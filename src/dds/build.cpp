@@ -304,6 +304,7 @@ void dds::build(const build_params& params, const library_manifest& man) {
     if (fs::exists(arc.out_path)) {
         fs::remove(arc.out_path);
     }
+    fs::create_directories(arc.out_path.parent_path());
     auto ar_res = run_proc(ar_cmd);
     if (!ar_res.okay()) {
         spdlog::error("Failure creating archive library {}", arc.out_path);
