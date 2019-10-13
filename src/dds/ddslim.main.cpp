@@ -46,7 +46,7 @@ struct cli_build {
     string_flag tc_filepath{cmd,
                             "toolchain_file",
                             "Path to the toolchain file to use",
-                            {"toolchain-file", 'T'},
+                            {"toolchain", 'T'},
                             (dds::fs::current_path() / "toolchain.dds").string()};
 
     args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests", 't'}};
