@@ -38,7 +38,8 @@ toolchain toolchain::load_from_file(fs::path p) {
 
     auto require_key = [](auto k, auto& opt) {
         if (!opt.has_value()) {
-            throw invalid_toolchain("Toolchain file is missing a required key: " + string(k));
+            throw invalid_toolchain(
+                fmt::format("Toolchain file is missing a required key '{}'", k));
         }
     };
 
@@ -50,7 +51,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         auto try_single = [&](auto k, auto& opt) {
             if (key == k) {
                 if (opt.has_value()) {
-                    throw invalid_toolchain("Duplicate key: " + key);
+                    throw invalid_toolchain(fmt::format("Duplicated key '{}'", key));
                 }
                 opt = value;
                 return true;
@@ -74,7 +75,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         // clang-format on
 
         if (!found_single) {
-            throw invalid_toolchain("Unknown toolchain file key: " + key);
+            throw invalid_toolchain(fmt::format("Unknown toolchain file key '{}'", key));
         }
     }
 

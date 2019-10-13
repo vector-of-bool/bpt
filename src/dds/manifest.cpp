@@ -2,6 +2,8 @@
 
 #include <dds/lm_parse.hpp>
 
+#include <spdlog/fmt/fmt.h>
+
 using namespace dds;
 
 library_manifest library_manifest::load_from_file(const fs::path& fpath) {
@@ -13,7 +15,8 @@ library_manifest library_manifest::load_from_file(const fs::path& fpath) {
         } else if (pair.key() == "Private-Defines") {
             ret.private_defines.emplace_back(pair.value());
         } else {
-            throw std::runtime_error("Unknown key in " + fpath.string() + ": " + pair.key());
+            throw std::runtime_error(
+                fmt::format("Unknown key in file '{}': {}", fpath.string(), pair.key()));
         }
     }
     return ret;

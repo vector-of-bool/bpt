@@ -2,6 +2,8 @@
 
 #include <dds/util.hpp>
 
+#include <spdlog/fmt/fmt.h>
+
 #include <cctype>
 #include <fstream>
 
@@ -44,8 +46,7 @@ void parse_line(std::vector<lm_pair>& pairs, const std::string_view whole_line) 
 
     while (true) {
         if (iter == end) {
-            throw std::runtime_error("Invalid line in config file: '"s + std::string(whole_line)
-                                     + "'");
+            throw std::runtime_error(fmt::format("Invalid line in config file: '{}'", whole_line));
         }
         if (*iter == ':') {
             if (++iter == end) {

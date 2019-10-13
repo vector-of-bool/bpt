@@ -163,7 +163,7 @@ void copy_headers(const fs::path& source, const fs::path& dest, const source_lis
 void generate_export(const build_params& params,
                      fs::path            archive_file,
                      const source_list&  sources) {
-    const auto export_root = params.out_root / (params.export_name + ".export-root");
+    const auto export_root = params.out_root / fmt::format("{}.export-root", params.export_name);
     spdlog::info("Generating library export: {}", export_root.string());
     fs::remove_all(export_root);
     fs::create_directories(export_root);
@@ -296,8 +296,8 @@ void dds::build(const build_params& params, const library_manifest& man) {
     archive_spec arc;
     arc.input_files = compile_sources(sources, params, man);
 
-    arc.out_path
-        = params.out_root / ("lib" + params.export_name + params.toolchain.archive_suffix());
+    arc.out_path = params.out_root
+        / (fmt::format("lib{}{}", params.export_name, params.toolchain.archive_suffix()));
 
     spdlog::info("Create archive {}", arc.out_path.string());
     auto ar_cmd = params.toolchain.create_archive_command(arc);
