@@ -170,7 +170,7 @@ def link_exe(cxx: Path, obj: Path, lib: Path, *, out: Path = None) -> Path:
 
 def run_test(exe: Path) -> None:
     print(f'Running test: {exe}')
-    subprocess.check_call([exe])
+    subprocess.check_call([str(exe)])
 
 
 def main(argv: Sequence[str]) -> int:
