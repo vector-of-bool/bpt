@@ -1,7 +1,7 @@
 #include <dds/build.hpp>
 #include <dds/lm_parse.hpp>
-#include <dds/util.hpp>
 #include <dds/logging.hpp>
+#include <dds/util.hpp>
 
 #include <args.hxx>
 
@@ -57,24 +57,24 @@ struct cli_build {
                                "Enable compiler warnings",
                                {"warnings", 'W'}};
 
-    args::ValueFlag<int> num_jobs{ cmd,
-                                   "jobs",
-                                   "Set the number of parallel jobs when compiling files",
-                                   { "jobs", 'j' },
-                                   0 };
+    args::ValueFlag<int> num_jobs{cmd,
+                                  "jobs",
+                                  "Set the number of parallel jobs when compiling files",
+                                  {"jobs", 'j'},
+                                  0};
 
     int run() {
         dds::build_params params;
-        params.root           = lib_dir.Get();
-        params.out_root       = out_dir.Get();
-        params.toolchain_file = tc_filepath.Get();
-        params.export_name    = export_name.Get();
-        params.do_export      = export_.Get();
-        params.build_tests    = build_tests.Get();
+        params.root            = lib_dir.Get();
+        params.out_root        = out_dir.Get();
+        params.toolchain_file  = tc_filepath.Get();
+        params.export_name     = export_name.Get();
+        params.do_export       = export_.Get();
+        params.build_tests     = build_tests.Get();
         params.enable_warnings = enable_warnings.Get();
         params.parallel_jobs   = num_jobs.Get();
         dds::library_manifest man;
-        const auto man_filepath = params.root / "manifest.dds";
+        const auto            man_filepath = params.root / "manifest.dds";
         if (exists(man_filepath)) {
             man = dds::library_manifest::load_from_file(man_filepath);
         }

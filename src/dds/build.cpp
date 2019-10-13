@@ -6,10 +6,10 @@
 #include <dds/toolchain.hpp>
 
 #include <algorithm>
-#include <sstream>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <stdexcept>
 #include <thread>
 
@@ -239,13 +239,11 @@ std::vector<fs::path> compile_sources(source_list             sources,
 
     std::unique_lock         lk{mut};
     std::vector<std::thread> threads;
-    int njobs = params.parallel_jobs;
+    int                      njobs = params.parallel_jobs;
     if (njobs < 1) {
         njobs = std::thread::hardware_concurrency() + 2;
     }
-    std::generate_n(std::back_inserter(threads), njobs, [&] {
-        return std::thread(compile_one);
-    });
+    std::generate_n(std::back_inserter(threads), njobs, [&] { return std::thread(compile_one); });
     spdlog::info("Parallel compile with {} threads", threads.size());
     lk.unlock();
     for (auto& t : threads) {

@@ -38,7 +38,7 @@ struct requirement_failed {};
             std::cerr << "An unhandled exception occured: " << e.what() << '\n';                   \
             return 2;                                                                              \
         }                                                                                          \
-        return ::dds::S_failed_checks;                                                                    \
+        return ::dds::S_failed_checks;                                                             \
     }                                                                                              \
     static_assert(true)
 

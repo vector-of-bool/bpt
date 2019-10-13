@@ -93,4 +93,4 @@ proc_result dds::run_proc(const std::vector<std::string>& command) {
     return res;
 }
 
-#endif // _WIN32
+#endif  // _WIN32

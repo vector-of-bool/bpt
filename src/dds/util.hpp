@@ -1,9 +1,9 @@
 #ifndef DDS_UTIL_HPP_INCLUDED
 #define DDS_UTIL_HPP_INCLUDED
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <algorithm>
 
 namespace dds {
 

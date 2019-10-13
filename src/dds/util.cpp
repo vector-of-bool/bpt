@@ -17,7 +17,6 @@ std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode, std::e
     return ret;
 }
 
-
 std::string dds::slurp_file(const fs::path& path, std::error_code& ec) {
     auto file = dds::open(path, std::ios::in, ec);
     if (ec) {

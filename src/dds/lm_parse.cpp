@@ -2,8 +2,8 @@
 
 #include <dds/util.hpp>
 
-#include <fstream>
 #include <cctype>
+#include <fstream>
 
 namespace fs = std::filesystem;
 
