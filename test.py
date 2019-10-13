@@ -32,7 +32,7 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
         stderr=subprocess.STDOUT,
     )
     if res.returncode != 0:
-        print(f'Test failed with exit code [{res.returncode}]:\n{res.stdout}')
+        print(f'Test failed with exit code [{res.returncode}]:\n{res.stdout.decode()}')
     return res.returncode == 0
 
 
