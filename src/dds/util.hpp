@@ -31,8 +31,24 @@ inline std::string slurp_file(const fs::path& path) {
 }
 
 inline bool ends_with(std::string_view s, std::string_view key) {
-    auto found = s.find(key);
+    auto found = s.rfind(key);
     return found != s.npos && found == s.size() - key.size();
+}
+
+inline bool starts_with(std::string_view s, std::string_view key) { return s.find(key) == 0; }
+
+inline bool contains(std::string_view s, std::string_view key) { return s.find(key) != s.npos; }
+
+inline std::vector<std::string> split(std::string_view str, std::string_view sep) {
+    std::vector<std::string>    ret;
+    std::string_view::size_type prev_pos = 0;
+    auto                        pos      = prev_pos;
+    while ((pos = str.find(sep, prev_pos)) != str.npos) {
+        ret.emplace_back(str.substr(prev_pos, pos - prev_pos));
+        prev_pos = pos + sep.length();
+    }
+    ret.emplace_back(str.substr(prev_pos));
+    return ret;
 }
 
 template <typename Container, typename Predicate>
