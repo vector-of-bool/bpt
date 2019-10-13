@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 from typing import List, NamedTuple
+import shutil
 import subprocess
 import sys
 
@@ -12,24 +13,27 @@ class TestOptions(NamedTuple):
 
 
 def run_test_dir(dir: Path, opts: TestOptions) -> bool:
-    try:
-        subprocess.check_call(
-            [
-                str(opts.exe),
-                'build',
-                '--export',
-                '--warnings',
-                '--tests',
-                '--toolchain',
-                opts.toolchain,
-            ],
-            cwd=dir,
-        )
-    except subprocess.CalledProcessError:
-        import traceback
-        traceback.print_exc()
-        return False
-    return True
+    print(f'Running test: {dir.name} ...')
+    out_dir = dir / '_build'
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    res = subprocess.run(
+        [
+            str(opts.exe),
+            'build',
+            '--export',
+            '--warnings',
+            '--tests',
+            f'--toolchain={opts.toolchain}',
+            f'--out-dir={out_dir}',
+        ],
+        cwd=dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if res.returncode != 0:
+        print(f'Test failed with exit code [{res.returncode}]:\n{res.stdout}')
+    return res.returncode == 0
 
 
 def run_tests(opts: TestOptions) -> int:

@@ -1,2 +1,3 @@
 Private-Include: external/spdlog/include
 Private-Include: external/wil/include
+Private-Define: FMT_HEADER_ONLY=1

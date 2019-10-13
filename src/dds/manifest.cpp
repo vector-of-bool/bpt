@@ -12,7 +12,7 @@ library_manifest library_manifest::load_from_file(const fs::path& fpath) {
     for (auto& pair : kvs.items()) {
         if (pair.key() == "Private-Include") {
             ret.private_includes.emplace_back(pair.value());
-        } else if (pair.key() == "Private-Defines") {
+        } else if (pair.key() == "Private-Define") {
             ret.private_defines.emplace_back(pair.value());
         } else {
             throw std::runtime_error(
