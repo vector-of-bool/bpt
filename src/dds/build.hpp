@@ -15,6 +15,7 @@ struct build_params {
     std::string export_name;
     bool        do_export = false;
     bool        build_tests = false;
+    bool        enable_warnings = false;
 };
 
 void build(const build_params&, const library_manifest& man);

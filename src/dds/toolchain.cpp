@@ -29,6 +29,7 @@ toolchain toolchain::load_from_file(fs::path p) {
     opt_string c_compile_template;
     opt_string cxx_compile_template;
     opt_string create_archive_template;
+    opt_string warning_flags;
 
     opt_string archive_suffix;
 
@@ -64,6 +65,7 @@ toolchain toolchain::load_from_file(fs::path p) {
             || try_single("Compile-C++-Template", cxx_compile_template)
             || try_single("Create-Archive-Template", create_archive_template)
             || try_single("Archive-Suffix", archive_suffix)
+            || try_single("Warning-Flags", warning_flags)
             || false;
         // clang-format on
 
@@ -88,6 +90,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         def_template.value(),
         create_archive_template.value(),
         archive_suffix.value(),
+        warning_flags.value_or(""),
     };
 }
 
@@ -183,18 +186,22 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
 
     for (auto&& inc_dir : spec.include_dirs) {
         auto inc_args = include_args(inc_dir);
-        flags.insert(flags.end(), inc_args.begin(), inc_args.end());
+        extend(flags, inc_args);
     }
 
     for (auto&& def : spec.definitions) {
         auto def_args = definition_args(def);
-        flags.insert(flags.end(), def_args.begin(), def_args.end());
+        extend(flags, def_args);
+    }
+
+    if (spec.enable_warnings) {
+        extend(flags, _warning_flags);
     }
 
     vector<string> command;
     for (auto arg : _cxx_compile) {
         if (arg == "<FLAGS>") {
-            command.insert(command.end(), flags.begin(), flags.end());
+            extend(command, flags);
         } else {
             arg = replace(arg, "<FILE>", spec.source_path.string());
             arg = replace(arg, "<OUT>", spec.out_path.string());
@@ -208,7 +215,7 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
     vector<string> cmd;
     for (auto& arg : _archive_template) {
         if (arg == "<OBJECTS>") {
-            cmd.insert(cmd.end(), spec.input_files.begin(), spec.input_files.end());
+            extend(cmd, spec.input_files);
         } else {
             cmd.push_back(replace(arg, "<ARCHIVE>", spec.out_path.string()));
         }

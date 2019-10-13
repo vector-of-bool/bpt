@@ -22,6 +22,7 @@ struct compile_file_spec {
     std::vector<std::string> definitions  = {};
     std::vector<fs::path>    include_dirs = {};
     language                 lang         = language::automatic;
+    bool                     enable_warnings = false;
 };
 
 struct archive_spec {
@@ -32,13 +33,13 @@ struct archive_spec {
 class toolchain {
     using string_seq = std::vector<std::string>;
 
-    string_seq _c_compile;
-    string_seq _cxx_compile;
-    string_seq _inc_template;
-    string_seq _def_template;
-    string_seq _archive_template;
-
+    string_seq  _c_compile;
+    string_seq  _cxx_compile;
+    string_seq  _inc_template;
+    string_seq  _def_template;
+    string_seq  _archive_template;
     std::string _archive_suffix;
+    string_seq  _warning_flags;
 
 public:
     toolchain(const std::string& c_compile,
@@ -46,13 +47,15 @@ public:
               const std::string& inc_template,
               const std::string& def_template,
               const std::string& archive_template,
-              const std::string& archive_suffix)
+              const std::string& archive_suffix,
+              const std::string& warning_flags)
         : _c_compile(split_shell_string(c_compile))
         , _cxx_compile(split_shell_string(cxx_compile))
         , _inc_template(split_shell_string(inc_template))
         , _def_template(split_shell_string(def_template))
         , _archive_template(split_shell_string(archive_template))
-        , _archive_suffix(archive_suffix) {}
+        , _archive_suffix(archive_suffix)
+        , _warning_flags(split_shell_string(warning_flags)) {}
 
     static toolchain load_from_file(fs::path);
 

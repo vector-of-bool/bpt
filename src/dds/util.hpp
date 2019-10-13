@@ -41,6 +41,11 @@ void erase_if(Container& c, Predicate&& p) {
     c.erase(erase_point, c.end());
 }
 
+template <typename Container, typename Other>
+void extend(Container& c, const Other& o) {
+    c.insert(c.end(), o.begin(), o.end());
+}
+
 }  // namespace dds
 
 #endif  // DDS_UTIL_HPP_INCLUDED

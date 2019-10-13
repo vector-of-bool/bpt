@@ -52,6 +52,11 @@ struct cli_build {
     args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests"}};
     args::Flag export_{cmd, "export_dir", "Generate a library export", {"export", 'E'}};
 
+    args::Flag enable_warnings{cmd,
+                               "enable_warnings",
+                               "Enable compiler warnings",
+                               {"--warnings", 'W'}};
+
     int run() {
         dds::build_params params;
         params.root           = lib_dir.Get();
@@ -60,6 +65,7 @@ struct cli_build {
         params.export_name    = export_name.Get();
         params.do_export      = export_.Get();
         params.build_tests    = build_tests.Get();
+        params.enable_warnings = enable_warnings.Get();
         dds::library_manifest man;
         const auto man_filepath = params.root / "manifest.dds";
         if (exists(man_filepath)) {

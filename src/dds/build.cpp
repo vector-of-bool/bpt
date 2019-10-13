@@ -111,6 +111,7 @@ fs::path compile_file(fs::path                src_path,
     spdlog::info("Compile file: {}", fs::relative(src_path, params.root).string());
 
     compile_file_spec spec{src_path, obj_path};
+    spec.enable_warnings = params.enable_warnings;
 
     spec.include_dirs.push_back(params.root / "src");
     spec.include_dirs.push_back(params.root / "include");
@@ -133,6 +134,10 @@ fs::path compile_file(fs::path                src_path,
         }
         spdlog::error("Subcommand FAILED: {}\n{}", strm.str(), compile_res.output);
         throw compile_failure("Compilation failed.");
+    }
+
+    if (!compile_res.output.empty()) {
+        spdlog::warn("While compiling file {}:\n{}", spec.source_path.string(), compile_res.output);
     }
 
     return obj_path;
