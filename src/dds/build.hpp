@@ -14,6 +14,7 @@ struct build_params {
     fs::path    toolchain_file;
     std::string export_name;
     bool        do_export = false;
+    bool        build_tests = false;
 };
 
 void build(const build_params&, const library_manifest& man);

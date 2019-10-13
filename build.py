@@ -34,6 +34,7 @@ def _compile_src(cxx: Path, cpp_file: Path) -> Tuple[Path, Path]:
         '-Wshadow',
         '-Wconversion',
         '-fdiagnostics-color',
+        '-pthread',
         '-g',
         '-c',
         '-O0',
@@ -87,7 +88,19 @@ def link_exe(cxx: Path, obj: Path, lib: Path, *, out: Path = None) -> Path:
         out.parent.mkdir(exist_ok=True, parents=True)
 
     print(f'Linking executable {out}')
-    subprocess.check_call([cxx, '-static', obj, lib, '-lstdc++fs', f'-o{out}'])
+    subprocess.check_call([
+        cxx,
+        '-static',
+        '-pthread',
+        # See: https://stackoverflow.com/questions/35116327/when-g-static-link-pthread-cause-segmentation-fault-why
+        '-Wl,--whole-archive',
+        '-lpthread',
+        '-Wl,--no-whole-archive',
+        obj,
+        lib,
+        '-lstdc++fs',
+        f'-o{out}',
+    ])
     return out
 
 

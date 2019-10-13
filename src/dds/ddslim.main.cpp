@@ -17,8 +17,6 @@ struct cli_base {
     args::ArgumentParser& parser;
     args::HelpFlag _help{parser, "help", "Display this help message and exit", {'h', "help"}};
 
-    std::shared_ptr<spdlog::logger> console = dds::get_logger();
-
     args::Group cmd_group{parser, "Available Commands"};
 };
 
@@ -51,6 +49,7 @@ struct cli_build {
                           {"toolchain-file", 'T'},
                           dds::fs::current_path() / "toolchain.dds"};
 
+    args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests"}};
     args::Flag export_{cmd, "export_dir", "Generate a library export", {"export", 'E'}};
 
     int run() {
@@ -60,6 +59,7 @@ struct cli_build {
         params.toolchain_file = tc_filepath.Get();
         params.export_name    = export_name.Get();
         params.do_export      = export_.Get();
+        params.build_tests    = build_tests.Get();
         dds::library_manifest man;
         const auto man_filepath = params.root / "manifest.dds";
         if (exists(man_filepath)) {
@@ -73,6 +73,7 @@ struct cli_build {
 }  // namespace
 
 int main(int argc, char** argv) {
+    spdlog::set_pattern("[%H:%M:%S] [%^%l%$] %v");
     args::ArgumentParser parser("DDSLiM - The drop-dead-simple library manager");
 
     cli_base  cli{parser};

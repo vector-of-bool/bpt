@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 
 namespace dds {
 
@@ -32,6 +33,12 @@ inline std::string slurp_file(const fs::path& path) {
 inline bool ends_with(std::string_view s, std::string_view key) {
     auto found = s.find(key);
     return found != s.npos && found == s.size() - key.size();
+}
+
+template <typename Container, typename Predicate>
+void erase_if(Container& c, Predicate&& p) {
+    auto erase_point = std::remove_if(c.begin(), c.end(), p);
+    c.erase(erase_point, c.end());
 }
 
 }  // namespace dds
