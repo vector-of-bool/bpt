@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 
 std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode, std::error_code& ec) {
     std::fstream ret;
@@ -10,7 +11,7 @@ std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode, std::e
 
     try {
         ret.open(filepath.string(), mode);
-    } catch (const std::ios::failure& e) {
+    } catch (const std::ios::failure&) {
         ec = std::error_code(errno, std::system_category());
     }
     return ret;

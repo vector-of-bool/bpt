@@ -1,1 +1,2 @@
 Private-Include: external/spdlog/include
+Private-Include: external/wil/include

@@ -1,3 +1,4 @@
+#ifndef _WIN32
 #include "./proc.hpp"
 
 #include <poll.h>
@@ -91,3 +92,5 @@ proc_result dds::run_proc(const std::vector<std::string>& command) {
     }
     return res;
 }
+
+#endif // _WIN32

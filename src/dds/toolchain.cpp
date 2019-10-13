@@ -215,7 +215,9 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
     vector<string> cmd;
     for (auto& arg : _archive_template) {
         if (arg == "<OBJECTS>") {
-            extend(cmd, spec.input_files);
+            std::transform(spec.input_files.begin(), spec.input_files.end(), std::back_inserter(cmd), [](auto&& p) {
+                return p.string();
+            });
         } else {
             cmd.push_back(replace(arg, "<ARCHIVE>", spec.out_path.string()));
         }

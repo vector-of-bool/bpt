@@ -3,6 +3,7 @@
 #include <dds/util.hpp>
 
 #include <fstream>
+#include <cctype>
 
 namespace fs = std::filesystem;
 
@@ -13,7 +14,7 @@ using namespace dds;
 namespace {
 
 std::string_view sview(std::string_view::const_iterator beg, std::string_view::const_iterator end) {
-    return std::string_view{beg, static_cast<std::size_t>(std::distance(beg, end))};
+    return std::string_view(&*beg, static_cast<std::size_t>(std::distance(beg, end)));
 }
 
 std::string_view trim(std::string_view s) {

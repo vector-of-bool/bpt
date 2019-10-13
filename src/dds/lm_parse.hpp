@@ -20,8 +20,6 @@ public:
 
     auto& key() const noexcept { return _key; }
     auto& value() const noexcept { return _value; }
-
-    auto tie() const noexcept { return std::tie(key(), value()); }
 };
 
 struct kv_pair_iterator {

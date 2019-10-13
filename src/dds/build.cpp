@@ -6,6 +6,7 @@
 #include <dds/toolchain.hpp>
 
 #include <algorithm>
+#include <sstream>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -136,6 +137,11 @@ fs::path compile_file(fs::path                src_path,
         throw compile_failure("Compilation failed.");
     }
 
+    // MSVC prints the filename of the source file. Dunno why, but they do.
+    if (compile_res.output.find(spec.source_path.filename().string() + "\r\n") == 0) {
+        compile_res.output.erase(0, spec.source_path.filename().string().length() + 2);
+    }
+
     if (!compile_res.output.empty()) {
         spdlog::warn("While compiling file {}:\n{}", spec.source_path.string(), compile_res.output);
     }
@@ -233,7 +239,11 @@ std::vector<fs::path> compile_sources(source_list             sources,
 
     std::unique_lock         lk{mut};
     std::vector<std::thread> threads;
-    std::generate_n(std::back_inserter(threads), std::thread::hardware_concurrency() + 2, [&] {
+    int njobs = params.parallel_jobs;
+    if (njobs < 1) {
+        njobs = std::thread::hardware_concurrency() + 2;
+    }
+    std::generate_n(std::back_inserter(threads), njobs, [&] {
         return std::thread(compile_one);
     });
     spdlog::info("Parallel compile with {} threads", threads.size());

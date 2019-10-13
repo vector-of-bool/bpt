@@ -41,7 +41,7 @@ struct cli_build {
                             "export_name",
                             "Set the name of the export",
                             {"export-name", 'n'},
-                            dds::fs::current_path().filename()};
+                            dds::fs::current_path().filename().string()};
 
     path_flag tc_filepath{cmd,
                           "toolchain_file",
@@ -55,7 +55,13 @@ struct cli_build {
     args::Flag enable_warnings{cmd,
                                "enable_warnings",
                                "Enable compiler warnings",
-                               {"--warnings", 'W'}};
+                               {"warnings", 'W'}};
+
+    args::ValueFlag<int> num_jobs{ cmd,
+                                   "jobs",
+                                   "Set the number of parallel jobs when compiling files",
+                                   { "jobs", 'j' },
+                                   0 };
 
     int run() {
         dds::build_params params;
@@ -66,6 +72,7 @@ struct cli_build {
         params.do_export      = export_.Get();
         params.build_tests    = build_tests.Get();
         params.enable_warnings = enable_warnings.Get();
+        params.parallel_jobs   = num_jobs.Get();
         dds::library_manifest man;
         const auto man_filepath = params.root / "manifest.dds";
         if (exists(man_filepath)) {
