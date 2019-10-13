@@ -1,8 +1,5 @@
 # Refer: https://aka.ms/yaml
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 jobs:
   - job: Windows MSVC
     pool:
