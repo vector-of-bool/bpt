@@ -2,6 +2,8 @@
 
 #include <dds/lm_parse.hpp>
 
+#include <spdlog/fmt/fmt.h>
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -32,6 +34,7 @@ toolchain toolchain::load_from_file(fs::path p) {
     opt_string warning_flags;
 
     opt_string archive_suffix;
+    opt_string object_suffix;
 
     auto require_key = [](auto k, auto& opt) {
         if (!opt.has_value()) {
@@ -64,8 +67,9 @@ toolchain toolchain::load_from_file(fs::path p) {
             || try_single("Compile-C-Template", c_compile_template)
             || try_single("Compile-C++-Template", cxx_compile_template)
             || try_single("Create-Archive-Template", create_archive_template)
-            || try_single("Archive-Suffix", archive_suffix)
             || try_single("Warning-Flags", warning_flags)
+            || try_single("Archive-Suffix", archive_suffix)
+            || try_single("Object-Suffix", object_suffix)
             || false;
         // clang-format on
 
@@ -82,6 +86,7 @@ toolchain toolchain::load_from_file(fs::path p) {
     require_key("Create-Archive-Template", create_archive_template);
 
     require_key("Archive-Suffix", archive_suffix);
+    require_key("Object-Suffix", object_suffix);
 
     return toolchain{
         c_compile_template.value(),
@@ -89,8 +94,9 @@ toolchain toolchain::load_from_file(fs::path p) {
         inc_template.value(),
         def_template.value(),
         create_archive_template.value(),
-        archive_suffix.value(),
         warning_flags.value_or(""),
+        archive_suffix.value(),
+        object_suffix.value(),
     };
 }
 
@@ -224,4 +230,95 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
         }
     }
     return cmd;
+}
+
+std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
+    toolchain ret;
+
+    using namespace std::string_literals;
+
+    if (starts_with(s, "gcc") || starts_with(s, "clang")) {
+        ret._inc_template     = {"-isystem", "<PATH>"};
+        ret._def_template     = {"-D", "<DEF>"};
+        ret._archive_suffix   = ".a";
+        ret._object_suffix    = ".o";
+        ret._warning_flags    = {"-Wall", "-Wextra"};
+        ret._archive_template = {"ar", "rcs", "<ARCHIVE>", "<OBJECTS>"};
+
+        std::vector<std::string> common_flags = {
+            "<FLAGS>",
+            "-g",
+            "-fPIC",
+            "-fdiagnostics-color",
+            "-pthread",
+            "-c",
+            "-o",
+            "<OUT>",
+            "<FILE>",
+        };
+        std::vector<std::string> c_flags;
+        std::vector<std::string> cxx_flags = {"-std=c++17"};
+
+        std::string c_compiler_base;
+        std::string cxx_compiler_base;
+        std::string compiler_suffix;
+
+        if (starts_with(s, "gcc")) {
+            c_compiler_base   = "gcc";
+            cxx_compiler_base = "g++";
+            common_flags.push_back("-Og");
+        } else if (starts_with(s, "clang")) {
+            c_compiler_base   = "clang";
+            cxx_compiler_base = "clang++";
+        } else {
+            assert(false && "Unreachable");
+            std::terminate();
+        }
+
+        if (ends_with(s, "-7")) {
+            compiler_suffix = "-7";
+        } else if (ends_with(s, "-8")) {
+            compiler_suffix = "-8";
+        } else if (ends_with(s, "-9")) {
+            compiler_suffix = "-9";
+        } else if (ends_with(s, "-10")) {
+            compiler_suffix = "-10";
+        }
+
+        auto c_compiler_name = c_compiler_base + compiler_suffix;
+        if (c_compiler_name != s) {
+            return std::nullopt;
+        }
+        auto cxx_compiler_name = cxx_compiler_base + compiler_suffix;
+
+        ret._c_compile.push_back(c_compiler_name);
+        extend(ret._c_compile, common_flags);
+        extend(ret._c_compile, c_flags);
+        ret._cxx_compile.push_back(cxx_compiler_name);
+        extend(ret._cxx_compile, common_flags);
+        extend(ret._cxx_compile, cxx_flags);
+    } else if (s == "msvc") {
+        ret._inc_template = {"/I<PATH>"};
+        ret._def_template = {"/D<DEF>"};
+        ret._c_compile    = {"cl.exe", "/nologo", "<FLAGS>", "/c", "<FILE>", "/Fo<OUT>"};
+        ret._cxx_compile  = {"cl.exe",
+                            "/nologo",
+                            "<FLAGS>",
+                            "/std:c++latest",
+                            "/EHsc",
+                            "/c",
+                            "<FILE>",
+                            "/Fo<OUT>"};
+        std::vector<std::string_view> common_flags = {"/Z7", "/O2", "/MT", "/DEBUG"};
+        extend(ret._c_compile, common_flags);
+        extend(ret._cxx_compile, common_flags);
+        ret._archive_suffix   = ".lib";
+        ret._object_suffix    = ".obj";
+        ret._archive_template = {"lib", "/nologo", "/OUT:<ARCHIVE>", "<OBJECTS>"};
+        ret._warning_flags    = {"/W4"};
+    } else {
+        return std::nullopt;
+    }
+
+    return ret;
 }
