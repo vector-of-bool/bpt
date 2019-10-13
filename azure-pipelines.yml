@@ -1,19 +1,24 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-trigger:
-- master
+# Refer: https://aka.ms/yaml
 
 pool:
   vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+jobs:
+  - job: Windows MSVC
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+      - script: |
+          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 &&
+          python build.py --cxx cl.exe --test
+        displayName: Build and Run Tests
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  - job: Linux GCC
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: |
+          set -eu
+          sudo apt install -y python3-minimal g++-8
+          python3 build.py --cxx g++-8 --test
+        displayName: Build and Run Tests
