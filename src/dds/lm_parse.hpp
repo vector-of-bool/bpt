@@ -109,7 +109,11 @@ inline kv_pair_iterator::kv_pair_iterator(base_iter it, base_iter end, std::stri
 
 lm_kv_pairs lm_parse_string(std::string_view);
 lm_kv_pairs lm_parse_file(std::filesystem::path);
-void        lm_write_pairs(std::filesystem::path, lm_kv_pairs);
+void        lm_write_pairs(std::filesystem::path, const std::vector<lm_pair>&);
+
+inline void lm_write_pairs(const std::filesystem::path& fpath, const lm_kv_pairs& pairs) {
+    lm_write_pairs(fpath, pairs.items());
+}
 
 }  // namespace dds
 

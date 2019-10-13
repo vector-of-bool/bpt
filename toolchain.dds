@@ -1,5 +1,6 @@
-Include-Template: -I <PATH>
+Include-Template: -isystem <PATH>
 Define-Template: -D <DEF>
+Warning-Flags: -Wall -Wextra -Wshadow -Werror
 
 Compile-C-Template:   gcc-8 <FLAGS> -g -fPIC -fdiagnostics-color -O0            -c <FILE> -o <OUT>
 Compile-C++-Template: g++-8 <FLAGS> -g -fPIC -fdiagnostics-color -O0 -std=c++17 -c <FILE> -o <OUT>

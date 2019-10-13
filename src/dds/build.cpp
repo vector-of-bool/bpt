@@ -1,5 +1,6 @@
 #include "./build.hpp"
 
+#include <dds/lm_parse.hpp>
 #include <dds/logging.hpp>
 #include <dds/proc.hpp>
 #include <dds/toolchain.hpp>
@@ -157,15 +158,31 @@ void generate_export(const build_params& params,
     spdlog::info("Generating library export: {}", export_root.string());
     fs::remove_all(export_root);
     fs::create_directories(export_root);
-    fs::copy_file(archive_file, export_root / archive_file.filename());
+    const auto archive_dest = export_root / archive_file.filename();
+    fs::copy_file(archive_file, archive_dest);
 
-    auto header_root = params.root / "include";
+    auto       header_root = params.root / "include";
+    const auto header_dest = export_root / "include";
     if (!fs::is_directory(header_root)) {
         header_root = params.root / "src";
     }
     if (fs::is_directory(header_root)) {
-        copy_headers(header_root, export_root / "include", sources);
+        copy_headers(header_root, header_dest, sources);
     }
+
+    std::vector<lm_pair> lm_pairs;
+    lm_pairs.emplace_back("Type", "Package");
+    lm_pairs.emplace_back("Name", params.export_name);
+    lm_pairs.emplace_back("Namespace", params.export_name);
+    lm_pairs.emplace_back("Library", "lib.lml");
+    lm_write_pairs(export_root / "package.lmp", lm_pairs);
+
+    lm_pairs.clear();
+    lm_pairs.emplace_back("Type", "Library");
+    lm_pairs.emplace_back("Name", params.export_name);
+    lm_pairs.emplace_back("Path", fs::relative(archive_dest, export_root).string());
+    lm_pairs.emplace_back("Include-Path", fs::relative(header_dest, export_root).string());
+    lm_write_pairs(export_root / "lib.lml", lm_pairs);
 }
 
 std::vector<fs::path> compile_sources(source_list             sources,

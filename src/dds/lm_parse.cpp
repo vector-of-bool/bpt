@@ -91,6 +91,11 @@ dds::lm_kv_pairs dds::lm_parse_string(std::string_view s) {
     return lm_kv_pairs(std::move(pairs));
 }
 
-dds::lm_kv_pairs dds::lm_parse_file(fs::path fpath) {
-    return lm_parse_string(slurp_file(fpath));
+dds::lm_kv_pairs dds::lm_parse_file(fs::path fpath) { return lm_parse_string(slurp_file(fpath)); }
+
+void dds::lm_write_pairs(fs::path fpath, const std::vector<lm_pair>& pairs) {
+    auto fstream = open(fpath, std::ios::out | std::ios::binary);
+    for (auto& pair : pairs) {
+        fstream << pair.key() << ": " << pair.value() << '\n';
+    }
 }
