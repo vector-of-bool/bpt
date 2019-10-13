@@ -1,7 +1,7 @@
 # Refer: https://aka.ms/yaml
 
 jobs:
-  - job: Windows MSVC
+  - job: Windows_MSVC
     pool:
       vmImage: vs2017-win2016
     steps:
@@ -10,7 +10,7 @@ jobs:
           python build.py --cxx cl.exe --test
         displayName: Build and Run Tests
 
-  - job: Linux GCC
+  - job: Linux_GCC
     pool:
       vmImage: ubuntu-18.04
     steps:
