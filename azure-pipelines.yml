@@ -9,8 +9,10 @@ jobs:
           echo Loading VS environment
           call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
           echo Executing build/test script
-          python -u build.py --cxx cl.exe --test || exit 1
+          python -u build.py --cxx cl.exe --test --static || exit 1
         displayName: Build and Run Tests
+      - publish: _build/ddslim.exe
+        artifact: DDSLiM Executable - Windows
 
   - job: Linux_GCC
     pool:
@@ -19,8 +21,10 @@ jobs:
       - script: |
           set -eu
           sudo apt install -y python3-minimal g++-8
-          python3 -u build.py --cxx g++-8 --test
+          python3 -u build.py --cxx g++-8 --test --static
         displayName: Build and Run Tests
+      - publish: _build/ddslim
+        artifact: DDSLiM Executable - Linux
 
   - job: macOS
     pool:
@@ -30,3 +34,6 @@ jobs:
           set -eu
           brew install gcc@8
           python3 -u build.py --cxx g++-8 --test
+        displayName: Build and Run Tests
+      - publish: _build/ddslim
+        artifact: DDSLiM Executable - macOS
