@@ -99,13 +99,11 @@ void collect_sources(source_list& sf, const fs::path& source_dir) {
     }
 }
 
-fs::path compile_file(fs::path                src_path,
-                      const build_params&     params,
-                      const toolchain&        tc,
-                      const library_manifest& man) {
+fs::path compile_file(fs::path src_path, const build_params& params, const library_manifest& man) {
     auto obj_dir     = params.out_root / "obj";
     auto obj_relpath = fs::relative(src_path, params.root);
-    obj_relpath.replace_filename(obj_relpath.filename().string() + ".o");
+    obj_relpath.replace_filename(obj_relpath.filename().string()
+                                 + params.toolchain.object_suffix());
     auto obj_path = obj_dir / obj_relpath;
     fs::create_directories(obj_path.parent_path());
 
@@ -125,7 +123,7 @@ fs::path compile_file(fs::path                src_path,
         spec.definitions.push_back(def);
     }
 
-    auto cmd         = tc.create_compile_command(spec);
+    auto cmd         = params.toolchain.create_compile_command(spec);
     auto compile_res = run_proc(cmd);
     if (!compile_res.okay()) {
         spdlog::error("Compilation failed: {}", spec.source_path.string());
@@ -196,10 +194,8 @@ void generate_export(const build_params& params,
     lm_write_pairs(export_root / "lib.lml", lm_pairs);
 }
 
-std::vector<fs::path> compile_sources(source_list             sources,
-                                      const build_params&     params,
-                                      const toolchain&        tc,
-                                      const library_manifest& man) {
+std::vector<fs::path>
+compile_sources(source_list sources, const build_params& params, const library_manifest& man) {
     // We don't bother with a nice thread pool, as the overhead of compiling
     // source files dwarfs the cost of interlocking.
     std::mutex                      mut;
@@ -226,7 +222,7 @@ std::vector<fs::path> compile_sources(source_list             sources,
             }
             lk.unlock();
             try {
-                auto obj_path = compile_file(source.path, params, tc, man);
+                auto obj_path = compile_file(source.path, params, man);
                 lk.lock();
                 objects.emplace_back(std::move(obj_path));
             } catch (...) {
@@ -266,8 +262,6 @@ std::vector<fs::path> compile_sources(source_list             sources,
 }  // namespace
 
 void dds::build(const build_params& params, const library_manifest& man) {
-    auto tc = toolchain::load_from_file(params.toolchain_file);
-
     auto include_dir = params.root / "include";
     auto src_dir     = params.root / "src";
 
@@ -300,12 +294,13 @@ void dds::build(const build_params& params, const library_manifest& man) {
     }
 
     archive_spec arc;
-    arc.input_files = compile_sources(sources, params, tc, man);
+    arc.input_files = compile_sources(sources, params, man);
 
-    arc.out_path = params.out_root / ("lib" + params.export_name + tc.archive_suffix());
+    arc.out_path
+        = params.out_root / ("lib" + params.export_name + params.toolchain.archive_suffix());
 
     spdlog::info("Create archive {}", arc.out_path.string());
-    auto ar_cmd = tc.create_archive_command(arc);
+    auto ar_cmd = params.toolchain.create_archive_command(arc);
     if (fs::exists(arc.out_path)) {
         fs::remove(arc.out_path);
     }

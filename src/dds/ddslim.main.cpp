@@ -43,13 +43,13 @@ struct cli_build {
                             {"export-name", 'n'},
                             dds::fs::current_path().filename().string()};
 
-    path_flag tc_filepath{cmd,
-                          "toolchain_file",
-                          "Path to the toolchain file to use",
-                          {"toolchain-file", 'T'},
-                          dds::fs::current_path() / "toolchain.dds"};
+    string_flag tc_filepath{cmd,
+                            "toolchain_file",
+                            "Path to the toolchain file to use",
+                            {"toolchain-file", 'T'},
+                            (dds::fs::current_path() / "toolchain.dds").string()};
 
-    args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests"}};
+    args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests", 't'}};
     args::Flag export_{cmd, "export_dir", "Generate a library export", {"export", 'E'}};
 
     args::Flag enable_warnings{cmd,
@@ -63,12 +63,27 @@ struct cli_build {
                                   {"jobs", 'j'},
                                   0};
 
+    dds::toolchain _get_toolchain() {
+        const auto tc_path = tc_filepath.Get();
+        if (tc_path.find(":") == 0) {
+            auto default_tc = tc_path.substr(1);
+            auto tc         = dds::toolchain::get_builtin(default_tc);
+            if (!tc.has_value()) {
+                throw std::runtime_error(
+                    fmt::format("Invalid default toolchain name '{}'", default_tc));
+            }
+            return std::move(*tc);
+        } else {
+            return dds::toolchain::load_from_file(tc_path);
+        }
+    }
+
     int run() {
         dds::build_params params;
         params.root            = lib_dir.Get();
         params.out_root        = out_dir.Get();
-        params.toolchain_file  = tc_filepath.Get();
         params.export_name     = export_name.Get();
+        params.toolchain       = _get_toolchain();
         params.do_export       = export_.Get();
         params.build_tests     = build_tests.Get();
         params.enable_warnings = enable_warnings.Get();
