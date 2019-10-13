@@ -1,0 +1,8 @@
+Include-Template: -I <PATH>
+Define-Template: -D <DEF>
+
+Compile-C-Template:   gcc-8 <FLAGS> -g -fPIC -fdiagnostics-color -O0            -c <FILE> -o <OUT>
+Compile-C++-Template: g++-8 <FLAGS> -g -fPIC -fdiagnostics-color -O0 -std=c++17 -c <FILE> -o <OUT>
+Create-Archive-Template: ar rcs <ARCHIVE> <OBJECTS>
+
+Archive-Suffix: .a
