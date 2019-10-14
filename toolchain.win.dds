@@ -1,8 +1,0 @@
-Include-Template: /I<PATH>
-Define-Template: /D<DEF>
-
-Compile-C-Template: cl.exe /nologo <FLAGS> /c <FILE> /Fo<OUT>
-Compile-C++-Template: cl.exe /nologo <FLAGS> /std:c++latest /EHsc /c <FILE> /Fo<OUT>
-Create-Archive-Template: lib /nologo /OUT:<ARCHIVE> <OBJECTS>
-
-Archive-Suffix: .lib
