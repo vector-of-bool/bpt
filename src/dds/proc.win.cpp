@@ -16,7 +16,7 @@ using namespace dds;
 
 namespace {
 
-[[noreturn]] void throw_system_error(const char* what) {
+[[noreturn]] void throw_system_error(std::string what) {
     throw std::system_error(std::error_code(::GetLastError(), std::system_category()), what);
 }
 
@@ -65,7 +65,7 @@ proc_result dds::run_proc(const std::vector<std::string>& cmd) {
                             &startup_info,
                             &proc_info);
     if (!okay) {
-        throw_system_error("Failed to spawn a child process");
+        throw_system_error(fmt::format("Failed to spawn child process [{}]", cmd_str));
     }
 
     writer.reset();
