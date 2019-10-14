@@ -20,18 +20,10 @@ namespace {
     throw std::system_error(std::error_code(::GetLastError(), std::system_category()), what);
 }
 
-std::string concat_args(const std::vector<std::string>& cmd) {
-    std::stringstream strm;
-    for (const auto& arg : cmd) {
-        strm << arg << ' ';
-    }
-    return strm.str();
-}
-
 }  // namespace
 
 proc_result dds::run_proc(const std::vector<std::string>& cmd) {
-    auto cmd_str = concat_args(cmd);
+    const auto cmd_str = quote_command(cmd);
 
     ::SECURITY_ATTRIBUTES security = {};
     security.bInheritHandle        = TRUE;
