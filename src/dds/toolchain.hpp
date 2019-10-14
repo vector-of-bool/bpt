@@ -39,6 +39,7 @@ class toolchain {
     string_seq  _inc_template;
     string_seq  _def_template;
     string_seq  _archive_template;
+    string_seq  _link_exe_template;
     string_seq  _warning_flags;
     std::string _archive_suffix;
     std::string _object_suffix;
@@ -51,6 +52,7 @@ public:
               std::string_view inc_template,
               std::string_view def_template,
               std::string_view archive_template,
+              std::string_view link_exe_template,
               std::string_view warning_flags,
               std::string_view archive_suffix,
               std::string_view object_suffix)
@@ -59,6 +61,7 @@ public:
         , _inc_template(split_shell_string(inc_template))
         , _def_template(split_shell_string(def_template))
         , _archive_template(split_shell_string(archive_template))
+        , _link_exe_template(split_shell_string(link_exe_template))
         , _warning_flags(split_shell_string(warning_flags))
         , _archive_suffix(archive_suffix)
         , _object_suffix(object_suffix) {}

@@ -31,6 +31,7 @@ toolchain toolchain::load_from_file(fs::path p) {
     opt_string c_compile_template;
     opt_string cxx_compile_template;
     opt_string create_archive_template;
+    opt_string link_exe_template;
     opt_string warning_flags;
 
     opt_string archive_suffix;
@@ -71,6 +72,7 @@ toolchain toolchain::load_from_file(fs::path p) {
             || try_single("Warning-Flags", warning_flags)
             || try_single("Archive-Suffix", archive_suffix)
             || try_single("Object-Suffix", object_suffix)
+            || try_single("Link-Executable-Template", link_exe_template)
             || false;
         // clang-format on
 
@@ -85,6 +87,7 @@ toolchain toolchain::load_from_file(fs::path p) {
     require_key("Compile-C-Template", c_compile_template);
     require_key("Compile-C++-Template", cxx_compile_template);
     require_key("Create-Archive-Template", create_archive_template);
+    require_key("Link-Executable-Template", link_exe_template);
 
     require_key("Archive-Suffix", archive_suffix);
     require_key("Object-Suffix", object_suffix);
@@ -95,6 +98,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         inc_template.value(),
         def_template.value(),
         create_archive_template.value(),
+        link_exe_template.value(),
         warning_flags.value_or(""),
         archive_suffix.value(),
         object_suffix.value(),
@@ -295,9 +299,22 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         ret._c_compile.push_back(c_compiler_name);
         extend(ret._c_compile, common_flags);
         extend(ret._c_compile, c_flags);
+
         ret._cxx_compile.push_back(cxx_compiler_name);
         extend(ret._cxx_compile, common_flags);
         extend(ret._cxx_compile, cxx_flags);
+
+        ret._link_exe_template.push_back(cxx_compiler_name);
+        extend(ret._link_exe_template,
+               {
+                   "-g",
+                   "-fPIC",
+                   "-fdiagnostics-color",
+                   "-pthread",
+                   "<INPUTS>",
+                   "-o",
+                   "<OUT>",
+               });
     } else if (s == "msvc") {
         ret._inc_template = {"/I<PATH>"};
         ret._def_template = {"/D<DEF>"};
@@ -316,7 +333,9 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         ret._archive_suffix   = ".lib";
         ret._object_suffix    = ".obj";
         ret._archive_template = {"lib", "/nologo", "/OUT:<ARCHIVE>", "<OBJECTS>"};
-        ret._warning_flags    = {"/W4"};
+        ret._link_exe_template
+            = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<INPUTS>", "/Fe<OUT>"};
+        ret._warning_flags = {"/W4"};
     } else {
         return std::nullopt;
     }
