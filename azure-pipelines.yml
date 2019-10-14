@@ -21,30 +21,24 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
-      - script: |
-          set -eu
-          sudo apt install -y python3-minimal g++-8
-          python3 -u build.py --cxx g++-8 --test --static
+      - script: sudo apt install -y python3-minimal g++-8
+        displayName: Prepare System
+      - script: python3 -u build.py --cxx g++-8 --test --static
         displayName: Build and Run Unit Tests
       - publish: _build/ddslim
         artifact: DDSLiM Executable - Linux
-      - script: |
-          set -eu
-          python3 -u test.py --exe _build/ddslim -T:gcc-8
+      - script: python3 -u test.py --exe _build/ddslim -T:gcc-8
         displayName: Smoke Tests
 
   - job: macOS
     pool:
       vmImage: macOS-10.14
     steps:
-      - script: |
-          set -eu
-          brew install gcc@8
-          python3 -u build.py --cxx g++-8 --test
+      - script: brew install gcc@8
+        displayName: Prepare System
+      - script: python3 -u build.py --cxx g++-8 --test
         displayName: Build and Run Unit Tests
       - publish: _build/ddslim
         artifact: DDSLiM Executable - macOS
-      - script: |
-          set -eu
-          python3 -u test.py --exe _build/ddslim -T:gcc-8
+      - script: python3 -u test.py --exe _build/ddslim -T:gcc-8
         displayName: Smoke Tests
