@@ -58,6 +58,11 @@ struct cli_build {
                                "Enable compiler warnings",
                                {"warnings", 'W'}};
 
+    args::Flag full{cmd,
+                    "full",
+                    "Build all optional components (tests, apps, warnings, export)",
+                    {"full", 'F'}};
+
     args::ValueFlag<int> num_jobs{cmd,
                                   "jobs",
                                   "Set the number of parallel jobs when compiling files",
@@ -94,6 +99,12 @@ struct cli_build {
         const auto            man_filepath = params.root / "manifest.dds";
         if (exists(man_filepath)) {
             man = dds::library_manifest::load_from_file(man_filepath);
+        }
+        if (full.Get()) {
+            params.do_export       = true;
+            params.build_tests     = true;
+            params.build_apps      = true;
+            params.enable_warnings = true;
         }
         dds::build(params, man);
         return 0;
