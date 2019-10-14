@@ -13,7 +13,10 @@ jobs:
         displayName: Build and Run Unit Tests
       - publish: _build/ddslim.exe
         artifact: DDSLiM Executable - Windows
-      - script: python -u test.py --exe _build/ddslim -T:msvc || exit 1
+      - script: |
+          echo Loading VS environment
+          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
+          python -u test.py --exe _build/ddslim -T:msvc || exit 1
         displayName: Smoke Tests
 
   - job: Windows_MSVC_VS2019
@@ -28,7 +31,10 @@ jobs:
         displayName: Build and Run Unit Tests
       - publish: _build/ddslim.exe
         artifact: DDSLiM Executable - Windows
-      - script: python -u test.py --exe _build/ddslim -T:msvc || exit 1
+      - script: |
+          echo Loading VS environment
+          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
+          python -u test.py --exe _build/ddslim -T:msvc || exit 1
         displayName: Smoke Tests
 
   - job: Linux_GCC
