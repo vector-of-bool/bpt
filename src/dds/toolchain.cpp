@@ -36,6 +36,7 @@ toolchain toolchain::load_from_file(fs::path p) {
 
     opt_string archive_suffix;
     opt_string object_suffix;
+    opt_string exe_suffix;
 
     auto require_key = [](auto k, auto& opt) {
         if (!opt.has_value()) {
@@ -69,10 +70,11 @@ toolchain toolchain::load_from_file(fs::path p) {
             || try_single("Compile-C-Template", c_compile_template)
             || try_single("Compile-C++-Template", cxx_compile_template)
             || try_single("Create-Archive-Template", create_archive_template)
+            || try_single("Link-Executable-Template", link_exe_template)
             || try_single("Warning-Flags", warning_flags)
             || try_single("Archive-Suffix", archive_suffix)
             || try_single("Object-Suffix", object_suffix)
-            || try_single("Link-Executable-Template", link_exe_template)
+            || try_single("Executable-Suffix", exe_suffix)
             || false;
         // clang-format on
 
@@ -91,6 +93,7 @@ toolchain toolchain::load_from_file(fs::path p) {
 
     require_key("Archive-Suffix", archive_suffix);
     require_key("Object-Suffix", object_suffix);
+    require_key("Executable-Suffix", exe_suffix);
 
     return toolchain{
         c_compile_template.value(),
@@ -102,6 +105,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         warning_flags.value_or(""),
         archive_suffix.value(),
         object_suffix.value(),
+        exe_suffix.value(),
     };
 }
 
@@ -237,6 +241,21 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
     return cmd;
 }
 
+vector<string> toolchain::create_link_executable_command(const link_exe_spec& spec) const noexcept {
+    vector<string> cmd;
+    for (auto& arg : _link_exe_template) {
+        if (arg == "<INPUTS>") {
+            std::transform(spec.inputs.begin(),
+                           spec.inputs.end(),
+                           std::back_inserter(cmd),
+                           [](auto&& p) { return p.string(); });
+        } else {
+            cmd.push_back(replace(arg, "<OUT>", spec.output.string()));
+        }
+    }
+    return cmd;
+}
+
 std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
     toolchain ret;
 
@@ -332,6 +351,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         extend(ret._cxx_compile, common_flags);
         ret._archive_suffix   = ".lib";
         ret._object_suffix    = ".obj";
+        ret._exe_suffix       = ".exe";
         ret._archive_template = {"lib", "/nologo", "/OUT:<ARCHIVE>", "<OBJECTS>"};
         ret._link_exe_template
             = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<INPUTS>", "/Fe<OUT>"};
