@@ -163,7 +163,7 @@ void copy_headers(const fs::path& source, const fs::path& dest, const source_lis
 void generate_export(const build_params& params,
                      fs::path            archive_file,
                      const source_list&  sources) {
-    const auto export_root = params.out_root / fmt::format("{}.export-root", params.export_name);
+    const auto export_root = params.out_root / fmt::format("{}.lpk", params.export_name);
     spdlog::info("Generating library export: {}", export_root.string());
     fs::remove_all(export_root);
     fs::create_directories(export_root);
