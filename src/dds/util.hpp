@@ -62,6 +62,11 @@ void extend(Container& c, const Other& o) {
     c.insert(c.end(), o.begin(), o.end());
 }
 
+template <typename Container, typename Item>
+void extend(Container& c, std::initializer_list<Item> il) {
+    extend(c, il);
+}
+
 }  // namespace dds
 
 #endif  // DDS_UTIL_HPP_INCLUDED
