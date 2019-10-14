@@ -13,7 +13,7 @@ class TestOptions(NamedTuple):
 
 
 def run_test_dir(dir: Path, opts: TestOptions) -> bool:
-    print(f'Running test: {dir.name} ...')
+    print(f'Running test: {dir.name} ', end='')
     out_dir = dir / '_build'
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -26,13 +26,17 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
             '--tests',
             f'--toolchain={opts.toolchain}',
             f'--out-dir={out_dir}',
+            f'--export-name={dir.stem}',
         ],
         cwd=dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
     if res.returncode != 0:
+        print('- FAILED')
         print(f'Test failed with exit code [{res.returncode}]:\n{res.stdout.decode()}')
+    else:
+        print('- PASSED')
     return res.returncode == 0
 
 
