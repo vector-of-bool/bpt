@@ -17,6 +17,7 @@ struct build_params {
     bool           do_export       = false;
     bool           build_tests     = false;
     bool           enable_warnings = false;
+    bool           build_apps      = false;
     int            parallel_jobs   = 0;
 };
 

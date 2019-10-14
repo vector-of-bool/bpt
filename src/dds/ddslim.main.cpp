@@ -50,7 +50,8 @@ struct cli_build {
                             (dds::fs::current_path() / "toolchain.dds").string()};
 
     args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests", 't'}};
-    args::Flag export_{cmd, "export_dir", "Generate a library export", {"export", 'E'}};
+    args::Flag build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
+    args::Flag export_{cmd, "export", "Generate a library export", {"export", 'E'}};
 
     args::Flag enable_warnings{cmd,
                                "enable_warnings",
@@ -86,6 +87,7 @@ struct cli_build {
         params.toolchain       = _get_toolchain();
         params.do_export       = export_.Get();
         params.build_tests     = build_tests.Get();
+        params.build_apps      = build_apps.Get();
         params.enable_warnings = enable_warnings.Get();
         params.parallel_jobs   = num_jobs.Get();
         dds::library_manifest man;

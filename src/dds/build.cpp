@@ -132,11 +132,7 @@ fs::path compile_file(fs::path src_path, const build_params& params, const libra
     auto compile_res = run_proc(cmd);
     if (!compile_res.okay()) {
         spdlog::error("Compilation failed: {}", spec.source_path.string());
-        std::stringstream strm;
-        for (auto& arg : cmd) {
-            strm << std::quoted(arg) << ' ';
-        }
-        spdlog::error("Subcommand FAILED: {}\n{}", strm.str(), compile_res.output);
+        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd), compile_res.output);
         throw compile_failure("Compilation failed.");
     }
 
@@ -221,13 +217,43 @@ link_test(const fs::path& source_file, const build_params& params, const fs::pat
     auto proc_res = run_proc(link_command);
     if (proc_res.retc != 0) {
         throw compile_failure(
-            fmt::format("Failed to link executable '{}'. Link command exited {}:\n{}",
+            fmt::format("Failed to link test executable '{}'. Link command [{}] returned {}:\n{}",
                         spec.output.string(),
+                        quote_command(link_command),
                         proc_res.retc,
                         proc_res.output));
     }
 
     return spec.output;
+}
+
+void link_app(const fs::path&     source_file,
+              const build_params& params,
+              const fs::path&     lib_archive) {
+    const auto obj_file = object_file_path(source_file, params);
+    if (!fs::exists(obj_file)) {
+        throw compile_failure(
+            fmt::format("Unable to find a generated app object file where expected ({})",
+                        obj_file.string()));
+    }
+
+    const auto    app_name = source_file.stem().stem().string();
+    link_exe_spec spec;
+    extend(spec.inputs, {obj_file, lib_archive});
+    spec.output = params.out_root / (app_name + params.toolchain.executable_suffix() + ".tmp");
+    const auto link_command = params.toolchain.create_link_executable_command(spec);
+
+    spdlog::info("Linking application executable: {}", spec.output.string());
+    auto proc_res = run_proc(link_command);
+    if (proc_res.retc != 0) {
+        throw compile_failure(fmt::format(
+            "Failed to link application executable '{}'. Link command [{}] returned {}:\n{}",
+            spec.output.string(),
+            quote_command(link_command),
+            proc_res.retc,
+            proc_res.output));
+    }
+    fs::rename(spec.output, spec.output.parent_path() / spec.output.stem());
 }
 
 std::vector<fs::path> link_tests(const source_list&  sources,
@@ -241,6 +267,16 @@ std::vector<fs::path> link_tests(const source_list&  sources,
         }
     }
     return exes;
+}
+
+void link_apps(const source_list&  sources,
+               const build_params& params,
+               const fs::path&     lib_archive) {
+    for (const auto& source_file : sources) {
+        if (source_file.kind == source_kind::app) {
+            link_app(source_file.path, params, lib_archive);
+        }
+    }
 }
 
 std::vector<fs::path>
@@ -263,7 +299,10 @@ compile_sources(source_list sources, const build_params& params, const library_m
             }
             auto source = sources.back();
             sources.pop_back();
-            if (source.kind == source_kind::header || source.kind == source_kind::app) {
+            if (source.kind == source_kind::header) {
+                continue;
+            }
+            if (source.kind == source_kind::app && !params.build_apps) {
                 continue;
             }
             if (source.kind == source_kind::test && !params.build_tests) {
@@ -272,8 +311,10 @@ compile_sources(source_list sources, const build_params& params, const library_m
             lk.unlock();
             try {
                 auto obj_path = compile_file(source.path, params, man);
-                lk.lock();
-                objects.emplace_back(std::move(obj_path));
+                if (source.kind == source_kind::source) {
+                    lk.lock();
+                    objects.emplace_back(std::move(obj_path));
+                }
             } catch (...) {
                 lk.lock();
                 exceptions.push_back(std::current_exception());
@@ -358,11 +399,7 @@ void dds::build(const build_params& params, const library_manifest& man) {
     auto ar_res = run_proc(ar_cmd);
     if (!ar_res.okay()) {
         spdlog::error("Failure creating archive library {}", arc.out_path);
-        std::stringstream strm;
-        for (auto& arg : ar_cmd) {
-            strm << std::quoted(arg) << ' ';
-        }
-        spdlog::error("Subcommand failed: {}", strm.str());
+        spdlog::error("Subcommand failed: {}", quote_command(ar_cmd));
         spdlog::error("Subcommand produced output:\n{}", ar_res.output);
         throw archive_failure("Failed to create the library archive");
     }
@@ -371,6 +408,10 @@ void dds::build(const build_params& params, const library_manifest& man) {
     std::vector<fs::path> test_exes;
     if (params.build_tests) {
         test_exes = link_tests(sources, params, man, arc.out_path);
+    }
+
+    if (params.build_apps) {
+        link_apps(sources, params, arc.out_path);
     }
 
     if (params.do_export) {
