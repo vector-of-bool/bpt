@@ -21,7 +21,7 @@ jobs:
 
   - job: Windows_MSVC_VS2019
     pool:
-      vmImage: vs2019-win2019
+      vmImage: windows-2019
     steps:
       - script: |
           echo Loading VS environment
