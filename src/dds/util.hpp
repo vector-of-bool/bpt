@@ -64,7 +64,7 @@ void extend(Container& c, const Other& o) {
 
 template <typename Container, typename Item>
 void extend(Container& c, std::initializer_list<Item> il) {
-    extend(c, il);
+    c.insert(c.end(), il.begin(), il.end());
 }
 
 }  // namespace dds
