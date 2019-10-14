@@ -6,6 +6,7 @@
 #include <dds/toolchain.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -113,6 +114,7 @@ fs::path compile_file(fs::path src_path, const build_params& params, const libra
     fs::create_directories(obj_path.parent_path());
 
     spdlog::info("Compile file: {}", fs::relative(src_path, params.root).string());
+    auto start_time = std::chrono::steady_clock::now();
 
     compile_file_spec spec{src_path, obj_path};
     spec.enable_warnings = params.enable_warnings;
@@ -130,6 +132,14 @@ fs::path compile_file(fs::path src_path, const build_params& params, const libra
 
     auto cmd         = params.toolchain.create_compile_command(spec);
     auto compile_res = run_proc(cmd);
+
+    auto end_time = std::chrono::steady_clock::now();
+    auto dur_ms   = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    spdlog::info("Compile file: {} - {:n}ms",
+                 fs::relative(src_path, params.root).string(),
+                 dur_ms.count());
+
     if (!compile_res.okay()) {
         spdlog::error("Compilation failed: {}", spec.source_path.string());
         spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd), compile_res.output);
