@@ -23,7 +23,7 @@ namespace {
 }  // namespace
 
 proc_result dds::run_proc(const std::vector<std::string>& cmd) {
-    const auto cmd_str = quote_command(cmd);
+    auto cmd_str = quote_command(cmd);
 
     ::SECURITY_ATTRIBUTES security = {};
     security.bInheritHandle        = TRUE;
