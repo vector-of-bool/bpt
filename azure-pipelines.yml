@@ -14,7 +14,7 @@ jobs:
       - publish: _build/ddslim.exe
         artifact: DDSLiM Executable - Windows
       - script: |
-          python3 -u test.py --exe _build/ddslim -T:msvc || exit 1
+          python -u test.py --exe _build/ddslim -T:msvc || exit 1
         displayName: Smoke Tests
 
   - job: Linux_GCC
