@@ -165,29 +165,6 @@ vector<string> dds::split_shell_string(std::string_view shell) {
     return acc;
 }
 
-namespace {
-
-std::string replace(std::string_view str, std::string_view key, std::string_view repl) {
-    std::string                 ret;
-    std::string_view::size_type pos      = 0;
-    std::string_view::size_type prev_pos = 0;
-    while (pos = str.find(key, pos), pos != key.npos) {
-        ret.append(str.begin() + prev_pos, str.begin() + pos);
-        ret.append(repl);
-        prev_pos = pos += key.size();
-    }
-    ret.append(str.begin() + prev_pos, str.end());
-    return ret;
-}
-
-vector<string> replace(vector<string> strings, std::string_view key, std::string_view repl) {
-    for (auto& item : strings) {
-        item = replace(item, key, repl);
-    }
-    return strings;
-}
-}  // namespace
-
 vector<string> toolchain::include_args(const fs::path& p) const noexcept {
     return replace(_inc_template, "<PATH>", p.string());
 }

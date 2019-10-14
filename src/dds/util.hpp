@@ -51,6 +51,27 @@ inline std::vector<std::string> split(std::string_view str, std::string_view sep
     return ret;
 }
 
+inline std::string replace(std::string_view str, std::string_view key, std::string_view repl) {
+    std::string                 ret;
+    std::string_view::size_type pos      = 0;
+    std::string_view::size_type prev_pos = 0;
+    while (pos = str.find(key, pos), pos != key.npos) {
+        ret.append(str.begin() + prev_pos, str.begin() + pos);
+        ret.append(repl);
+        prev_pos = pos += key.size();
+    }
+    ret.append(str.begin() + prev_pos, str.end());
+    return ret;
+}
+
+inline std::vector<std::string>
+replace(std::vector<std::string> strings, std::string_view key, std::string_view repl) {
+    for (auto& item : strings) {
+        item = replace(item, key, repl);
+    }
+    return strings;
+}
+
 template <typename Container, typename Predicate>
 void erase_if(Container& c, Predicate&& p) {
     auto erase_point = std::remove_if(c.begin(), c.end(), p);
