@@ -99,12 +99,17 @@ void collect_sources(source_list& sf, const fs::path& source_dir) {
     }
 }
 
-fs::path compile_file(fs::path src_path, const build_params& params, const library_manifest& man) {
+fs::path object_file_path(fs::path source_path, const build_params& params) {
     auto obj_dir     = params.out_root / "obj";
-    auto obj_relpath = fs::relative(src_path, params.root);
+    auto obj_relpath = fs::relative(source_path, params.root);
     obj_relpath.replace_filename(obj_relpath.filename().string()
                                  + params.toolchain.object_suffix());
     auto obj_path = obj_dir / obj_relpath;
+    return obj_path;
+}
+
+fs::path compile_file(fs::path src_path, const build_params& params, const library_manifest& man) {
+    auto obj_path = object_file_path(src_path, params);
     fs::create_directories(obj_path.parent_path());
 
     spdlog::info("Compile file: {}", fs::relative(src_path, params.root).string());
@@ -192,6 +197,50 @@ void generate_export(const build_params& params,
     lm_pairs.emplace_back("Path", fs::relative(archive_dest, export_root).string());
     lm_pairs.emplace_back("Include-Path", fs::relative(header_dest, export_root).string());
     lm_write_pairs(export_root / "lib.lml", lm_pairs);
+}
+
+fs::path
+link_test(const fs::path& source_file, const build_params& params, const fs::path& lib_archive) {
+    const auto obj_file = object_file_path(source_file, params);
+    if (!fs::exists(obj_file)) {
+        throw compile_failure(
+            fmt::format("Unable to find a generated test object file where expected ({})",
+                        obj_file.string()));
+    }
+
+    const auto    test_name = source_file.stem().stem().string();
+    link_exe_spec spec;
+    extend(spec.inputs, {obj_file, lib_archive});
+    spec.output = params.out_root
+        / fs::relative(source_file, params.root)
+              .replace_filename(test_name + params.toolchain.executable_suffix());
+    const auto link_command = params.toolchain.create_link_executable_command(spec);
+
+    spdlog::info("Linking test executable: {}", spec.output.string());
+    fs::create_directories(spec.output.parent_path());
+    auto proc_res = run_proc(link_command);
+    if (proc_res.retc != 0) {
+        throw compile_failure(
+            fmt::format("Failed to link executable '{}'. Link command exited {}:\n{}",
+                        spec.output.string(),
+                        proc_res.retc,
+                        proc_res.output));
+    }
+
+    return spec.output;
+}
+
+std::vector<fs::path> link_tests(const source_list&  sources,
+                                 const build_params& params,
+                                 const library_manifest&,
+                                 const fs::path& lib_archive) {
+    std::vector<fs::path> exes;
+    for (const auto& source_file : sources) {
+        if (source_file.kind == source_kind::test) {
+            exes.push_back(link_test(source_file.path, params, lib_archive));
+        }
+    }
+    return exes;
 }
 
 std::vector<fs::path>
@@ -299,6 +348,7 @@ void dds::build(const build_params& params, const library_manifest& man) {
     arc.out_path = params.out_root
         / (fmt::format("lib{}{}", params.export_name, params.toolchain.archive_suffix()));
 
+    // Create the static library archive
     spdlog::info("Create archive {}", arc.out_path.string());
     auto ar_cmd = params.toolchain.create_archive_command(arc);
     if (fs::exists(arc.out_path)) {
@@ -317,7 +367,24 @@ void dds::build(const build_params& params, const library_manifest& man) {
         throw archive_failure("Failed to create the library archive");
     }
 
+    // Link any test executables
+    std::vector<fs::path> test_exes;
+    if (params.build_tests) {
+        test_exes = link_tests(sources, params, man, arc.out_path);
+    }
+
     if (params.do_export) {
         generate_export(params, arc.out_path, sources);
+    }
+
+    if (params.build_tests) {
+        for (const auto& exe : test_exes) {
+            spdlog::info("Running test: {}", fs::relative(exe, params.out_root).string());
+            const auto test_res = run_proc({exe.string()});
+            if (test_res.retc != 0) {
+                spdlog::error("TEST FAILED:\n{}", test_res.output);
+            }
+        }
+        spdlog::info("Test run finished");
     }
 }
