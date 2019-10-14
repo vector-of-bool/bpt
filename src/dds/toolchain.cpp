@@ -78,9 +78,11 @@ toolchain toolchain::load_from_file(fs::path p) {
             || false;
         // clang-format on
 
-        if (!found_single) {
-            throw invalid_toolchain(fmt::format("Unknown toolchain file key '{}'", key));
+        if (found_single) {
+            continue;
         }
+
+        throw invalid_toolchain(fmt::format("Unknown toolchain file key '{}'", key));
     }
 
     require_key("Include-Template", inc_template);
@@ -306,8 +308,9 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
                    "-g",
                    "-fPIC",
                    "-fdiagnostics-color",
-                   "-pthread",
                    "<INPUTS>",
+                   "-pthread",
+                   "-lstdc++fs",
                    "-o",
                    "<OUT>",
                });
