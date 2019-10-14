@@ -7,13 +7,16 @@ import subprocess
 import sys
 
 
+ROOT = Path(__file__).parent.parent.absolute()
+
+
 class TestOptions(NamedTuple):
     exe: Path
     toolchain: str
 
 
 def run_test_dir(dir: Path, opts: TestOptions) -> bool:
-    print(f'Running test: {dir.name} ', end='')
+    print(f'Running test: {dir.stem} ', end='')
     out_dir = dir / '_build'
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -43,7 +46,7 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
 def run_tests(opts: TestOptions) -> int:
     print('Sanity check...')
     subprocess.check_output([str(opts.exe), '--help'])
-    tests_subdir = Path(__file__).parent.absolute() / 'tests'
+    tests_subdir = ROOT / 'tests'
 
     test_dirs = tests_subdir.glob('*.test')
     ret = 0

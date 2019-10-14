@@ -11,7 +11,7 @@ import subprocess
 import time
 import sys
 
-HERE_DIR = Path(__file__).parent.absolute()
+ROOT = Path(__file__).parent.parent.absolute()
 
 INCLUDE_DIRS = [
     'external/taywee-args/include',
@@ -44,7 +44,7 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
     if not opts.is_msvc:
         cmd = [
             str(opts.cxx),
-            f'-I{HERE_DIR / "src"}',
+            f'-I{ROOT / "src"}',
             '-std=c++17',
             '-Wall',
             '-Wextra',
@@ -65,7 +65,7 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
         else:
             cmd.append('-O2')
         cmd.extend(
-            itertools.chain.from_iterable(('-isystem', str(HERE_DIR / subdir))
+            itertools.chain.from_iterable(('-isystem', str(ROOT / subdir))
                                           for subdir in INCLUDE_DIRS))
         return cmd
     else:
@@ -77,7 +77,7 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             '/EHsc',
             '/std:c++latest',
             '/DFMT_HEADER_ONLY=1',
-            f'/I{HERE_DIR / "src"}',
+            f'/I{ROOT / "src"}',
             str(cpp_file),
             '/c',
             f'/Fo{obj_file}',
@@ -90,18 +90,18 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             cmd.append('/MT')
         else:
             cmd.append('/MD')
-        cmd.extend(f'/I{HERE_DIR / subdir}' for subdir in INCLUDE_DIRS)
+        cmd.extend(f'/I{ROOT / subdir}' for subdir in INCLUDE_DIRS)
         return cmd
 
 
 def _compile_src(opts: BuildOptions, cpp_file: Path) -> Tuple[Path, Path]:
-    build_dir = HERE_DIR / '_build'
-    src_dir = HERE_DIR / 'src'
+    build_dir = ROOT / '_build'
+    src_dir = ROOT / 'src'
     relpath = cpp_file.relative_to(src_dir)
     obj_path = build_dir / relpath.with_name(relpath.name + opts.obj_suffix)
     obj_path.parent.mkdir(exist_ok=True, parents=True)
     cmd = _create_compile_command(opts, cpp_file, obj_path)
-    msg = f'Compile C++ file: {cpp_file}'
+    msg = f'Compile C++ file: {cpp_file.relative_to(ROOT)}'
     print(msg)
     start = time.time()
     res = subprocess.run(
@@ -113,8 +113,12 @@ def _compile_src(opts: BuildOptions, cpp_file: Path) -> Tuple[Path, Path]:
         raise RuntimeError(
             f'Compile command ({cmd}) failed for {cpp_file}:\n{res.stdout.decode()}'
         )
-    if res.stdout:
-        print(res.stdout.decode())
+    stdout: str = res.stdout.decode()
+    fname_head = f'{cpp_file.name}\r\n'
+    if stdout.startswith(fname_head):
+        stdout = stdout[len(fname_head):]
+    if stdout:
+        print(stdout, end='')
     end = time.time()
     print(f'{msg} - Done: {end - start:.2}s')
     return cpp_file, obj_path
@@ -132,11 +136,11 @@ def compile_sources(opts: BuildOptions,
 def _create_archive_command(opts: BuildOptions,
                             objects: Iterable[Path]) -> Tuple[Path, List[str]]:
     if opts.is_msvc:
-        lib_file = HERE_DIR / '_build/libddslim.lib'
+        lib_file = ROOT / '_build/libddslim.lib'
         cmd = ['lib', '/nologo', f'/OUT:{lib_file}', *map(str, objects)]
         return lib_file, cmd
     else:
-        lib_file = HERE_DIR / '_build/libddslim.a'
+        lib_file = ROOT / '_build/libddslim.a'
         cmd = ['ar', 'rsc', str(lib_file), *map(str, objects)]
         return lib_file, cmd
 
@@ -196,7 +200,7 @@ def link_exe(opts: BuildOptions, obj: Path, lib: Path, *,
              out: Path = None) -> Path:
     if out is None:
         basename = obj.stem
-        out = HERE_DIR / '_build/test' / (basename + '.exe')
+        out = ROOT / '_build/test' / (basename + '.exe')
         out.parent.mkdir(exist_ok=True, parents=True)
 
     print(f'Linking executable {out}')
@@ -230,9 +234,9 @@ def main(argv: Sequence[str]) -> int:
         '--static', action='store_true', help='Build a static executable')
     args = parser.parse_args(argv)
 
-    all_sources = set(HERE_DIR.glob('src/**/*.cpp'))
-    test_sources = set(HERE_DIR.glob('src/**/*.test.cpp'))
-    main_sources = set(HERE_DIR.glob('src/**/*.main.cpp'))
+    all_sources = set(ROOT.glob('src/**/*.cpp'))
+    test_sources = set(ROOT.glob('src/**/*.test.cpp'))
+    main_sources = set(ROOT.glob('src/**/*.main.cpp'))
 
     lib_sources = (all_sources - test_sources) - main_sources
 
@@ -255,7 +259,7 @@ def main(argv: Sequence[str]) -> int:
         build_opts,
         objects[next(iter(main_sources))],
         lib,
-        out=HERE_DIR / '_build/ddslim')
+        out=ROOT / '_build/ddslim')
 
     if args.test:
         list(pool.map(run_test, test_exes))
