@@ -1,9 +1,11 @@
 #include "./build.hpp"
 
-#include <dds/lm_parse.hpp>
+#include <dds/compile.hpp>
 #include <dds/logging.hpp>
 #include <dds/proc.hpp>
+#include <dds/source.hpp>
 #include <dds/toolchain.hpp>
+#include <dds/lm_parse.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -18,87 +20,9 @@ using namespace dds;
 
 namespace {
 
-struct compile_failure : std::runtime_error {
-    using runtime_error::runtime_error;
-};
-
 struct archive_failure : std::runtime_error {
     using runtime_error::runtime_error;
 };
-
-enum class source_kind {
-    header,
-    source,
-    test,
-    app,
-};
-
-struct source_file_info {
-    fs::path    path;
-    source_kind kind;
-};
-
-using source_list = std::vector<source_file_info>;
-
-std::optional<source_kind> infer_kind(const fs::path& p) {
-    static std::vector<std::string_view> header_exts = {
-        ".h",
-        ".H",
-        ".H++",
-        ".h++",
-        ".hh",
-        ".hpp",
-        ".hxx",
-        ".inl",
-    };
-    static std::vector<std::string_view> source_exts = {
-        ".C",
-        ".c",
-        ".c++",
-        ".cc",
-        ".cpp",
-        ".cxx",
-    };
-    auto leaf = p.filename();
-
-    auto ext_found
-        = std::lower_bound(header_exts.begin(), header_exts.end(), p.extension(), std::less<>());
-    if (ext_found != header_exts.end() && *ext_found == p.extension()) {
-        return source_kind::header;
-    }
-
-    ext_found
-        = std::lower_bound(source_exts.begin(), source_exts.end(), p.extension(), std::less<>());
-    if (ext_found == source_exts.end() || *ext_found != p.extension()) {
-        return std::nullopt;
-    }
-
-    if (ends_with(p.stem().string(), ".test")) {
-        return source_kind::test;
-    }
-
-    if (ends_with(p.stem().string(), ".main")) {
-        return source_kind::app;
-    }
-
-    return source_kind::source;
-}
-
-void collect_sources(source_list& sf, const fs::path& source_dir) {
-    for (auto entry : fs::recursive_directory_iterator(source_dir)) {
-        if (!entry.is_regular_file()) {
-            continue;
-        }
-        auto entry_path = entry.path();
-        auto kind       = infer_kind(entry_path);
-        if (!kind.has_value()) {
-            spdlog::warn("Couldn't infer a source file kind for file: {}", entry_path.string());
-            continue;
-        }
-        source_file_info info{entry_path, *kind};
-        sf.emplace_back(std::move(info));
-    }
-}
 
 fs::path object_file_path(fs::path source_path, const build_params& params) {
     auto obj_dir     = params.out_root / "obj";
@@ -106,55 +30,6 @@ fs::path object_file_path(fs::path source_path, const build_params& params) {
     obj_relpath.replace_filename(obj_relpath.filename().string()
                                  + params.toolchain.object_suffix());
     auto obj_path = obj_dir / obj_relpath;
-    return obj_path;
-}
-
-fs::path compile_file(fs::path src_path, const build_params& params, const library_manifest& man) {
-    auto obj_path = object_file_path(src_path, params);
-    fs::create_directories(obj_path.parent_path());
-
-    spdlog::info("Compile file: {}", fs::relative(src_path, params.root).string());
-    auto start_time = std::chrono::steady_clock::now();
-
-    compile_file_spec spec{src_path, obj_path};
-    spec.enable_warnings = params.enable_warnings;
-
-    spec.include_dirs.push_back(params.root / "src");
-    spec.include_dirs.push_back(params.root / "include");
-
-    for (auto& inc : man.private_includes) {
-        spec.include_dirs.push_back(inc);
-    }
-
-    for (auto& def : man.private_defines) {
-        spec.definitions.push_back(def);
-    }
-
-    auto cmd         = params.toolchain.create_compile_command(spec);
-    auto compile_res = run_proc(cmd);
-
-    auto end_time = std::chrono::steady_clock::now();
-    auto dur_ms   = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    spdlog::info("Compile file: {} - {:n}ms",
-                 fs::relative(src_path, params.root).string(),
-                 dur_ms.count());
-
-    if (!compile_res.okay()) {
-        spdlog::error("Compilation failed: {}", spec.source_path.string());
-        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd), compile_res.output);
-        throw compile_failure("Compilation failed.");
-    }
-
-    // MSVC prints the filename of the source file. Dunno why, but they do.
-    if (compile_res.output.find(spec.source_path.filename().string() + "\r\n") == 0) {
-        compile_res.output.erase(0, spec.source_path.filename().string().length() + 2);
-    }
-
-    if (!compile_res.output.empty()) {
-        spdlog::warn("While compiling file {}:\n{}", spec.source_path.string(), compile_res.output);
-    }
-
     return obj_path;
 }
 
@@ -289,74 +164,44 @@ void link_apps(const source_list&  sources,
     }
 }
 
-std::vector<fs::path>
-compile_sources(source_list sources, const build_params& params, const library_manifest& man) {
-    // We don't bother with a nice thread pool, as the overhead of compiling
-    // source files dwarfs the cost of interlocking.
-    std::mutex                      mut;
-    std::atomic_bool                any_error{false};
-    std::vector<std::exception_ptr> exceptions;
-    std::vector<fs::path>           objects;
+dds::compilation_set collect_compiles(const build_params& params, const library_manifest& man) {
+    source_list sources           = source_file::collect_pf_sources(params.root);
+    const bool  need_compile_deps = params.build_tests || params.build_apps || params.build_deps;
+    if (need_compile_deps) {
+        spdlog::critical("Dependency resolution isn't done yet");
+    }
 
-    auto compile_one = [&]() mutable {
-        while (true) {
-            std::unique_lock lk{mut};
-            if (!exceptions.empty()) {
-                break;
-            }
-            if (sources.empty()) {
-                break;
-            }
-            auto source = sources.back();
-            sources.pop_back();
-            if (source.kind == source_kind::header) {
-                continue;
-            }
-            if (source.kind == source_kind::app && !params.build_apps) {
-                continue;
-            }
-            if (source.kind == source_kind::test && !params.build_tests) {
-                continue;
-            }
-            lk.unlock();
-            try {
-                auto obj_path = compile_file(source.path, params, man);
-                if (source.kind == source_kind::source) {
-                    lk.lock();
-                    objects.emplace_back(std::move(obj_path));
-                }
-            } catch (...) {
-                lk.lock();
-                exceptions.push_back(std::current_exception());
-                break;
-            }
+    if (sources.empty()) {
+        spdlog::info("No source files found to compile");
+    }
+
+    compilation_set comps;
+    for (auto& sf : sources) {
+        if (sf.kind == source_kind::header) {
+            continue;
         }
-    };
-
-    std::unique_lock         lk{mut};
-    std::vector<std::thread> threads;
-    int                      njobs = params.parallel_jobs;
-    if (njobs < 1) {
-        njobs = std::thread::hardware_concurrency() + 2;
-    }
-    std::generate_n(std::back_inserter(threads), njobs, [&] { return std::thread(compile_one); });
-    spdlog::info("Parallel compile with {} threads", threads.size());
-    lk.unlock();
-    for (auto& t : threads) {
-        t.join();
-    }
-    for (auto eptr : exceptions) {
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception& e) {
-            spdlog::error(e.what());
+        if (sf.kind == source_kind::app && !params.build_apps) {
+            continue;
         }
-    }
-    if (!exceptions.empty()) {
-        throw compile_failure("Failed to compile library sources");
-    }
+        if (sf.kind == source_kind::test && !params.build_tests) {
+            continue;
+        }
 
-    return objects;
+        compilation_rules rules;
+        rules.base_path() = params.root / "src";
+        extend(rules.defs(), man.private_defines);
+        extend(rules.include_dirs(), man.private_includes);
+        rules.include_dirs().push_back(fs::absolute(params.root / "src"));
+        rules.include_dirs().push_back(fs::absolute(params.root / "include"));
+
+        const auto obj_path = object_file_path(sf.path, params);
+        comps.compilations.push_back(file_compilation{std::move(rules),
+                                                      sf.path,
+                                                      obj_path,
+                                                      params.export_name,
+                                                      params.enable_warnings});
+    }
+    return comps;
 }
 
 }  // namespace
@@ -365,36 +210,17 @@ void dds::build(const build_params& params, const library_manifest& man) {
     auto include_dir = params.root / "include";
     auto src_dir     = params.root / "src";
 
-    source_list sources;
+    auto compiles = collect_compiles(params, man);
 
-    if (fs::exists(include_dir)) {
-        if (!fs::is_directory(include_dir)) {
-            throw std::runtime_error("The `include` at the root of the project is not a directory");
-        }
-        collect_sources(sources, include_dir);
-        // Drop any source files we found within `include/`
-        erase_if(sources, [&](auto& info) {
-            if (info.kind != source_kind::header) {
-                spdlog::warn("Source file in `include` will not be compiled: {}", info.path);
-                return true;
-            }
-            return false;
-        });
-    }
+    compiles.execute_all(params.toolchain, params.parallel_jobs);
 
-    if (fs::exists(src_dir)) {
-        if (!fs::is_directory(src_dir)) {
-            throw std::runtime_error("The `src` at the root of the project is not a directory");
-        }
-        collect_sources(sources, src_dir);
-    }
-
-    if (sources.empty()) {
-        spdlog::warn("No source files found to compile/export!");
-    }
+    source_list sources = source_file::collect_pf_sources(params.root);
 
     archive_spec arc;
-    arc.input_files = compile_sources(sources, params, man);
+    for (const auto& comp : compiles.compilations) {
+        arc.input_files.push_back(comp.obj);
+    }
+    // arc.input_files = compile_sources(sources, params, man);
 
     arc.out_path = params.out_root
         / (fmt::format("lib{}{}", params.export_name, params.toolchain.archive_suffix()));

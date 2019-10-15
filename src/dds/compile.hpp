@@ -1,0 +1,54 @@
+#pragma once
+
+#include <dds/toolchain.hpp>
+#include <dds/util.hpp>
+
+#include <memory>
+#include <optional>
+#include <stdexcept>
+
+namespace dds {
+
+struct compile_failure : std::runtime_error {
+    using runtime_error::runtime_error;
+};
+
+class compilation_rules {
+    struct rules_impl {
+        std::vector<fs::path>    inc_dirs;
+        std::vector<std::string> defs;
+        fs::path                 base_path;
+    };
+
+    std::shared_ptr<rules_impl> _impl = std::make_shared<rules_impl>();
+
+public:
+    compilation_rules() = default;
+
+    auto&       base_path() noexcept { return _impl->base_path; }
+    const auto& base_path() const noexcept { return _impl->base_path; }
+
+    auto&       include_dirs() noexcept { return _impl->inc_dirs; }
+    const auto& include_dirs() const noexcept { return _impl->inc_dirs; }
+
+    auto&       defs() noexcept { return _impl->defs; }
+    const auto& defs() const noexcept { return _impl->defs; }
+};
+
+struct file_compilation {
+    compilation_rules rules;
+    fs::path          file;
+    fs::path          obj;
+    std::string       owner_name;
+    bool              enable_warnings = false;
+
+    void compile(const toolchain& tc) const;
+};
+
+struct compilation_set {
+    std::vector<file_compilation> compilations;
+
+    void execute_all(const toolchain& tc, int n_jobs) const;
+};
+
+}  // namespace dds

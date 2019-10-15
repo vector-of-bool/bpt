@@ -18,6 +18,7 @@ struct build_params {
     bool           build_tests     = false;
     bool           enable_warnings = false;
     bool           build_apps      = false;
+    bool           build_deps      = false;
     int            parallel_jobs   = 0;
 };
 
