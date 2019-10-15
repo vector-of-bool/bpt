@@ -1,6 +1,6 @@
 #include "./toolchain.hpp"
 
-#include <dds/lm_parse.hpp>
+#include <libman/parse.hpp>
 
 #include <spdlog/fmt/fmt.h>
 
@@ -45,7 +45,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         }
     };
 
-    auto kvs = lm_parse_file(p);
+    auto kvs = lm::parse_file(p);
     for (auto&& pair : kvs.items()) {
         auto& key   = pair.key();
         auto& value = pair.value();
@@ -238,7 +238,13 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
 std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
     toolchain ret;
 
-    using namespace std::string_literals;
+    using namespace std::literals;
+
+    if (starts_with(s, "ccache:")) {
+        s = s.substr("ccache:"sv.length());
+        ret._c_compile.push_back("ccache");
+        ret._cxx_compile.push_back("ccache");
+    }
 
     if (starts_with(s, "gcc") || starts_with(s, "clang")) {
         ret._inc_template     = {"-isystem", "<PATH>"};

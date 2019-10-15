@@ -5,7 +5,7 @@
 #include <dds/proc.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
-#include <dds/lm_parse.hpp>
+#include <libman/parse.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -65,19 +65,19 @@ void generate_export(const build_params& params,
         copy_headers(header_root, header_dest, sources);
     }
 
-    std::vector<lm_pair> lm_pairs;
+    std::vector<lm::pair> lm_pairs;
     lm_pairs.emplace_back("Type", "Package");
     lm_pairs.emplace_back("Name", params.export_name);
     lm_pairs.emplace_back("Namespace", params.export_name);
     lm_pairs.emplace_back("Library", "lib.lml");
-    lm_write_pairs(export_root / "package.lmp", lm_pairs);
+    lm::write_pairs(export_root / "package.lmp", lm_pairs);
 
     lm_pairs.clear();
     lm_pairs.emplace_back("Type", "Library");
     lm_pairs.emplace_back("Name", params.export_name);
     lm_pairs.emplace_back("Path", fs::relative(archive_dest, export_root).string());
     lm_pairs.emplace_back("Include-Path", fs::relative(header_dest, export_root).string());
-    lm_write_pairs(export_root / "lib.lml", lm_pairs);
+    lm::write_pairs(export_root / "lib.lml", lm_pairs);
 }
 
 fs::path

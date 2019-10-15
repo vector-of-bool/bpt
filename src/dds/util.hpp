@@ -9,6 +9,8 @@ namespace dds {
 
 namespace fs = std::filesystem;
 
+using path_ref = const fs::path&;
+
 std::fstream open(const fs::path& filepath, std::ios::openmode mode, std::error_code& ec);
 std::string  slurp_file(const fs::path& path, std::error_code& ec);
 

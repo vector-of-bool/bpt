@@ -1,5 +1,4 @@
-#ifndef DDS_LM_PARSE_HPP_INCLUDED
-#define DDS_LM_PARSE_HPP_INCLUDED
+#pragma once
 
 #include <cassert>
 #include <filesystem>
@@ -7,14 +6,14 @@
 #include <utility>
 #include <vector>
 
-namespace dds {
+namespace lm {
 
-class lm_pair {
+class pair {
     std::string _key;
     std::string _value;
 
 public:
-    lm_pair(std::string_view k, std::string_view v)
+    pair(std::string_view k, std::string_view v)
         : _key(k)
         , _value(v) {}
 
@@ -22,8 +21,8 @@ public:
     auto& value() const noexcept { return _value; }
 };
 
-struct kv_pair_iterator {
-    using vec_type  = std::vector<lm_pair>;
+class pair_iterator {
+    using vec_type  = std::vector<pair>;
     using base_iter = vec_type::const_iterator;
     base_iter   _iter;
     base_iter   _end;
@@ -36,9 +35,9 @@ public:
     using pointer           = vec_type::pointer;
     using reference         = vec_type::reference;
 
-    inline kv_pair_iterator(base_iter, base_iter, std::string_view k);
+    inline pair_iterator(base_iter, base_iter, std::string_view k);
 
-    kv_pair_iterator& operator++() & noexcept {
+    pair_iterator& operator++() & noexcept {
         assert(_iter != _end);
         ++_iter;
         while (_iter != _end && _iter->key() != _key) {
@@ -47,34 +46,34 @@ public:
         return *this;
     }
 
-    const lm_pair* operator->() const noexcept {
+    const pair* operator->() const noexcept {
         assert(_iter != _end);
         return _iter.operator->();
     }
 
-    const lm_pair& operator*() const noexcept {
+    const pair& operator*() const noexcept {
         assert(_iter != _end);
         return *_iter;
     }
 
-    inline bool operator!=(const kv_pair_iterator& o) const noexcept { return _iter != o._iter; }
+    inline bool operator!=(const pair_iterator& o) const noexcept { return _iter != o._iter; }
 
     auto begin() const noexcept { return *this; }
-    auto end() const noexcept { return kv_pair_iterator(_end, _end, _key); }
+    auto end() const noexcept { return pair_iterator(_end, _end, _key); }
 
     explicit operator bool() const noexcept { return *this != end(); }
 };
 
-class lm_kv_pairs {
-    std::vector<lm_pair> _kvs;
+class pair_list {
+    std::vector<pair> _kvs;
 
 public:
-    explicit lm_kv_pairs(std::vector<lm_pair> kvs)
+    explicit pair_list(std::vector<pair> kvs)
         : _kvs(kvs) {}
 
     auto& items() const noexcept { return _kvs; }
 
-    const lm_pair* find(const std::string_view& key) const noexcept {
+    const pair* find(const std::string_view& key) const noexcept {
         for (auto&& item : items()) {
             if (item.key() == key) {
                 return &item;
@@ -83,36 +82,34 @@ public:
         return nullptr;
     }
 
-    kv_pair_iterator iter(std::string_view key) const noexcept {
+    pair_iterator iter(std::string_view key) const noexcept {
         auto       iter = items().begin();
         const auto end  = items().end();
         while (iter != end && iter->key() != key) {
             ++iter;
         }
-        return kv_pair_iterator{iter, end, key};
+        return pair_iterator{iter, end, key};
     }
 
-    std::vector<lm_pair> all_of(std::string_view key) const noexcept {
+    std::vector<pair> all_of(std::string_view key) const noexcept {
         auto iter = this->iter(key);
-        return std::vector<lm_pair>(iter, iter.end());
+        return std::vector<pair>(iter, iter.end());
     }
 
     auto size() const noexcept { return _kvs.size(); }
 };
 
-inline kv_pair_iterator::kv_pair_iterator(base_iter it, base_iter end, std::string_view k)
+inline pair_iterator::pair_iterator(base_iter it, base_iter end, std::string_view k)
     : _iter{it}
     , _end{end}
     , _key{k} {}
 
-lm_kv_pairs lm_parse_string(std::string_view);
-lm_kv_pairs lm_parse_file(std::filesystem::path);
-void        lm_write_pairs(std::filesystem::path, const std::vector<lm_pair>&);
+pair_list parse_string(std::string_view);
+pair_list parse_file(std::filesystem::path);
+void      write_pairs(std::filesystem::path, const std::vector<pair>&);
 
-inline void lm_write_pairs(const std::filesystem::path& fpath, const lm_kv_pairs& pairs) {
-    lm_write_pairs(fpath, pairs.items());
+inline void write_pairs(const std::filesystem::path& fpath, const pair_list& pairs) {
+    write_pairs(fpath, pairs.items());
 }
 
-}  // namespace dds
-
-#endif  // DDS_LM_PARSE_HPP_INCLUDED
+}  // namespace lm

@@ -1,4 +1,4 @@
-#include "./lm_parse.hpp"
+#include "./parse.hpp"
 
 #include <dds/util.hpp>
 
@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 
 using namespace std::literals;
 
-using namespace dds;
+using namespace lm;
 
 namespace {
 
@@ -34,7 +34,7 @@ std::string_view trim(std::string_view s) {
     return sview(iter, new_end);
 }
 
-void parse_line(std::vector<lm_pair>& pairs, const std::string_view whole_line) {
+void parse_line(std::vector<pair>& pairs, const std::string_view whole_line) {
     const auto line = trim(whole_line);
     if (line.empty() || line[0] == '#') {
         return;
@@ -72,8 +72,8 @@ void parse_line(std::vector<lm_pair>& pairs, const std::string_view whole_line) 
 
 }  // namespace
 
-dds::lm_kv_pairs dds::lm_parse_string(std::string_view s) {
-    std::vector<lm_pair> pairs;
+pair_list lm::parse_string(std::string_view s) {
+    std::vector<pair> pairs;
 
     auto line_begin = s.begin();
     auto iter       = line_begin;
@@ -90,13 +90,13 @@ dds::lm_kv_pairs dds::lm_parse_string(std::string_view s) {
     if (line_begin != end) {
         parse_line(pairs, sview(line_begin, end));
     }
-    return lm_kv_pairs(std::move(pairs));
+    return pair_list(std::move(pairs));
 }
 
-dds::lm_kv_pairs dds::lm_parse_file(fs::path fpath) { return lm_parse_string(slurp_file(fpath)); }
+lm::pair_list lm::parse_file(fs::path fpath) { return parse_string(dds::slurp_file(fpath)); }
 
-void dds::lm_write_pairs(fs::path fpath, const std::vector<lm_pair>& pairs) {
-    auto fstream = open(fpath, std::ios::out | std::ios::binary);
+void lm::write_pairs(fs::path fpath, const std::vector<pair>& pairs) {
+    auto fstream = dds::open(fpath, std::ios::out | std::ios::binary);
     for (auto& pair : pairs) {
         fstream << pair.key() << ": " << pair.value() << '\n';
     }

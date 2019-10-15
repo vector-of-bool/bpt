@@ -1,5 +1,5 @@
 #include <dds/build.hpp>
-#include <dds/lm_parse.hpp>
+#include <libman/parse.hpp>
 #include <dds/logging.hpp>
 #include <dds/util.hpp>
 
