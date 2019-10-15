@@ -1,6 +1,6 @@
 #include "./parse.hpp"
 
-#include <dds/util.hpp>
+#include <libman/util.hpp>
 
 #include <spdlog/fmt/fmt.h>
 
@@ -14,25 +14,6 @@ using namespace std::literals;
 using namespace lm;
 
 namespace {
-
-std::string_view sview(std::string_view::const_iterator beg, std::string_view::const_iterator end) {
-    return std::string_view(&*beg, static_cast<std::size_t>(std::distance(beg, end)));
-}
-
-std::string_view trim(std::string_view s) {
-    auto iter = s.begin();
-    auto end  = s.end();
-    while (iter != end && std::isspace(*iter)) {
-        ++iter;
-    }
-    auto riter = s.rbegin();
-    auto rend  = s.rend();
-    while (riter != rend && std::isspace(*riter)) {
-        ++riter;
-    }
-    auto new_end = riter.base();
-    return sview(iter, new_end);
-}
 
 void parse_line(std::vector<pair>& pairs, const std::string_view whole_line) {
     const auto line = trim(whole_line);

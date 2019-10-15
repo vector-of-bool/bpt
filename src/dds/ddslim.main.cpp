@@ -1,7 +1,7 @@
 #include <dds/build.hpp>
-#include <libman/parse.hpp>
 #include <dds/logging.hpp>
 #include <dds/util.hpp>
+#include <libman/parse.hpp>
 
 #include <args.hxx>
 
@@ -53,6 +53,12 @@ struct cli_build {
     args::Flag build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
     args::Flag export_{cmd, "export", "Generate a library export", {"export", 'E'}};
 
+    path_flag lm_index{cmd,
+                       "lm_index",
+                       "Path to a libman index (usually INDEX.lmi)",
+                       {"--lm-index", 'I'},
+                       dds::fs::path()};
+
     args::Flag enable_warnings{cmd,
                                "enable_warnings",
                                "Enable compiler warnings",
@@ -95,6 +101,7 @@ struct cli_build {
         params.build_apps      = build_apps.Get();
         params.enable_warnings = enable_warnings.Get();
         params.parallel_jobs   = num_jobs.Get();
+        params.lm_index        = lm_index.Get();
         dds::library_manifest man;
         const auto            man_filepath = params.root / "manifest.dds";
         if (exists(man_filepath)) {

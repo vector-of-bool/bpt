@@ -5,6 +5,7 @@
 #include <dds/proc.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
+#include <libman/index.hpp>
 #include <libman/parse.hpp>
 
 #include <algorithm>
@@ -167,7 +168,58 @@ void link_apps(const source_list&  sources,
 dds::compilation_set collect_compiles(const build_params& params, const library_manifest& man) {
     source_list sources           = source_file::collect_pf_sources(params.root);
     const bool  need_compile_deps = params.build_tests || params.build_apps || params.build_deps;
-    if (need_compile_deps) {
+
+    std::vector<fs::path>    dep_includes;
+    std::vector<std::string> dep_defines;
+    if (need_compile_deps && (!man.uses.empty() || !man.links.empty())) {
+        fs::path lm_index_path = params.lm_index;
+        for (auto cand : {"INDEX.lmi", "_build/INDEX.lmi"}) {
+            if (!lm_index_path.empty()) {
+                break;
+            }
+            lm_index_path = params.root / cand;
+        }
+        if (!fs::exists(lm_index_path)) {
+            throw compile_failure(
+                "No `INDEX.lmi` found, but we need to pull in dependencies."
+                "Use a package manager to generate an INDEX.lmi");
+        }
+        auto lm_index  = lm::index::from_file(lm_index_path);
+        auto lib_index = lm_index.build_library_index();
+
+        auto collect_more_deps = [&](auto& uses_key) {
+            auto pair = split(uses_key, "/");
+            if (pair.size() != 2) {
+                throw compile_failure(fmt::format("Invalid `Uses`: {}", uses_key));
+            }
+
+            auto& pkg_ns = pair[0];
+            auto& lib    = pair[1];
+
+            auto found = lib_index.find(std::pair(pkg_ns, lib));
+            if (found == lib_index.end()) {
+                throw compile_failure(
+                    fmt::format("No library '{}/{}': Check that it is installed and available",
+                                pkg_ns,
+                                lib));
+            }
+
+            const lm::library& lm_lib = found->second;
+            extend(dep_includes, lm_lib.include_paths);
+            extend(dep_defines, lm_lib.preproc_defs);
+
+            // TODO: RECURSE!
+            // for (auto next_usage : lm_lib.uses) {
+            //     recurse(recurse, next_usage);
+            // }
+        };
+
+        // TODO: Set compilation flags on each file set (as needed)
+
+        for (auto& uses : man.uses) {
+            collect_more_deps(uses);
+        }
+
         spdlog::critical("Dependency resolution isn't done yet");
     }
 
@@ -190,7 +242,9 @@ dds::compilation_set collect_compiles(const build_params& params, const library_
         compilation_rules rules;
         rules.base_path() = params.root / "src";
         extend(rules.defs(), man.private_defines);
+        extend(rules.defs(), dep_defines);
         extend(rules.include_dirs(), man.private_includes);
+        extend(rules.include_dirs(), dep_includes);
         rules.include_dirs().push_back(fs::absolute(params.root / "src"));
         rules.include_dirs().push_back(fs::absolute(params.root / "include"));
 

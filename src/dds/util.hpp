@@ -7,6 +7,8 @@
 
 namespace dds {
 
+inline namespace file_utils {
+
 namespace fs = std::filesystem;
 
 using path_ref = const fs::path&;
@@ -31,6 +33,48 @@ inline std::string slurp_file(const fs::path& path) {
     }
     return contents;
 }
+
+}  // namespace file_utils
+
+template <typename Container, typename Predicate>
+void erase_if(Container& c, Predicate&& p) {
+    auto erase_point = std::remove_if(c.begin(), c.end(), p);
+    c.erase(erase_point, c.end());
+}
+
+template <typename Container, typename Other>
+void extend(Container& c, const Other& o) {
+    c.insert(c.end(), o.begin(), o.end());
+}
+
+template <typename Container, typename Item>
+void extend(Container& c, std::initializer_list<Item> il) {
+    c.insert(c.end(), il.begin(), il.end());
+}
+
+inline namespace string_utils {
+
+inline std::string_view sview(std::string_view::const_iterator beg,
+                              std::string_view::const_iterator end) {
+    return std::string_view(&*beg, static_cast<std::size_t>(std::distance(beg, end)));
+}
+
+inline std::string_view trim(std::string_view s) {
+    auto iter = s.begin();
+    auto end  = s.end();
+    while (iter != end && std::isspace(*iter)) {
+        ++iter;
+    }
+    auto riter = s.rbegin();
+    auto rend  = s.rend();
+    while (riter != rend && std::isspace(*riter)) {
+        ++riter;
+    }
+    auto new_end = riter.base();
+    return sview(iter, new_end);
+}
+
+inline std::string trim(std::string&& s) { return std::string(trim(s)); }
 
 inline bool ends_with(std::string_view s, std::string_view key) {
     auto found = s.rfind(key);
@@ -74,21 +118,7 @@ replace(std::vector<std::string> strings, std::string_view key, std::string_view
     return strings;
 }
 
-template <typename Container, typename Predicate>
-void erase_if(Container& c, Predicate&& p) {
-    auto erase_point = std::remove_if(c.begin(), c.end(), p);
-    c.erase(erase_point, c.end());
-}
-
-template <typename Container, typename Other>
-void extend(Container& c, const Other& o) {
-    c.insert(c.end(), o.begin(), o.end());
-}
-
-template <typename Container, typename Item>
-void extend(Container& c, std::initializer_list<Item> il) {
-    c.insert(c.end(), il.begin(), il.end());
-}
+}  // namespace string_utils
 
 }  // namespace dds
 

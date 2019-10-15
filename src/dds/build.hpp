@@ -12,6 +12,7 @@ namespace dds {
 struct build_params {
     fs::path       root;
     fs::path       out_root;
+    fs::path       lm_index;
     dds::toolchain toolchain;
     std::string    export_name;
     bool           do_export       = false;
