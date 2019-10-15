@@ -9,7 +9,7 @@ using namespace lm;
 library library::from_file(path_ref fpath) {
     auto pairs = parse_file(fpath);
 
-    library     ret;
+    library ret;
 
     std::string _type_;
     read(fmt::format("Reading library manifest file '{}'", fpath.string()),

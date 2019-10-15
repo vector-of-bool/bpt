@@ -2,8 +2,8 @@
 #define DDS_PROC_HPP_INCLUDED
 
 #include <string>
-#include <vector>
 #include <string_view>
+#include <vector>
 
 namespace dds {
 

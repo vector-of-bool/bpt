@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+using namespace dds;
+
 std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode, std::error_code& ec) {
     std::fstream ret;
     auto         mask = ret.exceptions() | std::ios::failbit;

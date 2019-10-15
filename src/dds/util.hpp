@@ -2,6 +2,7 @@
 #define DDS_UTIL_HPP_INCLUDED
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 

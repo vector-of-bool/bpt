@@ -1,4 +1,3 @@
-Private-Include: external/spdlog/include
-Private-Include: external/wil/include
-Private-Include: external/taywee-args/include
-Private-Define: FMT_HEADER_ONLY=1
+Uses: taywee/args
+Uses: spdlog/spdlog
+Uses: ms/wil

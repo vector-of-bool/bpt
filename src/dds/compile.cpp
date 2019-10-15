@@ -14,7 +14,9 @@ using namespace dds;
 void file_compilation::compile(const toolchain& tc) const {
     fs::create_directories(obj.parent_path());
 
-    spdlog::info("[{}] Compile file: {}", owner_name, fs::relative(file, rules.base_path()).string());
+    spdlog::info("[{}] Compile file: {}",
+                 owner_name,
+                 fs::relative(file, rules.base_path()).string());
     auto start_time = std::chrono::steady_clock::now();
 
     compile_file_spec spec{file, obj};

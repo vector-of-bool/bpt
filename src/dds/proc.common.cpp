@@ -10,7 +10,7 @@ using namespace dds;
 
 bool dds::needs_quoting(std::string_view s) {
     std::string_view okay_chars = "@%-+=:,./|_";
-    const bool all_okay = std::all_of(s.begin(), s.end(), [&](char c) {
+    const bool       all_okay   = std::all_of(s.begin(), s.end(), [&](char c) {
         return std::isalnum(c) || (okay_chars.find(c) != okay_chars.npos);
     });
     return !all_okay;

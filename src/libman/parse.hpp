@@ -226,7 +226,7 @@ public:
 };
 
 template <typename... Items>
-auto read(std::string_view context[[maybe_unused]], const pair_list& pairs, Items... is) {
+auto read(std::string_view context [[maybe_unused]], const pair_list& pairs, Items... is) {
     std::vector<pair> bad_pairs;
     for (auto [key, value] : pairs.items()) {
         auto nread = (is.read_one(context, key, value) + ... + 0);

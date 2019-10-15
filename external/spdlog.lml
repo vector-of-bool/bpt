@@ -1,0 +1,6 @@
+Type: Library
+
+Name: spdlog
+
+Include-Path: spdlog/include
+Preprocessor-Define: FMT_HEADER_ONLY=1

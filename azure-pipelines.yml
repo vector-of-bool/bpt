@@ -16,7 +16,7 @@ jobs:
       - script: |
           echo Loading VS environment
           call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
-          python -u tools/test.py --exe _build/ddslim -T:msvc || exit 1
+          python -u tools/test.py --exe _build/ddslim.exe -T:msvc || exit 1
         displayName: Smoke Tests
 
   - job: Windows_MSVC_VS2019
@@ -34,10 +34,10 @@ jobs:
       - script: |
           echo Loading VS environment
           call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
-          python -u tools/test.py --exe _build/ddslim -T:msvc || exit 1
+          python -u tools/test.py --exe _build/ddslim.exe -T:msvc || exit 1
         displayName: Smoke Tests
 
-  - job: Linux_GCC
+  - job: Linux_GCC8
     pool:
       vmImage: ubuntu-18.04
     steps:
@@ -50,7 +50,7 @@ jobs:
       - script: python3 -u tools/test.py --exe _build/ddslim -T:gcc-8
         displayName: Smoke Tests
 
-  - job: macOS
+  - job: macOS_GCC8
     pool:
       vmImage: macOS-10.14
     steps:
