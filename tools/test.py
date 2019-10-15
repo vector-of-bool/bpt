@@ -6,7 +6,6 @@ import shutil
 import subprocess
 import sys
 
-
 ROOT = Path(__file__).parent.parent.absolute()
 
 
@@ -37,7 +36,8 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
     )
     if res.returncode != 0:
         print('- FAILED')
-        print(f'Test failed with exit code [{res.returncode}]:\n{res.stdout.decode()}')
+        print(f'Test failed with exit code '
+              f'[{res.returncode}]:\n{res.stdout.decode()}')
     else:
         print('- PASSED')
     return res.returncode == 0
@@ -56,6 +56,23 @@ def run_tests(opts: TestOptions) -> int:
     return ret
 
 
+def bootstrap_self(opts: TestOptions):
+    # Copy the exe to another location, as windows refuses to let a binary be
+    # replaced while it is executing
+    new_exe = ROOT / '_ddslime.bootstrap-test.exe'
+    shutil.copy2(opts.exe, new_exe)
+    res = subprocess.run([
+        str(new_exe),
+        'build',
+        f'-FT{opts.toolchain}',
+    ])
+    if res.returncode != 0:
+        print('The bootstrap test failed!', file=sys.stderr)
+        return False
+    print('Bootstrap test PASSED!')
+    return True
+
+
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -69,9 +86,17 @@ def main(argv: List[str]) -> int:
         help='The ddslim toolchain to use while testing',
         required=True,
     )
+    parser.add_argument(
+        '--skip-bootstrap-test',
+        action='store_true',
+        help='Skip the self-bootstrap test',
+    )
     args = parser.parse_args(argv)
 
     opts = TestOptions(exe=Path(args.exe).absolute(), toolchain=args.toolchain)
+
+    if not args.skip_bootstrap_test and not bootstrap_self(opts):
+        return 2
 
     return run_tests(opts)
 
