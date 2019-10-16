@@ -312,7 +312,7 @@ void dds::build(const build_params& params, const library_manifest& man) {
         for (const auto& exe : test_exes) {
             spdlog::info("Running test: {}", fs::relative(exe, params.out_root).string());
             const auto test_res = run_proc({exe.string()});
-            if (test_res.retc != 0) {
+            if (!test_res.okay()) {
                 spdlog::error("TEST FAILED:\n{}", test_res.output);
             }
         }
