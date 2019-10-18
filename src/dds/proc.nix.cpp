@@ -45,7 +45,9 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
     ::execvp(strings[0], (char* const*)strings.data());
 
     if (errno == ENOENT) {
-        std::cerr << fmt::format("[ddslim child executor] The requested executable ({}) could not be found.", strings[0]);
+        std::cerr << fmt::
+                format("[ddslim child executor] The requested executable ({}) could not be found.",
+                       strings[0]);
         std::exit(-1);
     }
 
