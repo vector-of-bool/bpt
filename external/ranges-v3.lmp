@@ -1,0 +1,6 @@
+Type: Package
+
+Name: ranges-v3
+Namespace: Niebler
+
+Library: ranges-v3.lml
