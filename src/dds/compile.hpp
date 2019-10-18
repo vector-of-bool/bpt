@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/source.hpp>
 #include <dds/toolchain.hpp>
 #include <dds/util.hpp>
 
@@ -37,7 +38,7 @@ public:
 
 struct file_compilation {
     compilation_rules rules;
-    fs::path          file;
+    source_file       source;
     fs::path          obj;
     std::string       owner_name;
     bool              enable_warnings = false;

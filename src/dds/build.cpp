@@ -250,7 +250,7 @@ dds::compilation_set collect_compiles(const build_params& params, const library_
 
         const auto obj_path = object_file_path(sf.path, params);
         comps.compilations.push_back(file_compilation{std::move(rules),
-                                                      sf.path,
+                                                      sf,
                                                       obj_path,
                                                       params.export_name,
                                                       params.enable_warnings});
@@ -272,9 +272,10 @@ void dds::build(const build_params& params, const library_manifest& man) {
 
     archive_spec arc;
     for (const auto& comp : compiles.compilations) {
-        arc.input_files.push_back(comp.obj);
+        if (comp.source.kind == source_kind::source) {
+            arc.input_files.push_back(comp.obj);
+        }
     }
-    // arc.input_files = compile_sources(sources, params, man);
 
     arc.out_path = params.out_root
         / (fmt::format("lib{}{}", params.export_name, params.toolchain.archive_suffix()));

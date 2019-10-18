@@ -16,10 +16,10 @@ void file_compilation::compile(const toolchain& tc) const {
 
     spdlog::info("[{}] Compile file: {}",
                  owner_name,
-                 fs::relative(file, rules.base_path()).string());
+                 fs::relative(source.path, rules.base_path()).string());
     auto start_time = std::chrono::steady_clock::now();
 
-    compile_file_spec spec{file, obj};
+    compile_file_spec spec{source.path, obj};
     spec.enable_warnings = enable_warnings;
 
     extend(spec.include_dirs, rules.include_dirs());
@@ -33,11 +33,11 @@ void file_compilation::compile(const toolchain& tc) const {
 
     spdlog::info("[{}] Compile file: {} - {:n}ms",
                  owner_name,
-                 fs::relative(file, rules.base_path()).string(),
+                 fs::relative(source.path, rules.base_path()).string(),
                  dur_ms.count());
 
     if (!compile_res.okay()) {
-        spdlog::error("Compilation failed: {}", file.string());
+        spdlog::error("Compilation failed: {}", source.path.string());
         spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd), compile_res.output);
         throw compile_failure("Compilation failed.");
     }
