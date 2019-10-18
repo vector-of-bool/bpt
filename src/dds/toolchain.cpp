@@ -314,7 +314,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
                    "-g",
                    "-fPIC",
                    "-fdiagnostics-color",
-                   "<INPUTS>",
+                   "<IN>",
                    "-pthread",
                    "-lstdc++fs",
                    "-o",
