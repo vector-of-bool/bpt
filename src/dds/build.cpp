@@ -101,7 +101,7 @@ link_test(const fs::path& source_file, const build_params& params, const fs::pat
     spdlog::info("Linking test executable: {}", spec.output.string());
     fs::create_directories(spec.output.parent_path());
     auto proc_res = run_proc(link_command);
-    if (proc_res.retc != 0) {
+    if (!proc_res.okay()) {
         throw compile_failure(
             fmt::format("Failed to link test executable '{}'. Link command [{}] returned {}:\n{}",
                         spec.output.string(),
