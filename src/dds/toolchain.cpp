@@ -197,7 +197,7 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
         if (arg == "<FLAGS>") {
             extend(command, flags);
         } else {
-            arg = replace(arg, "<FILE>", spec.source_path.string());
+            arg = replace(arg, "<IN>", spec.source_path.string());
             arg = replace(arg, "<OUT>", spec.out_path.string());
             command.push_back(arg);
         }
@@ -208,13 +208,13 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
 vector<string> toolchain::create_archive_command(const archive_spec& spec) const noexcept {
     vector<string> cmd;
     for (auto& arg : _archive_template) {
-        if (arg == "<OBJECTS>") {
+        if (arg == "<IN>") {
             std::transform(spec.input_files.begin(),
                            spec.input_files.end(),
                            std::back_inserter(cmd),
                            [](auto&& p) { return p.string(); });
         } else {
-            cmd.push_back(replace(arg, "<ARCHIVE>", spec.out_path.string()));
+            cmd.push_back(replace(arg, "<OUT>", spec.out_path.string()));
         }
     }
     return cmd;
@@ -223,7 +223,7 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
 vector<string> toolchain::create_link_executable_command(const link_exe_spec& spec) const noexcept {
     vector<string> cmd;
     for (auto& arg : _link_exe_template) {
-        if (arg == "<INPUTS>") {
+        if (arg == "<IN>") {
             std::transform(spec.inputs.begin(),
                            spec.inputs.end(),
                            std::back_inserter(cmd),
@@ -252,7 +252,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         ret._archive_suffix   = ".a";
         ret._object_suffix    = ".o";
         ret._warning_flags    = {"-Wall", "-Wextra"};
-        ret._archive_template = {"ar", "rcs", "<ARCHIVE>", "<OBJECTS>"};
+        ret._archive_template = {"ar", "rcs", "<OUT>", "<IN>"};
 
         std::vector<std::string> common_flags = {
             "<FLAGS>",
@@ -263,7 +263,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
             "-c",
             "-o",
             "<OUT>",
-            "<FILE>",
+            "<IN>",
         };
         std::vector<std::string> c_flags;
         std::vector<std::string> cxx_flags = {"-std=c++17"};
@@ -275,7 +275,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         if (starts_with(s, "gcc")) {
             c_compiler_base   = "gcc";
             cxx_compiler_base = "g++";
-            common_flags.push_back("-Og");
+            common_flags.push_back("-O0");
         } else if (starts_with(s, "clang")) {
             c_compiler_base   = "clang";
             cxx_compiler_base = "clang++";
@@ -323,14 +323,14 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
     } else if (s == "msvc") {
         ret._inc_template = {"/I<PATH>"};
         ret._def_template = {"/D<DEF>"};
-        ret._c_compile    = {"cl.exe", "/nologo", "<FLAGS>", "/c", "<FILE>", "/Fo<OUT>"};
+        ret._c_compile    = {"cl.exe", "/nologo", "<FLAGS>", "/c", "<IN>", "/Fo<OUT>"};
         ret._cxx_compile  = {"cl.exe",
                             "/nologo",
                             "<FLAGS>",
                             "/std:c++latest",
                             "/EHsc",
                             "/c",
-                            "<FILE>",
+                            "<IN>",
                             "/Fo<OUT>"};
         std::vector<std::string_view> common_flags = {"/Z7", "/O2", "/MT", "/DEBUG"};
         extend(ret._c_compile, common_flags);
@@ -338,9 +338,9 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         ret._archive_suffix   = ".lib";
         ret._object_suffix    = ".obj";
         ret._exe_suffix       = ".exe";
-        ret._archive_template = {"lib", "/nologo", "/OUT:<ARCHIVE>", "<OBJECTS>"};
+        ret._archive_template = {"lib", "/nologo", "/OUT:<OUT>", "<IN>"};
         ret._link_exe_template
-            = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<INPUTS>", "/Fe<OUT>"};
+            = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<IN>", "/Fe<OUT>"};
         ret._warning_flags = {"/W4"};
     } else {
         return std::nullopt;
