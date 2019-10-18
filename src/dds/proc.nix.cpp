@@ -1,6 +1,8 @@
 #ifndef _WIN32
 #include "./proc.hpp"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <poll.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -41,6 +43,11 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
     }
     strings.push_back(nullptr);
     ::execvp(strings[0], (char* const*)strings.data());
+
+    if (errno == ENOENT) {
+        std::cerr << fmt::format("[ddslim child executor] The requested executable ({}) could not be found.", strings[0]);
+        std::exit(-1);
+    }
 
     std::cerr << "[ddslim child executor] execvp returned! This is a fatal error: "
               << std::system_category().message(errno) << '\n';
