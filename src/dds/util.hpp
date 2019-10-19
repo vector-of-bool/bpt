@@ -70,6 +70,8 @@ inline std::string slurp_file(const fs::path& path) {
     return contents;
 }
 
+void safe_rename(path_ref source, path_ref dest);
+
 }  // namespace file_utils
 
 template <typename Container, typename Predicate>

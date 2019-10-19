@@ -1,5 +1,7 @@
 #include "./util.hpp"
 
+#include <spdlog/fmt/fmt.h>
+
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -28,4 +30,31 @@ std::string dds::slurp_file(const fs::path& path, std::error_code& ec) {
     std::ostringstream out;
     out << file.rdbuf();
     return std::move(out).str();
+}
+
+void dds::safe_rename(path_ref source, path_ref dest) {
+    std::error_code ec;
+    fs::rename(source, dest, ec);
+    if (!ec) {
+        return;
+    }
+
+    if (ec != std::errc::cross_device_link) {
+        throw std::system_error(ec,
+                                fmt::format("Failed to move item [{}] to [{}]",
+                                            source.string(),
+                                            dest.string()));
+    }
+
+    auto tmp = dest;
+    tmp.replace_filename(tmp.filename().string() + ".tmp-dds-mv");
+    try {
+        fs::remove_all(tmp);
+        fs::copy(source, tmp, fs::copy_options::recursive);
+    } catch (...) {
+        fs::remove_all(tmp, ec);
+        throw;
+    }
+    fs::rename(tmp, dest);
+    fs::remove_all(source);
 }
