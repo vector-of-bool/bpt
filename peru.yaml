@@ -2,6 +2,7 @@ imports:
   spdlog: external/spdlog
   taywee-args: external/taywee-args
   wil: external/wil
+  ranges-v3: external/ranges-v3
 
 git module spdlog:
   url: https://github.com/gabime/spdlog.git
@@ -19,3 +20,8 @@ git module wil:
   url: https://github.com/microsoft/wil.git
   rev: 6de0b3e6c1bad18feaedd2589d452d66e7fc5600
   pick: include
+
+git module ranges-v3:
+  url: https://github.com/ericniebler/range-v3.git
+  rev: 0.9.1
+  pick: include/
