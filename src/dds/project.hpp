@@ -9,11 +9,13 @@
 namespace dds {
 
 class project {
+    fs::path               _root;
     std::optional<library> _main_lib;
     std::vector<library>   _submodules;
 
-    project(std::optional<library>&& ml, std::vector<library>&& mods)
-        : _main_lib(std::move(ml))
+    project(path_ref root, std::optional<library>&& ml, std::vector<library>&& mods)
+        : _root(root)
+        , _main_lib(std::move(ml))
         , _submodules(std::move(mods)) {}
 
 public:
@@ -25,6 +27,8 @@ public:
         }
         return nullptr;
     }
+
+    path_ref root() const noexcept { return _root; }
 };
 
 }  // namespace dds

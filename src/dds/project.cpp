@@ -30,5 +30,5 @@ project project::from_directory(path_ref pf_dir_path) {
     if (has_library_dirs(pf_dir_path)) {
         main_lib = library::from_directory(pf_dir_path);
     }
-    return project(std::move(main_lib), collect_submodules(pf_dir_path / "libs"));
+    return project(pf_dir_path, std::move(main_lib), collect_submodules(pf_dir_path / "libs"));
 }
