@@ -420,6 +420,10 @@ void dds::build(const build_params& params, const package_manifest&) {
         }
     }
 
+    if (n_test_fails) {
+        throw compile_failure("Test failures during build");
+    }
+
     if (params.do_export) {
         export_project(params, project);
     }
