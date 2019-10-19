@@ -23,14 +23,13 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
         'build',
         '--full',
         f'--toolchain={opts.toolchain}',
-        f'--export-name={dir.stem}',
     )
     fails += _run_subproc_test(
         dir,
         opts,
         'Source Distribution',
         'sdist',
-        f'--out={dir.stem}/test.dsd',
+        f'--out=_build/{dir.stem}/test.dsd',
         '--force',
     )
     return fails == 0
