@@ -14,7 +14,7 @@ using namespace dds;
 void file_compilation::compile(const toolchain& tc) const {
     fs::create_directories(obj.parent_path());
 
-    spdlog::info("[{}] Compile file: {}",
+    spdlog::info("[{}] Compile: {}",
                  owner_name,
                  fs::relative(source.path, rules.base_path()).string());
     auto start_time = std::chrono::steady_clock::now();
@@ -31,7 +31,7 @@ void file_compilation::compile(const toolchain& tc) const {
     auto end_time = std::chrono::steady_clock::now();
     auto dur_ms   = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    spdlog::info("[{}] Compile file: {} - {:n}ms",
+    spdlog::info("[{}] Compile: {} - {:n}ms",
                  owner_name,
                  fs::relative(source.path, rules.base_path()).string(),
                  dur_ms.count());
