@@ -28,7 +28,8 @@ void sdist_copy_library(path_ref out_root, const library& lib, const sdist_param
               return false;
           });
 
-    spdlog::info("Export library source from {}", lib.base_dir().string());
+    spdlog::info("sdist: Export library from {}", lib.base_dir().string());
+    fs::create_directories(out_root);
     for (const auto& source : sources_to_keep) {
         auto relpath = fs::relative(source.path, lib.base_dir());
         spdlog::info("Copy source file {}", relpath.string());
