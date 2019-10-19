@@ -1,5 +1,6 @@
 #include <dds/build.hpp>
 #include <dds/logging.hpp>
+#include <dds/sdist.hpp>
 #include <dds/util.hpp>
 #include <libman/parse.hpp>
 
@@ -20,28 +21,61 @@ struct cli_base {
     args::Group cmd_group{parser, "Available Commands"};
 };
 
-struct cli_build {
-    cli_base&     base;
-    args::Command cmd{base.cmd_group, "build", "Build a library"};
+struct common_flags {
+    args::Command& cmd;
 
-    args::HelpFlag _help{cmd, "help", "Display this help message and exit", {'h', "help"}};
+    args::HelpFlag _help{cmd, "help", "Print this hellp message and exit", {'h', "help"}};
+};
 
-    path_flag lib_dir{cmd,
-                      "lib_dir",
-                      "The path to the directory containing the library",
-                      {"lib-dir"},
-                      dds::fs::current_path()};
-    path_flag out_dir{cmd,
-                      "out_dir",
-                      "The directory in which to write the built files",
-                      {"out-dir"},
-                      dds::fs::current_path() / "_build"};
+struct common_project_flags {
+    args::Command& cmd;
+
+    path_flag root{cmd,
+                   "project_dir",
+                   "Path to the directory containing the project",
+                   {"project-dir"},
+                   dds::fs::current_path()};
 
     string_flag export_name{cmd,
                             "export_name",
-                            "Set the name of the export",
-                            {"export-name", 'n'},
+                            "Set the name of othe project",
+                            {'n', "export-name"},
                             dds::fs::current_path().filename().string()};
+};
+
+struct cli_sdist {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "sdist", "Create a source distribution of a project"};
+
+    common_flags _common{cmd};
+
+    common_project_flags project{cmd};
+
+    path_flag out{cmd,
+                  "out",
+                  "The full destination of the source distribution",
+                  {"out"},
+                  dds::fs::current_path() / "project.dsd"};
+
+    args::Flag force{cmd, "force", "Forcibly replace an existing result", {"force"}};
+
+    int run() {
+        dds::sdist_params params;
+        params.project_dir = project.root.Get();
+        params.dest_path   = out.Get();
+        params.force       = force.Get();
+        dds::create_sdist(params);
+        return 0;
+    }
+};
+
+struct cli_build {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "build", "Build a project"};
+
+    common_flags _common{cmd};
+
+    common_project_flags project{cmd};
 
     string_flag tc_filepath{cmd,
                             "toolchain_file",
@@ -75,6 +109,12 @@ struct cli_build {
                                   {"jobs", 'j'},
                                   0};
 
+    path_flag out{cmd,
+                  "out",
+                  "The root build directory",
+                  {"out"},
+                  dds::fs::current_path() / "_build"};
+
     dds::toolchain _get_toolchain() {
         const auto tc_path = tc_filepath.Get();
         if (tc_path.find(":") == 0) {
@@ -92,9 +132,9 @@ struct cli_build {
 
     int run() {
         dds::build_params params;
-        params.root            = lib_dir.Get();
-        params.out_root        = out_dir.Get();
-        params.export_name     = export_name.Get();
+        params.root            = project.root.Get();
+        params.out_root        = out.Get();
+        params.export_name     = project.export_name.Get();
         params.toolchain       = _get_toolchain();
         params.do_export       = export_.Get();
         params.build_tests     = build_tests.Get();
@@ -126,6 +166,7 @@ int main(int argc, char** argv) {
 
     cli_base  cli{parser};
     cli_build build{cli};
+    cli_sdist sdist{cli};
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -140,6 +181,8 @@ int main(int argc, char** argv) {
     try {
         if (build.cmd) {
             return build.run();
+        } else if (sdist.cmd) {
+            return sdist.run();
         } else {
             assert(false);
             std::terminate();
