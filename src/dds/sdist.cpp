@@ -64,4 +64,9 @@ void dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     if (project.main_library()) {
         sdist_copy_library(out, *project.main_library(), params);
     }
+
+    auto man_path = project.root() / "manifest.dds";
+    if (fs::is_regular_file(man_path)) {
+        fs::copy(man_path, out / man_path.filename());
+    }
 }
