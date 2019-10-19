@@ -120,7 +120,8 @@ fs::path export_project_library(const build_params& params,
 void export_project(const build_params& params, const project& project) {
     if (project.manifest().name.empty()) {
         throw compile_failure(
-            fmt::format("Cannot generate an export when the project has no name (Provide a package.dds with a `Name` field)"));
+            fmt::format("Cannot generate an export when the project has no name (Provide a "
+                        "package.dds with a `Name` field)"));
     }
     const auto export_root = params.out_root / fmt::format("{}.lpk", project.manifest().name);
     spdlog::info("Generating project export: {}", export_root.string());
@@ -265,9 +266,9 @@ fs::path obj_for_source(const object_file_index& idx, path_ref source_path) {
 /**
  * Create the static library archive for the given library object.
  */
-fs::path create_lib_archive(const build_params&      params,
-                            const library&           lib,
-                            const object_file_index& obj_idx) {
+std::optional<fs::path> create_lib_archive(const build_params&      params,
+                                           const library&           lib,
+                                           const object_file_index& obj_idx) {
     archive_spec arc;
     arc.out_path = lib_archive_path(params, lib);
 
@@ -278,6 +279,10 @@ fs::path create_lib_archive(const build_params&      params,
         | transform(DDS_TL(obj_for_source(obj_idx, _1.path)))  //
         | to_vector                                            //
         ;
+
+    if (arc.input_files.empty()) {
+        return std::nullopt;
+    }
 
     spdlog::info("Create archive for {}: {}", lib.name(), arc.out_path.string());
     auto ar_cmd = params.toolchain.create_archive_command(arc);
@@ -308,7 +313,11 @@ fs::path link_one_exe(path_ref                 dest,
     assert(fs::exists(main_obj));
 
     link_exe_spec spec;
-    extend(spec.inputs, {main_obj, lib_archive_path(params, lib)});
+    spec.inputs.push_back(main_obj);
+    auto lib_arc_path = lib_archive_path(params, lib);
+    if (fs::is_regular_file(lib_arc_path)) {
+        spec.inputs.push_back(lib_arc_path);
+    }
     spec.output             = dest;
     const auto link_command = params.toolchain.create_link_executable_command(spec);
 
@@ -342,15 +351,18 @@ std::vector<fs::path> link_executables(source_kind              sk,
 }
 
 struct link_results {
-    fs::path              archive_path;
-    std::vector<fs::path> test_exes;
-    std::vector<fs::path> app_exes;
+    std::optional<fs::path> archive_path;
+    std::vector<fs::path>   test_exes;
+    std::vector<fs::path>   app_exes;
 };
 
 link_results
 link_project_lib(const build_params& params, const library& lib, const object_file_index& obj_idx) {
     link_results res;
-    res.archive_path = create_lib_archive(params, lib, obj_idx);
+    auto         op_arc_path = create_lib_archive(params, lib, obj_idx);
+    if (op_arc_path) {
+        res.archive_path = *op_arc_path;
+    }
 
     auto get_test_exe_path = [&](const source_file sf) {
         return params.out_root
