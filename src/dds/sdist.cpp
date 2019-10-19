@@ -3,7 +3,14 @@
 #include <dds/project.hpp>
 #include <dds/temp.hpp>
 
+#include <libman/parse.hpp>
+
+#include <browns/md5.hpp>
+#include <browns/output.hpp>
+#include <neo/buffer.hpp>
+
 #include <range/v3/algorithm/for_each.hpp>
+#include <range/v3/algorithm/sort.hpp>
 #include <range/v3/view/filter.hpp>
 
 #include <spdlog/spdlog.h>
@@ -12,30 +19,57 @@ using namespace dds;
 
 namespace {
 
-void sdist_copy_library(path_ref out_root, const library& lib, const sdist_params& params) {
+void hash_file(std::string_view prefix, path_ref fpath, browns::md5& hash) {
+    hash.feed(neo::buffer(prefix));
+    std::ifstream infile;
+    infile.exceptions(std::ios::failbit | std::ios::badbit);
+    using file_iter = std::istreambuf_iterator<char>;
+    infile.open(fpath, std::ios::binary);
+    assert(infile.good());
+    hash.feed(neo::buffer("\nfile_content: "));
+    hash.feed(file_iter(infile), file_iter());
+}
+
+void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath, browns::md5& hash) {
+    auto relpath = fs::relative(filepath, in_root);
+    spdlog::info("Export file {}", relpath.string());
+    hash_file("filepath:" + relpath.generic_string(), filepath, hash);
+    auto dest = out_root / relpath;
+    fs::create_directories(dest.parent_path());
+    fs::copy(filepath, dest);
+}
+
+void sdist_copy_library(path_ref            out_root,
+                        const library&      lib,
+                        const sdist_params& params,
+                        browns::md5&        hash) {
     auto sources_to_keep =  //
         lib.sources()       //
         | ranges::view::filter([&](const source_file& sf) {
-              if (sf.kind == source_kind::source || sf.kind == source_kind::header) {
+              if (sf.kind == source_kind::app && params.include_apps) {
                   return true;
               }
-              if (sf.kind == source_kind::app && params.include_apps) {
+              if (sf.kind == source_kind::source || sf.kind == source_kind::header) {
                   return true;
               }
               if (sf.kind == source_kind::test && params.include_tests) {
                   return true;
               }
               return false;
-          });
+          })  //
+        | ranges::to_vector;
+
+    ranges::sort(sources_to_keep, std::less<>(), DDS_TL(_1.path));
+
+    auto lib_dds_path = lib.base_dir() / "library.dds";
+    if (fs::is_regular_file(lib_dds_path)) {
+        sdist_export_file(out_root, params.project_dir, lib_dds_path, hash);
+    }
 
     spdlog::info("sdist: Export library from {}", lib.base_dir().string());
     fs::create_directories(out_root);
     for (const auto& source : sources_to_keep) {
-        auto relpath = fs::relative(source.path, lib.base_dir());
-        spdlog::info("Copy source file {}", relpath.string());
-        auto dest = out_root / relpath;
-        fs::create_directories(dest.parent_path());
-        fs::copy(source.path, dest);
+        sdist_export_file(out_root, params.project_dir, source.path, hash);
     }
 }
 
@@ -61,13 +95,27 @@ void dds::create_sdist(const sdist_params& params) {
 }
 
 void dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
-    auto project = project::from_directory(params.project_dir);
+    auto        project = project::from_directory(params.project_dir);
+    browns::md5 md5;
+
     if (project.main_library()) {
-        sdist_copy_library(out, *project.main_library(), params);
+        sdist_copy_library(out, *project.main_library(), params, md5);
     }
 
-    auto man_path = project.root() / "manifest.dds";
-    if (fs::is_regular_file(man_path)) {
-        fs::copy(man_path, out / man_path.filename());
+    for (const library& submod : project.submodules()) {
+        sdist_copy_library(out, submod, params, md5);
     }
+
+    auto man_path = project.root() / "package.dds";
+    if (fs::is_regular_file(man_path)) {
+        sdist_export_file(out, params.project_dir, man_path, md5);
+    }
+
+    md5.pad();
+    auto hash_str = browns::format_digest(md5.digest());
+    spdlog::info("Generated export as {}-{}", project.manifest().name, hash_str);
+
+    std::vector<lm::pair> pairs;
+    pairs.emplace_back("MD5-Hash", hash_str);
+    lm::write_pairs(out / "_meta.dds", pairs);
 }
