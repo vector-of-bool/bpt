@@ -51,7 +51,7 @@ pf_info collect_pf_sources(path_ref path) {
 library library::from_directory(path_ref lib_dir, std::string_view name) {
     auto [sources, inc_dir, src_dir] = collect_pf_sources(lib_dir);
 
-    auto lib = library(name, std::move(sources));;
+    auto lib = library(lib_dir, name, std::move(sources));
 
     if (fs::exists(inc_dir)) {
         lib._pub_inc_dir = inc_dir;
@@ -59,7 +59,7 @@ library library::from_directory(path_ref lib_dir, std::string_view name) {
             lib._priv_inc_dir = src_dir;
         }
     } else {
-        lib._pub_inc_dir = src_dir;
+        lib._pub_inc_dir  = src_dir;
         lib._priv_inc_dir = src_dir;
     }
 
