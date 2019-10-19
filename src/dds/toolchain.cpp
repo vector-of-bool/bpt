@@ -1,5 +1,8 @@
 #include "./toolchain.hpp"
 
+#include <dds/util/algo.hpp>
+#include <dds/util/string.hpp>
+
 #include <libman/parse.hpp>
 
 #include <spdlog/fmt/fmt.h>

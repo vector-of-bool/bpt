@@ -6,6 +6,9 @@
 #include <dds/project.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
+#include <dds/util/algo.hpp>
+#include <dds/util/string.hpp>
+#include <dds/util/tl.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
 

@@ -1,7 +1,7 @@
 #include <dds/build.hpp>
 #include <dds/logging.hpp>
 #include <dds/sdist.hpp>
-#include <dds/util.hpp>
+#include <dds/util/fs.hpp>
 
 #include <libman/parse.hpp>
 

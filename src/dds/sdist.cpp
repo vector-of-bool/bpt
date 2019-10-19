@@ -2,6 +2,8 @@
 
 #include <dds/project.hpp>
 #include <dds/temp.hpp>
+#include <dds/util/fs.hpp>
+#include <dds/util/tl.hpp>
 
 #include <libman/parse.hpp>
 

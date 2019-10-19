@@ -2,7 +2,7 @@
 
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
-#include <dds/util.hpp>
+#include <dds/util/fs.hpp>
 
 #include <memory>
 #include <optional>

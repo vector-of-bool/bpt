@@ -1,5 +1,8 @@
 #include "./source.hpp"
 
+#include <dds/util/tl.hpp>
+#include <dds/util/string.hpp>
+
 #include <spdlog/spdlog.h>
 
 #include <range/v3/range/conversion.hpp>

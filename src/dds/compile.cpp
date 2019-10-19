@@ -1,6 +1,7 @@
 #include "./compile.hpp"
 
 #include <dds/proc.hpp>
+#include <dds/util/algo.hpp>
 
 #include <spdlog/spdlog.h>
 

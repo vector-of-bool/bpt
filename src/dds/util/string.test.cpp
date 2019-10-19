@@ -1,4 +1,5 @@
-#include <dds/util.hpp>
+#include <dds/util/string.hpp>
+
 #include <dds/util.test.hpp>
 
 using namespace dds;

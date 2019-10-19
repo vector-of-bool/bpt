@@ -1,5 +1,7 @@
 #include <dds/library.hpp>
 
+#include <dds/util/algo.hpp>
+
 #include <spdlog/spdlog.h>
 
 using namespace dds;

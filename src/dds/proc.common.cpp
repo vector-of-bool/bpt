@@ -1,6 +1,6 @@
 #include "./proc.hpp"
 
-#include <dds/util.hpp>
+#include <dds/util/string.hpp>
 
 #include <algorithm>
 #include <array>

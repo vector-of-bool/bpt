@@ -1,7 +1,7 @@
 #ifndef DDS_TOOLCHAIN_HPP_INCLUDED
 #define DDS_TOOLCHAIN_HPP_INCLUDED
 
-#include <dds/util.hpp>
+#include <dds/util/fs.hpp>
 
 #include <optional>
 #include <string>
