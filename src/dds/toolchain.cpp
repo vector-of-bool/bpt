@@ -324,8 +324,15 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         ret._inc_template = {"/I<PATH>"};
         ret._def_template = {"/D<DEF>"};
         ret._c_compile    = {"cl.exe", "/nologo", "<FLAGS>", "/c", "<IN>", "/Fo<OUT>"};
-        ret._cxx_compile
-            = {"cl.exe", "/nologo", "<FLAGS>", "/std:c++latest", "/EHsc", "/c", "<IN>", "/Fo<OUT>"};
+        ret._cxx_compile  = {"cl.exe",
+                            "/nologo",
+                            "<FLAGS>",
+                            "/std:c++latest",
+                            "/permissive-",
+                            "/EHsc",
+                            "/c",
+                            "<IN>",
+                            "/Fo<OUT>"};
         std::vector<std::string_view> common_flags = {"/Z7", "/O2", "/MT", "/DEBUG"};
         extend(ret._c_compile, common_flags);
         extend(ret._cxx_compile, common_flags);
