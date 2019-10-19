@@ -44,7 +44,7 @@ def have_ccache() -> bool:
     try:
         subprocess.check_output(['ccache', '--version'])
         return True
-    except subprocess.CalledProcessError:
+    except FileNotFoundError:
         return False
 
 
