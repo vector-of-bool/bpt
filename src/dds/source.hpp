@@ -21,7 +21,6 @@ struct source_file {
 
     static std::optional<source_file> from_path(path_ref) noexcept;
     static std::vector<source_file>   collect_for_dir(path_ref);
-    static std::vector<source_file>   collect_pf_sources(path_ref);
 };
 
 using source_list = std::vector<source_file>;

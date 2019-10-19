@@ -2,6 +2,10 @@
 
 #include <spdlog/spdlog.h>
 
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
+
 #include <algorithm>
 #include <optional>
 #include <vector>
@@ -61,51 +65,19 @@ std::optional<source_file> source_file::from_path(path_ref path) noexcept {
     return source_file{path, *kind};
 }
 
-source_list source_file::collect_for_dir(path_ref path) {
-    source_list ret;
-    for (auto entry : fs::recursive_directory_iterator(path)) {
-        if (!entry.is_regular_file()) {
-            continue;
-        }
-        auto sf = source_file::from_path(entry.path());
-        if (!sf) {
-            spdlog::warn("Couldn't infer a source file kind for file: {}", entry.path().string());
-        }
-        ret.emplace_back(std::move(*sf));
-    }
-    return ret;
-}
+source_list source_file::collect_for_dir(path_ref src) {
+    using namespace ranges::view;
+    // Strips nullopt elements and lifts the value from the results
+    auto drop_nulls =                   //
+        filter(DDS_TL(_1.has_value()))  //
+        | transform(DDS_TL(*_1));
 
-source_list source_file::collect_pf_sources(path_ref path) {
-    auto include_dir = path / "include";
-    auto src_dir     = path / "src";
-
-    source_list sources;
-
-    if (fs::exists(include_dir)) {
-        if (!fs::is_directory(include_dir)) {
-            throw std::runtime_error("The `include` at the root of the project is not a directory");
-        }
-        auto inc_sources = source_file::collect_for_dir(include_dir);
-        // Drop any source files we found within `include/`
-        erase_if(sources, [&](auto& info) {
-            if (info.kind != source_kind::header) {
-                spdlog::warn("Source file in `include` will not be compiled: {}",
-                             info.path.string());
-                return true;
-            }
-            return false;
-        });
-        extend(sources, inc_sources);
-    }
-
-    if (fs::exists(src_dir)) {
-        if (!fs::is_directory(src_dir)) {
-            throw std::runtime_error("The `src` at the root of the project is not a directory");
-        }
-        auto src_sources = source_file::collect_for_dir(src_dir);
-        extend(sources, src_sources);
-    }
-
-    return sources;
+    // Collect all source files from the directory
+    return                                               //
+        fs::recursive_directory_iterator(src)            //
+        | filter(DDS_TL(_1.is_regular_file()))           //
+        | transform(DDS_TL(source_file::from_path(_1)))  //
+        // source_file::from_path returns an optional. Drop nulls
+        | drop_nulls  //
+        | ranges::to_vector;
 }

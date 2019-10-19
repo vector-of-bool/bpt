@@ -39,7 +39,7 @@ void file_compilation::compile(const toolchain& tc) const {
     if (!compile_res.okay()) {
         spdlog::error("Compilation failed: {}", source.path.string());
         spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd), compile_res.output);
-        throw compile_failure("Compilation failed.");
+        throw compile_failure(fmt::format("Compilation failed for {}.", source.path.string()));
     }
 
     // MSVC prints the filename of the source file. Dunno why, but they do.

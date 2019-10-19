@@ -3,10 +3,15 @@
 #include <dds/compile.hpp>
 #include <dds/logging.hpp>
 #include <dds/proc.hpp>
+#include <dds/project.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
+
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -166,8 +171,11 @@ void link_apps(const source_list&  sources,
 }
 
 dds::compilation_set collect_compiles(const build_params& params, const library_manifest& man) {
-    source_list sources           = source_file::collect_pf_sources(params.root);
-    const bool  need_compile_deps = params.build_tests || params.build_apps || params.build_deps;
+    auto project = project::from_directory(params.root);
+    assert(project.main_library());
+    const auto& sources = project.main_library()->sources();
+
+    const bool need_compile_deps = params.build_tests || params.build_apps || params.build_deps;
 
     std::vector<fs::path>    dep_includes;
     std::vector<std::string> dep_defines;
@@ -268,14 +276,19 @@ void dds::build(const build_params& params, const library_manifest& man) {
 
     compiles.execute_all(params.toolchain, params.parallel_jobs);
 
-    source_list sources = source_file::collect_pf_sources(params.root);
+    using namespace ranges::view;
+
+    source_list sources = compiles.compilations       //
+        | transform(DDS_TL(_1.source))  //
+        | ranges::to_vector;
 
     archive_spec arc;
-    for (const auto& comp : compiles.compilations) {
-        if (comp.source.kind == source_kind::source) {
-            arc.input_files.push_back(comp.obj);
-        }
-    }
+    // Collect object files that make up that library
+    arc.input_files = compiles.compilations
+        // Only library sources
+        | filter(DDS_TL(_1.source.kind == source_kind::source))  //
+        | transform(DDS_TL(_1.obj))                              //
+        | ranges::to_vector;
 
     arc.out_path = params.out_root
         / (fmt::format("lib{}{}", params.export_name, params.toolchain.archive_suffix()));
