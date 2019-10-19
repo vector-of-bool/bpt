@@ -46,10 +46,6 @@ struct file_compilation {
     void compile(const toolchain& tc) const;
 };
 
-struct compilation_set {
-    std::vector<file_compilation> compilations;
-
-    void execute_all(const toolchain& tc, int n_jobs) const;
-};
+void execute_all(const std::vector<file_compilation>&, const toolchain& tc, int n_jobs);
 
 }  // namespace dds

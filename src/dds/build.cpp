@@ -9,8 +9,11 @@
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
 
+#include <range/v3/action/join.hpp>
+#include <range/v3/algorithm/for_each.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
+#include <range/v3/view/join.hpp>
 #include <range/v3/view/transform.hpp>
 
 #include <algorithm>
@@ -24,11 +27,26 @@
 
 using namespace dds;
 
+using namespace ranges;
+using namespace ranges::view;
+
 namespace {
 
 struct archive_failure : std::runtime_error {
     using runtime_error::runtime_error;
 };
+
+/**
+ * Return an iterable over every library in the project
+ */
+auto iter_libraries(const project& pr) {
+    std::vector<std::reference_wrapper<const library>> libs;
+    if (pr.main_library()) {
+        libs.push_back(*pr.main_library());
+    }
+    extend(libs, pr.submodules());
+    return libs;
+}
 
 fs::path object_file_path(fs::path source_path, const build_params& params) {
     auto obj_dir     = params.out_root / "obj";
@@ -37,6 +55,11 @@ fs::path object_file_path(fs::path source_path, const build_params& params) {
                                  + params.toolchain.object_suffix());
     auto obj_path = obj_dir / obj_relpath;
     return obj_path;
+}
+
+fs::path lib_archive_path(const build_params& params, const library& lib) {
+    return params.out_root
+        / (fmt::format("lib{}{}", lib.name(), params.toolchain.archive_suffix()));
 }
 
 void copy_headers(const fs::path& source, const fs::path& dest, const source_list& sources) {
@@ -52,134 +75,115 @@ void copy_headers(const fs::path& source, const fs::path& dest, const source_lis
     }
 }
 
-void generate_export(const build_params& params,
-                     fs::path            archive_file,
-                     const source_list&  sources) {
-    const auto export_root = params.out_root / fmt::format("{}.lpk", params.export_name);
-    spdlog::info("Generating library export: {}", export_root.string());
+fs::path export_project_library(const build_params& params,
+                                const library&      lib,
+                                const project&      project,
+                                path_ref            export_root) {
+    auto relpath      = fs::relative(lib.base_dir(), project.root());
+    auto lib_out_root = export_root / relpath;
+    auto header_root  = lib.base_dir() / "include";
+    if (!fs::is_directory(header_root)) {
+        header_root = lib.base_dir() / "src";
+    }
+
+    auto lml_path       = export_root / fmt::format("{}.lml", lib.name());
+    auto lml_parent_dir = lml_path.parent_path();
+
+    std::vector<lm::pair> pairs;
+    pairs.emplace_back("Type", "Library");
+    pairs.emplace_back("Name", lib.name());
+
+    if (fs::is_directory(header_root)) {
+        auto header_dest = lib_out_root / "include";
+        copy_headers(header_root, header_dest, lib.sources());
+        pairs.emplace_back("Include-Path", fs::relative(header_dest, lml_parent_dir).string());
+    }
+
+    auto ar_path = lib_archive_path(params, lib);
+    if (fs::is_regular_file(ar_path)) {
+        auto ar_dest = lib_out_root / ar_path.filename();
+        fs::copy_file(ar_path, ar_dest);
+        pairs.emplace_back("Path", fs::relative(ar_dest, lml_parent_dir).string());
+    }
+
+    for (const auto& use : lib.manifest().uses) {
+        pairs.emplace_back("Uses", use);
+    }
+    for (const auto& links : lib.manifest().links) {
+        pairs.emplace_back("Links", links);
+    }
+
+    lm::write_pairs(lml_path, pairs);
+    return lml_path;
+}
+
+void export_project(const build_params& params, const project& project) {
+    if (project.manifest().name.empty()) {
+        throw compile_failure(
+            fmt::format("Cannot generate an export when the project has no name (Provide a package.dds with a `Name` field)"));
+    }
+    const auto export_root = params.out_root / fmt::format("{}.lpk", project.manifest().name);
+    spdlog::info("Generating project export: {}", export_root.string());
     fs::remove_all(export_root);
     fs::create_directories(export_root);
-    const auto archive_dest = export_root / archive_file.filename();
-    fs::copy_file(archive_file, archive_dest);
 
-    auto       header_root = params.root / "include";
-    const auto header_dest = export_root / "include";
-    if (!fs::is_directory(header_root)) {
-        header_root = params.root / "src";
-    }
-    if (fs::is_directory(header_root)) {
-        copy_headers(header_root, header_dest, sources);
-    }
+    std::vector<lm::pair> pairs;
 
-    std::vector<lm::pair> lm_pairs;
-    lm_pairs.emplace_back("Type", "Package");
-    lm_pairs.emplace_back("Name", params.export_name);
-    lm_pairs.emplace_back("Namespace", params.export_name);
-    lm_pairs.emplace_back("Library", "lib.lml");
-    lm::write_pairs(export_root / "package.lmp", lm_pairs);
+    pairs.emplace_back("Type", "Package");
+    pairs.emplace_back("Name", project.manifest().name);
+    pairs.emplace_back("Namespace", project.manifest().name);
 
-    lm_pairs.clear();
-    lm_pairs.emplace_back("Type", "Library");
-    lm_pairs.emplace_back("Name", params.export_name);
-    lm_pairs.emplace_back("Path", fs::relative(archive_dest, export_root).string());
-    lm_pairs.emplace_back("Include-Path", fs::relative(header_dest, export_root).string());
-    lm::write_pairs(export_root / "lib.lml", lm_pairs);
+    auto all_libs = iter_libraries(project);
+    extend(pairs,
+           all_libs                                                                           //
+               | transform(DDS_TL(export_project_library(params, _1, project, export_root)))  //
+               | transform(DDS_TL(lm::pair("Library", _1.string())))                          //
+    );
+
+    lm::write_pairs(export_root / "package.lmp", pairs);
 }
 
-fs::path
-link_test(const fs::path& source_file, const build_params& params, const fs::path& lib_archive) {
-    const auto obj_file = object_file_path(source_file, params);
-    if (!fs::exists(obj_file)) {
+void include_deps(const lm::index::library_index& lib_index,
+                  std::vector<fs::path>&          includes,
+                  std::vector<std::string>&       defines,
+                  std::string_view                usage_key,
+                  bool                            is_public_usage) {
+    auto pair = split(usage_key, "/");
+    if (pair.size() != 2) {
+        throw compile_failure(fmt::format("Invalid `Uses`: {}", usage_key));
+    }
+
+    auto& pkg_ns = pair[0];
+    auto& lib    = pair[1];
+
+    auto found = lib_index.find(std::pair(pkg_ns, lib));
+    if (found == lib_index.end()) {
         throw compile_failure(
-            fmt::format("Unable to find a generated test object file where expected ({})",
-                        obj_file.string()));
+            fmt::format("No library '{}/{}': Check that it is installed and available",
+                        pkg_ns,
+                        lib));
     }
 
-    const auto    test_name = source_file.stem().stem().string();
-    link_exe_spec spec;
-    extend(spec.inputs, {obj_file, lib_archive});
-    spec.output = params.out_root
-        / fs::relative(source_file, params.root)
-              .replace_filename(test_name + params.toolchain.executable_suffix());
-    const auto link_command = params.toolchain.create_link_executable_command(spec);
+    const lm::library& lm_lib = found->second;
+    extend(includes, lm_lib.include_paths);
+    extend(defines, lm_lib.preproc_defs);
 
-    spdlog::info("Linking test executable: {}", spec.output.string());
-    fs::create_directories(spec.output.parent_path());
-    auto proc_res = run_proc(link_command);
-    if (!proc_res.okay()) {
-        throw compile_failure(
-            fmt::format("Failed to link test executable '{}'. Link command [{}] returned {}:\n{}",
-                        spec.output.string(),
-                        quote_command(link_command),
-                        proc_res.retc,
-                        proc_res.output));
+    for (const auto& uses : lm_lib.uses) {
+        include_deps(lib_index, includes, defines, uses, is_public_usage && true);
     }
-
-    return spec.output;
-}
-
-void link_app(const fs::path&     source_file,
-              const build_params& params,
-              const fs::path&     lib_archive) {
-    const auto obj_file = object_file_path(source_file, params);
-    if (!fs::exists(obj_file)) {
-        throw compile_failure(
-            fmt::format("Unable to find a generated app object file where expected ({})",
-                        obj_file.string()));
-    }
-
-    const auto    app_name = source_file.stem().stem().string();
-    link_exe_spec spec;
-    extend(spec.inputs, {obj_file, lib_archive});
-    spec.output = params.out_root / (app_name + params.toolchain.executable_suffix() + ".tmp");
-    const auto link_command = params.toolchain.create_link_executable_command(spec);
-
-    spdlog::info("Linking application executable: {}", spec.output.string());
-    auto proc_res = run_proc(link_command);
-    if (proc_res.retc != 0) {
-        throw compile_failure(fmt::format(
-            "Failed to link application executable '{}'. Link command [{}] returned {}:\n{}",
-            spec.output.string(),
-            quote_command(link_command),
-            proc_res.retc,
-            proc_res.output));
-    }
-    fs::rename(spec.output, spec.output.parent_path() / spec.output.stem());
-}
-
-std::vector<fs::path> link_tests(const source_list&  sources,
-                                 const build_params& params,
-                                 const library_manifest&,
-                                 const fs::path& lib_archive) {
-    std::vector<fs::path> exes;
-    for (const auto& source_file : sources) {
-        if (source_file.kind == source_kind::test) {
-            exes.push_back(link_test(source_file.path, params, lib_archive));
-        }
-    }
-    return exes;
-}
-
-void link_apps(const source_list&  sources,
-               const build_params& params,
-               const fs::path&     lib_archive) {
-    for (const auto& source_file : sources) {
-        if (source_file.kind == source_kind::app) {
-            link_app(source_file.path, params, lib_archive);
-        }
+    for (const auto& links : lm_lib.links) {
+        include_deps(lib_index, includes, defines, links, false);
     }
 }
 
-dds::compilation_set collect_compiles(const build_params& params, const library_manifest& man) {
-    auto project = project::from_directory(params.root);
-    assert(project.main_library());
-    const auto& sources = project.main_library()->sources();
-
-    const bool need_compile_deps = params.build_tests || params.build_apps || params.build_deps;
+std::vector<file_compilation> file_compilations_of_lib(const build_params& params,
+                                                       const library&      lib) {
+    const auto& sources = lib.sources();
 
     std::vector<fs::path>    dep_includes;
     std::vector<std::string> dep_defines;
-    if (need_compile_deps && (!man.uses.empty() || !man.links.empty())) {
+
+    if (!lib.manifest().uses.empty() || !lib.manifest().links.empty()) {
         fs::path lm_index_path = params.lm_index;
         for (auto cand : {"INDEX.lmi", "_build/INDEX.lmi"}) {
             if (!lm_index_path.empty()) {
@@ -195,106 +199,87 @@ dds::compilation_set collect_compiles(const build_params& params, const library_
         auto lm_index  = lm::index::from_file(lm_index_path);
         auto lib_index = lm_index.build_library_index();
 
-        auto collect_more_deps = [&](auto& uses_key) {
-            auto pair = split(uses_key, "/");
-            if (pair.size() != 2) {
-                throw compile_failure(fmt::format("Invalid `Uses`: {}", uses_key));
-            }
-
-            auto& pkg_ns = pair[0];
-            auto& lib    = pair[1];
-
-            auto found = lib_index.find(std::pair(pkg_ns, lib));
-            if (found == lib_index.end()) {
-                throw compile_failure(
-                    fmt::format("No library '{}/{}': Check that it is installed and available",
-                                pkg_ns,
-                                lib));
-            }
-
-            const lm::library& lm_lib = found->second;
-            extend(dep_includes, lm_lib.include_paths);
-            extend(dep_defines, lm_lib.preproc_defs);
-
-            // TODO: RECURSE!
-            // for (auto next_usage : lm_lib.uses) {
-            //     recurse(recurse, next_usage);
-            // }
-        };
-
-        // TODO: Set compilation flags on each file set (as needed)
-
-        for (auto& uses : man.uses) {
-            collect_more_deps(uses);
+        for (const auto& uses : lib.manifest().uses) {
+            include_deps(lib_index, dep_includes, dep_defines, uses, true);
         }
-
-        spdlog::critical("Dependency resolution isn't done yet");
+        for (const auto& links : lib.manifest().links) {
+            include_deps(lib_index, dep_includes, dep_defines, links, false);
+        }
+        spdlog::critical("Dependency resolution isn't fully implemented yet!!");
     }
 
     if (sources.empty()) {
         spdlog::info("No source files found to compile");
     }
 
-    compilation_set comps;
-    for (auto& sf : sources) {
-        if (sf.kind == source_kind::header) {
-            continue;
-        }
-        if (sf.kind == source_kind::app && !params.build_apps) {
-            continue;
-        }
-        if (sf.kind == source_kind::test && !params.build_tests) {
-            continue;
-        }
+    auto should_compile_source = [&](const source_file& sf) {
+        return (sf.kind == source_kind::source || (sf.kind == source_kind::app && params.build_apps)
+                || (sf.kind == source_kind::test && params.build_tests));
+    };
 
-        compilation_rules rules;
-        rules.base_path() = params.root / "src";
-        extend(rules.defs(), man.private_defines);
-        extend(rules.defs(), dep_defines);
-        extend(rules.include_dirs(), man.private_includes);
-        extend(rules.include_dirs(), dep_includes);
-        rules.include_dirs().push_back(fs::absolute(params.root / "src"));
-        rules.include_dirs().push_back(fs::absolute(params.root / "include"));
+    compilation_rules rules;
+    rules.base_path() = lib.base_dir() / "src";
+    extend(rules.defs(), lib.manifest().private_defines);
+    extend(rules.defs(), dep_defines);
+    extend(rules.include_dirs(), lib.manifest().private_includes);
+    extend(rules.include_dirs(), dep_includes);
+    rules.include_dirs().push_back(fs::absolute(lib.base_dir() / "src"));
+    rules.include_dirs().push_back(fs::absolute(lib.base_dir() / "include"));
 
-        const auto obj_path = object_file_path(sf.path, params);
-        comps.compilations.push_back(file_compilation{std::move(rules),
-                                                      sf,
-                                                      obj_path,
-                                                      params.export_name,
-                                                      params.enable_warnings});
-    }
-    return comps;
+    return                               //
+        sources                          //
+        | filter(should_compile_source)  //
+        | transform(DDS_TL(file_compilation{rules,
+                                            _1,
+                                            object_file_path(_1.path, params),
+                                            lib.name(),
+                                            params.enable_warnings}))  //
+        | to_vector;
 }
 
-}  // namespace
+std::vector<dds::file_compilation> collect_compiles(const build_params& params,
+                                                    const project&      project) {
+    auto libs = iter_libraries(project);
+    return                                                         //
+        libs                                                       //
+        | transform(DDS_TL(file_compilations_of_lib(params, _1)))  //
+        | ranges::actions::join                                    //
+        | to_vector                                                //
+        ;
+}
 
-void dds::build(const build_params& params, const library_manifest& man) {
-    auto include_dir = params.root / "include";
-    auto src_dir     = params.root / "src";
+using object_file_index = std::map<fs::path, fs::path>;
 
-    auto compiles = collect_compiles(params, man);
+/**
+ * Obtain the path to the object file that corresponds to the named source file
+ */
+fs::path obj_for_source(const object_file_index& idx, path_ref source_path) {
+    auto iter = idx.find(source_path);
+    if (iter == idx.end()) {
+        assert(false && "Lookup on invalid source file");
+        std::terminate();
+    }
+    return iter->second;
+}
 
-    compiles.execute_all(params.toolchain, params.parallel_jobs);
-
-    using namespace ranges::view;
-
-    source_list sources = compiles.compilations       //
-        | transform(DDS_TL(_1.source))  //
-        | ranges::to_vector;
-
+/**
+ * Create the static library archive for the given library object.
+ */
+fs::path create_lib_archive(const build_params&      params,
+                            const library&           lib,
+                            const object_file_index& obj_idx) {
     archive_spec arc;
+    arc.out_path = lib_archive_path(params, lib);
+
     // Collect object files that make up that library
-    arc.input_files = compiles.compilations
-        // Only library sources
-        | filter(DDS_TL(_1.source.kind == source_kind::source))  //
-        | transform(DDS_TL(_1.obj))                              //
-        | ranges::to_vector;
+    arc.input_files =                                          //
+        lib.sources()                                          //
+        | filter(DDS_TL(_1.kind == source_kind::source))       //
+        | transform(DDS_TL(obj_for_source(obj_idx, _1.path)))  //
+        | to_vector                                            //
+        ;
 
-    arc.out_path = params.out_root
-        / (fmt::format("lib{}{}", params.export_name, params.toolchain.archive_suffix()));
-
-    // Create the static library archive
-    spdlog::info("Create archive {}", arc.out_path.string());
+    spdlog::info("Create archive for {}: {}", lib.name(), arc.out_path.string());
     auto ar_cmd = params.toolchain.create_archive_command(arc);
     if (fs::exists(arc.out_path)) {
         fs::remove(arc.out_path);
@@ -308,28 +293,134 @@ void dds::build(const build_params& params, const library_manifest& man) {
         throw archive_failure("Failed to create the library archive");
     }
 
-    // Link any test executables
+    return arc.out_path;
+}
+
+/**
+ * Link a single test executable identified by a single source file
+ */
+fs::path link_one_exe(path_ref                 dest,
+                      path_ref                 source_file,
+                      const build_params&      params,
+                      const library&           lib,
+                      const object_file_index& obj_idx) {
+    auto main_obj = obj_for_source(obj_idx, source_file);
+    assert(fs::exists(main_obj));
+
+    link_exe_spec spec;
+    extend(spec.inputs, {main_obj, lib_archive_path(params, lib)});
+    spec.output             = dest;
+    const auto link_command = params.toolchain.create_link_executable_command(spec);
+
+    spdlog::info("Create executable: {}", (fs::relative(spec.output, params.out_root)).string());
+    fs::create_directories(spec.output.parent_path());
+    auto proc_res = run_proc(link_command);
+    if (!proc_res.okay()) {
+        throw compile_failure(
+            fmt::format("Failed to link test executable '{}'. Link command [{}] returned {}:\n{}",
+                        spec.output.string(),
+                        quote_command(link_command),
+                        proc_res.retc,
+                        proc_res.output));
+    }
+
+    return spec.output;
+}
+
+template <typename GetExeNameFn>
+std::vector<fs::path> link_executables(source_kind              sk,
+                                       GetExeNameFn&&           get_exe_path,
+                                       const build_params&      params,
+                                       const library&           lib,
+                                       const object_file_index& obj_idx) {
+    return                                                                                  //
+        lib.sources()                                                                       //
+        | filter(DDS_TL(_1.kind == sk))                                                     //
+        | transform(DDS_TL(link_one_exe(get_exe_path(_1), _1.path, params, lib, obj_idx)))  //
+        | to_vector                                                                         //
+        ;
+}
+
+struct link_results {
+    fs::path              archive_path;
     std::vector<fs::path> test_exes;
+    std::vector<fs::path> app_exes;
+};
+
+link_results
+link_project_lib(const build_params& params, const library& lib, const object_file_index& obj_idx) {
+    link_results res;
+    res.archive_path = create_lib_archive(params, lib, obj_idx);
+
+    auto get_test_exe_path = [&](const source_file sf) {
+        return params.out_root
+            / fs::relative(sf.path, params.root)
+                  .replace_filename(sf.path.stem().stem().string()
+                                    + params.toolchain.executable_suffix());
+    };
+
+    auto get_app_exe_path = [&](const source_file& sf) {
+        return params.out_root
+            / (sf.path.stem().stem().string() + params.toolchain.executable_suffix());
+    };
+
+    // Link test executables
     if (params.build_tests) {
-        test_exes = link_tests(sources, params, man, arc.out_path);
+        extend(res.test_exes,
+               link_executables(source_kind::test, get_test_exe_path, params, lib, obj_idx));
     }
 
     if (params.build_apps) {
-        link_apps(sources, params, arc.out_path);
+        extend(res.app_exes,
+               link_executables(source_kind::app, get_app_exe_path, params, lib, obj_idx));
+    }
+
+    return res;
+}
+
+std::vector<link_results> link_project(const build_params&                  params,
+                                       const project&                       pr,
+                                       const std::vector<file_compilation>& compilations) {
+    auto obj_index =                                            //
+        compilations                                            //
+        | transform(DDS_TL(std::pair(_1.source.path, _1.obj)))  //
+        | to<object_file_index>                                 //
+        ;
+
+    auto libs = iter_libraries(pr);
+    return libs                                                       //
+        | transform(DDS_TL(link_project_lib(params, _1, obj_index)))  //
+        | to_vector;
+}
+
+}  // namespace
+
+void dds::build(const build_params& params, const package_manifest&) {
+    auto project = project::from_directory(params.root);
+
+    auto compiles = collect_compiles(params, project);
+
+    dds::execute_all(compiles, params.toolchain, params.parallel_jobs);
+
+    using namespace ranges::view;
+
+    auto link_res = link_project(params, project, compiles);
+
+    auto all_tests = link_res              //
+        | transform(DDS_TL(_1.test_exes))  //
+        | action::join;
+
+    int n_test_fails = 0;
+    for (path_ref test_exe : all_tests) {
+        spdlog::info("Running test: {}", fs::relative(test_exe, params.out_root).string());
+        const auto test_res = run_proc({test_exe.string()});
+        if (!test_res.okay()) {
+            spdlog::error("TEST FAILED\n{}", test_res.output);
+            n_test_fails++;
+        }
     }
 
     if (params.do_export) {
-        generate_export(params, arc.out_path, sources);
-    }
-
-    if (params.build_tests) {
-        for (const auto& exe : test_exes) {
-            spdlog::info("Running test: {}", fs::relative(exe, params.out_root).string());
-            const auto test_res = run_proc({exe.string()});
-            if (!test_res.okay()) {
-                spdlog::error("TEST FAILED:\n{}", test_res.output);
-            }
-        }
-        spdlog::info("Test run finished");
+        export_project(params, project);
     }
 }

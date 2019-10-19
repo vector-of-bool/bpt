@@ -1,7 +1,7 @@
 #ifndef DDS_BUILD_HPP_INCLUDED
 #define DDS_BUILD_HPP_INCLUDED
 
-#include <dds/manifest.hpp>
+#include <dds/package_manifest.hpp>
 #include <dds/toolchain.hpp>
 #include <dds/util.hpp>
 
@@ -14,7 +14,6 @@ struct build_params {
     fs::path       out_root;
     fs::path       lm_index;
     dds::toolchain toolchain;
-    std::string    export_name;
     bool           do_export       = false;
     bool           build_tests     = false;
     bool           enable_warnings = false;
@@ -23,7 +22,7 @@ struct build_params {
     int            parallel_jobs   = 0;
 };
 
-void build(const build_params&, const library_manifest& man);
+void build(const build_params&, const package_manifest& man);
 
 }  // namespace dds
 

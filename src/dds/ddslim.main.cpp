@@ -2,6 +2,7 @@
 #include <dds/logging.hpp>
 #include <dds/sdist.hpp>
 #include <dds/util.hpp>
+
 #include <libman/parse.hpp>
 
 #include <args.hxx>
@@ -35,12 +36,6 @@ struct common_project_flags {
                    "Path to the directory containing the project",
                    {"project-dir"},
                    dds::fs::current_path()};
-
-    string_flag export_name{cmd,
-                            "export_name",
-                            "Set the name of othe project",
-                            {'n', "export-name"},
-                            dds::fs::current_path().filename().string()};
 };
 
 struct cli_sdist {
@@ -134,7 +129,6 @@ struct cli_build {
         dds::build_params params;
         params.root            = project.root.Get();
         params.out_root        = out.Get();
-        params.export_name     = project.export_name.Get();
         params.toolchain       = _get_toolchain();
         params.do_export       = export_.Get();
         params.build_tests     = build_tests.Get();
@@ -142,10 +136,10 @@ struct cli_build {
         params.enable_warnings = enable_warnings.Get();
         params.parallel_jobs   = num_jobs.Get();
         params.lm_index        = lm_index.Get();
-        dds::library_manifest man;
-        const auto            man_filepath = params.root / "manifest.dds";
+        dds::package_manifest man;
+        const auto            man_filepath = params.root / "package.dds";
         if (exists(man_filepath)) {
-            man = dds::library_manifest::load_from_file(man_filepath);
+            man = dds::package_manifest::load_from_file(man_filepath);
         }
         if (full.Get()) {
             params.do_export       = true;

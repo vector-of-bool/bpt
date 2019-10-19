@@ -37,11 +37,10 @@ decltype(auto) nth_arg(A&& a = nullptr, B&& b = nullptr, C&& c = nullptr, D&& d 
         [[maybe_unused]] auto&& _3 = ::dds::detail::nth_arg<2>((decltype(_args_)&&)(_args_)...);   \
         [[maybe_unused]] auto&& _4 = ::dds::detail::nth_arg<3>((decltype(_args_)&&)(_args_)...);   \
         static_assert(sizeof...(_args_) <= 4);                                                     \
-        decltype(auto) result = (__VA_ARGS__);                                                     \
-        return result;                                                                             \
+        return (__VA_ARGS__);                                                                      \
     }
 
-#define DDS_TL [] DDS_CTL
+#define DDS_TL [&] DDS_CTL
 
 inline namespace file_utils {
 

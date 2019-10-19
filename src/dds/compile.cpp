@@ -55,7 +55,9 @@ void file_compilation::compile(const toolchain& tc) const {
     }
 }
 
-void compilation_set::execute_all(const toolchain& tc, int n_jobs) const {
+void dds::execute_all(const std::vector<file_compilation>& compilations,
+                      const toolchain&                     tc,
+                      int                                  n_jobs) {
     // We don't bother with a nice thread pool, as the overhead of compiling
     // source files dwarfs the cost of interlocking.
     std::mutex mut;

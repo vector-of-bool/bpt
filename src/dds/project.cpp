@@ -30,5 +30,13 @@ project project::from_directory(path_ref pf_dir_path) {
     if (has_library_dirs(pf_dir_path)) {
         main_lib = library::from_directory(pf_dir_path);
     }
-    return project(pf_dir_path, std::move(main_lib), collect_submodules(pf_dir_path / "libs"));
+    package_manifest man;
+    auto             man_path = pf_dir_path / "package.dds";
+    if (fs::is_regular_file(man_path)) {
+        man = package_manifest::load_from_file(man_path);
+    }
+    return project(pf_dir_path,
+                   std::move(main_lib),
+                   collect_submodules(pf_dir_path / "libs"),
+                   std::move(man));
 }

@@ -51,7 +51,13 @@ pf_info collect_pf_sources(path_ref path) {
 library library::from_directory(path_ref lib_dir, std::string_view name) {
     auto [sources, inc_dir, src_dir] = collect_pf_sources(lib_dir);
 
-    auto lib = library(lib_dir, name, std::move(sources));
+    library_manifest man;
+    auto             man_path = lib_dir / "library.dds";
+    if (fs::is_regular_file(man_path)) {
+        man = library_manifest::load_from_file(man_path);
+    }
+
+    auto lib = library(lib_dir, name, std::move(sources), std::move(man));
 
     if (fs::exists(inc_dir)) {
         lib._pub_inc_dir = inc_dir;
