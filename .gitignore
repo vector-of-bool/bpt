@@ -3,3 +3,4 @@ __pycache__/
 .peru/
 .vscode/
 .mypy_cache/
+*.dsd/
