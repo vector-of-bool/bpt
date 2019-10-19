@@ -17,6 +17,7 @@ INCLUDE_DIRS = [
     'external/taywee-args/include',
     'external/spdlog/include',
     'external/wil/include',
+    'external/ranges-v3/include',
 ]
 
 
@@ -39,6 +40,14 @@ def is_msvc(cxx: Path) -> bool:
     return (not 'clang' in cxx.name) and 'cl' in cxx.name
 
 
+def have_ccache() -> bool:
+    try:
+        subprocess.check_output(['ccache', '--version'])
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def _create_compile_command(opts: BuildOptions, cpp_file: Path,
                             obj_file: Path) -> List[str]:
     if not opts.is_msvc:
@@ -58,6 +67,8 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             str(cpp_file),
             f'-o{obj_file}',
         ]
+        if have_ccache():
+            cmd.insert(0, 'ccache')
         if opts.static:
             cmd.append('-static')
         if opts.debug:
@@ -76,6 +87,7 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             '/nologo',
             '/EHsc',
             '/std:c++latest',
+            '/permissive-',
             '/DFMT_HEADER_ONLY=1',
             f'/I{ROOT / "src"}',
             str(cpp_file),
