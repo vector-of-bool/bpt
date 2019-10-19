@@ -1,5 +1,4 @@
-#ifndef DDS_MANIFEST_HPP_INCLUDED
-#define DDS_MANIFEST_HPP_INCLUDED
+#pragma once
 
 #include <dds/util.hpp>
 
@@ -15,5 +14,3 @@ struct library_manifest {
 };
 
 }  // namespace dds
-
-#endif  // DDS_MANIFEST_HPP_INCLUDED

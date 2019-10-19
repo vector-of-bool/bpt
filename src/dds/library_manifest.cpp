@@ -1,4 +1,4 @@
-#include "./manifest.hpp"
+#include "./library_manifest.hpp"
 
 #include <libman/parse.hpp>
 
