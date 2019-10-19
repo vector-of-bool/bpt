@@ -15,7 +15,52 @@ class TestOptions(NamedTuple):
 
 
 def run_test_dir(dir: Path, opts: TestOptions) -> bool:
-    print(f'Running test: {dir.stem} ', end='')
+    fails = 0
+    fails += _run_subproc_test(
+        dir,
+        opts,
+        'Full Build',
+        'build',
+        '--full',
+        f'--toolchain={opts.toolchain}',
+        f'--export-name={dir.stem}',
+    )
+    fails += _run_subproc_test(
+        dir,
+        opts,
+        'Source Distribution',
+        'sdist',
+        f'--out={dir.stem}/test.dsd',
+        '--force',
+    )
+    return fails == 0
+
+
+def _run_subproc_test(dir: Path, opts: TestOptions, name: str,
+                      *args: str) -> int:
+    print(f'Running test: {dir.stem} - {name} ', end='')
+    out_dir = dir / '_build'
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    res = subprocess.run(
+        [
+            str(opts.exe),
+        ] + list(str(s) for s in args),
+        cwd=dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if res.returncode != 0:
+        print('- FAILED')
+        print(f'Test failed with exit code '
+              f'[{res.returncode}]:\n{res.stdout.decode()}')
+        return 1
+    print('- PASSED')
+    return 0
+
+
+def _run_build_test(dir: Path, opts: TestOptions) -> int:
+    print(f'Running test: {dir.stem} - build', end='')
     out_dir = dir / '_build'
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -26,8 +71,9 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
             '--export',
             '--warnings',
             '--tests',
+            '--full',
             f'--toolchain={opts.toolchain}',
-            f'--out-dir={out_dir}',
+            f'--out={out_dir}',
             f'--export-name={dir.stem}',
         ],
         cwd=dir,
@@ -38,9 +84,9 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
         print('- FAILED')
         print(f'Test failed with exit code '
               f'[{res.returncode}]:\n{res.stdout.decode()}')
-    else:
-        print('- PASSED')
-    return res.returncode == 0
+        return 1
+    print('- PASSED')
+    return 0
 
 
 def run_tests(opts: TestOptions) -> int:
@@ -66,6 +112,7 @@ def bootstrap_self(opts: TestOptions):
         'build',
         f'-FT{opts.toolchain}',
     ])
+    new_exe.unlink()
     if res.returncode != 0:
         print('The bootstrap test failed!', file=sys.stderr)
         return False
