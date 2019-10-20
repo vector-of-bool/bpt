@@ -1,7 +1,10 @@
 #include <dds/build.hpp>
 #include <dds/logging.hpp>
+#include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/paths.hpp>
+#include <dds/util/signal.hpp>
 
 #include <libman/parse.hpp>
 
@@ -25,7 +28,7 @@ struct cli_base {
 struct common_flags {
     args::Command& cmd;
 
-    args::HelpFlag _help{cmd, "help", "Print this hellp message and exit", {'h', "help"}};
+    args::HelpFlag _help{cmd, "help", "Print this help message and exit", {'h', "help"}};
 };
 
 struct common_project_flags {
@@ -36,6 +39,55 @@ struct common_project_flags {
                    "Path to the directory containing the project",
                    {"project-dir"},
                    dds::fs::current_path()};
+};
+
+struct cli_repo {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "repo", "Manage the package repository"};
+    common_flags  _common{cmd};
+
+    path_flag where{cmd, "dir", "Directory in which to initialize the repository", {'d', "dir"}};
+
+    args::Group repo_group{cmd, "Repo subcommands"};
+
+    struct {
+        cli_repo&     parent;
+        args::Command cmd{parent.repo_group, "ls", "List repository contents"};
+        common_flags  _common{cmd};
+
+        int run() {
+            return dds::repository::with_repository(dds::repository::default_local_path(),
+                                                    dds::repo_flags::none,
+                                                    [&](auto) { return 0; });
+        }
+    } ls{*this};
+
+    struct {
+        cli_repo&     parent;
+        args::Command cmd{parent.repo_group, "init", "Initialize a directory as a repository"};
+        common_flags  _common{cmd};
+
+        int run() {
+            if (parent.where.Get().empty()) {
+                throw args::ParseError("The --dir flag is required");
+            }
+            auto repo_dir = dds::fs::absolute(parent.where.Get());
+            dds::repository::with_repository(repo_dir, dds::repo_flags::create_if_absent, [](auto) {
+            });
+            return 0;
+        }
+    } init{*this};
+
+    int run() {
+        if (ls.cmd) {
+            return ls.run();
+        } else if (init.cmd) {
+            return init.run();
+        } else {
+            assert(false);
+            std::terminate();
+        }
+    }
 };
 
 struct cli_sdist {
@@ -53,13 +105,25 @@ struct cli_sdist {
                   dds::fs::current_path() / "project.dsd"};
 
     args::Flag force{cmd, "force", "Forcibly replace an existing result", {"force"}};
+    args::Flag export_{cmd,
+                       "export",
+                       "Export the result into the local repository",
+                       {'E', "export"}};
 
     int run() {
         dds::sdist_params params;
         params.project_dir = project.root.Get();
         params.dest_path   = out.Get();
         params.force       = force.Get();
-        dds::create_sdist(params);
+        auto sdist         = dds::create_sdist(params);
+        if (export_.Get()) {
+            dds::repository::with_repository(  //
+                dds::repository::default_local_path(),
+                dds::repo_flags::create_if_absent | dds::repo_flags::write_lock,
+                [&](dds::repository repo) {  //
+                    repo.add_sdist(sdist);
+                });
+        }
         return 0;
     }
 };
@@ -161,6 +225,7 @@ int main(int argc, char** argv) {
     cli_base  cli{parser};
     cli_build build{cli};
     cli_sdist sdist{cli};
+    cli_repo  repo{cli};
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -179,10 +244,15 @@ int main(int argc, char** argv) {
             return build.run();
         } else if (sdist.cmd) {
             return sdist.run();
+        } else if (repo.cmd) {
+            return repo.run();
         } else {
             assert(false);
             std::terminate();
         }
+    } catch (const dds::user_cancelled&) {
+        spdlog::critical("Operation cancelled by user");
+        return 2;
     } catch (const std::exception& e) {
         spdlog::critical(e.what());
         return 2;
