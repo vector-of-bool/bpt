@@ -1,6 +1,8 @@
 #ifndef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/signal.hpp>
+
 #include <spdlog/fmt/fmt.h>
 
 #include <poll.h>
@@ -79,6 +81,10 @@ proc_result dds::run_proc(const std::vector<std::string>& command) {
 
     while (true) {
         rc = ::poll(&stdio_fd, 1, -1);
+        if (rc && errno == EINTR) {
+            errno = 0;
+            continue;
+        }
         check_rc(rc > 0, "Failed in poll()");
         std::string buffer;
         buffer.resize(1024);
@@ -99,6 +105,8 @@ proc_result dds::run_proc(const std::vector<std::string>& command) {
     } else if (WIFSIGNALED(status)) {
         res.signal = WTERMSIG(status);
     }
+
+    cancellation_point();
     return res;
 }
 

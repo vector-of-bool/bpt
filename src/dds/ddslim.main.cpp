@@ -172,6 +172,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    dds::install_signal_handlers();
+
     try {
         if (build.cmd) {
             return build.run();

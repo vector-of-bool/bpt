@@ -2,6 +2,7 @@
 
 #include <dds/proc.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/signal.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -81,6 +82,7 @@ void dds::execute_all(const std::vector<file_compilation>& compilations,
             lk.unlock();
             try {
                 compilation.compile(tc);
+                cancellation_point();
             } catch (...) {
                 lk.lock();
                 exceptions.push_back(std::current_exception());
