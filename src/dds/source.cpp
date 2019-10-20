@@ -1,6 +1,5 @@
 #include "./source.hpp"
 
-#include <dds/util/tl.hpp>
 #include <dds/util/string.hpp>
 
 #include <spdlog/spdlog.h>
@@ -71,15 +70,15 @@ std::optional<source_file> source_file::from_path(path_ref path) noexcept {
 source_list source_file::collect_for_dir(path_ref src) {
     using namespace ranges::views;
     // Strips nullopt elements and lifts the value from the results
-    auto drop_nulls =                   //
-        filter(DDS_TL(_1.has_value()))  //
-        | transform(DDS_TL(*_1));
+    auto drop_nulls =                                       //
+        filter([](auto&& opt) { return opt.has_value(); })  //
+        | transform([](auto&& opt) { return *opt; });       //
 
     // Collect all source files from the directory
-    return                                               //
-        fs::recursive_directory_iterator(src)            //
-        | filter(DDS_TL(_1.is_regular_file()))           //
-        | transform(DDS_TL(source_file::from_path(_1)))  //
+    return                                                                       //
+        fs::recursive_directory_iterator(src)                                    //
+        | filter([](auto&& entry) { return entry.is_regular_file(); })           //
+        | transform([](auto&& entry) { return source_file::from_path(entry); })  //
         // source_file::from_path returns an optional. Drop nulls
         | drop_nulls  //
         | ranges::to_vector;

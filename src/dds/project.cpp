@@ -1,7 +1,6 @@
 #include <dds/project.hpp>
 
 #include <dds/source.hpp>
-#include <dds/util/tl.hpp>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -18,9 +17,9 @@ std::vector<library> collect_submodules(path_ref pf_libs_dir) {
         return {};
     }
     using namespace ranges::views;
-    return fs::directory_iterator(pf_libs_dir)            //
-        | filter(has_library_dirs)                        //
-        | transform(DDS_TL(library::from_directory(_1)))  //
+    return fs::directory_iterator(pf_libs_dir)                                    //
+        | filter(has_library_dirs)                                                //
+        | transform([](auto&& entry) { return library::from_directory(entry); })  //
         | ranges::to_vector;
 }
 

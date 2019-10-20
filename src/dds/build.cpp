@@ -8,7 +8,6 @@
 #include <dds/toolchain.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
-#include <dds/util/tl.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
 
@@ -139,10 +138,11 @@ void export_project(const build_params& params, const project& project) {
 
     auto all_libs = iter_libraries(project);
     extend(pairs,
-           all_libs                                                                           //
-               | transform(DDS_TL(export_project_library(params, _1, project, export_root)))  //
-               | transform(DDS_TL(lm::pair("Library", _1.string())))                          //
-    );
+           all_libs  //
+               | transform([&](auto&& lib) {
+                     return export_project_library(params, lib, project, export_root);
+                 })                                                                           //
+               | transform([](auto&& path) { return lm::pair("Library", path.string()); }));  //
 
     lm::write_pairs(export_root / "package.lmp", pairs);
 }
@@ -233,22 +233,24 @@ std::vector<file_compilation> file_compilations_of_lib(const build_params& param
     return                               //
         sources                          //
         | filter(should_compile_source)  //
-        | transform(DDS_TL(file_compilation{rules,
-                                            _1,
-                                            object_file_path(_1.path, params),
-                                            lib.name(),
-                                            params.enable_warnings}))  //
+        | transform([&](auto&& src) {
+              return file_compilation{rules,
+                                      src,
+                                      object_file_path(src.path, params),
+                                      lib.name(),
+                                      params.enable_warnings};
+          })  //
         | to_vector;
 }
 
 std::vector<dds::file_compilation> collect_compiles(const build_params& params,
                                                     const project&      project) {
     auto libs = iter_libraries(project);
-    return                                                         //
-        libs                                                       //
-        | transform(DDS_TL(file_compilations_of_lib(params, _1)))  //
-        | ranges::actions::join                                    //
-        | to_vector                                                //
+    return                                                                              //
+        libs                                                                            //
+        | transform([&](auto&& lib) { return file_compilations_of_lib(params, lib); })  //
+        | ranges::actions::join                                                         //
+        | to_vector                                                                     //
         ;
 }
 
@@ -276,11 +278,11 @@ std::optional<fs::path> create_lib_archive(const build_params&      params,
     arc.out_path = lib_archive_path(params, lib);
 
     // Collect object files that make up that library
-    arc.input_files =                                          //
-        lib.sources()                                          //
-        | filter(DDS_TL(_1.kind == source_kind::source))       //
-        | transform(DDS_TL(obj_for_source(obj_idx, _1.path)))  //
-        | to_vector                                            //
+    arc.input_files =                                                           //
+        lib.sources()                                                           //
+        | filter([](auto&& s) { return s.kind == source_kind::source; })        //
+        | transform([&](auto&& s) { return obj_for_source(obj_idx, s.path); })  //
+        | to_vector                                                             //
         ;
 
     if (arc.input_files.empty()) {
@@ -345,11 +347,13 @@ std::vector<fs::path> link_executables(source_kind              sk,
                                        const build_params&      params,
                                        const library&           lib,
                                        const object_file_index& obj_idx) {
-    return                                                                                  //
-        lib.sources()                                                                       //
-        | filter(DDS_TL(_1.kind == sk))                                                     //
-        | transform(DDS_TL(link_one_exe(get_exe_path(_1), _1.path, params, lib, obj_idx)))  //
-        | to_vector                                                                         //
+    return                                                //
+        lib.sources()                                     //
+        | filter([&](auto&& s) { return s.kind == sk; })  //
+        | transform([&](auto&& s) {
+              return link_one_exe(get_exe_path(s), s.path, params, lib, obj_idx);
+          })         //
+        | to_vector  //
         ;
 }
 
@@ -396,15 +400,15 @@ link_project_lib(const build_params& params, const library& lib, const object_fi
 std::vector<link_results> link_project(const build_params&                  params,
                                        const project&                       pr,
                                        const std::vector<file_compilation>& compilations) {
-    auto obj_index =                                            //
-        compilations                                            //
-        | transform(DDS_TL(std::pair(_1.source.path, _1.obj)))  //
-        | to<object_file_index>                                 //
+    auto obj_index =                                                                    //
+        ranges::views::all(compilations)                                                //
+        | transform([](auto&& comp) { return std::pair(comp.source.path, comp.obj); })  //
+        | ranges::to<object_file_index>()                                               //
         ;
 
     auto libs = iter_libraries(pr);
-    return libs                                                       //
-        | transform(DDS_TL(link_project_lib(params, _1, obj_index)))  //
+    return libs                                                                            //
+        | transform([&](auto&& lib) { return link_project_lib(params, lib, obj_index); })  //
         | to_vector;
 }
 
@@ -421,8 +425,8 @@ void dds::build(const build_params& params, const package_manifest&) {
 
     auto link_res = link_project(params, project, compiles);
 
-    auto all_tests = link_res              //
-        | transform(DDS_TL(_1.test_exes))  //
+    auto all_tests = link_res                                    //
+        | transform([](auto&& link) { return link.test_exes; })  //
         | ranges::actions::join;
 
     int n_test_fails = 0;

@@ -3,7 +3,6 @@
 #include <dds/project.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
-#include <dds/util/tl.hpp>
 
 #include <libman/parse.hpp>
 
@@ -61,7 +60,7 @@ void sdist_copy_library(path_ref            out_root,
           })  //
         | ranges::to_vector;
 
-    ranges::sort(sources_to_keep, std::less<>(), DDS_TL(_1.path));
+    ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
 
     auto lib_dds_path = lib.base_dir() / "library.dds";
     if (fs::is_regular_file(lib_dds_path)) {
