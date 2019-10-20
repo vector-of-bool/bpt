@@ -157,11 +157,12 @@ public:
 
 template <typename T>
 class read_opt {
-    std::string_view  _key;
-    std::optional<T>& _ref;
+    std::string_view _key;
+    T&               _ref;
+    bool             _did_read = false;
 
 public:
-    read_opt(std::string_view key, std::optional<T>& ref)
+    read_opt(std::string_view key, T& ref)
         : _key(key)
         , _ref(ref) {}
 
@@ -169,11 +170,11 @@ public:
         if (key != _key) {
             return 0;
         }
-        if (_ref.has_value()) {
+        if (_did_read) {
             throw std::runtime_error(std::string(context) + ": Duplicated key '" + std::string(key)
                                      + "' is not allowed.");
         }
-        _ref.emplace(value);
+        _ref = T(value);
         return 1;
     }
 
