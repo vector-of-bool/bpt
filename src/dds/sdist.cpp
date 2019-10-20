@@ -77,8 +77,8 @@ void sdist_copy_library(path_ref            out_root,
 
 }  // namespace
 
-void dds::create_sdist(const sdist_params& params) {
-    auto dest = params.dest_path;
+sdist dds::create_sdist(const sdist_params& params) {
+    auto dest = fs::absolute(params.dest_path);
     if (fs::exists(dest)) {
         if (!params.force) {
             throw std::runtime_error(
@@ -89,14 +89,15 @@ void dds::create_sdist(const sdist_params& params) {
     auto tempdir = temporary_dir::create();
     create_sdist_in_dir(tempdir.path(), params);
     if (fs::exists(dest) && params.force) {
-        fs::remove_all(params.dest_path);
+        fs::remove_all(dest);
     }
-    fs::create_directories(params.dest_path.parent_path());
-    safe_rename(tempdir.path(), params.dest_path);
-    spdlog::info("Source distribution created in {}", params.dest_path.string());
+    fs::create_directories(dest.parent_path());
+    safe_rename(tempdir.path(), dest);
+    spdlog::info("Source distribution created in {}", dest.string());
+    return sdist::from_directory(dest);
 }
 
-void dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
+sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto        project = project::from_directory(params.project_dir);
     browns::md5 md5;
 
@@ -118,6 +119,24 @@ void dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     spdlog::info("Generated export as {}-{}", project.manifest().name, hash_str);
 
     std::vector<lm::pair> pairs;
+    pairs.emplace_back("Name", project.manifest().name);
+    pairs.emplace_back("Version", project.manifest().version);
     pairs.emplace_back("MD5-Hash", hash_str);
-    lm::write_pairs(out / "_meta.dds", pairs);
+    lm::write_pairs(out / "_sdist.dds", pairs);
+
+    return sdist::from_directory(out);
+}
+
+sdist sdist::from_directory(path_ref where) {
+    auto        meta_pairs = lm::parse_file(where / "_sdist.dds");
+    std::string name;
+    std::string  version;
+    std::string hash_str;
+    lm::read("Loading source distribution",
+             meta_pairs,
+             lm::read_required("Name", name),
+             lm::read_required("Version", version),
+             lm::read_required("MD5-Hash", hash_str),
+             lm::reject_unknown());
+    return sdist{name, version, hash_str, where};
 }
