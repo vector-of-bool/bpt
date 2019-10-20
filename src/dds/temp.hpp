@@ -14,7 +14,12 @@ class temporary_dir {
 
         impl(const impl&) = delete;
 
-        ~impl();
+        ~impl() {
+            std::error_code ec;
+            if (fs::exists(path, ec)) {
+                fs::remove_all(path, ec);
+            }
+        }
     };
 
     std::shared_ptr<impl> _ptr;

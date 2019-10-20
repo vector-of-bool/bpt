@@ -1,3 +1,4 @@
+#ifndef _WIN32
 #include "./temp.hpp"
 
 using namespace dds;
@@ -15,10 +16,4 @@ temporary_dir temporary_dir::create() {
     auto path = fs::path(tempdir_path);
     return std::make_shared<impl>(std::move(path));
 }
-
-temporary_dir::impl::~impl() {
-    std::error_code ec;
-    if (fs::exists(path, ec)) {
-        fs::remove_all(path, ec);
-    }
-}
+#endif
