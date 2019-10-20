@@ -38,8 +38,8 @@ fs::path appdata_dir() {
 
 }  // namespace
 
-fs::path dds::user_data_dir() { return appdata_local_dir(); }
-fs::path dds::user_cache_dir() { return appdata_local_dir(); }
+fs::path dds::user_data_dir() { return appdatalocal_dir(); }
+fs::path dds::user_cache_dir() { return appdatalocal_dir(); }
 fs::path dds::user_config_dir() { return appdata_dir(); }
 
 #endif
