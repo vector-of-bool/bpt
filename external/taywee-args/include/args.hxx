@@ -1,16 +1,20 @@
-/* Copyright (c) 2016-2017 Taylor C. Richberger <taywee@gmx.com> and Pavel
+/* A simple header-only C++ argument parser library.
+ *
+ * https://github.com/Taywee/args
+ *
+ * Copyright (c) 2016-2019 Taylor C. Richberger <taywee@gmx.com> and Pavel
  * Belikov
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
  * deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,6 +44,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <type_traits>
+#include <cstddef>
 
 #ifdef ARGS_TESTNAMESPACE
 namespace argstest
@@ -1470,7 +1475,9 @@ namespace args
              */
             std::vector<Base *>::size_type MatchedChildren() const
             {
-                return std::count_if(std::begin(Children()), std::end(Children()), [](const Base *child){return child->Matched();});
+                // Cast to avoid warnings from -Wsign-conversion
+                return static_cast<std::vector<Base *>::size_type>(
+                        std::count_if(std::begin(Children()), std::end(Children()), [](const Base *child){return child->Matched();}));
             }
 
             /** Whether or not this group matches validation
@@ -1630,11 +1637,11 @@ namespace args
 
         public:
             Subparser(std::vector<std::string> args_, ArgumentParser &parser_, const Command &command_, const HelpParams &helpParams_)
-                : args(std::move(args_)), parser(&parser_), helpParams(helpParams_), command(command_)
+                : Group({}, Validators::AllChildGroups), args(std::move(args_)), parser(&parser_), helpParams(helpParams_), command(command_)
             {
             }
 
-            Subparser(const Command &command_, const HelpParams &helpParams_) : helpParams(helpParams_), command(command_)
+            Subparser(const Command &command_, const HelpParams &helpParams_) : Group({}, Validators::AllChildGroups), helpParams(helpParams_), command(command_)
             {
             }
 
@@ -2125,18 +2132,23 @@ namespace args
                     return;
                 }
 
+                auto onValidationError = [&]
+                {
+                    std::ostringstream problem;
+                    problem << "Group validation failed somewhere!";
+#ifdef ARGS_NOEXCEPT
+                    error = Error::Validation;
+                    errorMsg = problem.str();
+#else
+                    throw ValidationError(problem.str());
+#endif
+                };
+
                 for (Base *child: Children())
                 {
                     if (child->IsGroup() && !child->Matched())
                     {
-                        std::ostringstream problem;
-                        problem << "Group validation failed somewhere!";
-#ifdef ARGS_NOEXCEPT
-                        error = Error::Validation;
-                        errorMsg = problem.str();
-#else
-                        throw ValidationError(problem.str());
-#endif
+                        onValidationError();
                     }
 
                     child->Validate(shortprefix, longprefix);
@@ -2145,6 +2157,10 @@ namespace args
                 if (subparser != nullptr)
                 {
                     subparser->Validate(shortprefix, longprefix);
+                    if (!subparser->Matched())
+                    {
+                        onValidationError();
+                    }
                 }
 
                 if (selectedCommand == nullptr && commandIsRequired && (Group::HasCommand() || subparserHasCommand))
@@ -2636,7 +2652,7 @@ namespace args
 #endif
                         }
 
-                        SelectCommand(*itCommand);
+                        SelectedCommand().SelectCommand(*itCommand);
 
                         if (const auto &coroutine = GetCoroutine())
                         {
@@ -2697,7 +2713,7 @@ namespace args
 #endif
                         readCompletion = true;
                         ++it;
-                        size_t argsLeft = std::distance(it, end);
+                        const auto argsLeft = static_cast<size_t>(std::distance(it, end));
                         if (completion->cword == 0 || argsLeft <= 1 || completion->cword >= argsLeft)
                         {
 #ifndef ARGS_NOEXCEPT
@@ -2716,13 +2732,15 @@ namespace args
                                 if (idx > 0 && curArgs[idx] == "=")
                                 {
                                     curArgs[idx - 1] += "=";
+                                    // Avoid warnings from -Wsign-conversion
+                                    const auto signedIdx = static_cast<std::ptrdiff_t>(idx);
                                     if (idx + 1 < curArgs.size())
                                     {
                                         curArgs[idx - 1] += curArgs[idx + 1];
-                                        curArgs.erase(curArgs.begin() + idx, curArgs.begin() + idx + 2);
+                                        curArgs.erase(curArgs.begin() + signedIdx, curArgs.begin() + signedIdx + 2);
                                     } else
                                     {
-                                        curArgs.erase(curArgs.begin() + idx);
+                                        curArgs.erase(curArgs.begin() + signedIdx);
                                     }
                                 } else
                                 {
@@ -3049,7 +3067,7 @@ namespace args
                 const std::vector<std::string> args(argv + 1, argv + argc);
                 return ParseArgs(args) == std::end(args);
             }
-            
+
             template <typename T>
             bool ParseCLI(const T &args)
             {
@@ -3251,9 +3269,14 @@ namespace args
         operator ()(const std::string &name, const std::string &value, T &destination)
         {
             std::istringstream ss(value);
-            ss >> destination >> std::ws;
+            bool failed = !(ss >> destination);
 
-            if (ss.rdbuf()->in_avail() > 0)
+            if (!failed)
+            {
+                ss >> std::ws;
+            }
+
+            if (ss.rdbuf()->in_avail() > 0 || failed)
             {
 #ifdef ARGS_NOEXCEPT
                 (void)name;
@@ -3277,7 +3300,7 @@ namespace args
     };
 
     /** An argument-accepting flag class
-     * 
+     *
      * \tparam T the type to extract the argument as
      * \tparam Reader The functor type used to read the argument, taking the name, value, and destination reference with operator(), and returning a bool (if ARGS_NOEXCEPT is defined)
      */
@@ -3491,7 +3514,7 @@ namespace args
                 return values.end();
             }
 
-            const_iterator end() const noexcept 
+            const_iterator end() const noexcept
             {
                 return values.end();
             }
@@ -3520,7 +3543,7 @@ namespace args
     };
 
     /** An argument-accepting flag class that pushes the found values into a list
-     * 
+     *
      * \tparam T the type to extract the argument as
      * \tparam List the list type that houses the values
      * \tparam Reader The functor type used to read the argument, taking the name, value, and destination reference with operator(), and returning a bool (if ARGS_NOEXCEPT is defined)
@@ -3625,7 +3648,7 @@ namespace args
                 return values.end();
             }
 
-            const_iterator end() const noexcept 
+            const_iterator end() const noexcept
             {
                 return values.end();
             }
@@ -3637,7 +3660,7 @@ namespace args
     };
 
     /** A mapping value flag class
-     * 
+     *
      * \tparam K the type to extract the argument as
      * \tparam T the type to store the result as
      * \tparam Reader The functor type used to read the argument, taking the name, value, and destination reference with operator(), and returning a bool (if ARGS_NOEXCEPT is defined)
@@ -3724,7 +3747,7 @@ namespace args
     };
 
     /** A mapping value flag list class
-     * 
+     *
      * \tparam K the type to extract the argument as
      * \tparam T the type to store the result as
      * \tparam List the list type that houses the values
@@ -3852,7 +3875,7 @@ namespace args
                 return values.end();
             }
 
-            const_iterator end() const noexcept 
+            const_iterator end() const noexcept
             {
                 return values.end();
             }
@@ -3918,7 +3941,7 @@ namespace args
     };
 
     /** A positional argument class that pushes the found values into a list
-     * 
+     *
      * \tparam T the type to extract the argument as
      * \tparam List the list type that houses the values
      * \tparam Reader The functor type used to read the argument, taking the name, value, and destination reference with operator(), and returning a bool (if ARGS_NOEXCEPT is defined)
@@ -4024,7 +4047,7 @@ namespace args
                 return values.end();
             }
 
-            const_iterator end() const noexcept 
+            const_iterator end() const noexcept
             {
                 return values.end();
             }
@@ -4036,7 +4059,7 @@ namespace args
     };
 
     /** A positional argument mapping class
-     * 
+     *
      * \tparam K the type to extract the argument as
      * \tparam T the type to store the result as
      * \tparam Reader The functor type used to read the argument, taking the name, value, and destination reference with operator(), and returning a bool (if ARGS_NOEXCEPT is defined)
@@ -4116,7 +4139,7 @@ namespace args
     };
 
     /** A positional argument mapping list class
-     * 
+     *
      * \tparam K the type to extract the argument as
      * \tparam T the type to store the result as
      * \tparam List the list type that houses the values
@@ -4245,7 +4268,7 @@ namespace args
                 return values.end();
             }
 
-            const_iterator end() const noexcept 
+            const_iterator end() const noexcept
             {
                 return values.end();
             }

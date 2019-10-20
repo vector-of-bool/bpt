@@ -11,7 +11,7 @@ git module spdlog:
 
 git module taywee-args:
   url: https://github.com/Taywee/args.git
-  rev: 6.2.2
+  rev: 78e27faf75ff7d20f232f11ffcef65cde43c449d
   move:
     args.hxx: include/args.hxx
   pick: include
