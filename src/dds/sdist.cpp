@@ -47,7 +47,7 @@ void sdist_copy_library(path_ref            out_root,
                         browns::md5&        hash) {
     auto sources_to_keep =  //
         lib.sources()       //
-        | ranges::view::filter([&](const source_file& sf) {
+        | ranges::views::filter([&](const source_file& sf) {
               if (sf.kind == source_kind::app && params.include_apps) {
                   return true;
               }

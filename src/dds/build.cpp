@@ -31,7 +31,7 @@
 using namespace dds;
 
 using namespace ranges;
-using namespace ranges::view;
+using namespace ranges::views;
 
 namespace {
 
@@ -417,13 +417,13 @@ void dds::build(const build_params& params, const package_manifest&) {
 
     dds::execute_all(compiles, params.toolchain, params.parallel_jobs);
 
-    using namespace ranges::view;
+    using namespace ranges::views;
 
     auto link_res = link_project(params, project, compiles);
 
     auto all_tests = link_res              //
         | transform(DDS_TL(_1.test_exes))  //
-        | action::join;
+        | ranges::actions::join;
 
     int n_test_fails = 0;
     for (path_ref test_exe : all_tests) {

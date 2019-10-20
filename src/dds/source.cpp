@@ -69,7 +69,7 @@ std::optional<source_file> source_file::from_path(path_ref path) noexcept {
 }
 
 source_list source_file::collect_for_dir(path_ref src) {
-    using namespace ranges::view;
+    using namespace ranges::views;
     // Strips nullopt elements and lifts the value from the results
     auto drop_nulls =                   //
         filter(DDS_TL(_1.has_value()))  //
