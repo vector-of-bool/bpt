@@ -48,6 +48,14 @@ def have_ccache() -> bool:
         return False
 
 
+def have_sccache() -> bool:
+    try:
+        subprocess.check_output(['sccache', '--version'])
+        return True
+    except FileNotFoundError:
+        return False
+
+
 def _create_compile_command(opts: BuildOptions, cpp_file: Path,
                             obj_file: Path) -> List[str]:
     if not opts.is_msvc:
@@ -69,6 +77,8 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
         ]
         if have_ccache():
             cmd.insert(0, 'ccache')
+        elif have_sccache():
+            cmd.insert(0, 'sccache')
         if opts.static:
             cmd.append('-static')
         if opts.debug:
@@ -88,12 +98,22 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             '/EHsc',
             '/std:c++latest',
             '/permissive-',
+            '/experimental:preprocessor',
+            '/wd5105',  # winbase.h
+            '/DWIN32_LEAN_AND_MEAN',
+            '/DNOMINMAX',
             '/DFMT_HEADER_ONLY=1',
+            '/D_CRT_SECURE_NO_WARNINGS',
+            '/diagnostics:caret',
             f'/I{ROOT / "src"}',
             str(cpp_file),
             '/c',
             f'/Fo{obj_file}',
         ]
+        if have_ccache():
+            cmd.insert(0, 'ccache')
+        elif have_sccache():
+            cmd.insert(0, 'sccache')
         if opts.debug:
             cmd.extend(('/Od', '/DEBUG', '/Z7'))
         else:
@@ -126,7 +146,7 @@ def _compile_src(opts: BuildOptions, cpp_file: Path) -> Tuple[Path, Path]:
             f'Compile command ({cmd}) failed for {cpp_file}:\n{res.stdout.decode()}'
         )
     stdout: str = res.stdout.decode()
-    fname_head = f'{cpp_file.name}\r\n'
+    fname_head = f'{cpp_file.name}\n'
     if stdout.startswith(fname_head):
         stdout = stdout[len(fname_head):]
     if stdout:
