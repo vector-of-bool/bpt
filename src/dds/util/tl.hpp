@@ -11,7 +11,10 @@ template <std::size_t I,
           typename B = std::nullptr_t,
           typename C = std::nullptr_t,
           typename D = std::nullptr_t>
-decltype(auto) nth_arg(A&& a = nullptr, B&& b = nullptr, C&& c = nullptr, D&& d = nullptr) {
+decltype(auto) nth_arg(A&& a[[maybe_unused]] = nullptr,
+                       B&& b[[maybe_unused]] = nullptr,
+                       C&& c[[maybe_unused]] = nullptr,
+                       D&& d[[maybe_unused]] = nullptr) {
     if constexpr (I == 0) {
         return (A &&) a;
     } else if constexpr (I == 1) {
@@ -27,12 +30,16 @@ decltype(auto) nth_arg(A&& a = nullptr, B&& b = nullptr, C&& c = nullptr, D&& d 
 
 // Based on https://github.com/Quincunx271/TerseLambda
 #define DDS_CTL(...)                                                                               \
-    (auto&&... _args_)->auto {                                                                     \
-        [[maybe_unused]] auto&& _1 = ::dds::detail::nth_arg<0>((decltype(_args_)&&)(_args_)...);   \
-        [[maybe_unused]] auto&& _2 = ::dds::detail::nth_arg<1>((decltype(_args_)&&)(_args_)...);   \
-        [[maybe_unused]] auto&& _3 = ::dds::detail::nth_arg<2>((decltype(_args_)&&)(_args_)...);   \
-        [[maybe_unused]] auto&& _4 = ::dds::detail::nth_arg<3>((decltype(_args_)&&)(_args_)...);   \
-        static_assert(sizeof...(_args_) <= 4);                                                     \
+    (auto&&... tl_args)->auto {                                                                    \
+        [[maybe_unused]] auto&& _1 = ::dds::detail::nth_arg<0, decltype(tl_args)...>(              \
+            static_cast<decltype(tl_args)&&>(tl_args)...);                                         \
+        [[maybe_unused]] auto&& _2 = ::dds::detail::nth_arg<1, decltype(tl_args)...>(              \
+            static_cast<decltype(tl_args)&&>(tl_args)...);                                         \
+        [[maybe_unused]] auto&& _3 = ::dds::detail::nth_arg<2, decltype(tl_args)...>(              \
+            static_cast<decltype(tl_args)&&>(tl_args)...);                                         \
+        [[maybe_unused]] auto&& _4 = ::dds::detail::nth_arg<3, decltype(tl_args)...>(              \
+            static_cast<decltype(tl_args)&&>(tl_args)...);                                         \
+        static_assert(sizeof...(tl_args) <= 4);                                                    \
         return (__VA_ARGS__);                                                                      \
     }
 
