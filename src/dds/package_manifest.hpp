@@ -8,6 +8,7 @@ namespace dds {
 
 struct package_manifest {
     std::string name;
+    std::string version = "no-version";
 
     static package_manifest load_from_file(path_ref);
 };
