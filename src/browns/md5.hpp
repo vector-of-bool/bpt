@@ -99,7 +99,7 @@ private:
     }
 
     constexpr static std::byte* _le_copy(std::uint64_t n, std::byte* ptr) noexcept {
-        auto n_ptr = reinterpret_cast<const std::byte*>(&n);
+        auto n_ptr = neo::byte_pointer(&n);
         auto n_end = n_ptr + sizeof n;
         while (n_ptr != n_end) {
             *ptr++ = *n_ptr++;
@@ -174,7 +174,7 @@ public:
         }
         digest_type ret      = {};
         auto        data     = neo::byte_pointer(_running_digest.data());
-        auto        dest     = ret.data();
+        auto        dest     = ret.begin();
         auto        dest_end = ret.end();
         while (dest != dest_end) {
             *dest++ = *data++;
