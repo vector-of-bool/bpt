@@ -226,12 +226,21 @@ public:
     void validate(std::string_view) {}
 };
 
+class reject_unknown {
+public:
+    int read_one(std::string_view context, std::string_view key, std::string_view) const {
+        throw std::runtime_error(std::string(context) + ": Unknown key '" + std::string(key) + "'");
+    }
+
+    void validate(std::string_view) {}
+};
+
 template <typename... Items>
-auto read(std::string_view context [[maybe_unused]], const pair_list& pairs, Items... is) {
+auto read(std::string_view context[[maybe_unused]], const pair_list& pairs, Items... is) {
     std::vector<pair> bad_pairs;
     for (auto [key, value] : pairs.items()) {
-        auto nread = (is.read_one(context, key, value) + ... + 0);
-        if (nread == 0) {
+        auto did_read = (is.read_one(context, key, value) || ...);
+        if (did_read) {
             bad_pairs.emplace_back(key, value);
         }
     }
