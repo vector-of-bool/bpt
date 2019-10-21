@@ -37,7 +37,7 @@ void dds::safe_rename(path_ref source, path_ref dest) {
         return;
     }
 
-    if (ec != std::errc::cross_device_link) {
+    if (ec != std::errc::cross_device_link && ec != std::errc::permission_denied) {
         throw std::system_error(ec,
                                 fmt::format("Failed to move item [{}] to [{}]",
                                             source.string(),
