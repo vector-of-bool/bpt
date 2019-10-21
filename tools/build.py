@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Sequence, Iterable, Dict, Tuple, List, NamedTuple
 import subprocess
 import time
+import re
 import sys
 
 ROOT = Path(__file__).parent.parent.absolute()
@@ -100,11 +101,13 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             '/permissive-',
             '/experimental:preprocessor',
             '/wd5105',  # winbase.h
+            '/wd4459',  # Shadowing
             '/DWIN32_LEAN_AND_MEAN',
             '/DNOMINMAX',
             '/DFMT_HEADER_ONLY=1',
             '/D_CRT_SECURE_NO_WARNINGS',
             '/diagnostics:caret',
+            '/experimental:external',
             f'/I{ROOT / "src"}',
             str(cpp_file),
             '/c',
@@ -112,8 +115,6 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
         ]
         if have_ccache():
             cmd.insert(0, 'ccache')
-        elif have_sccache():
-            cmd.insert(0, 'sccache')
         if opts.debug:
             cmd.extend(('/Od', '/DEBUG', '/Z7'))
         else:
@@ -122,7 +123,7 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             cmd.append('/MT')
         else:
             cmd.append('/MD')
-        cmd.extend(f'/I{ROOT / subdir}' for subdir in INCLUDE_DIRS)
+        cmd.extend(f'/external:I{ROOT / subdir}' for subdir in INCLUDE_DIRS)
         return cmd
 
 
@@ -146,9 +147,8 @@ def _compile_src(opts: BuildOptions, cpp_file: Path) -> Tuple[Path, Path]:
             f'Compile command ({cmd}) failed for {cpp_file}:\n{res.stdout.decode()}'
         )
     stdout: str = res.stdout.decode()
-    fname_head = f'{cpp_file.name}\n'
-    if stdout.startswith(fname_head):
-        stdout = stdout[len(fname_head):]
+    stdout = re.sub(r'^{cpp_file.name}\r?\n', stdout, '')
+    fname_head = f'{cpp_file.name}\r\n'
     if stdout:
         print(stdout, end='')
     end = time.time()
@@ -212,9 +212,9 @@ def _create_exe_link_command(opts: BuildOptions, obj: Path, lib: Path,
             '/nologo',
             '/W4',
             '/WX',
-            '/MT',
             '/Z7',
             '/DEBUG',
+            'rpcrt4.lib',
             f'/Fe{out}',
             str(lib),
             str(obj),
@@ -278,7 +278,7 @@ def main(argv: Sequence[str]) -> int:
         static=args.static,
         debug=args.debug)
 
-    objects = compile_sources(build_opts, all_sources)
+    objects = compile_sources(build_opts, sorted(all_sources))
 
     lib = make_library(build_opts, (objects[p] for p in lib_sources))
 
