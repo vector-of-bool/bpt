@@ -43,12 +43,6 @@ struct file_compilation {
     std::string       owner_name;
     bool              enable_warnings = false;
 
-    file_compilation(compilation_rules rules,
-                     source_file       sf,
-                     path_ref          obj,
-                     std::string       owner,
-                     bool);
-
     void compile(const toolchain& tc) const;
 };
 
