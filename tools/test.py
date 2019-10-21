@@ -139,7 +139,10 @@ def main(argv: List[str]) -> int:
     )
     args = parser.parse_args(argv)
 
-    opts = TestOptions(exe=Path(args.exe).absolute(), toolchain=args.toolchain)
+    tc = args.toolchain
+    if not tc.startswith(':'):
+        tc = Path(tc).absolute()
+    opts = TestOptions(exe=Path(args.exe).absolute(), toolchain=tc)
 
     if not args.skip_bootstrap_test and not bootstrap_self(opts):
         return 2
