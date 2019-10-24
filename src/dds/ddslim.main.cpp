@@ -6,6 +6,9 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
 
+#include <range/v3/view/group_by.hpp>
+#include <range/v3/view/transform.hpp>
+
 #include <libman/parse.hpp>
 
 #include <args.hxx>
@@ -18,35 +21,93 @@ namespace {
 using string_flag = args::ValueFlag<std::string>;
 using path_flag   = args::ValueFlag<dds::fs::path>;
 
+struct toolchain_flag : string_flag {
+    toolchain_flag(args::Group& grp)
+        : string_flag{grp,
+                      "toolchain_file",
+                      "Path/ident of the toolchain file to use",
+                      {"toolchain", 'T'},
+                      (dds::fs::current_path() / "toolchain.dds").string()} {}
+
+    dds::toolchain get_toolchain() {
+        const auto tc_path = this->Get();
+        if (tc_path.find(":") == 0) {
+            auto default_tc = tc_path.substr(1);
+            auto tc         = dds::toolchain::get_builtin(default_tc);
+            if (!tc.has_value()) {
+                throw std::runtime_error(
+                    fmt::format("Invalid default toolchain name '{}'", default_tc));
+            }
+            return std::move(*tc);
+        } else {
+            return dds::toolchain::load_from_file(tc_path);
+        }
+    }
+};
+
+struct repo_where_flag : path_flag {
+    repo_where_flag(args::Group& grp)
+        : path_flag{grp,
+                    "dir",
+                    "Directory in which to initialize the repository",
+                    {"repo-dir"},
+                    dds::repository::default_local_path()} {}
+};
+
+/**
+ * Base class holds the actual argument parser
+ */
 struct cli_base {
     args::ArgumentParser& parser;
     args::HelpFlag _help{parser, "help", "Display this help message and exit", {'h', "help"}};
 
+    // Test argument:
+    args::Flag _verify_ident{parser,
+                             "test",
+                             "Print `yes` and exit 0. Useful for scripting.",
+                             {"are-you-the-real-dds?"}};
+
     args::Group cmd_group{parser, "Available Commands"};
 };
 
+/**
+ * Flags common to all subcommands
+ */
 struct common_flags {
     args::Command& cmd;
 
     args::HelpFlag _help{cmd, "help", "Print this help message and exit", {'h', "help"}};
 };
 
+/**
+ * Flags common to project-related commands
+ */
 struct common_project_flags {
     args::Command& cmd;
 
     path_flag root{cmd,
                    "project_dir",
                    "Path to the directory containing the project",
-                   {"project-dir"},
+                   {'p', "project-dir"},
                    dds::fs::current_path()};
 };
+
+/*
+########  ######## ########   #######
+##     ## ##       ##     ## ##     ##
+##     ## ##       ##     ## ##     ##
+########  ######   ########  ##     ##
+##   ##   ##       ##        ##     ##
+##    ##  ##       ##        ##     ##
+##     ## ######## ##         #######
+*/
 
 struct cli_repo {
     cli_base&     base;
     args::Command cmd{base.cmd_group, "repo", "Manage the package repository"};
     common_flags  _common{cmd};
 
-    path_flag where{cmd, "dir", "Directory in which to initialize the repository", {'d', "dir"}};
+    repo_where_flag where{cmd};
 
     args::Group repo_group{cmd, "Repo subcommands"};
 
@@ -56,9 +117,33 @@ struct cli_repo {
         common_flags  _common{cmd};
 
         int run() {
-            return dds::repository::with_repository(dds::repository::default_local_path(),
-                                                    dds::repo_flags::none,
-                                                    [&](auto) { return 0; });
+            auto list_contents = [&](dds::repository repo) {
+                auto same_name
+                    = [](auto&& a, auto&& b) { return a.manifest.name == b.manifest.name; };
+
+                auto all_sdists  = repo.load_sdists();
+                auto grp_by_name = all_sdists                      //
+                    | ranges::views::group_by(same_name)           //
+                    | ranges::views::transform(ranges::to_vector)  //
+                    | ranges::views::transform([](auto&& grp) {
+                                       assert(grp.size() > 0);
+                                       return std::pair(grp[0].manifest.name, grp);
+                                   });
+
+                for (const auto& [name, grp] : grp_by_name) {
+                    spdlog::info("{}:", name);
+                    for (const dds::sdist& sd : grp) {
+                        spdlog::info("  - {} [{}]",
+                                     sd.manifest.version.to_string(),
+                                     sd.md5_string());
+                    }
+                }
+
+                return 0;
+            };
+            return dds::repository::with_repository(parent.where.Get(),
+                                                    dds::repo_flags::read,
+                                                    list_contents);
         }
     } ls{*this};
 
@@ -90,6 +175,16 @@ struct cli_repo {
     }
 };
 
+/*
+ ######  ########  ####  ######  ########
+##    ## ##     ##  ##  ##    ##    ##
+##       ##     ##  ##  ##          ##
+ ######  ##     ##  ##   ######     ##
+      ## ##     ##  ##        ##    ##
+##    ## ##     ##  ##  ##    ##    ##
+ ######  ########  ####  ######     ##
+*/
+
 struct cli_sdist {
     cli_base&     base;
     args::Command cmd{base.cmd_group, "sdist", "Create a source distribution of a project"};
@@ -104,11 +199,12 @@ struct cli_sdist {
                   {"out"},
                   dds::fs::current_path() / "project.dsd"};
 
-    args::Flag force{cmd, "force", "Forcibly replace an existing result", {"force"}};
-    args::Flag export_{cmd,
+    args::Flag      force{cmd, "force", "Forcibly replace an existing result", {"force"}};
+    args::Flag      export_{cmd,
                        "export",
                        "Export the result into the local repository",
                        {'E', "export"}};
+    repo_where_flag repo_where{cmd};
 
     int run() {
         dds::sdist_params params;
@@ -118,7 +214,7 @@ struct cli_sdist {
         auto sdist         = dds::create_sdist(params);
         if (export_.Get()) {
             dds::repository::with_repository(  //
-                dds::repository::default_local_path(),
+                repo_where.Get(),
                 dds::repo_flags::create_if_absent | dds::repo_flags::write_lock,
                 [&](dds::repository repo) {  //
                     repo.add_sdist(sdist);
@@ -128,6 +224,16 @@ struct cli_sdist {
     }
 };
 
+/*
+########  ##     ## #### ##       ########
+##     ## ##     ##  ##  ##       ##     ##
+##     ## ##     ##  ##  ##       ##     ##
+########  ##     ##  ##  ##       ##     ##
+##     ## ##     ##  ##  ##       ##     ##
+##     ## ##     ##  ##  ##       ##     ##
+########   #######  #### ######## ########
+*/
+
 struct cli_build {
     cli_base&     base;
     args::Command cmd{base.cmd_group, "build", "Build a project"};
@@ -136,15 +242,10 @@ struct cli_build {
 
     common_project_flags project{cmd};
 
-    string_flag tc_filepath{cmd,
-                            "toolchain_file",
-                            "Path to the toolchain file to use",
-                            {"toolchain", 'T'},
-                            (dds::fs::current_path() / "toolchain.dds").string()};
-
-    args::Flag build_tests{cmd, "build_tests", "Build the tests", {"tests", 't'}};
-    args::Flag build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
-    args::Flag export_{cmd, "export", "Generate a library export", {"export", 'E'}};
+    args::Flag     build_tests{cmd, "build_tests", "Build the tests", {"tests", 't'}};
+    args::Flag     build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
+    args::Flag     export_{cmd, "export", "Generate a library export", {"export", 'E'}};
+    toolchain_flag tc_filepath{cmd};
 
     path_flag lm_index{cmd,
                        "lm_index",
@@ -174,26 +275,11 @@ struct cli_build {
                   {"out"},
                   dds::fs::current_path() / "_build"};
 
-    dds::toolchain _get_toolchain() {
-        const auto tc_path = tc_filepath.Get();
-        if (tc_path.find(":") == 0) {
-            auto default_tc = tc_path.substr(1);
-            auto tc         = dds::toolchain::get_builtin(default_tc);
-            if (!tc.has_value()) {
-                throw std::runtime_error(
-                    fmt::format("Invalid default toolchain name '{}'", default_tc));
-            }
-            return std::move(*tc);
-        } else {
-            return dds::toolchain::load_from_file(tc_path);
-        }
-    }
-
     int run() {
         dds::build_params params;
         params.root            = project.root.Get();
         params.out_root        = out.Get();
-        params.toolchain       = _get_toolchain();
+        params.toolchain       = tc_filepath.get_toolchain();
         params.do_export       = export_.Get();
         params.build_tests     = build_tests.Get();
         params.build_apps      = build_apps.Get();
@@ -216,7 +302,115 @@ struct cli_build {
     }
 };
 
+/*
+########  ######## ########   ######
+##     ## ##       ##     ## ##    ##
+##     ## ##       ##     ## ##
+##     ## ######   ########   ######
+##     ## ##       ##              ##
+##     ## ##       ##        ##    ##
+########  ######## ##         ######
+*/
+
+struct cli_deps {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "deps", "Obtain/inspect/build deps for the project"};
+
+    common_flags         _flags{cmd};
+    common_project_flags project{cmd};
+
+    args::Group deps_group{cmd, "Subcommands"};
+
+    dds::package_manifest load_package_manifest() {
+        return dds::package_manifest::load_from_file(project.root.Get() / "package.dds");
+    }
+
+    struct {
+        cli_deps&     parent;
+        args::Command cmd{parent.deps_group, "ls", "List project dependencies"};
+        common_flags  _common{cmd};
+
+        int run() {
+            const auto man = parent.load_package_manifest();
+            for (const auto& dep : man.dependencies) {
+                std::cout << dep.name << " " << dep.version.to_string() << '\n';
+            }
+            return 0;
+        }
+    } ls{*this};
+
+    struct {
+        cli_deps&     parent;
+        args::Command cmd{parent.deps_group, "build", "Build project dependencies"};
+        common_flags  _common{cmd};
+
+        path_flag  build_dir{cmd,
+                            "build_dir",
+                            "Directory where build results will be stored",
+                            {"deps-build-dir"},
+                            dds::fs::current_path() / "_build/deps"};
+        path_flag  lmi_path{cmd, "lmi_path", "Destination for the INDEX.lmi file", {"lmi-path"}};
+        args::Flag no_lmi{cmd,
+                          "no_lmi",
+                          "If specified, will not generate an INDEX.lmi",
+                          {"skip-lmi"}};
+
+        repo_where_flag repo_where{cmd};
+
+        toolchain_flag tc_filepath{cmd};
+
+        void _build_one_dep(const dds::sdist& dep) {
+            spdlog::info("Build dependency {} {}",
+                         dep.manifest.name,
+                         dep.manifest.version.to_string());
+            dds::build_params params;
+            params.root      = dep.path;
+            params.toolchain = tc_filepath.get_toolchain();
+            params.out_root  = build_dir.Get()
+                / fmt::format("{}-{}", dep.manifest.name, dep.manifest.version.to_string());
+
+            dds::build(params, dep.manifest);
+        }
+
+        int run() {
+            auto man  = parent.load_package_manifest();
+            auto deps = dds::repository::with_repository(  //
+                repo_where.Get(),
+                dds::repo_flags::read,
+                [&](dds::repository repo) {
+                    return find_dependencies(repo,
+                                             man.dependencies.begin(),
+                                             man.dependencies.end());
+                });
+            for (auto&& dep : deps) {
+                _build_one_dep(dep);
+            }
+            return 0;
+        }
+    } build{*this};
+
+    int run() {
+        if (ls.cmd) {
+            return ls.run();
+        } else if (build.cmd) {
+            return build.run();
+        }
+        std::terminate();
+        return 0;
+    }
+};
+
 }  // namespace
+
+/*
+##     ##    ###    #### ##    ##
+###   ###   ## ##    ##  ###   ##
+#### ####  ##   ##   ##  ####  ##
+## ### ## ##     ##  ##  ## ## ##
+##     ## #########  ##  ##  ####
+##     ## ##     ##  ##  ##   ###
+##     ## ##     ## #### ##    ##
+*/
 
 int main(int argc, char** argv) {
     spdlog::set_pattern("[%H:%M:%S] [%^%l%$] %v");
@@ -226,6 +420,7 @@ int main(int argc, char** argv) {
     cli_build build{cli};
     cli_sdist sdist{cli};
     cli_repo  repo{cli};
+    cli_deps  deps{cli};
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -240,12 +435,17 @@ int main(int argc, char** argv) {
     dds::install_signal_handlers();
 
     try {
-        if (build.cmd) {
+        if (cli._verify_ident) {
+            std::cout << "yes\n";
+            return 0;
+        } else if (build.cmd) {
             return build.run();
         } else if (sdist.cmd) {
             return sdist.run();
         } else if (repo.cmd) {
             return repo.run();
+        } else if (deps.cmd) {
+            return deps.run();
         } else {
             assert(false);
             std::terminate();

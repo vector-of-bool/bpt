@@ -6,6 +6,7 @@
 #include <cassert>
 #include <functional>
 #include <shared_mutex>
+#include <vector>
 
 namespace dds {
 
@@ -13,6 +14,7 @@ class sdist;
 
 enum repo_flags {
     none             = 0b00,
+    read             = none,
     create_if_absent = 0b01,
     write_lock       = 0b10,
 };
@@ -23,11 +25,14 @@ inline repo_flags operator|(repo_flags a, repo_flags b) {
 
 class repository {
     fs::path _root;
+
     repository(path_ref p)
         : _root(p) {}
 
     static void _log_blocking(path_ref dir) noexcept;
     static void _init_repo_dir(path_ref dir) noexcept;
+
+    fs::path _dist_dir() const noexcept { return _root / "dist"; }
 
 public:
     template <typename Func>
@@ -61,7 +66,9 @@ public:
 
     static fs::path default_local_path() noexcept;
 
-    void add_sdist(const sdist&);
+    void                 add_sdist(const sdist&);
+    std::optional<sdist> get_sdist(std::string_view name, std::string_view version) const;
+    std::vector<sdist>   load_sdists() const noexcept;
 };
 
 }  // namespace dds
