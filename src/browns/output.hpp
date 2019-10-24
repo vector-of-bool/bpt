@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 namespace browns {
 
@@ -19,6 +20,50 @@ std::string format_digest(const std::array<std::byte, N>& dig) {
         auto       low     = (static_cast<char>(b) & 0x0f);
         c1                 = tab[high];
         c2                 = tab[low];
+    }
+    return ret;
+}
+
+template <typename Digest>
+Digest parse_digest(std::string_view str) {
+    Digest           ret;
+    std::byte*       out_ptr = ret.data();
+    std::byte* const out_end = out_ptr + ret.size();
+    auto             str_ptr = str.begin();
+    const auto       str_end = str.end();
+
+    auto invalid = [&] {  //
+        throw std::runtime_error("Invalid hash digest string: " + std::string(str));
+    };
+
+    auto nibble = [&](char c) -> std::byte {
+        if (c >= 'A' && c <= 'F') {
+            c = static_cast<char>(c + ('a' - 'A'));
+        }
+        if (c >= '0' && c <= '9') {
+            return std::byte(c - '0');
+        }
+        if (c >= 'a' && c <= 'f') {
+            return std::byte(c - 'a');
+        }
+        invalid();
+        std::terminate();
+    };
+
+    // We must have an even number of chars to form full octets
+    if (str.size() % 2) {
+        invalid();
+    }
+
+    while (str_ptr != str_end && out_ptr != out_end) {
+        std::byte high  = nibble(*str_ptr++);
+        std::byte low   = nibble(*str_ptr++);
+        std::byte octet = (high << 4) | low;
+        *out_ptr++      = octet;
+    }
+
+    if (str_ptr != str_end || out_ptr != out_end) {
+        invalid();
     }
     return ret;
 }
