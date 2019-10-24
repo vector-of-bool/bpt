@@ -103,6 +103,9 @@ fs::path export_project_library(const build_params& params,
 
     auto ar_path = lib_archive_path(params, lib);
     if (fs::is_regular_file(ar_path)) {
+        // XXX: We don't want to just export the archive simply because it exists!
+        //      We should check that we actually generated one as part of the
+        //      build, otherwise we might end up packaging a random static lib.
         auto ar_dest = lib_out_root / ar_path.filename();
         fs::copy_file(ar_path, ar_dest);
         pairs.emplace_back("Path", fs::relative(ar_dest, lml_parent_dir).string());
@@ -289,11 +292,12 @@ std::optional<fs::path> create_lib_archive(const build_params&      params,
         return std::nullopt;
     }
 
-    spdlog::info("Create archive for {}: {}", lib.name(), arc.out_path.string());
     auto ar_cmd = params.toolchain.create_archive_command(arc);
     if (fs::exists(arc.out_path)) {
         fs::remove(arc.out_path);
     }
+
+    spdlog::info("Create archive for {}: {}", lib.name(), arc.out_path.string());
     fs::create_directories(arc.out_path.parent_path());
     auto ar_res = run_proc(ar_cmd);
     if (!ar_res.okay()) {
