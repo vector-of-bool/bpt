@@ -56,4 +56,6 @@ struct library_build_params {
     shared_compile_file_rules compile_rules;
 };
 
+std::vector<library> collect_libraries(path_ref where, std::string_view basename);
+
 }  // namespace dds

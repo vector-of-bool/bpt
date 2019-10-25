@@ -1,9 +1,11 @@
 #include <dds/library.hpp>
 
-#include <dds/build/source_dir.hpp>
 #include <dds/build/compile.hpp>
+#include <dds/build/source_dir.hpp>
 #include <dds/util/algo.hpp>
 
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace dds;
@@ -79,6 +81,31 @@ shared_compile_file_rules library::base_compile_rules() const noexcept {
     }
     if (src_dir.exists()) {
         ret.include_dirs().push_back(src_dir.path);
+    }
+    return ret;
+}
+
+auto has_library_dirs
+    = [](path_ref dir) { return fs::exists(dir / "src") || fs::exists(dir / "include"); };
+
+std::vector<library> dds::collect_libraries(path_ref root, std::string_view basename) {
+    std::vector<library> ret;
+    if (has_library_dirs(root)) {
+        ret.emplace_back(library::from_directory(root, basename));
+    }
+
+    auto pf_libs_dir = root / "libs";
+
+    if (fs::is_directory(pf_libs_dir)) {
+        extend(ret,
+               fs::directory_iterator(pf_libs_dir)            //
+                   | ranges::views::filter(has_library_dirs)  //
+                   | ranges::views::transform([&](auto p) {
+                         return library::from_directory(p,
+                                                        fmt::format("{}-{}",
+                                                                    basename,
+                                                                    p.path().filename().string()));
+                     }));
     }
     return ret;
 }
