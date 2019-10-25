@@ -23,10 +23,12 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
              lm::reject_unknown());
 
     if (ret.name.empty()) {
-        throw std::runtime_error(fmt::format("'Name' field in [{}] may not be an empty string", fpath.string()));
+        throw std::runtime_error(
+            fmt::format("'Name' field in [{}] may not be an empty string", fpath.string()));
     }
     if (version_str.empty()) {
-        throw std::runtime_error(fmt::format("'Version' field in [{}] may not be an empty string", fpath.string()));
+        throw std::runtime_error(
+            fmt::format("'Version' field in [{}] may not be an empty string", fpath.string()));
     }
 
     ret.version = semver::version::parse(version_str);

@@ -102,7 +102,7 @@ constexpr const_buffer buffer(std::basic_string_view<Char, Traits> sv, std::size
 }
 
 template <typename Char, typename Traits>
-constexpr const_buffer buffer(std::basic_string_view<Char,  Traits> sv) {
+constexpr const_buffer buffer(std::basic_string_view<Char, Traits> sv) {
     return buffer(sv, sv.size());
 }
 

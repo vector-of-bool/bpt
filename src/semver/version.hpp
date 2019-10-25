@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <vector>
 #include <tuple>
+#include <vector>
 
 namespace semver {
 
