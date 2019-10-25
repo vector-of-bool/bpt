@@ -1,6 +1,5 @@
 #include "./deps.hpp"
 
-#include <dds/build/sroot.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
 #include <dds/util/string.hpp>
@@ -100,8 +99,7 @@ void add_sdist_to_dep_plan(build_plan& plan, const sdist& sd, const sdist_index_
     auto                      lib        = dds::library::from_directory(sd.path);
     shared_compile_file_rules comp_rules = lib.base_compile_rules();
     add_dep_includes(comp_rules, sd.manifest, sd_idx);
-    sroot_build_params params;
-    params.main_name     = sd.manifest.name;
+    library_build_params params;
     params.compile_rules = comp_rules;
     plan.add_library(lib, params);
 }

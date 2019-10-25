@@ -2,7 +2,6 @@
 
 #include <dds/build/compile.hpp>
 #include <dds/build/params.hpp>
-#include <dds/build/sroot.hpp>
 #include <dds/library.hpp>
 
 #include <dds/toolchain.hpp>
@@ -28,14 +27,14 @@ struct library_plan {
     std::vector<create_exe_plan>     link_executables;
     fs::path                         out_subdir;
 
-    static library_plan create(const library& lib, const sroot_build_params& params);
+    static library_plan create(const library& lib, const library_build_params& params);
 };
 
 struct build_plan {
     std::vector<library_plan> create_libraries;
 
     // static build_plan generate(const build_params& params);
-    void add_library(const library& lib, const sroot_build_params& params) {
+    void add_library(const library& lib, const library_build_params& params) {
         create_libraries.push_back(library_plan::create(lib, params));
     }
 

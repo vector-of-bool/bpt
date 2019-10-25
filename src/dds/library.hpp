@@ -1,8 +1,8 @@
 #pragma once
 
-#include <dds/library_manifest.hpp>
-#include <dds/build/source_dir.hpp>
 #include <dds/build/compile.hpp>
+#include <dds/build/source_dir.hpp>
+#include <dds/library_manifest.hpp>
 #include <dds/source.hpp>
 
 #include <optional>
@@ -44,8 +44,16 @@ public:
     fs::path public_include_dir() const noexcept;
     fs::path private_include_dir() const noexcept;
 
-    const source_list& all_sources() const noexcept { return _sources; }
+    const source_list&        all_sources() const noexcept { return _sources; }
     shared_compile_file_rules base_compile_rules() const noexcept;
+};
+
+struct library_build_params {
+    fs::path                  out_subdir;
+    bool                      build_tests = false;
+    bool                      build_apps  = false;
+    std::vector<fs::path>     rt_link_libraries;
+    shared_compile_file_rules compile_rules;
 };
 
 }  // namespace dds

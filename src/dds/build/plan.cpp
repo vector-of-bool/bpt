@@ -14,7 +14,7 @@
 
 using namespace dds;
 
-library_plan library_plan::create(const library& root, const sroot_build_params& params) {
+library_plan library_plan::create(const library& lib, const library_build_params& params) {
     std::vector<compile_file_plan>   compile_files;
     std::vector<create_archive_plan> create_archives;
     std::vector<create_exe_plan>     link_executables;
@@ -23,7 +23,7 @@ library_plan library_plan::create(const library& root, const sroot_build_params&
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
 
-    auto src_dir = root.src_dir();
+    auto src_dir = lib.src_dir();
     if (src_dir.exists()) {
         auto all_sources = src_dir.sources();
         auto to_compile  = all_sources | ranges::views::filter([&](const source_file& sf) {
@@ -35,7 +35,7 @@ library_plan library_plan::create(const library& root, const sroot_build_params&
         for (const auto& sfile : to_compile) {
             compile_file_plan cf_plan;
             cf_plan.source    = sfile;
-            cf_plan.qualifier = params.main_name;
+            cf_plan.qualifier = lib.name();
             cf_plan.rules     = params.compile_rules;
             compile_files.push_back(std::move(cf_plan));
             if (sfile.kind == source_kind::test) {
@@ -57,7 +57,7 @@ library_plan library_plan::create(const library& root, const sroot_build_params&
         ar_plan.in_sources = lib_sources                                   //
             | ranges::views::transform([](auto&& sf) { return sf.path; })  //
             | ranges::to_vector;
-        ar_plan.name    = params.main_name;
+        ar_plan.name    = lib.name();
         ar_plan.out_dir = params.out_subdir;
         create_archives.push_back(std::move(ar_plan));
     }
