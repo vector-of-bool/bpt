@@ -14,11 +14,7 @@
 
 using namespace dds;
 
-void build_plan::add_sroot(const sroot& root, const sroot_build_params& params) {
-    create_libraries.push_back(library_plan::create(root, params));
-}
-
-library_plan library_plan::create(const sroot& root, const sroot_build_params& params) {
+library_plan library_plan::create(const library& root, const sroot_build_params& params) {
     std::vector<compile_file_plan>   compile_files;
     std::vector<create_archive_plan> create_archives;
     std::vector<create_exe_plan>     link_executables;
@@ -53,7 +49,7 @@ library_plan library_plan::create(const sroot& root, const sroot_build_params& p
     }
 
     if (!app_sources.empty() || !test_sources.empty()) {
-        assert(false && "Apps/tests not implemented on this code path");
+        spdlog::critical("Apps/tests not implemented on this code path");
     }
 
     if (!lib_sources.empty()) {
@@ -62,11 +58,11 @@ library_plan library_plan::create(const sroot& root, const sroot_build_params& p
             | ranges::views::transform([](auto&& sf) { return sf.path; })  //
             | ranges::to_vector;
         ar_plan.name    = params.main_name;
-        ar_plan.out_dir = params.out_dir;
+        ar_plan.out_dir = params.out_subdir;
         create_archives.push_back(std::move(ar_plan));
     }
 
-    return library_plan{compile_files, create_archives, link_executables, params.out_dir};
+    return library_plan{compile_files, create_archives, link_executables, params.out_subdir};
 }
 
 namespace {

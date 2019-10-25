@@ -1,6 +1,8 @@
 #pragma once
 
 #include <dds/library_manifest.hpp>
+#include <dds/build/source_dir.hpp>
+#include <dds/build/compile.hpp>
 #include <dds/source.hpp>
 
 #include <optional>
@@ -14,15 +16,13 @@ struct library_ident {
 };
 
 class library {
-    fs::path         _base_dir;
+    fs::path         _path;
     std::string      _name;
     source_list      _sources;
-    fs::path         _pub_inc_dir;
-    fs::path         _priv_inc_dir;
     library_manifest _man;
 
     library(path_ref dir, std::string_view name, source_list&& src, library_manifest&& man)
-        : _base_dir(dir)
+        : _path(dir)
         , _name(name)
         , _sources(std::move(src))
         , _man(std::move(man)) {}
@@ -37,11 +37,15 @@ public:
 
     auto& manifest() const noexcept { return _man; }
 
-    path_ref base_dir() const noexcept { return _base_dir; }
-    path_ref public_include_dir() const noexcept { return _pub_inc_dir; }
-    path_ref private_include_dir() const noexcept { return _priv_inc_dir; }
+    source_directory src_dir() const noexcept { return source_directory{path() / "src"}; }
+    source_directory include_dir() const noexcept { return source_directory{path() / "include"}; }
 
-    const source_list& sources() const noexcept { return _sources; }
+    path_ref path() const noexcept { return _path; }
+    fs::path public_include_dir() const noexcept;
+    fs::path private_include_dir() const noexcept;
+
+    const source_list& all_sources() const noexcept { return _sources; }
+    shared_compile_file_rules base_compile_rules() const noexcept;
 };
 
 }  // namespace dds

@@ -45,7 +45,7 @@ void sdist_copy_library(path_ref            out_root,
                         const sdist_params& params,
                         browns::md5&        hash) {
     auto sources_to_keep =  //
-        lib.sources()       //
+        lib.all_sources()   //
         | ranges::views::filter([&](const source_file& sf) {
               if (sf.kind == source_kind::app && params.include_apps) {
                   return true;
@@ -62,12 +62,12 @@ void sdist_copy_library(path_ref            out_root,
 
     ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
 
-    auto lib_dds_path = lib.base_dir() / "library.dds";
+    auto lib_dds_path = lib.path() / "library.dds";
     if (fs::is_regular_file(lib_dds_path)) {
         sdist_export_file(out_root, params.project_dir, lib_dds_path, hash);
     }
 
-    spdlog::info("sdist: Export library from {}", lib.base_dir().string());
+    spdlog::info("sdist: Export library from {}", lib.path().string());
     fs::create_directories(out_root);
     for (const auto& source : sources_to_keep) {
         sdist_export_file(out_root, params.project_dir, source.path, hash);

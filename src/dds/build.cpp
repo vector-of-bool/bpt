@@ -72,11 +72,11 @@ fs::path export_project_library(const build_params& params,
                                 const library&      lib,
                                 const project&      project,
                                 path_ref            export_root) {
-    auto relpath      = fs::relative(lib.base_dir(), project.root());
+    auto relpath      = fs::relative(lib.path(), project.root());
     auto lib_out_root = export_root / relpath;
-    auto header_root  = lib.base_dir() / "include";
+    auto header_root  = lib.path() / "include";
     if (!fs::is_directory(header_root)) {
-        header_root = lib.base_dir() / "src";
+        header_root = lib.path() / "src";
     }
 
     auto lml_path       = export_root / fmt::format("{}.lml", lib.name());
@@ -88,7 +88,7 @@ fs::path export_project_library(const build_params& params,
 
     if (fs::is_directory(header_root)) {
         auto header_dest = lib_out_root / "include";
-        copy_headers(header_root, header_dest, lib.sources());
+        copy_headers(header_root, header_dest, lib.all_sources());
         pairs.emplace_back("Include-Path", fs::relative(header_dest, lml_parent_dir).string());
     }
 
@@ -176,7 +176,7 @@ void include_deps(const lm::index::library_index& lib_index,
 
 std::vector<compile_file_plan> file_compilations_of_lib(const build_params& params,
                                                         const library&      lib) {
-    const auto& sources = lib.sources();
+    const auto& sources = lib.all_sources();
 
     std::vector<fs::path>    dep_includes;
     std::vector<std::string> dep_defines;
@@ -220,8 +220,8 @@ std::vector<compile_file_plan> file_compilations_of_lib(const build_params& para
     extend(rules.defs(), dep_defines);
     extend(rules.include_dirs(), lib.manifest().private_includes);
     extend(rules.include_dirs(), dep_includes);
-    rules.include_dirs().push_back(fs::absolute(lib.base_dir() / "src"));
-    rules.include_dirs().push_back(fs::absolute(lib.base_dir() / "include"));
+    rules.include_dirs().push_back(fs::absolute(lib.path() / "src"));
+    rules.include_dirs().push_back(fs::absolute(lib.path() / "include"));
     rules.enable_warnings() = params.enable_warnings;
 
     return                               //
@@ -269,7 +269,7 @@ std::optional<fs::path> create_lib_archive(const build_params&      params,
 
     // Collect object files that make up that library
     arc.input_files =                                                           //
-        lib.sources()                                                           //
+        lib.all_sources()                                                       //
         | filter([](auto&& s) { return s.kind == source_kind::source; })        //
         | transform([&](auto&& s) { return obj_for_source(obj_idx, s.path); })  //
         | to_vector                                                             //
@@ -339,7 +339,7 @@ std::vector<fs::path> link_executables(source_kind              sk,
                                        const library&           lib,
                                        const object_file_index& obj_idx) {
     return                                                //
-        lib.sources()                                     //
+        lib.all_sources()                                 //
         | filter([&](auto&& s) { return s.kind == sk; })  //
         | transform([&](auto&& s) {
               return link_one_exe(get_exe_path(s), s.path, params, lib, obj_idx);
@@ -409,6 +409,18 @@ std::vector<link_results> link_project(const build_params&                   par
 }  // namespace
 
 void dds::build(const build_params& params, const package_manifest&) {
+    // auto               sroot      = dds::sroot{params.root};
+    // auto               comp_rules = sroot.base_compile_rules();
+
+    // sroot_build_params sr_params;
+    // sr_params.main_name   = man.name;
+    // sr_params.build_tests = params.build_tests;
+    // sr_params.build_apps  = params.build_apps;
+    // sr_params.compile_rules = comp_rules;
+    // build_plan plan;
+    // plan.add_sroot(sroot, sr_params);
+    // plan.compile_all(params.toolchain, params.parallel_jobs, params.out_root);
+
     auto project = project::from_directory(params.root);
 
     auto compiles = collect_compiles(params, project);

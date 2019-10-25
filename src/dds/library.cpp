@@ -1,6 +1,7 @@
 #include <dds/library.hpp>
 
 #include <dds/build/source_dir.hpp>
+#include <dds/build/compile.hpp>
 #include <dds/util/algo.hpp>
 
 #include <spdlog/spdlog.h>
@@ -9,13 +10,7 @@ using namespace dds;
 
 namespace {
 
-struct pf_info {
-    source_list sources;
-    fs::path    inc_dir;
-    fs::path    src_dir;
-};
-
-pf_info collect_pf_sources(path_ref path) {
+auto collect_pf_sources(path_ref path) {
     auto include_dir = source_directory{path / "include"};
     auto src_dir     = source_directory{path / "src"};
 
@@ -46,13 +41,13 @@ pf_info collect_pf_sources(path_ref path) {
         extend(sources, src_sources);
     }
 
-    return {std::move(sources), include_dir.path, src_dir.path};
+    return sources;
 }
 
 }  // namespace
 
 library library::from_directory(path_ref lib_dir, std::string_view name) {
-    auto [sources, inc_dir, src_dir] = collect_pf_sources(lib_dir);
+    auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
     auto             man_path = lib_dir / "library.dds";
@@ -62,15 +57,28 @@ library library::from_directory(path_ref lib_dir, std::string_view name) {
 
     auto lib = library(lib_dir, name, std::move(sources), std::move(man));
 
-    if (fs::exists(inc_dir)) {
-        lib._pub_inc_dir = inc_dir;
-        if (fs::exists(src_dir)) {
-            lib._priv_inc_dir = src_dir;
-        }
-    } else {
-        lib._pub_inc_dir  = src_dir;
-        lib._priv_inc_dir = src_dir;
-    }
-
     return lib;
+}
+
+fs::path library::public_include_dir() const noexcept {
+    auto inc_dir = include_dir();
+    if (inc_dir.exists()) {
+        return inc_dir.path;
+    }
+    return src_dir().path;
+}
+
+fs::path library::private_include_dir() const noexcept { return src_dir().path; }
+
+shared_compile_file_rules library::base_compile_rules() const noexcept {
+    auto                      inc_dir = include_dir();
+    auto                      src_dir = this->src_dir();
+    shared_compile_file_rules ret;
+    if (inc_dir.exists()) {
+        ret.include_dirs().push_back(inc_dir.path);
+    }
+    if (src_dir.exists()) {
+        ret.include_dirs().push_back(src_dir.path);
+    }
+    return ret;
 }

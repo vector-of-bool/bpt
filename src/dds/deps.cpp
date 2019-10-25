@@ -86,18 +86,24 @@ void add_dep_includes(shared_compile_file_rules& rules,
                             man.name));
         }
         add_dep_includes(rules, found->second.get().manifest, sd_idx);
-        rules.include_dirs().push_back(sroot{found->second.get().path}.public_include_dir());
+        auto lib_src     = found->second.get().path / "src";
+        auto lib_include = found->second.get().path / "include";
+        if (fs::exists(lib_include)) {
+            rules.include_dirs().push_back(lib_include);
+        } else {
+            rules.include_dirs().push_back(lib_src);
+        }
     }
 }
 
 void add_sdist_to_dep_plan(build_plan& plan, const sdist& sd, const sdist_index_type& sd_idx) {
-    auto                      root       = dds::sroot{sd.path};
-    shared_compile_file_rules comp_rules = root.base_compile_rules();
+    auto                      lib        = dds::library::from_directory(sd.path);
+    shared_compile_file_rules comp_rules = lib.base_compile_rules();
     add_dep_includes(comp_rules, sd.manifest, sd_idx);
     sroot_build_params params;
     params.main_name     = sd.manifest.name;
     params.compile_rules = comp_rules;
-    plan.add_sroot(root, params);
+    plan.add_library(lib, params);
 }
 
 }  // namespace
