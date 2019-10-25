@@ -11,9 +11,21 @@ void erase_if(Container& c, Predicate&& p) {
     c.erase(erase_point, c.end());
 }
 
+template <typename Container, typename Iter, typename Stop>
+void extend(Container& c, Iter iter, const Stop stop) {
+    while (iter != stop) {
+        c.insert(c.end(), typename Container::value_type(*iter++));
+    }
+}
+
+template <typename Container, typename Iter>
+void extend(Container& c, Iter iter, Iter end) {
+    c.insert(c.end(), iter, end);
+}
+
 template <typename Container, typename Other>
-void extend(Container& c, const Other& o) {
-    c.insert(c.end(), o.begin(), o.end());
+void extend(Container& c, Other&& o) {
+    extend(c, o.begin(), o.end());
 }
 
 template <typename Container, typename Item>
