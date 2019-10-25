@@ -192,7 +192,7 @@ std::vector<file_compilation> file_compilations_of_lib(const build_params& param
 
     if (!lib.manifest().uses.empty() || !lib.manifest().links.empty()) {
         fs::path lm_index_path = params.lm_index;
-        for (auto cand : {"INDEX.lmi", "_build/INDEX.lmi"}) {
+        for (auto cand : {fs::path("INDEX.lmi"), params.out_root / "INDEX.lmi"}) {
             if (!lm_index_path.empty()) {
                 break;
             }
