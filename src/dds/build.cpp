@@ -1,6 +1,6 @@
 #include "./build.hpp"
 
-#include <dds/compile.hpp>
+#include <dds/build/compile.hpp>
 #include <dds/logging.hpp>
 #include <dds/proc.hpp>
 #include <dds/project.hpp>
@@ -48,15 +48,6 @@ auto iter_libraries(const project& pr) {
     }
     extend(libs, pr.submodules());
     return libs;
-}
-
-fs::path object_file_path(fs::path source_path, const build_params& params) {
-    auto obj_dir     = params.out_root / "obj";
-    auto obj_relpath = fs::relative(source_path, params.root);
-    obj_relpath.replace_filename(obj_relpath.filename().string()
-                                 + params.toolchain.object_suffix());
-    auto obj_path = obj_dir / obj_relpath;
-    return obj_path;
 }
 
 fs::path lib_archive_path(const build_params& params, const library& lib) {
@@ -183,8 +174,8 @@ void include_deps(const lm::index::library_index& lib_index,
     }
 }
 
-std::vector<file_compilation> file_compilations_of_lib(const build_params& params,
-                                                       const library&      lib) {
+std::vector<compile_file_plan> file_compilations_of_lib(const build_params& params,
+                                                        const library&      lib) {
     const auto& sources = lib.sources();
 
     std::vector<fs::path>    dep_includes;
@@ -224,30 +215,26 @@ std::vector<file_compilation> file_compilations_of_lib(const build_params& param
                 || (sf.kind == source_kind::test && params.build_tests));
     };
 
-    compilation_rules rules;
-    rules.base_path() = lib.base_dir() / "src";
+    shared_compile_file_rules rules;
     extend(rules.defs(), lib.manifest().private_defines);
     extend(rules.defs(), dep_defines);
     extend(rules.include_dirs(), lib.manifest().private_includes);
     extend(rules.include_dirs(), dep_includes);
     rules.include_dirs().push_back(fs::absolute(lib.base_dir() / "src"));
     rules.include_dirs().push_back(fs::absolute(lib.base_dir() / "include"));
+    rules.enable_warnings() = params.enable_warnings;
 
     return                               //
         sources                          //
         | filter(should_compile_source)  //
         | transform([&](auto&& src) {
-              return file_compilation{rules,
-                                      src,
-                                      object_file_path(src.path, params),
-                                      lib.name(),
-                                      params.enable_warnings};
+              return compile_file_plan{rules, src, lib.name()};
           })  //
         | to_vector;
 }
 
-std::vector<dds::file_compilation> collect_compiles(const build_params& params,
-                                                    const project&      project) {
+std::vector<dds::compile_file_plan> collect_compiles(const build_params& params,
+                                                     const project&      project) {
     auto libs = iter_libraries(project);
     return                                                                              //
         libs                                                                            //
@@ -401,13 +388,16 @@ link_project_lib(const build_params& params, const library& lib, const object_fi
     return res;
 }
 
-std::vector<link_results> link_project(const build_params&                  params,
-                                       const project&                       pr,
-                                       const std::vector<file_compilation>& compilations) {
-    auto obj_index =                                                                    //
-        ranges::views::all(compilations)                                                //
-        | transform([](auto&& comp) { return std::pair(comp.source.path, comp.obj); })  //
-        | ranges::to<object_file_index>()                                               //
+std::vector<link_results> link_project(const build_params&                   params,
+                                       const project&                        pr,
+                                       const std::vector<compile_file_plan>& compilations) {
+    auto obj_index =                      //
+        ranges::views::all(compilations)  //
+        | transform([&](const compile_file_plan& comp) -> std::pair<fs::path, fs::path> {
+              return std::pair(comp.source.path,
+                               params.out_root / comp.get_object_file_path(params.toolchain));
+          })                               //
+        | ranges::to<object_file_index>()  //
         ;
 
     auto libs = iter_libraries(pr);
@@ -423,7 +413,7 @@ void dds::build(const build_params& params, const package_manifest&) {
 
     auto compiles = collect_compiles(params, project);
 
-    dds::execute_all(compiles, params.toolchain, params.parallel_jobs);
+    dds::execute_all(compiles, params.toolchain, params.parallel_jobs, params.out_root);
 
     using namespace ranges::views;
 

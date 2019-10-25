@@ -1,4 +1,5 @@
 #include <dds/build.hpp>
+#include <dds/build/plan.hpp>
 #include <dds/logging.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
@@ -359,19 +360,6 @@ struct cli_deps {
 
         toolchain_flag tc_filepath{cmd};
 
-        void _build_one_dep(const dds::sdist& dep) {
-            spdlog::info("Build dependency {} {}",
-                         dep.manifest.name,
-                         dep.manifest.version.to_string());
-            dds::build_params params;
-            params.root      = dep.path;
-            params.toolchain = tc_filepath.get_toolchain();
-            params.out_root  = build_dir.Get()
-                / fmt::format("{}-{}", dep.manifest.name, dep.manifest.version.to_string());
-
-            dds::build(params, dep.manifest);
-        }
-
         int run() {
             auto man  = parent.load_package_manifest();
             auto deps = dds::repository::with_repository(  //
@@ -382,9 +370,9 @@ struct cli_deps {
                                              man.dependencies.begin(),
                                              man.dependencies.end());
                 });
-            for (auto&& dep : deps) {
-                _build_one_dep(dep);
-            }
+
+            auto plan = dds::create_deps_build_plan(deps);
+            plan.compile_all(tc_filepath.get_toolchain(), 6, build_dir.Get());
             return 0;
         }
     } build{*this};

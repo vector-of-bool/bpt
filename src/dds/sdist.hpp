@@ -21,10 +21,10 @@ struct sdist {
     browns::md5::digest_type md5;
     fs::path                 path;
 
-    sdist(package_manifest man, browns::md5::digest_type hash, path_ref path)
+    sdist(package_manifest man, browns::md5::digest_type hash, path_ref path_)
         : manifest(std::move(man))
         , md5(hash)
-        , path(path) {}
+        , path(path_) {}
 
     static sdist from_directory(path_ref p);
 

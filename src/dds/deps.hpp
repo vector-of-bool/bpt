@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dds/build/plan.hpp>
+
 #include <semver/version.hpp>
 
 #include <string_view>
@@ -27,7 +29,7 @@ namespace detail {
 
 void do_find_deps(const repository&, const dependency& dep, std::vector<sdist>& acc);
 
-} // namespace detail
+}  // namespace detail
 
 std::vector<sdist> find_dependencies(const repository& repo, const dependency& dep);
 
@@ -39,5 +41,7 @@ inline std::vector<sdist> find_dependencies(const repository& repo, Iter it, Snt
     }
     return acc;
 }
+
+build_plan create_deps_build_plan(const std::vector<sdist>& deps);
 
 }  // namespace dds

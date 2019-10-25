@@ -1,5 +1,6 @@
 #include <dds/library.hpp>
 
+#include <dds/build/source_dir.hpp>
 #include <dds/util/algo.hpp>
 
 #include <spdlog/spdlog.h>
@@ -15,16 +16,16 @@ struct pf_info {
 };
 
 pf_info collect_pf_sources(path_ref path) {
-    auto include_dir = path / "include";
-    auto src_dir     = path / "src";
+    auto include_dir = source_directory{path / "include"};
+    auto src_dir     = source_directory{path / "src"};
 
     source_list sources;
 
-    if (fs::exists(include_dir)) {
-        if (!fs::is_directory(include_dir)) {
+    if (include_dir.exists()) {
+        if (!fs::is_directory(include_dir.path)) {
             throw std::runtime_error("The `include` at the root of the project is not a directory");
         }
-        auto inc_sources = source_file::collect_for_dir(include_dir);
+        auto inc_sources = include_dir.sources();
         // Drop any source files we found within `include/`
         erase_if(sources, [&](auto& info) {
             if (info.kind != source_kind::header) {
@@ -37,15 +38,15 @@ pf_info collect_pf_sources(path_ref path) {
         extend(sources, inc_sources);
     }
 
-    if (fs::exists(src_dir)) {
-        if (!fs::is_directory(src_dir)) {
+    if (src_dir.exists()) {
+        if (!fs::is_directory(src_dir.path)) {
             throw std::runtime_error("The `src` at the root of the project is not a directory");
         }
-        auto src_sources = source_file::collect_for_dir(src_dir);
+        auto src_sources = src_dir.sources();
         extend(sources, src_sources);
     }
 
-    return {std::move(sources), include_dir, src_dir};
+    return {std::move(sources), include_dir.path, src_dir.path};
 }
 
 }  // namespace

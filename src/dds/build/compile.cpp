@@ -13,16 +13,17 @@
 
 using namespace dds;
 
-void file_compilation::compile(const toolchain& tc) const {
-    fs::create_directories(obj.parent_path());
+void compile_file_plan::compile(const toolchain& tc, path_ref out_prefix) const {
+    const auto obj_path = out_prefix / get_object_file_path(tc);
+    fs::create_directories(obj_path.parent_path());
 
     spdlog::info("[{}] Compile: {}",
-                 owner_name,
-                 fs::relative(source.path, rules.base_path()).string());
+                 qualifier,
+                 fs::relative(source.path, source.basis_path).string());
     auto start_time = std::chrono::steady_clock::now();
 
-    compile_file_spec spec{source.path, obj};
-    spec.enable_warnings = enable_warnings;
+    compile_file_spec spec{source.path, obj_path};
+    spec.enable_warnings = rules.enable_warnings();
 
     extend(spec.include_dirs, rules.include_dirs());
     extend(spec.definitions, rules.defs());
@@ -34,8 +35,8 @@ void file_compilation::compile(const toolchain& tc) const {
     auto dur_ms   = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
     spdlog::info("[{}] Compile: {} - {:n}ms",
-                 owner_name,
-                 fs::relative(source.path, rules.base_path()).string(),
+                 qualifier,
+                 fs::relative(source.path, source.basis_path).string(),
                  dur_ms.count());
 
     if (!compile_res.okay()) {
@@ -57,9 +58,16 @@ void file_compilation::compile(const toolchain& tc) const {
     }
 }
 
-void dds::execute_all(const std::vector<file_compilation>& compilations,
-                      const toolchain&                     tc,
-                      int                                  n_jobs) {
+fs::path compile_file_plan::get_object_file_path(const toolchain& tc) const noexcept {
+    auto relpath = fs::relative(source.path, source.basis_path);
+    relpath.replace_filename(relpath.filename().string() + tc.object_suffix());
+    return relpath;
+}
+
+void dds::execute_all(const std::vector<compile_file_plan>& compilations,
+                      const toolchain&                      tc,
+                      int                                   n_jobs,
+                      path_ref                              out_prefix) {
     // We don't bother with a nice thread pool, as the overhead of compiling
     // source files dwarfs the cost of interlocking.
     std::mutex mut;
@@ -81,7 +89,7 @@ void dds::execute_all(const std::vector<file_compilation>& compilations,
             auto& compilation = *comp_iter++;
             lk.unlock();
             try {
-                compilation.compile(tc);
+                compilation.compile(tc, out_prefix);
                 cancellation_point();
             } catch (...) {
                 lk.lock();

@@ -4,10 +4,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
-
 #include <algorithm>
 #include <optional>
 #include <vector>
@@ -58,28 +54,11 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
     return source_kind::source;
 }
 
-std::optional<source_file> source_file::from_path(path_ref path) noexcept {
+std::optional<source_file> source_file::from_path(path_ref path, path_ref base_path) noexcept {
     auto kind = infer_source_kind(path);
     if (!kind.has_value()) {
         return std::nullopt;
     }
 
-    return source_file{path, *kind};
-}
-
-source_list source_file::collect_for_dir(path_ref src) {
-    using namespace ranges::views;
-    // Strips nullopt elements and lifts the value from the results
-    auto drop_nulls =                                       //
-        filter([](auto&& opt) { return opt.has_value(); })  //
-        | transform([](auto&& opt) { return *opt; });       //
-
-    // Collect all source files from the directory
-    return                                                                       //
-        fs::recursive_directory_iterator(src)                                    //
-        | filter([](auto&& entry) { return entry.is_regular_file(); })           //
-        | transform([](auto&& entry) { return source_file::from_path(entry); })  //
-        // source_file::from_path returns an optional. Drop nulls
-        | drop_nulls  //
-        | ranges::to_vector;
+    return source_file{path, base_path, *kind};
 }
