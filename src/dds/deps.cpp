@@ -96,12 +96,14 @@ void add_dep_includes(shared_compile_file_rules& rules,
 }
 
 void add_sdist_to_dep_plan(build_plan& plan, const sdist& sd, const sdist_index_type& sd_idx) {
-    auto                      lib        = dds::library::from_directory(sd.path, sd.manifest.name);
-    shared_compile_file_rules comp_rules = lib.base_compile_rules();
-    add_dep_includes(comp_rules, sd.manifest, sd_idx);
-    library_build_params params;
-    params.compile_rules = comp_rules;
-    plan.add_library(lib, params);
+    auto libs = collect_libraries(sd.path, sd.manifest.name);
+    for (const auto& lib : libs) {
+        shared_compile_file_rules comp_rules = lib.base_compile_rules();
+        add_dep_includes(comp_rules, sd.manifest, sd_idx);
+        library_build_params params;
+        params.compile_rules = comp_rules;
+        plan.add_library(lib, params);
+    }
 }
 
 }  // namespace
