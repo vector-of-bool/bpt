@@ -60,7 +60,7 @@ void compile_file_plan::compile(const build_env& env) const {
 
 fs::path compile_file_plan::get_object_file_path(const build_env& env) const noexcept {
     auto relpath = fs::relative(source.path, source.basis_path);
-    auto ret = env.output_root / subdir / relpath;
+    auto ret     = env.output_root / subdir / relpath;
     ret.replace_filename(relpath.filename().string() + env.toolchain.object_suffix());
     return ret;
 }
