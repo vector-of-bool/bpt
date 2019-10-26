@@ -24,7 +24,7 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
-      - script: sudo apt install -y python3-minimal g++-8
+      - script: sudo apt update -y && sudo apt install -y python3-minimal g++-8
         displayName: Prepare System
       - script: python3 -u tools/build.py --cxx g++-8 --test --static
         displayName: Build and Run Unit Tests
