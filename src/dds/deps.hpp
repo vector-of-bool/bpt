@@ -44,4 +44,6 @@ inline std::vector<sdist> find_dependencies(const repository& repo, Iter it, Snt
 
 build_plan create_deps_build_plan(const std::vector<sdist>& deps);
 
+void write_libman_index(path_ref where, const build_plan& plan, const build_env& env);
+
 }  // namespace dds

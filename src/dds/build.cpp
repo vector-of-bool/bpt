@@ -228,7 +228,7 @@ std::vector<compile_file_plan> file_compilations_of_lib(const build_params& para
         sources                          //
         | filter(should_compile_source)  //
         | transform([&](auto&& src) {
-              return compile_file_plan{rules, src, lib.name()};
+              return compile_file_plan{rules, "obj/" + lib.name(), src, lib.name()};
           })  //
         | to_vector;
 }
@@ -395,7 +395,7 @@ std::vector<link_results> link_project(const build_params&                   par
         ranges::views::all(compilations)  //
         | transform([&](const compile_file_plan& comp) -> std::pair<fs::path, fs::path> {
               return std::pair(comp.source.path,
-                               params.out_root / comp.get_object_file_path(params.toolchain));
+                               comp.get_object_file_path(build_env{params.toolchain, params.out_root}));
           })                               //
         | ranges::to<object_file_index>()  //
         ;
@@ -408,7 +408,8 @@ std::vector<link_results> link_project(const build_params&                   par
 
 }  // namespace
 
-void dds::build(const build_params& params, const package_manifest&) {
+void dds::build(const build_params& params, const package_manifest& man) {
+    auto libs = collect_libraries(params.root, man.name);
     // auto               sroot      = dds::sroot{params.root};
     // auto               comp_rules = sroot.base_compile_rules();
 
@@ -425,7 +426,9 @@ void dds::build(const build_params& params, const package_manifest&) {
 
     auto compiles = collect_compiles(params, project);
 
-    dds::execute_all(compiles, params.toolchain, params.parallel_jobs, params.out_root);
+    dds::build_env env{params.toolchain, params.out_root};
+
+    dds::execute_all(compiles, params.parallel_jobs, env);
 
     using namespace ranges::views;
 

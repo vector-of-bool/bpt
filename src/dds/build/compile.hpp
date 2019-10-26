@@ -10,6 +10,11 @@
 
 namespace dds {
 
+struct build_env {
+    dds::toolchain toolchain;
+    fs::path       output_root;
+};
+
 struct compile_failure : std::runtime_error {
     using runtime_error::runtime_error;
 };
@@ -38,16 +43,14 @@ public:
 
 struct compile_file_plan {
     shared_compile_file_rules rules;
+    fs::path                  subdir;
     dds::source_file          source;
     std::string               qualifier;
 
-    fs::path get_object_file_path(const toolchain& tc) const noexcept;
-    void     compile(const toolchain& tc, path_ref out_prefix) const;
+    fs::path get_object_file_path(const build_env& env) const noexcept;
+    void     compile(const build_env&) const;
 };
 
-void execute_all(const std::vector<compile_file_plan>&,
-                 const toolchain& tc,
-                 int              n_jobs,
-                 path_ref         out_prefix);
+void execute_all(const std::vector<compile_file_plan>&, int n_jobs, const build_env& env);
 
 }  // namespace dds

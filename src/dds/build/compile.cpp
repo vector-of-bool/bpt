@@ -13,8 +13,8 @@
 
 using namespace dds;
 
-void compile_file_plan::compile(const toolchain& tc, path_ref out_prefix) const {
-    const auto obj_path = out_prefix / get_object_file_path(tc);
+void compile_file_plan::compile(const build_env& env) const {
+    const auto obj_path = get_object_file_path(env);
     fs::create_directories(obj_path.parent_path());
 
     spdlog::info("[{}] Compile: {}",
@@ -28,7 +28,7 @@ void compile_file_plan::compile(const toolchain& tc, path_ref out_prefix) const 
     extend(spec.include_dirs, rules.include_dirs());
     extend(spec.definitions, rules.defs());
 
-    auto cmd         = tc.create_compile_command(spec);
+    auto cmd         = env.toolchain.create_compile_command(spec);
     auto compile_res = run_proc(cmd);
 
     auto end_time = std::chrono::steady_clock::now();
@@ -58,16 +58,16 @@ void compile_file_plan::compile(const toolchain& tc, path_ref out_prefix) const 
     }
 }
 
-fs::path compile_file_plan::get_object_file_path(const toolchain& tc) const noexcept {
+fs::path compile_file_plan::get_object_file_path(const build_env& env) const noexcept {
     auto relpath = fs::relative(source.path, source.basis_path);
-    relpath.replace_filename(relpath.filename().string() + tc.object_suffix());
-    return relpath;
+    auto ret = env.output_root / subdir / relpath;
+    ret.replace_filename(relpath.filename().string() + env.toolchain.object_suffix());
+    return ret;
 }
 
 void dds::execute_all(const std::vector<compile_file_plan>& compilations,
-                      const toolchain&                      tc,
                       int                                   n_jobs,
-                      path_ref                              out_prefix) {
+                      const build_env&                      env) {
     // We don't bother with a nice thread pool, as the overhead of compiling
     // source files dwarfs the cost of interlocking.
     std::mutex mut;
@@ -89,7 +89,7 @@ void dds::execute_all(const std::vector<compile_file_plan>& compilations,
             auto& compilation = *comp_iter++;
             lk.unlock();
             try {
-                compilation.compile(tc, out_prefix);
+                compilation.compile(env);
                 cancellation_point();
             } catch (...) {
                 lk.lock();

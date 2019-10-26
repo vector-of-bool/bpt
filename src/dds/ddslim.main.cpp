@@ -350,7 +350,11 @@ struct cli_deps {
                             "Directory where build results will be stored",
                             {"deps-build-dir"},
                             dds::fs::current_path() / "_build/deps"};
-        path_flag  lmi_path{cmd, "lmi_path", "Destination for the INDEX.lmi file", {"lmi-path"}};
+        path_flag  lmi_path{cmd,
+                           "lmi_path",
+                           "Destination for the INDEX.lmi file",
+                           {"lmi-path"},
+                           dds::fs::current_path() / "_build/INDEX.lmi"};
         args::Flag no_lmi{cmd,
                           "no_lmi",
                           "If specified, will not generate an INDEX.lmi",
@@ -374,8 +378,12 @@ struct cli_deps {
             auto plan = dds::create_deps_build_plan(deps);
             auto tc   = tc_filepath.get_toolchain();
             auto bdir = build_dir.Get();
-            plan.compile_all(tc, 6, bdir);
-            plan.archive_all(tc, 6, bdir);
+            dds::build_env env{std::move(tc), bdir};
+            plan.compile_all(env, 6);
+            plan.archive_all(env, 6);
+            if (!no_lmi.Get()) {
+                write_libman_index(lmi_path.Get(), plan, env);
+            }
             return 0;
         }
     } build{*this};

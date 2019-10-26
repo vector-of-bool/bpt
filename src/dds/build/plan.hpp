@@ -13,10 +13,9 @@ struct create_archive_plan {
     std::string name;
     fs::path    out_dir;
 
-    fs::path archive_file_path(const toolchain& tc) const noexcept;
+    fs::path archive_file_path(const build_env& env) const noexcept;
 
-    void
-    archive(const toolchain& tc, path_ref out_prefix, const std::vector<fs::path>& objects) const;
+    void archive(const build_env& env, const std::vector<fs::path>& objects) const;
 };
 
 struct create_exe_plan {
@@ -26,6 +25,8 @@ struct create_exe_plan {
 };
 
 struct library_plan {
+    std::string                        name;
+    fs::path                           source_root;
     fs::path                           out_subdir;
     std::vector<compile_file_plan>     compile_files;
     std::optional<create_archive_plan> create_archive;
@@ -34,16 +35,21 @@ struct library_plan {
     static library_plan create(const library& lib, const library_build_params& params);
 };
 
-struct build_plan {
+struct package_plan {
+    std::string               name;
+    std::vector<std::string>  pkg_requires;
     std::vector<library_plan> create_libraries;
 
-    // static build_plan generate(const build_params& params);
     void add_library(const library& lib, const library_build_params& params) {
         create_libraries.push_back(library_plan::create(lib, params));
     }
+};
 
-    void compile_all(const toolchain& tc, int njobs, path_ref out_prefix) const;
-    void archive_all(const toolchain& tc, int njobs, path_ref out_prefix) const;
+struct build_plan {
+    std::vector<package_plan> build_packages;
+
+    void compile_all(const build_env& env, int njobs) const;
+    void archive_all(const build_env& env, int njobs) const;
 };
 
 }  // namespace dds

@@ -41,6 +41,7 @@ library_plan library_plan::create(const library& lib, const library_build_params
             cf_plan.source    = sfile;
             cf_plan.qualifier = lib.name();
             cf_plan.rules     = params.compile_rules;
+            cf_plan.subdir    = fs::path("obj") / lib.name();
             compile_files.push_back(std::move(cf_plan));
             if (sfile.kind == source_kind::test) {
                 test_sources.push_back(sfile);
@@ -64,7 +65,12 @@ library_plan library_plan::create(const library& lib, const library_build_params
         create_archive.emplace(std::move(ar_plan));
     }
 
-    return library_plan{params.out_subdir, compile_files, create_archive, link_executables};
+    return library_plan{lib.name(),
+                        lib.path(),
+                        params.out_subdir,
+                        compile_files,
+                        create_archive,
+                        link_executables};
 }
 
 namespace {
@@ -123,19 +129,17 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 
 }  // namespace
 
-fs::path create_archive_plan::archive_file_path(const toolchain& tc) const noexcept {
-    fs::path fname = fmt::format("{}{}{}", "lib", name, tc.archive_suffix());
-    return fname;
+fs::path create_archive_plan::archive_file_path(const build_env& env) const noexcept {
+    return env.output_root / fmt::format("{}{}{}", "lib", name, env.toolchain.archive_suffix());
 }
 
-void create_archive_plan::archive(const toolchain&             tc,
-                                  path_ref                     out_prefix,
+void create_archive_plan::archive(const build_env& env,
                                   const std::vector<fs::path>& objects) const {
     archive_spec ar;
-    ar.input_files = objects;
-    ar.out_path    = out_prefix / archive_file_path(tc);
-    auto ar_cmd    = tc.create_archive_command(ar);
-    auto out_relpath = fs::relative(ar.out_path, out_prefix).string();
+    ar.input_files   = objects;
+    ar.out_path      = archive_file_path(env);
+    auto ar_cmd      = env.toolchain.create_archive_command(ar);
+    auto out_relpath = fs::relative(ar.out_path, env.output_root).string();
 
     spdlog::info("[{}] Archive: {}", name, out_relpath);
     auto start_time = std::chrono::steady_clock::now();
@@ -152,26 +156,33 @@ void create_archive_plan::archive(const toolchain&             tc,
     }
 }
 
-void build_plan::compile_all(const toolchain& tc, int njobs, path_ref out_prefix) const {
-    std::vector<std::pair<fs::path, std::reference_wrapper<const compile_file_plan>>> comps;
-    for (const auto& lib : create_libraries) {
-        const auto lib_out_prefix = out_prefix / lib.out_subdir;
-        for (auto&& cf_plan : lib.compile_files) {
-            comps.emplace_back(lib_out_prefix, cf_plan);
-        }
-    }
+namespace {
 
-    auto okay = parallel_run(comps, njobs, [&](const auto& pair) {
-        const auto& [out_dir, cf_plan] = pair;
-        cf_plan.get().compile(tc, out_dir);
-    });
+auto all_libraries(const build_plan& plan) {
+    return                                                           //
+        plan.build_packages                                          //
+        | ranges::views::transform(&package_plan::create_libraries)  //
+        | ranges::views::join                                        //
+        ;
+}
+
+}  // namespace
+
+void build_plan::compile_all(const build_env& env, int njobs) const {
+    auto all_compiles =                                           //
+        all_libraries(*this)                                      //
+        | ranges::views::transform(&library_plan::compile_files)  //
+        | ranges::views::join                                     //
+        ;
+
+    auto okay = parallel_run(all_compiles, njobs, [&](const auto& cf) { cf.compile(env); });
     if (!okay) {
         throw std::runtime_error("Compilation failed.");
     }
 }
 
-void build_plan::archive_all(const toolchain& tc, int njobs, path_ref out_prefix) const {
-    parallel_run(create_libraries, njobs, [&](const library_plan& lib) {
+void build_plan::archive_all(const build_env& env, int njobs) const {
+    parallel_run(all_libraries(*this), njobs, [&](const library_plan& lib) {
         if (!lib.create_archive) {
             return;
         }
@@ -180,10 +191,10 @@ void build_plan::archive_all(const toolchain& tc, int njobs, path_ref out_prefix
             | ranges::views::filter(
                   [](auto&& comp) { return comp.source.kind == source_kind::source; })  //
             | ranges::views::transform([&](auto&& comp) {
-                  return out_prefix / lib.out_subdir / comp.get_object_file_path(tc);
+                  return comp.get_object_file_path(env);
               })                 //
             | ranges::to_vector  //
             ;
-        lib.create_archive->archive(tc, out_prefix, objects);
+        lib.create_archive->archive(env, objects);
     });
 }
