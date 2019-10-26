@@ -1,5 +1,7 @@
 #include "./plan.hpp"
 
+#include <dds/proc.hpp>
+
 #include <range/v3/action/join.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>
@@ -9,15 +11,17 @@
 
 #include <spdlog/spdlog.h>
 
+#include <chrono>
 #include <mutex>
 #include <thread>
 
 using namespace dds;
 
 library_plan library_plan::create(const library& lib, const library_build_params& params) {
-    std::vector<compile_file_plan>   compile_files;
-    std::vector<create_archive_plan> create_archives;
-    std::vector<create_exe_plan>     link_executables;
+    std::vector<compile_file_plan>     compile_files;
+    std::vector<create_exe_plan>       link_executables;
+    std::optional<create_archive_plan> create_archive;
+    bool                               should_create_archive = false;
 
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
@@ -43,6 +47,7 @@ library_plan library_plan::create(const library& lib, const library_build_params
             } else if (sfile.kind == source_kind::app) {
                 app_sources.push_back(sfile);
             } else {
+                should_create_archive = true;
                 lib_sources.push_back(sfile);
             }
         }
@@ -52,17 +57,14 @@ library_plan library_plan::create(const library& lib, const library_build_params
         spdlog::critical("Apps/tests not implemented on this code path");
     }
 
-    if (!lib_sources.empty()) {
+    if (should_create_archive) {
         create_archive_plan ar_plan;
-        ar_plan.in_sources = lib_sources                                   //
-            | ranges::views::transform([](auto&& sf) { return sf.path; })  //
-            | ranges::to_vector;
         ar_plan.name    = lib.name();
         ar_plan.out_dir = params.out_subdir;
-        create_archives.push_back(std::move(ar_plan));
+        create_archive.emplace(std::move(ar_plan));
     }
 
-    return library_plan{compile_files, create_archives, link_executables, params.out_subdir};
+    return library_plan{params.out_subdir, compile_files, create_archive, link_executables};
 }
 
 namespace {
@@ -121,6 +123,35 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 
 }  // namespace
 
+fs::path create_archive_plan::archive_file_path(const toolchain& tc) const noexcept {
+    fs::path fname = fmt::format("{}{}{}", "lib", name, tc.archive_suffix());
+    return fname;
+}
+
+void create_archive_plan::archive(const toolchain&             tc,
+                                  path_ref                     out_prefix,
+                                  const std::vector<fs::path>& objects) const {
+    archive_spec ar;
+    ar.input_files = objects;
+    ar.out_path    = out_prefix / archive_file_path(tc);
+    auto ar_cmd    = tc.create_archive_command(ar);
+    auto out_relpath = fs::relative(ar.out_path, out_prefix).string();
+
+    spdlog::info("[{}] Archive: {}", name, out_relpath);
+    auto start_time = std::chrono::steady_clock::now();
+    auto ar_res     = run_proc(ar_cmd);
+    auto end_time   = std::chrono::steady_clock::now();
+    auto dur_ms     = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    spdlog::info("[{}] Archive: {} - {:n}ms", name, out_relpath, dur_ms.count());
+
+    if (!ar_res.okay()) {
+        spdlog::error("Creating static library archive failed: {}", out_relpath);
+        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
+        throw std::runtime_error(
+            fmt::format("Creating archive [{}] failed for '{}'", out_relpath, name));
+    }
+}
+
 void build_plan::compile_all(const toolchain& tc, int njobs, path_ref out_prefix) const {
     std::vector<std::pair<fs::path, std::reference_wrapper<const compile_file_plan>>> comps;
     for (const auto& lib : create_libraries) {
@@ -137,4 +168,22 @@ void build_plan::compile_all(const toolchain& tc, int njobs, path_ref out_prefix
     if (!okay) {
         throw std::runtime_error("Compilation failed.");
     }
+}
+
+void build_plan::archive_all(const toolchain& tc, int njobs, path_ref out_prefix) const {
+    parallel_run(create_libraries, njobs, [&](const library_plan& lib) {
+        if (!lib.create_archive) {
+            return;
+        }
+        const auto& objects
+            = ranges::views::all(lib.compile_files)  //
+            | ranges::views::filter(
+                  [](auto&& comp) { return comp.source.kind == source_kind::source; })  //
+            | ranges::views::transform([&](auto&& comp) {
+                  return out_prefix / lib.out_subdir / comp.get_object_file_path(tc);
+              })                 //
+            | ranges::to_vector  //
+            ;
+        lib.create_archive->archive(tc, out_prefix, objects);
+    });
 }

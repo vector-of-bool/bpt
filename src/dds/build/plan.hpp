@@ -10,9 +10,13 @@
 namespace dds {
 
 struct create_archive_plan {
-    std::vector<fs::path> in_sources;
-    std::string           name;
-    fs::path              out_dir;
+    std::string name;
+    fs::path    out_dir;
+
+    fs::path archive_file_path(const toolchain& tc) const noexcept;
+
+    void
+    archive(const toolchain& tc, path_ref out_prefix, const std::vector<fs::path>& objects) const;
 };
 
 struct create_exe_plan {
@@ -22,10 +26,10 @@ struct create_exe_plan {
 };
 
 struct library_plan {
-    std::vector<compile_file_plan>   compile_files;
-    std::vector<create_archive_plan> create_archives;
-    std::vector<create_exe_plan>     link_executables;
-    fs::path                         out_subdir;
+    fs::path                           out_subdir;
+    std::vector<compile_file_plan>     compile_files;
+    std::optional<create_archive_plan> create_archive;
+    std::vector<create_exe_plan>       link_executables;
 
     static library_plan create(const library& lib, const library_build_params& params);
 };
@@ -39,6 +43,7 @@ struct build_plan {
     }
 
     void compile_all(const toolchain& tc, int njobs, path_ref out_prefix) const;
+    void archive_all(const toolchain& tc, int njobs, path_ref out_prefix) const;
 };
 
 }  // namespace dds

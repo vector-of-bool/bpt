@@ -372,7 +372,10 @@ struct cli_deps {
                 });
 
             auto plan = dds::create_deps_build_plan(deps);
-            plan.compile_all(tc_filepath.get_toolchain(), 6, build_dir.Get());
+            auto tc   = tc_filepath.get_toolchain();
+            auto bdir = build_dir.Get();
+            plan.compile_all(tc, 6, bdir);
+            plan.archive_all(tc, 6, bdir);
             return 0;
         }
     } build{*this};
