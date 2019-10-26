@@ -184,7 +184,7 @@ std::vector<compile_file_plan> file_compilations_of_lib(const build_params& para
     if (!lib.manifest().uses.empty() || !lib.manifest().links.empty()) {
         fs::path lm_index_path = params.lm_index;
         for (auto cand : {fs::path("INDEX.lmi"), params.out_root / "INDEX.lmi"}) {
-            if (!lm_index_path.empty()) {
+            if (fs::exists(lm_index_path)) {
                 break;
             }
             lm_index_path = params.root / cand;
