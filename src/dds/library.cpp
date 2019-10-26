@@ -48,16 +48,17 @@ auto collect_pf_sources(path_ref path) {
 
 }  // namespace
 
-library library::from_directory(path_ref lib_dir, std::string_view name) {
+library library::from_directory(path_ref lib_dir) {
     auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
-    auto             man_path = lib_dir / "library.dds";
+    man.name      = lib_dir.filename().string();
+    auto man_path = lib_dir / "library.dds";
     if (fs::is_regular_file(man_path)) {
         man = library_manifest::load_from_file(man_path);
     }
 
-    auto lib = library(lib_dir, name, std::move(sources), std::move(man));
+    auto lib = library(lib_dir, std::move(sources), std::move(man));
 
     return lib;
 }
@@ -88,10 +89,10 @@ shared_compile_file_rules library::base_compile_rules() const noexcept {
 auto has_library_dirs
     = [](path_ref dir) { return fs::exists(dir / "src") || fs::exists(dir / "include"); };
 
-std::vector<library> dds::collect_libraries(path_ref root, std::string_view basename) {
+std::vector<library> dds::collect_libraries(path_ref root) {
     std::vector<library> ret;
     if (has_library_dirs(root)) {
-        ret.emplace_back(library::from_directory(root, basename));
+        ret.emplace_back(library::from_directory(root));
     }
 
     auto pf_libs_dir = root / "libs";
@@ -100,12 +101,7 @@ std::vector<library> dds::collect_libraries(path_ref root, std::string_view base
         extend(ret,
                fs::directory_iterator(pf_libs_dir)            //
                    | ranges::views::filter(has_library_dirs)  //
-                   | ranges::views::transform([&](auto p) {
-                         return library::from_directory(p,
-                                                        fmt::format("{}-{}",
-                                                                    basename,
-                                                                    p.path().filename().string()));
-                     }));
+                   | ranges::views::transform([&](auto p) { return library::from_directory(p); }));
     }
     return ret;
 }

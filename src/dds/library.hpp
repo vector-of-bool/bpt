@@ -17,23 +17,16 @@ struct library_ident {
 
 class library {
     fs::path         _path;
-    std::string      _name;
     source_list      _sources;
     library_manifest _man;
 
-    library(path_ref dir, std::string_view name, source_list&& src, library_manifest&& man)
+    library(path_ref dir, source_list&& src, library_manifest&& man)
         : _path(dir)
-        , _name(name)
         , _sources(std::move(src))
         , _man(std::move(man)) {}
 
 public:
-    static library from_directory(path_ref, std::string_view name);
-    static library from_directory(path_ref path) {
-        return from_directory(path, path.filename().string());
-    }
-
-    auto& name() const noexcept { return _name; }
+    static library from_directory(path_ref);
 
     auto& manifest() const noexcept { return _man; }
 
@@ -56,6 +49,6 @@ struct library_build_params {
     shared_compile_file_rules compile_rules;
 };
 
-std::vector<library> collect_libraries(path_ref where, std::string_view basename);
+std::vector<library> collect_libraries(path_ref where);
 
 }  // namespace dds

@@ -37,6 +37,7 @@ struct library_plan {
 
 struct package_plan {
     std::string               name;
+    std::string               namespace_;
     std::vector<std::string>  pkg_requires;
     std::vector<library_plan> create_libraries;
 

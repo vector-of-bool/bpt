@@ -18,6 +18,7 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     lm::read(fmt::format("Reading package manifest '{}'", fpath.string()),
              kvs,
              lm::read_required("Name", ret.name),
+             lm::read_opt("Namespace", ret.namespace_),
              lm::read_required("Version", version_str),
              lm::read_accumulate("Depends", depends_strs),
              lm::reject_unknown());

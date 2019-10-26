@@ -7,6 +7,7 @@
 namespace dds {
 
 struct library_manifest {
+    std::string              name;
     std::vector<fs::path>    private_includes;
     std::vector<std::string> private_defines;
     std::vector<std::string> uses;

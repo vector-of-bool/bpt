@@ -39,9 +39,9 @@ library_plan library_plan::create(const library& lib, const library_build_params
         for (const auto& sfile : to_compile) {
             compile_file_plan cf_plan;
             cf_plan.source    = sfile;
-            cf_plan.qualifier = lib.name();
+            cf_plan.qualifier = lib.manifest().name;
             cf_plan.rules     = params.compile_rules;
-            cf_plan.subdir    = fs::path("obj") / lib.name();
+            cf_plan.subdir    = fs::path("obj") / lib.manifest().name;
             compile_files.push_back(std::move(cf_plan));
             if (sfile.kind == source_kind::test) {
                 test_sources.push_back(sfile);
@@ -60,12 +60,12 @@ library_plan library_plan::create(const library& lib, const library_build_params
 
     if (should_create_archive) {
         create_archive_plan ar_plan;
-        ar_plan.name    = lib.name();
+        ar_plan.name    = lib.manifest().name;
         ar_plan.out_dir = params.out_subdir;
         create_archive.emplace(std::move(ar_plan));
     }
 
-    return library_plan{lib.name(),
+    return library_plan{lib.manifest().name,
                         lib.path(),
                         params.out_subdir,
                         compile_files,
@@ -133,7 +133,7 @@ fs::path create_archive_plan::archive_file_path(const build_env& env) const noex
     return env.output_root / fmt::format("{}{}{}", "lib", name, env.toolchain.archive_suffix());
 }
 
-void create_archive_plan::archive(const build_env& env,
+void create_archive_plan::archive(const build_env&             env,
                                   const std::vector<fs::path>& objects) const {
     archive_spec ar;
     ar.input_files   = objects;
@@ -186,14 +186,13 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
         if (!lib.create_archive) {
             return;
         }
-        const auto& objects
-            = ranges::views::all(lib.compile_files)  //
-            | ranges::views::filter(
-                  [](auto&& comp) { return comp.source.kind == source_kind::source; })  //
-            | ranges::views::transform([&](auto&& comp) {
-                  return comp.get_object_file_path(env);
-              })                 //
-            | ranges::to_vector  //
+        const auto& objects = ranges::views::all(lib.compile_files)  //
+            | ranges::views::filter([](auto&& comp) {
+                                  return comp.source.kind == source_kind::source;
+                              })  //
+            | ranges::views::transform(
+                                  [&](auto&& comp) { return comp.get_object_file_path(env); })  //
+            | ranges::to_vector                                                                 //
             ;
         lib.create_archive->archive(env, objects);
     });

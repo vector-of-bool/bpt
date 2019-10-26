@@ -52,7 +52,7 @@ auto iter_libraries(const project& pr) {
 
 fs::path lib_archive_path(const build_params& params, const library& lib) {
     return params.out_root
-        / (fmt::format("lib{}{}", lib.name(), params.toolchain.archive_suffix()));
+        / (fmt::format("lib{}{}", lib.manifest().name, params.toolchain.archive_suffix()));
 }
 
 void copy_headers(const fs::path& source, const fs::path& dest, const source_list& sources) {
@@ -79,12 +79,12 @@ fs::path export_project_library(const build_params& params,
         header_root = lib.path() / "src";
     }
 
-    auto lml_path       = export_root / fmt::format("{}.lml", lib.name());
+    auto lml_path       = export_root / fmt::format("{}.lml", lib.manifest().name);
     auto lml_parent_dir = lml_path.parent_path();
 
     std::vector<lm::pair> pairs;
     pairs.emplace_back("Type", "Library");
-    pairs.emplace_back("Name", lib.name());
+    pairs.emplace_back("Name", lib.manifest().name);
 
     if (fs::is_directory(header_root)) {
         auto header_dest = lib_out_root / "include";
@@ -228,7 +228,10 @@ std::vector<compile_file_plan> file_compilations_of_lib(const build_params& para
         sources                          //
         | filter(should_compile_source)  //
         | transform([&](auto&& src) {
-              return compile_file_plan{rules, "obj/" + lib.name(), src, lib.name()};
+              return compile_file_plan{rules,
+                                       "obj/" + lib.manifest().name,
+                                       src,
+                                       lib.manifest().name};
           })  //
         | to_vector;
 }
@@ -284,7 +287,7 @@ std::optional<fs::path> create_lib_archive(const build_params&      params,
         fs::remove(arc.out_path);
     }
 
-    spdlog::info("Create archive for {}: {}", lib.name(), arc.out_path.string());
+    spdlog::info("Create archive for {}: {}", lib.manifest().name, arc.out_path.string());
     fs::create_directories(arc.out_path.parent_path());
     auto ar_res = run_proc(ar_cmd);
     if (!ar_res.okay()) {
@@ -395,7 +398,8 @@ std::vector<link_results> link_project(const build_params&                   par
         ranges::views::all(compilations)  //
         | transform([&](const compile_file_plan& comp) -> std::pair<fs::path, fs::path> {
               return std::pair(comp.source.path,
-                               comp.get_object_file_path(build_env{params.toolchain, params.out_root}));
+                               comp.get_object_file_path(
+                                   build_env{params.toolchain, params.out_root}));
           })                               //
         | ranges::to<object_file_index>()  //
         ;
@@ -408,8 +412,8 @@ std::vector<link_results> link_project(const build_params&                   par
 
 }  // namespace
 
-void dds::build(const build_params& params, const package_manifest& man) {
-    auto libs = collect_libraries(params.root, man.name);
+void dds::build(const build_params& params, const package_manifest&) {
+    auto libs = collect_libraries(params.root);
     // auto               sroot      = dds::sroot{params.root};
     // auto               comp_rules = sroot.base_compile_rules();
 
