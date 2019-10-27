@@ -29,8 +29,9 @@ def run_test_dir(dir: Path, opts: TestOptions) -> bool:
         opts,
         'Source Distribution',
         'sdist',
+        'create',
         f'--out=_build/{dir.stem}/test.dsd',
-        '--force',
+        '--replace',
     )
     return fails == 0
 
