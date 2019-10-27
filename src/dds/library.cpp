@@ -1,6 +1,6 @@
 #include <dds/library.hpp>
 
-#include <dds/build/compile.hpp>
+#include <dds/build/plan/compile_file.hpp>
 #include <dds/build/source_dir.hpp>
 #include <dds/util/algo.hpp>
 

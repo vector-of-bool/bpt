@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/build/compile.hpp>
+#include <dds/build/plan/compile_file.hpp>
 #include <dds/build/source_dir.hpp>
 #include <dds/library_manifest.hpp>
 #include <dds/source.hpp>
@@ -42,11 +42,9 @@ public:
 };
 
 struct library_build_params {
-    fs::path                  out_subdir;
-    bool                      build_tests = false;
-    bool                      build_apps  = false;
-    std::vector<fs::path>     rt_link_libraries;
-    shared_compile_file_rules compile_rules;
+    fs::path out_subdir;
+    bool     build_tests = false;
+    bool     build_apps  = false;
 };
 
 std::vector<library> collect_libraries(path_ref where);

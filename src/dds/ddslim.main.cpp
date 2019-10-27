@@ -375,10 +375,11 @@ struct cli_deps {
                                              man.dependencies.end());
                 });
 
-            auto           plan = dds::create_deps_build_plan(deps);
             auto           tc   = tc_filepath.get_toolchain();
             auto           bdir = build_dir.Get();
             dds::build_env env{std::move(tc), bdir};
+
+            auto plan = dds::create_deps_build_plan(deps, env);
             plan.compile_all(env, 6);
             plan.archive_all(env, 6);
             if (!no_lmi.Get()) {

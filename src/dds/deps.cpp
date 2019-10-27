@@ -2,6 +2,8 @@
 
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
+#include <dds/usage_reqs.hpp>
+#include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
@@ -72,12 +74,13 @@ void detail::do_find_deps(const repository& repo, const dependency& dep, std::ve
 }
 
 using sdist_index_type = std::map<std::string, std::reference_wrapper<const sdist>>;
+using sdist_names      = std::set<std::string>;
 
 namespace {
 
-void linkup_dependencies(shared_compile_file_rules& rules,
-                         const package_manifest&    man,
-                         const sdist_index_type&    sd_idx) {
+void resolve_ureqs_(shared_compile_file_rules& rules,
+                    const package_manifest&    man,
+                    const sdist_index_type&    sd_idx) {
     for (const dependency& dep : man.dependencies) {
         auto found = sd_idx.find(dep.name);
         if (found == sd_idx.end()) {
@@ -86,7 +89,7 @@ void linkup_dependencies(shared_compile_file_rules& rules,
                             dep.name,
                             man.name));
         }
-        linkup_dependencies(rules, found->second.get().manifest, sd_idx);
+        resolve_ureqs_(rules, found->second.get().manifest, sd_idx);
         auto lib_src     = found->second.get().path / "src";
         auto lib_include = found->second.get().path / "include";
         if (fs::exists(lib_include)) {
@@ -97,32 +100,75 @@ void linkup_dependencies(shared_compile_file_rules& rules,
     }
 }
 
-void add_sdist_to_dep_plan(build_plan& plan, const sdist& sd, const sdist_index_type& sd_idx) {
-    auto& pkg      = plan.build_packages.emplace_back();
-    pkg.name       = sd.manifest.name;
-    pkg.namespace_ = sd.manifest.namespace_;
-    auto libs      = collect_libraries(sd.path);
+void resolve_ureqs(shared_compile_file_rules rules,
+                   const sdist&              sd,
+                   const library&            lib,
+                   const library_plan&       lib_plan,
+                   build_env_ref             env,
+                   usage_requirement_map&    ureqs) {
+    // Add the transitive requirements for this library to our compile rules.
+    for (auto&& use : lib.manifest().uses) {
+        ureqs.apply(rules, use.namespace_, use.name);
+    }
+
+    // Create usage requirements for this libary.
+    lm::library& reqs = ureqs.add(sd.manifest.namespace_, lib.manifest().name);
+    reqs.include_paths.push_back(lib.public_include_dir());
+    reqs.name  = lib.manifest().name;
+    reqs.uses  = lib.manifest().uses;
+    reqs.links = lib.manifest().links;
+    if (lib_plan.create_archive()) {
+        reqs.linkable_path = lib_plan.create_archive()->calc_archive_file_path(env);
+    }
+    // TODO: preprocessor definitions
+}
+
+void add_sdist_to_dep_plan(build_plan&             plan,
+                           const sdist&            sd,
+                           build_env_ref           env,
+                           const sdist_index_type& sd_idx,
+                           usage_requirement_map&  ureqs,
+                           sdist_names&            already_added) {
+    if (already_added.find(sd.manifest.name) != already_added.end()) {
+        // We've already loaded this package into the plan.
+        return;
+    }
+    spdlog::debug("Add to plan: {}", sd.manifest.name);
+    // First, load every dependency
+    for (const auto& dep : sd.manifest.dependencies) {
+        auto other = sd_idx.find(dep.name);
+        assert(other != sd_idx.end()
+               && "Failed to load a transitive dependency shortly after initializing them. What?");
+        add_sdist_to_dep_plan(plan, other->second, env, sd_idx, ureqs, already_added);
+    }
+    // Record that we have been processed:
+    already_added.insert(sd.manifest.name);
+    // Add the package:
+    auto& pkg  = plan.add_package(package_plan(sd.manifest.name, sd.manifest.namespace_));
+    auto  libs = collect_libraries(sd.path);
     for (const auto& lib : libs) {
         shared_compile_file_rules comp_rules = lib.base_compile_rules();
-        linkup_dependencies(comp_rules, sd.manifest, sd_idx);
-        library_build_params params;
-        params.compile_rules = comp_rules;
-        pkg.add_library(lib, params);
+        library_build_params      params;
+        auto                      lib_plan = library_plan::create(lib, params, ureqs);
+        resolve_ureqs(comp_rules, sd, lib, lib_plan, env, ureqs);
+        pkg.add_library(std::move(lib_plan));
     }
 }
 
 }  // namespace
 
-build_plan dds::create_deps_build_plan(const std::vector<sdist>& deps) {
-    auto sd_idx = deps | ranges::views::transform([](const auto& sd) {
-                      return std::pair(sd.manifest.name, std::cref(sd));
-                  })
+build_plan dds::create_deps_build_plan(const std::vector<sdist>& deps, build_env_ref env) {
+    auto sd_idx = deps  //
+        | ranges::views::transform(
+                      [](const auto& sd) { return std::pair(sd.manifest.name, std::cref(sd)); })  //
         | ranges::to<sdist_index_type>();
 
-    build_plan plan;
+    build_plan            plan;
+    usage_requirement_map ureqs;
+    sdist_names           already_added;
     for (const sdist& sd : deps) {
         spdlog::info("Recording dependency: {}", sd.manifest.name);
-        add_sdist_to_dep_plan(plan, sd, sd_idx);
+        add_sdist_to_dep_plan(plan, sd, env, sd_idx, ureqs, already_added);
     }
     return plan;
 }
@@ -130,20 +176,20 @@ build_plan dds::create_deps_build_plan(const std::vector<sdist>& deps) {
 namespace {
 
 fs::path generate_lml(const library_plan& lib, path_ref libdir, const build_env& env) {
-    auto fname    = lib.name + ".lml";
+    auto fname    = lib.name() + ".lml";
     auto lml_path = libdir / fname;
 
     std::vector<lm::pair> kvs;
     kvs.emplace_back("Type", "Library");
-    kvs.emplace_back("Name", lib.name);
-    if (lib.create_archive) {
+    kvs.emplace_back("Name", lib.name());
+    if (lib.create_archive()) {
         kvs.emplace_back("Path",
-                         fs::relative(lib.create_archive->archive_file_path(env),
+                         fs::relative(lib.create_archive()->calc_archive_file_path(env),
                                       lml_path.parent_path())
                              .string());
     }
-    auto pub_inc_dir = lib.source_root / "include";
-    auto src_dir     = lib.source_root / "src";
+    auto pub_inc_dir = lib.source_root() / "include";
+    auto src_dir     = lib.source_root() / "src";
     if (fs::exists(src_dir)) {
         pub_inc_dir = src_dir;
     }
@@ -157,16 +203,16 @@ fs::path generate_lml(const library_plan& lib, path_ref libdir, const build_env&
 }
 
 fs::path generate_lmp(const package_plan& pkg, path_ref basedir, const build_env& env) {
-    auto fname    = pkg.name + ".lmp";
+    auto fname    = pkg.name() + ".lmp";
     auto lmp_path = basedir / fname;
 
     std::vector<lm::pair> kvs;
     kvs.emplace_back("Type", "Package");
-    kvs.emplace_back("Name", pkg.name);
-    kvs.emplace_back("Namespace", pkg.namespace_);
+    kvs.emplace_back("Name", pkg.name());
+    kvs.emplace_back("Namespace", pkg.namespace_());
 
-    for (auto&& lib : pkg.create_libraries) {
-        auto lml = generate_lml(lib, basedir / pkg.name, env);
+    for (auto&& lib : pkg.libraries()) {
+        auto lml = generate_lml(lib, basedir / pkg.name(), env);
         kvs.emplace_back("Library", fs::relative(lml, lmp_path.parent_path()).string());
     }
 
@@ -184,11 +230,11 @@ void dds::write_libman_index(path_ref out_filepath, const build_plan& plan, cons
     auto                  lm_items_dir = out_filepath.parent_path() / "_libman";
     std::vector<lm::pair> kvs;
     kvs.emplace_back("Type", "Index");
-    for (const package_plan& pkg : plan.build_packages) {
+    for (const package_plan& pkg : plan.packages()) {
         auto pkg_lmp = generate_lmp(pkg, lm_items_dir, env);
         kvs.emplace_back("Package",
                          fmt::format("{}; {}",
-                                     pkg.name,
+                                     pkg.name(),
                                      fs::relative(pkg_lmp, out_filepath.parent_path()).string()));
     }
     lm::write_pairs(out_filepath, kvs);

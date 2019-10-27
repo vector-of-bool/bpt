@@ -42,7 +42,7 @@ inline std::vector<sdist> find_dependencies(const repository& repo, Iter it, Snt
     return acc;
 }
 
-build_plan create_deps_build_plan(const std::vector<sdist>& deps);
+build_plan create_deps_build_plan(const std::vector<sdist>& deps, build_env_ref env);
 
 void write_libman_index(path_ref where, const build_plan& plan, const build_env& env);
 

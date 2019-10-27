@@ -1,19 +1,11 @@
 #pragma once
 
+#include <dds/build/plan/base.hpp>
 #include <dds/source.hpp>
-#include <dds/toolchain.hpp>
-#include <dds/util/fs.hpp>
 
 #include <memory>
-#include <optional>
-#include <stdexcept>
 
 namespace dds {
-
-struct build_env {
-    dds::toolchain toolchain;
-    fs::path       output_root;
-};
 
 struct compile_failure : std::runtime_error {
     using runtime_error::runtime_error;
@@ -41,16 +33,27 @@ public:
     auto& enable_warnings() const noexcept { return _impl->enable_warnings; }
 };
 
-struct compile_file_plan {
-    shared_compile_file_rules rules;
-    fs::path                  subdir;
-    dds::source_file          source;
-    std::string               qualifier;
+class compile_file_plan {
+    shared_compile_file_rules _rules;
+    source_file               _source;
+    std::string               _qualifier;
+    fs::path                  _subdir;
 
-    fs::path get_object_file_path(const build_env& env) const noexcept;
-    void     compile(const build_env&) const;
+public:
+    compile_file_plan(shared_compile_file_rules rules,
+                      source_file               sf,
+                      std::string_view          qual,
+                      path_ref                  subdir)
+        : _rules(rules)
+        , _source(std::move(sf))
+        , _qualifier(qual)
+        , _subdir(subdir) {}
+
+    const source_file& source() const noexcept { return _source; }
+    path_ref           source_path() const noexcept { return _source.path; }
+
+    fs::path calc_object_file_path(build_env_ref env) const noexcept;
+    void     compile(build_env_ref) const;
 };
-
-void execute_all(const std::vector<compile_file_plan>&, int n_jobs, const build_env& env);
 
 }  // namespace dds
