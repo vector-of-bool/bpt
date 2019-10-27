@@ -10,7 +10,7 @@
 
 namespace dds {
 
-class sdist;
+struct sdist;
 
 enum repo_flags {
     none             = 0b00,
