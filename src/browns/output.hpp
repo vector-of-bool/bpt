@@ -40,14 +40,15 @@ Digest parse_digest(std::string_view str) {
         if (c >= 'A' && c <= 'F') {
             c = static_cast<char>(c + ('a' - 'A'));
         }
+        std::byte nib{0};
         if (c >= '0' && c <= '9') {
-            return std::byte(c - '0');
+            nib = std::byte(c - '0');
         } else if (c >= 'a' && c <= 'f') {
-            return std::byte(c - 'a');
+            nib = std::byte(c - 'a');
         } else {
             invalid();
         }
-        std::terminate();
+        return nib;
     };
 
     // We must have an even number of chars to form full octets
