@@ -153,7 +153,7 @@ def _compile_src(opts: BuildOptions, cpp_file: Path) -> Tuple[Path, Path]:
     if stdout:
         print(stdout, end='')
     end = time.time()
-    print(f'{msg} - Done: {end - start:.2}s')
+    print(f'{msg} - Done: {end - start:.2n}s')
     return cpp_file, obj_path
 
 
