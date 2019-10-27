@@ -82,5 +82,7 @@ library_plan library_plan::create(const library&               lib,
     return library_plan{lib.manifest().name,
                         lib.path(),
                         std::move(create_archive),
-                        std::move(link_executables)};
+                        std::move(link_executables),
+                        lib.manifest().uses,
+                        lib.manifest().links};
 }

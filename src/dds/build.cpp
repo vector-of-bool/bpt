@@ -37,74 +37,50 @@ struct archive_failure : std::runtime_error {
     using runtime_error::runtime_error;
 };
 
-/**
- * Return an iterable over every library in the project
- */
-auto iter_libraries(const project& pr) {
-    std::vector<std::reference_wrapper<const library>> libs;
-    if (pr.main_library()) {
-        libs.push_back(*pr.main_library());
-    }
-    extend(libs, pr.submodules());
-    return libs;
-}
-
-fs::path lib_archive_path(const build_params& params, const library& lib) {
-    return params.out_root
-        / (fmt::format("lib{}{}", lib.manifest().name, params.toolchain.archive_suffix()));
-}
-
-void copy_headers(const fs::path& source, const fs::path& dest, const source_list& sources) {
-    for (auto& file : sources) {
-        if (file.kind != source_kind::header) {
+void copy_headers(const fs::path& source, const fs::path& dest) {
+    for (fs::path file : fs::recursive_directory_iterator(source)) {
+        if (infer_source_kind(file) != source_kind::header) {
             continue;
         }
-        auto relpath    = fs::relative(file.path, source);
+        auto relpath    = fs::relative(file, source);
         auto dest_fpath = dest / relpath;
         spdlog::info("Export header: {}", relpath.string());
         fs::create_directories(dest_fpath.parent_path());
-        fs::copy_file(file.path, dest_fpath);
+        fs::copy_file(file, dest_fpath);
     }
 }
 
-fs::path export_project_library(const build_params& params,
-                                const library&      lib,
-                                const project&      project,
-                                path_ref            export_root) {
-    auto relpath      = fs::relative(lib.path(), project.root());
-    auto lib_out_root = export_root / relpath;
-    auto header_root  = lib.path() / "include";
+fs::path export_project_library(const library_plan& lib, build_env_ref env, path_ref export_root) {
+    auto lib_out_root = export_root / lib.name();
+    auto header_root  = lib.source_root() / "include";
     if (!fs::is_directory(header_root)) {
-        header_root = lib.path() / "src";
+        header_root = lib.source_root() / "src";
     }
 
-    auto lml_path       = export_root / fmt::format("{}.lml", lib.manifest().name);
+    auto lml_path       = export_root / fmt::format("{}.lml", lib.name());
     auto lml_parent_dir = lml_path.parent_path();
 
     std::vector<lm::pair> pairs;
     pairs.emplace_back("Type", "Library");
-    pairs.emplace_back("Name", lib.manifest().name);
+    pairs.emplace_back("Name", lib.name());
 
     if (fs::is_directory(header_root)) {
         auto header_dest = lib_out_root / "include";
-        copy_headers(header_root, header_dest, lib.all_sources());
+        copy_headers(header_root, header_dest);
         pairs.emplace_back("Include-Path", fs::relative(header_dest, lml_parent_dir).string());
     }
 
-    auto ar_path = lib_archive_path(params, lib);
-    if (fs::is_regular_file(ar_path)) {
-        // XXX: We don't want to just export the archive simply because it exists!
-        //      We should check that we actually generated one as part of the
-        //      build, otherwise we might end up packaging a random static lib.
+    if (lib.create_archive()) {
+        auto ar_path = lib.create_archive()->calc_archive_file_path(env);
         auto ar_dest = lib_out_root / ar_path.filename();
         fs::copy_file(ar_path, ar_dest);
         pairs.emplace_back("Path", fs::relative(ar_dest, lml_parent_dir).string());
     }
 
-    for (const auto& use : lib.manifest().uses) {
+    for (const auto& use : lib.uses()) {
         pairs.emplace_back("Uses", fmt::format("{}/{}", use.namespace_, use.name));
     }
-    for (const auto& links : lib.manifest().links) {
+    for (const auto& links : lib.links()) {
         pairs.emplace_back("Links", fmt::format("{}/{}", links.namespace_, links.name));
     }
 
@@ -112,13 +88,13 @@ fs::path export_project_library(const build_params& params,
     return lml_path;
 }
 
-void export_project(const build_params& params, const project& project) {
-    if (project.manifest().name.empty()) {
+void export_project(const package_plan& pkg, build_env_ref env) {
+    if (pkg.name().empty()) {
         throw compile_failure(
-            fmt::format("Cannot generate an export when the project has no name (Provide a "
+            fmt::format("Cannot generate an export when the package has no name (Provide a "
                         "package.dds with a `Name` field)"));
     }
-    const auto export_root = params.out_root / fmt::format("{}.lpk", project.manifest().name);
+    const auto export_root = env.output_root / fmt::format("{}.lpk", pkg.name());
     spdlog::info("Generating project export: {}", export_root.string());
     fs::remove_all(export_root);
     fs::create_directories(export_root);
@@ -126,20 +102,15 @@ void export_project(const build_params& params, const project& project) {
     std::vector<lm::pair> pairs;
 
     pairs.emplace_back("Type", "Package");
-    pairs.emplace_back("Name", project.manifest().name);
-    pairs.emplace_back("Namespace", project.manifest().name);
+    pairs.emplace_back("Name", pkg.name());
+    pairs.emplace_back("Namespace", pkg.namespace_());
 
-    auto all_libs = iter_libraries(project);
-    extend(pairs,
-           all_libs  //
-               | transform([&](auto&& lib) {
-                     return export_project_library(params, lib, project, export_root);
-                 })                                                                           //
-               | transform([](auto&& path) { return lm::pair("Library", path.string()); }));  //
+    for (const auto& lib : pkg.libraries()) {
+        export_project_library(lib, env, export_root);
+    }
 
     lm::write_pairs(export_root / "package.lmp", pairs);
 }
-
 
 usage_requirement_map
 load_usage_requirements(path_ref project_root, path_ref build_root, path_ref user_lm_index) {
@@ -189,16 +160,6 @@ void dds::build(const build_params& params, const package_manifest& man) {
 
     auto project = project::from_directory(params.root);
 
-    // dds::execute_all(compiles, params.parallel_jobs, env);
-
-    using namespace ranges::views;
-
-    // auto link_res = link_project(params, project, compiles);
-
-    // auto all_tests = link_res                                    //
-    //     | transform([](auto&& link) { return link.test_exes; })  //
-    //     | ranges::actions::join;
-
     // int n_test_fails = 0;
     // for (path_ref test_exe : all_tests) {
     //     spdlog::info("Running test: {}", fs::relative(test_exe, params.out_root).string());
@@ -213,7 +174,7 @@ void dds::build(const build_params& params, const package_manifest& man) {
     //     throw compile_failure("Test failures during build");
     // }
 
-    // if (params.do_export) {
-    //     export_project(params, project);
-    // }
+    if (params.do_export) {
+        export_project(pkg, env);
+    }
 }
