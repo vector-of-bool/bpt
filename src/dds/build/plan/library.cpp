@@ -2,8 +2,8 @@
 
 #include <dds/util/algo.hpp>
 
-#include <range/v3/view/filter.hpp>
 #include <range/v3/view/concat.hpp>
+#include <range/v3/view/filter.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace dds;
@@ -39,7 +39,7 @@ library_plan library_plan::create(const library&               lib,
         }
     }
 
-    auto compile_rules = lib.base_compile_rules();
+    auto compile_rules              = lib.base_compile_rules();
     compile_rules.enable_warnings() = params.enable_warnings;
     for (const auto& use : lib.manifest().uses) {
         ureqs.apply(compile_rules, use.namespace_, use.name);
@@ -65,7 +65,8 @@ library_plan library_plan::create(const library&               lib,
     }
 
     for (const source_file& source : ranges::views::concat(app_sources, test_sources)) {
-        auto subdir = source.kind == source_kind::test ? params.out_subdir / "test" : params.out_subdir;
+        auto subdir
+            = source.kind == source_kind::test ? params.out_subdir / "test" : params.out_subdir;
         link_executables.emplace_back(in_libs,
                                       compile_file_plan(compile_rules,
                                                         source,

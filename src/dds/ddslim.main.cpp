@@ -236,7 +236,7 @@ struct cli_sdist {
         int run() {
             auto repo_dir = repo_where.Get();
             // TODO: Generate a unique name to avoid conflicts
-            auto              tmp_sdist = repo_dir / ".tmp.sdist";
+            auto tmp_sdist = repo_dir / ".tmp.sdist";
             if (dds::fs::exists(tmp_sdist)) {
                 dds::fs::remove_all(tmp_sdist);
             }

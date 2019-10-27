@@ -31,6 +31,9 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
         throw std::runtime_error(
             fmt::format("'Version' field in [{}] may not be an empty string", fpath.string()));
     }
+    if (ret.namespace_.empty()) {
+        ret.namespace_ = ret.name;
+    }
 
     ret.version = semver::version::parse(version_str);
 

@@ -27,8 +27,6 @@ library library::from_file(path_ref fpath) {
          read_accumulate("Links", links_strs),
          read_accumulate("Special-Uses", ret.special_uses));
 
-    auto split_req = [](auto&& str) {};
-
     for (auto&& uses_str : uses_strs) {
         ret.uses.push_back(split_usage_string(uses_str));
     }
