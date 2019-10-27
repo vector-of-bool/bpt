@@ -11,7 +11,7 @@ struct compile_failure : std::runtime_error {
     using runtime_error::runtime_error;
 };
 
-struct shared_compile_file_rules {
+class shared_compile_file_rules {
     struct rules_impl {
         std::vector<fs::path>    inc_dirs;
         std::vector<std::string> defs;
