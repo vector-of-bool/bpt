@@ -13,6 +13,15 @@
 
 using namespace dds;
 
+std::vector<std::string> compile_file_plan::generate_compile_command(build_env_ref env) const
+    noexcept {
+    compile_file_spec spec{_source.path, calc_object_file_path(env)};
+    spec.enable_warnings = _rules.enable_warnings();
+    extend(spec.include_dirs, _rules.include_dirs());
+    extend(spec.definitions, _rules.defs());
+    return env.toolchain.create_compile_command(spec);
+}
+
 void compile_file_plan::compile(const build_env& env) const {
     const auto obj_path = calc_object_file_path(env);
     fs::create_directories(obj_path.parent_path());
@@ -22,13 +31,7 @@ void compile_file_plan::compile(const build_env& env) const {
                  fs::relative(_source.path, _source.basis_path).string());
     auto start_time = std::chrono::steady_clock::now();
 
-    compile_file_spec spec{_source.path, obj_path};
-    spec.enable_warnings = _rules.enable_warnings();
-
-    extend(spec.include_dirs, _rules.include_dirs());
-    extend(spec.definitions, _rules.defs());
-
-    auto cmd         = env.toolchain.create_compile_command(spec);
+    auto cmd         = generate_compile_command(env);
     auto compile_res = run_proc(cmd);
 
     auto end_time = std::chrono::steady_clock::now();
@@ -46,13 +49,13 @@ void compile_file_plan::compile(const build_env& env) const {
     }
 
     // MSVC prints the filename of the source file. Dunno why, but they do.
-    if (compile_res.output.find(spec.source_path.filename().string() + "\r\n") == 0) {
-        compile_res.output.erase(0, spec.source_path.filename().string().length() + 2);
+    if (compile_res.output.find(_source.path.filename().string() + "\r\n") == 0) {
+        compile_res.output.erase(0, _source.path.filename().string().length() + 2);
     }
 
     if (!compile_res.output.empty()) {
         spdlog::warn("While compiling file {} [{}]:\n{}",
-                     spec.source_path.string(),
+                     _source.path.string(),
                      quote_command(cmd),
                      compile_res.output);
     }

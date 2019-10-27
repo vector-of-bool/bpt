@@ -1,5 +1,6 @@
 #include "./plan.hpp"
 
+#include <dds/build/iter_compilations.hpp>
 #include <dds/proc.hpp>
 
 #include <range/v3/action/join.hpp>
@@ -72,45 +73,17 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 
 }  // namespace
 
-namespace {
-
-auto all_libraries(const build_plan& plan) {
-    return                                                    //
-        plan.packages()                                       //
-        | ranges::views::transform(&package_plan::libraries)  //
-        | ranges::views::join                                 //
-        ;
-}
-
-}  // namespace
-
 void build_plan::compile_all(const build_env& env, int njobs) const {
-    auto lib_compiles =                                                                        //
-        all_libraries(*this)                                                                   //
-        | ranges::views::transform(&library_plan::create_archive)                              //
-        | ranges::views::filter([&](auto&& opt) { return bool(opt); })                         //
-        | ranges::views::transform([&](auto&& opt) -> auto& { return opt->compile_files(); })  //
-        | ranges::views::join                                                                  //
-        ;
-
-    auto exe_compiles =                                                       //
-        all_libraries(*this)                                                  //
-        | ranges::views::transform(&library_plan::executables)                //
-        | ranges::views::join                                                 //
-        | ranges::views::transform(&link_executable_plan::main_compile_file)  //
-        ;
-
-    auto all_compiles = ranges::views::concat(lib_compiles, exe_compiles);
-
-    auto okay
-        = parallel_run(all_compiles, njobs, [&](const compile_file_plan& cf) { cf.compile(env); });
+    auto okay = parallel_run(iter_compilations(*this), njobs, [&](const compile_file_plan& cf) {
+        cf.compile(env);
+    });
     if (!okay) {
         throw std::runtime_error("Compilation failed.");
     }
 }
 
 void build_plan::archive_all(const build_env& env, int njobs) const {
-    parallel_run(all_libraries(*this), njobs, [&](const library_plan& lib) {
+    parallel_run(iter_libraries(*this), njobs, [&](const library_plan& lib) {
         if (lib.create_archive()) {
             lib.create_archive()->archive(env);
         }
@@ -118,7 +91,7 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
 }
 
 void build_plan::link_all(const build_env& env, int) const {
-    for (auto&& lib : all_libraries(*this)) {
+    for (auto&& lib : iter_libraries(*this)) {
         for (auto&& exe : lib.executables()) {
             exe.link(env, lib);
         }

@@ -49,6 +49,8 @@ public:
         , _qualifier(qual)
         , _subdir(subdir) {}
 
+    std::vector<std::string> generate_compile_command(build_env_ref) const noexcept;
+
     const source_file& source() const noexcept { return _source; }
     path_ref           source_path() const noexcept { return _source.path; }
 

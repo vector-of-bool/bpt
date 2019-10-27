@@ -5,6 +5,7 @@
 #include <dds/proc.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
+#include <dds/compdb.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
@@ -153,6 +154,9 @@ void dds::build(const build_params& params, const package_manifest& man) {
     }
 
     dds::build_env env{params.toolchain, params.out_root};
+    if (params.generate_compdb) {
+        generate_compdb(plan, env);
+    }
     plan.compile_all(env, params.parallel_jobs);
     plan.archive_all(env, params.parallel_jobs);
     plan.link_all(env, params.parallel_jobs);
