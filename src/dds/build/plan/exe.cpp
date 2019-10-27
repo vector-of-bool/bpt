@@ -3,7 +3,6 @@
 #include <dds/build/plan/library.hpp>
 #include <dds/proc.hpp>
 
-#include <range/v3/algorithm/find_if.hpp>
 #include <spdlog/spdlog.h>
 
 #include <cassert>
@@ -22,9 +21,10 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     spec.inputs = _input_libs;
     if (lib.create_archive()) {
         spec.inputs.push_back(lib.create_archive()->calc_archive_file_path(env));
-        auto main_obj = _main_compile.calc_object_file_path(env);
-        spec.inputs.push_back(std::move(main_obj));
     }
+
+    auto main_obj = _main_compile.calc_object_file_path(env);
+    spec.inputs.push_back(std::move(main_obj));
 
     const auto link_command = env.toolchain.create_link_executable_command(spec);
     spdlog::info("Linking executable: {}", fs::relative(spec.output, env.output_root).string());
