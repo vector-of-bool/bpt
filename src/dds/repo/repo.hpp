@@ -6,6 +6,7 @@
 #include <cassert>
 #include <functional>
 #include <shared_mutex>
+#include <optional>
 #include <vector>
 
 namespace dds {
