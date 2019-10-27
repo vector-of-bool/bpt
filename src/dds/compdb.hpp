@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/build/plan.hpp>
+#include <dds/build/plan/full.hpp>
 
 namespace dds {
 

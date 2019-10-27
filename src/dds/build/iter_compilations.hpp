@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/build/plan.hpp>
+#include <dds/build/plan/full.hpp>
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
