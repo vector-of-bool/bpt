@@ -73,6 +73,7 @@ fs::path export_project_library(const library_plan& lib, build_env_ref env, path
     if (lib.create_archive()) {
         auto ar_path = lib.create_archive()->calc_archive_file_path(env);
         auto ar_dest = lib_out_root / ar_path.filename();
+        fs::create_directories(ar_dest.parent_path());
         fs::copy_file(ar_path, ar_dest);
         pairs.emplace_back("Path", fs::relative(ar_dest, lml_parent_dir).string());
     }
