@@ -188,40 +188,84 @@ struct cli_repo {
 
 struct cli_sdist {
     cli_base&     base;
-    args::Command cmd{base.cmd_group, "sdist", "Create a source distribution of a project"};
+    args::Command cmd{base.cmd_group, "sdist", "Work with source distributions"};
 
     common_flags _common{cmd};
 
     common_project_flags project{cmd};
 
-    path_flag out{cmd,
-                  "out",
-                  "The full destination of the source distribution",
-                  {"out"},
-                  dds::fs::current_path() / "project.dsd"};
+    args::Group sdist_group{cmd, "`sdist` commands"};
 
-    args::Flag      force{cmd, "force", "Forcibly replace an existing result", {"force"}};
-    args::Flag      export_{cmd,
-                       "export",
-                       "Export the result into the local repository",
-                       {'E', "export"}};
-    repo_where_flag repo_where{cmd};
+    struct {
+        cli_sdist&    parent;
+        args::Command cmd{parent.sdist_group, "create", "Create a source distribution"};
 
-    int run() {
-        dds::sdist_params params;
-        params.project_dir = project.root.Get();
-        params.dest_path   = out.Get();
-        params.force       = force.Get();
-        auto sdist         = dds::create_sdist(params);
-        if (export_.Get()) {
+        path_flag out{cmd,
+                      "out",
+                      "The destination of the source distribution",
+                      {"out"},
+                      dds::fs::current_path() / "project.dsd"};
+
+        args::Flag force{cmd,
+                         "replace-if-exists",
+                         "Forcibly replace an existing distribution",
+                         {"replace"}};
+
+        int run() {
+            dds::sdist_params params;
+            params.project_dir = parent.project.root.Get();
+            params.dest_path   = out.Get();
+            params.force       = force.Get();
+            dds::create_sdist(params);
+            return 0;
+        }
+    } create{*this};
+
+    struct {
+        cli_sdist&    parent;
+        args::Command cmd{parent.sdist_group,
+                          "export",
+                          "Export a source distribution to a repository"};
+
+        repo_where_flag repo_where{cmd};
+        args::Flag      force{cmd,
+                         "replace-if-exists",
+                         "Replace an existing export in the repository",
+                         {"replace"}};
+
+        int run() {
+            auto repo_dir = repo_where.Get();
+            // TODO: Generate a unique name to avoid conflicts
+            auto              tmp_sdist = repo_dir / ".tmp.sdist";
+            if (dds::fs::exists(tmp_sdist)) {
+                dds::fs::remove_all(tmp_sdist);
+            }
+            dds::sdist_params params;
+            params.project_dir = parent.project.root.Get();
+            params.dest_path   = tmp_sdist;
+            params.force       = true;
+            auto sdist         = dds::create_sdist(params);
             dds::repository::with_repository(  //
-                repo_where.Get(),
+                repo_dir,
                 dds::repo_flags::create_if_absent | dds::repo_flags::write_lock,
                 [&](dds::repository repo) {  //
-                    repo.add_sdist(sdist);
+                    repo.add_sdist(sdist,
+                                   force.Get() ? dds::if_exists::replace
+                                               : dds::if_exists::throw_exc);
                 });
+            return 0;
         }
-        return 0;
+    } export_{*this};
+
+    int run() {
+        if (create.cmd) {
+            return create.run();
+        } else if (export_.cmd) {
+            return export_.run();
+        } else {
+            assert(false && "Unreachable");
+            std::terminate();
+        }
     }
 };
 
