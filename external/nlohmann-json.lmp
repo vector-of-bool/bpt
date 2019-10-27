@@ -1,0 +1,5 @@
+Type: Package
+Name: nlohmann-json
+Namespace: nlohmann
+
+Library: nlohmann-json.lml
