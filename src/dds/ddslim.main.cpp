@@ -440,7 +440,6 @@ struct cli_deps {
             return build.run();
         }
         std::terminate();
-        return 0;
     }
 };
 
