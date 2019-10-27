@@ -3,7 +3,6 @@
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/logging.hpp>
 #include <dds/proc.hpp>
-#include <dds/project.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain.hpp>
 #include <dds/usage_reqs.hpp>
@@ -157,8 +156,6 @@ void dds::build(const build_params& params, const package_manifest& man) {
     plan.compile_all(env, params.parallel_jobs);
     plan.archive_all(env, params.parallel_jobs);
     plan.link_all(env, params.parallel_jobs);
-
-    auto project = project::from_directory(params.root);
 
     // int n_test_fails = 0;
     // for (path_ref test_exe : all_tests) {

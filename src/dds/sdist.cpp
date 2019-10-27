@@ -1,6 +1,5 @@
 #include "./sdist.hpp"
 
-#include <dds/project.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 
@@ -100,28 +99,25 @@ sdist dds::create_sdist(const sdist_params& params) {
 }
 
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
-    auto project = project::from_directory(params.project_dir);
+    auto libs = collect_libraries(params.project_dir);
 
     browns::md5 md5;
 
-    if (project.main_library()) {
-        sdist_copy_library(out, *project.main_library(), params, md5);
+    for (const library& lib : libs) {
+        sdist_copy_library(out, lib, params, md5);
     }
 
-    for (const library& submod : project.submodules()) {
-        sdist_copy_library(out, submod, params, md5);
-    }
-
-    auto man_path = project.root() / "package.dds";
+    auto man_path = params.project_dir / "package.dds";
     if (!fs::is_regular_file(man_path)) {
         throw std::runtime_error(fmt::format(
             "Creating a source distribution requires a package.dds file for the project"));
     }
     sdist_export_file(out, params.project_dir, man_path, md5);
+    auto pkg_man = package_manifest::load_from_file(man_path);
 
     md5.pad();
     auto hash_str = browns::format_digest(md5.digest());
-    spdlog::info("Generated export as {}-{}", project.manifest().name, hash_str);
+    spdlog::info("Generated export as {}-{}", pkg_man.name, hash_str);
 
     std::vector<lm::pair> pairs;
     pairs.emplace_back("MD5-Hash", hash_str);
