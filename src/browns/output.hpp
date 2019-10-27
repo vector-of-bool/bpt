@@ -42,11 +42,11 @@ Digest parse_digest(std::string_view str) {
         }
         if (c >= '0' && c <= '9') {
             return std::byte(c - '0');
-        }
-        if (c >= 'a' && c <= 'f') {
+        } else if (c >= 'a' && c <= 'f') {
             return std::byte(c - 'a');
+        } else {
+            invalid();
         }
-        invalid();
         std::terminate();
     };
 
