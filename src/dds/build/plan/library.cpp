@@ -40,6 +40,7 @@ library_plan library_plan::create(const library&               lib,
     }
 
     auto compile_rules = lib.base_compile_rules();
+    compile_rules.enable_warnings() = params.enable_warnings;
     for (const auto& use : lib.manifest().uses) {
         ureqs.apply(compile_rules, use.namespace_, use.name);
     }

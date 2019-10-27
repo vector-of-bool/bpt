@@ -174,8 +174,9 @@ void dds::build(const build_params& params, const package_manifest& man) {
         = load_usage_requirements(params.root, params.out_root, params.lm_index);
 
     library_build_params lib_params;
-    lib_params.build_tests = params.build_tests;
-    lib_params.build_apps  = params.build_apps;
+    lib_params.build_tests     = params.build_tests;
+    lib_params.build_apps      = params.build_apps;
+    lib_params.enable_warnings = params.enable_warnings;
     for (const library& lib : libs) {
         lib_params.out_subdir = fs::relative(lib.path(), params.root);
         pkg.add_library(library_plan::create(lib, lib_params, ureqs));

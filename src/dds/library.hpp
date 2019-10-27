@@ -43,8 +43,9 @@ public:
 
 struct library_build_params {
     fs::path out_subdir;
-    bool     build_tests = false;
-    bool     build_apps  = false;
+    bool     build_tests     = false;
+    bool     build_apps      = false;
+    bool     enable_warnings = false;
 };
 
 std::vector<library> collect_libraries(path_ref where);
