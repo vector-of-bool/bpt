@@ -5,6 +5,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cassert>
 
 using namespace dds;
@@ -25,6 +26,7 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
 
     auto main_obj = _main_compile.calc_object_file_path(env);
     spec.inputs.push_back(std::move(main_obj));
+    std::reverse(spec.inputs.begin(), spec.inputs.end());
 
     const auto link_command = env.toolchain.create_link_executable_command(spec);
     spdlog::info("Linking executable: {}", fs::relative(spec.output, env.output_root).string());
