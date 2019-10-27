@@ -33,13 +33,20 @@ repository repository::open_for_directory(path_ref dirpath) {
     return {dirpath};
 }
 
-void repository::add_sdist(const sdist& sd) {
+void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     auto sd_dest
-        = _root / "dist" / sd.manifest.name / sd.manifest.version.to_string() / sd.md5_string();
+        = _root / "dist" / fmt::format("{}_{}", sd.manifest.name, sd.manifest.version.to_string());
     if (fs::exists(sd_dest)) {
-        spdlog::info("Source distribution '{}' is already available in the local repo",
-                     sd.path.string());
-        return;
+        auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
+                               sd.path.string());
+        if (ife_action == if_exists::throw_exc) {
+            throw std::runtime_error(msg);
+        } else if (ife_action == if_exists::ignore) {
+            spdlog::warn(msg);
+            return;
+        } else {
+            spdlog::info(msg + " - Replacing");
+        }
     }
     auto tmp_copy = sd_dest;
     tmp_copy.replace_filename(".tmp-import");
@@ -48,6 +55,9 @@ void repository::add_sdist(const sdist& sd) {
     }
     fs::create_directories(tmp_copy.parent_path());
     fs::copy(sd.path, tmp_copy, fs::copy_options::recursive);
+    if (fs::exists(sd_dest)) {
+        fs::remove_all(sd_dest);
+    }
     fs::rename(tmp_copy, sd_dest);
     spdlog::info("Source distribution '{}' successfully exported", sd.ident());
 }
@@ -55,10 +65,6 @@ void repository::add_sdist(const sdist& sd) {
 std::vector<sdist> repository::load_sdists() const noexcept {
     using namespace ranges;
     using namespace ranges::views;
-    auto drop_dot_dirs
-        = filter([](path_ref p) { return !starts_with(p.filename().string(), "."); });
-
-    auto iter_children = [&](path_ref p) { return fs::directory_iterator(p) | drop_dot_dirs; };
 
     auto try_read_sdist = [](path_ref p) -> std::optional<sdist> {
         try {
@@ -72,14 +78,8 @@ std::vector<sdist> repository::load_sdists() const noexcept {
     };
 
     return
-        // Get the top-level `name` dirs
+        // Get the top-level `name-version` dirs
         fs::directory_iterator(_dist_dir())  //
-        // Get the next level `version` dirs
-        | transform(iter_children)  //
-        | views::join               //
-        // Get the next level `ident` dirs
-        | transform(iter_children)  //
-        | views::join               //
         // // Convert each dir into an `sdist` object
         | transform(try_read_sdist)  //
         // // Drop items that failed to load
@@ -90,14 +90,10 @@ std::vector<sdist> repository::load_sdists() const noexcept {
 }
 
 std::optional<sdist> repository::get_sdist(std::string_view name, std::string_view version) const {
-    auto expect_path = _dist_dir() / name / version;
+    auto expect_path = _dist_dir() / fmt::format("{}_{}", name, version);
     if (!fs::is_directory(expect_path)) {
         return std::nullopt;
     }
 
-    auto dir_iter = fs::directory_iterator(expect_path);
-    if (dir_iter == fs::directory_iterator()) {
-        return std::nullopt;
-    }
-    return sdist::from_directory(*dir_iter);
+    return sdist::from_directory(expect_path);
 }
