@@ -19,6 +19,7 @@ INCLUDE_DIRS = [
     'external/spdlog/include',
     'external/wil/include',
     'external/ranges-v3/include',
+    'external/nlohmann-json/include',
 ]
 
 
