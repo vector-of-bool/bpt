@@ -8,7 +8,7 @@
 
 namespace semver {
 
-class invalid_version : std::runtime_error {
+class invalid_version : public std::runtime_error {
     std::ptrdiff_t _offset = 0;
 
 public:
