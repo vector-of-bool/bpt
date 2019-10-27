@@ -1,3 +1,5 @@
+Name: ddslim
+
 Uses: taywee/args
 Uses: spdlog/spdlog
 Uses: ms/wil
