@@ -1,11 +1,11 @@
 #include "./build.hpp"
 
 #include <dds/build/plan/compile_file.hpp>
+#include <dds/compdb.hpp>
 #include <dds/logging.hpp>
 #include <dds/proc.hpp>
 #include <dds/source.hpp>
 #include <dds/toolchain/toolchain.hpp>
-#include <dds/compdb.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
