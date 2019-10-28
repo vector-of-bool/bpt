@@ -1,4 +1,4 @@
-Name: ddslim
+Name: dds
 
 Uses: taywee/args
 Uses: spdlog/spdlog

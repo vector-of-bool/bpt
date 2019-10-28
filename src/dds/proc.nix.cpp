@@ -48,12 +48,12 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
 
     if (errno == ENOENT) {
         std::cerr << fmt::
-                format("[ddslim child executor] The requested executable ({}) could not be found.",
+                format("[dds child executor] The requested executable ({}) could not be found.",
                        strings[0]);
         std::exit(-1);
     }
 
-    std::cerr << "[ddslim child executor] execvp returned! This is a fatal error: "
+    std::cerr << "[dds child executor] execvp returned! This is a fatal error: "
               << std::system_category().message(errno) << '\n';
 
     std::terminate();

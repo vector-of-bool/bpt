@@ -105,7 +105,7 @@ def run_tests(opts: TestOptions) -> int:
 def bootstrap_self(opts: TestOptions):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
-    new_exe = ROOT / '_ddslime.bootstrap-test.exe'
+    new_exe = ROOT / '_dds.bootstrap-test.exe'
     shutil.copy2(opts.exe, new_exe)
     res = subprocess.run([
         str(new_exe),
@@ -125,12 +125,12 @@ def main(argv: List[str]) -> int:
     parser.add_argument(
         '--exe',
         '-e',
-        help='Path to the ddslim executable to test',
+        help='Path to the dds executable to test',
         required=True)
     parser.add_argument(
         '--toolchain',
         '-T',
-        help='The ddslim toolchain to use while testing',
+        help='The dds toolchain to use while testing',
         required=True,
     )
     parser.add_argument(

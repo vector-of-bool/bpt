@@ -132,7 +132,7 @@ def _compile_src(opts: BuildOptions, cpp_file: Path) -> Tuple[Path, Path]:
     build_dir = ROOT / '_build'
     src_dir = ROOT / 'src'
     relpath = cpp_file.relative_to(src_dir)
-    obj_path = build_dir / relpath.with_name(relpath.name + opts.obj_suffix)
+    obj_path = build_dir / '_obj' / relpath.with_name(relpath.name + opts.obj_suffix)
     obj_path.parent.mkdir(exist_ok=True, parents=True)
     cmd = _create_compile_command(opts, cpp_file, obj_path)
     msg = f'Compile C++ file: {cpp_file.relative_to(ROOT)}'
@@ -169,11 +169,11 @@ def compile_sources(opts: BuildOptions,
 def _create_archive_command(opts: BuildOptions,
                             objects: Iterable[Path]) -> Tuple[Path, List[str]]:
     if opts.is_msvc:
-        lib_file = ROOT / '_build/libddslim.lib'
+        lib_file = ROOT / '_build/libdds.lib'
         cmd = ['lib', '/nologo', f'/OUT:{lib_file}', *map(str, objects)]
         return lib_file, cmd
     else:
-        lib_file = ROOT / '_build/libddslim.a'
+        lib_file = ROOT / '_build/libdds.a'
         cmd = ['ar', 'rsc', str(lib_file), *map(str, objects)]
         return lib_file, cmd
 
@@ -292,7 +292,7 @@ def main(argv: Sequence[str]) -> int:
         build_opts,
         objects[next(iter(main_sources))],
         lib,
-        out=ROOT / '_build/ddslim')
+        out=ROOT / '_build/dds')
 
     if args.test:
         list(pool.map(run_test, test_exes))
