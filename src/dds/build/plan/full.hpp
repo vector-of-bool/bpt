@@ -21,6 +21,8 @@ public:
     void  compile_all(const build_env& env, int njobs) const;
     void  archive_all(const build_env& env, int njobs) const;
     void  link_all(const build_env& env, int njobs) const;
+
+    std::vector<test_failure> run_all_tests(build_env_ref env, int njobs) const;
 };
 
 }  // namespace dds

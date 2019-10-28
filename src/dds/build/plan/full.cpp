@@ -114,4 +114,24 @@ void build_plan::link_all(const build_env& env, int njobs) const {
     }
 }
 
+std::vector<test_failure> build_plan::run_all_tests(build_env_ref env, int njobs) const {
+    using namespace ranges::views;
+    auto test_executables =                       //
+        iter_libraries(*this)                     //
+        | transform(&library_plan::executables)   //
+        | join                                    //
+        | filter(&link_executable_plan::is_test)  //
+        ;
+
+    std::mutex mut;
+    std::vector<test_failure> fails;
+
+    parallel_run(test_executables, njobs, [&](const auto& exe) {
+        auto fail_info = exe.run_test(env);
+        if (fail_info) {
+            std::scoped_lock lk{mut};
+            fails.emplace_back(std::move(*fail_info));
+        }
+    });
+    return fails;
 }

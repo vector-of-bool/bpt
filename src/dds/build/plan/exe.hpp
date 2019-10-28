@@ -11,6 +11,12 @@ namespace dds {
 
 class library_plan;
 
+struct test_failure {
+    fs::path    executable_path;
+    std::string output;
+    int         retc;
+};
+
 class link_executable_plan {
     std::vector<fs::path> _input_libs;
     compile_file_plan     _main_compile;
@@ -32,6 +38,10 @@ public:
     fs::path calc_executable_path(const build_env& env) const noexcept;
 
     void link(const build_env&, const library_plan&) const;
+    std::optional<test_failure> run_test(build_env_ref) const;
+
+    bool is_test() const noexcept;
+    bool is_app() const noexcept;
 };
 
 }  // namespace dds

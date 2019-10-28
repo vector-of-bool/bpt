@@ -162,19 +162,13 @@ void dds::build(const build_params& params, const package_manifest& man) {
     plan.archive_all(env, params.parallel_jobs);
     plan.link_all(env, params.parallel_jobs);
 
-    // int n_test_fails = 0;
-    // for (path_ref test_exe : all_tests) {
-    //     spdlog::info("Running test: {}", fs::relative(test_exe, params.out_root).string());
-    //     const auto test_res = run_proc({test_exe.string()});
-    //     if (!test_res.okay()) {
-    //         spdlog::error("TEST FAILED\n{}", test_res.output);
-    //         n_test_fails++;
-    //     }
-    // }
-
-    // if (n_test_fails) {
-    //     throw compile_failure("Test failures during build");
-    // }
+    auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
+    for (auto& failures : test_failures) {
+        spdlog::error("Test {} failed! Output:\n{}[dds - test output end]", failures.executable_path.string(), failures.output);
+    }
+    if (!test_failures.empty()) {
+        throw compile_failure("Test failures during the build!");
+    }
 
     if (params.do_export) {
         export_project(pkg, env);

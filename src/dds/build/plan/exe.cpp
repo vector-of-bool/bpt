@@ -5,6 +5,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <chrono>
 #include <algorithm>
 #include <cassert>
 
@@ -39,5 +40,34 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
                         quote_command(link_command),
                         proc_res.retc,
                         proc_res.output));
+    }
+}
+
+bool link_executable_plan::is_app() const noexcept {
+    return _main_compile.source().kind == source_kind::app;
+}
+
+bool link_executable_plan::is_test() const noexcept {
+    return _main_compile.source().kind == source_kind::test;
+}
+
+std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) const {
+    auto exe_path = calc_executable_path(env);
+    auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
+    spdlog::info(msg);
+    auto start = std::chrono::high_resolution_clock::now();
+    auto res = run_proc({exe_path});
+    auto end = std::chrono::high_resolution_clock::now();
+    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    if (res.okay()) {
+        spdlog::info("{} - PASSED in {:>6n}μs", msg, dur.count());
+        return std::nullopt;
+    } else {
+        spdlog::error("{} - FAILED in {:>6n}μs [exitted {}]", msg, dur.count(), res.retc);
+        test_failure f;
+        f.executable_path = exe_path;
+        f.output = res.output;
+        f.retc = res.retc;
+        return f;
     }
 }
