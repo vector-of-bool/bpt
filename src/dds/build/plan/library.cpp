@@ -76,10 +76,6 @@ library_plan library_plan::create(const library&               lib,
                                       source.path.stem().stem().string());
     }
 
-    if (!app_sources.empty()) {
-        spdlog::critical("Apps not implemented on this code path!");
-    }
-
     return library_plan{lib.manifest().name,
                         lib.path(),
                         std::move(create_archive),
