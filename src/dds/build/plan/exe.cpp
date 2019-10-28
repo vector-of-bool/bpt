@@ -56,7 +56,7 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
     spdlog::info(msg);
     auto start = std::chrono::high_resolution_clock::now();
-    auto res   = run_proc({exe_path});
+    auto res   = run_proc({exe_path.string()});
     auto end   = std::chrono::high_resolution_clock::now();
     auto dur   = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if (res.okay()) {
