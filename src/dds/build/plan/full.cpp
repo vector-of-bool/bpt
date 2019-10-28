@@ -96,18 +96,17 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
 }
 
 void build_plan::link_all(const build_env& env, int njobs) const {
-    auto executables =         //
-        iter_libraries(*this)  //
-        | ranges::views::transform([](const library_plan& lib) {
-              auto repeated = ranges::views::repeat_n(std::cref(lib), lib.executables().size());
-              return ranges::views::zip(repeated, lib.executables());
-          })                   //
-        | ranges::views::join  //
-        ;
+    std::vector<std::pair<std::reference_wrapper<const library_plan>, std::reference_wrapper<const link_executable_plan>>> executables;
+
+    for (auto&& lib : iter_libraries(*this)) {
+        for (auto&& exe : lib.executables()) {
+            executables.emplace_back(lib, exe);
+        }
+    }
 
     auto okay = parallel_run(executables, njobs, [&](const auto& pair) {
         auto&& [lib, exe] = pair;
-        exe.link(env, lib);
+        exe.get().link(env, lib);
     });
     if (!okay) {
         throw std::runtime_error("Failure to link executables");
