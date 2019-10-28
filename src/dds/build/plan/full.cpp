@@ -85,11 +85,14 @@ void build_plan::compile_all(const build_env& env, int njobs) const {
 }
 
 void build_plan::archive_all(const build_env& env, int njobs) const {
-    parallel_run(iter_libraries(*this), njobs, [&](const library_plan& lib) {
+    auto okay = parallel_run(iter_libraries(*this), njobs, [&](const library_plan& lib) {
         if (lib.create_archive()) {
             lib.create_archive()->archive(env);
         }
     });
+    if (!okay) {
+        throw std::runtime_error("Error creating static library archives");
+    }
 }
 
 void build_plan::link_all(const build_env& env, int njobs) const {
@@ -102,8 +105,13 @@ void build_plan::link_all(const build_env& env, int njobs) const {
         | ranges::views::join  //
         ;
 
-    parallel_run(executables, njobs, [&](const auto& pair) {
+    auto okay = parallel_run(executables, njobs, [&](const auto& pair) {
         auto&& [lib, exe] = pair;
         exe.link(env, lib);
     });
+    if (!okay) {
+        throw std::runtime_error("Failure to link executables");
+    }
+}
+
 }
