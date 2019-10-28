@@ -3,7 +3,7 @@
 
 #include <dds/util/signal.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <spdlog/spdlog.h>
 
 #include <poll.h>
 #include <sys/wait.h>
@@ -62,6 +62,7 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
 }  // namespace
 
 proc_result dds::run_proc(const std::vector<std::string>& command) {
+    spdlog::debug("Spawning subprocess: {}", quote_command(command));
     int  stdio_pipe[2] = {};
     auto rc            = ::pipe(stdio_pipe);
     check_rc(rc == 0, "Create stdio pipe for subprocess");
