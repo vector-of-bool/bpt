@@ -444,7 +444,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             return {};
         }
         if (is_msvc) {
-            return {"/W4", "/WX"};
+            return {"/W4"};
         } else if (is_gnu_like) {
             return {"-Wall", "-Wextra", "-Wpedantic", "-Wconversion"};
         }
