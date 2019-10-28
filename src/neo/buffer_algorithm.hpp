@@ -36,7 +36,7 @@ constexpr std::size_t buffer_size(const Seq& seq) {
         ++iter;
     }
     return size;
-};
+}
 
 template <typename MutableSeq, typename ConstSeq>
 constexpr std::size_t
