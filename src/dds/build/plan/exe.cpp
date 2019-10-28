@@ -5,9 +5,9 @@
 
 #include <spdlog/spdlog.h>
 
-#include <chrono>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 
 using namespace dds;
 
@@ -56,9 +56,9 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
     spdlog::info(msg);
     auto start = std::chrono::high_resolution_clock::now();
-    auto res = run_proc({exe_path});
-    auto end = std::chrono::high_resolution_clock::now();
-    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    auto res   = run_proc({exe_path});
+    auto end   = std::chrono::high_resolution_clock::now();
+    auto dur   = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if (res.okay()) {
         spdlog::info("{} - PASSED - {:>9n}μs", msg, dur.count());
         return std::nullopt;
@@ -66,8 +66,8 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
         spdlog::error("{} - FAILED - {:>9n}μs [exited {}]", msg, dur.count(), res.retc);
         test_failure f;
         f.executable_path = exe_path;
-        f.output = res.output;
-        f.retc = res.retc;
+        f.output          = res.output;
+        f.retc            = res.retc;
         return f;
     }
 }

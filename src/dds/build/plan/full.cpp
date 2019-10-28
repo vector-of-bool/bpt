@@ -123,7 +123,7 @@ std::vector<test_failure> build_plan::run_all_tests(build_env_ref env, int njobs
         | filter(&link_executable_plan::is_test)  //
         ;
 
-    std::mutex mut;
+    std::mutex                mut;
     std::vector<test_failure> fails;
 
     parallel_run(test_executables, njobs, [&](const auto& exe) {

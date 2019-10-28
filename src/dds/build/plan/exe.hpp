@@ -37,7 +37,7 @@ public:
 
     fs::path calc_executable_path(const build_env& env) const noexcept;
 
-    void link(const build_env&, const library_plan&) const;
+    void                        link(const build_env&, const library_plan&) const;
     std::optional<test_failure> run_test(build_env_ref) const;
 
     bool is_test() const noexcept;

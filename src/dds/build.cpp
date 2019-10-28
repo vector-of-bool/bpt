@@ -164,7 +164,9 @@ void dds::build(const build_params& params, const package_manifest& man) {
 
     auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
     for (auto& failures : test_failures) {
-        spdlog::error("Test {} failed! Output:\n{}[dds - test output end]", failures.executable_path.string(), failures.output);
+        spdlog::error("Test {} failed! Output:\n{}[dds - test output end]",
+                      failures.executable_path.string(),
+                      failures.output);
     }
     if (!test_failures.empty()) {
         throw compile_failure("Test failures during the build!");

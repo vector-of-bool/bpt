@@ -26,7 +26,9 @@ void compile_file_plan::compile(const build_env& env) const {
     const auto obj_path = calc_object_file_path(env);
     fs::create_directories(obj_path.parent_path());
 
-    auto msg = fmt::format("[{}] Compile: {:40}", _qualifier, fs::relative(_source.path, _source.basis_path).string());
+    auto msg = fmt::format("[{}] Compile: {:40}",
+                           _qualifier,
+                           fs::relative(_source.path, _source.basis_path).string());
 
     spdlog::info(msg);
     auto start_time = std::chrono::steady_clock::now();
