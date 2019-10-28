@@ -58,31 +58,7 @@ class toolchain {
 public:
     toolchain() = default;
 
-    toolchain(std::string_view c_compile,
-              std::string_view cxx_compile,
-              std::string_view inc_template,
-              std::string_view def_template,
-              std::string_view archive_template,
-              std::string_view link_exe_template,
-              std::string_view warning_flags,
-              std::string_view archive_prefix,
-              std::string_view archive_suffix,
-              std::string_view object_suffix,
-              std::string_view exe_suffix)
-        : _c_compile(split_shell_string(c_compile))
-        , _cxx_compile(split_shell_string(cxx_compile))
-        , _inc_template(split_shell_string(inc_template))
-        , _def_template(split_shell_string(def_template))
-        , _link_archive(split_shell_string(archive_template))
-        , _link_exe(split_shell_string(link_exe_template))
-        , _warning_flags(split_shell_string(warning_flags))
-        , _archive_prefix(archive_prefix)
-        , _archive_suffix(archive_suffix)
-        , _object_suffix(object_suffix)
-        , _exe_suffix(exe_suffix) {}
-
     static toolchain realize(const toolchain_prep&);
-    static toolchain load_from_file(fs::path);
 
     auto& archive_suffix() const noexcept { return _archive_suffix; }
     auto& object_suffix() const noexcept { return _object_suffix; }

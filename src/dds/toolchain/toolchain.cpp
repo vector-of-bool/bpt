@@ -4,10 +4,7 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
 
-#include <libman/parse.hpp>
-
-#include <spdlog/fmt/fmt.h>
-
+#include <cassert>
 #include <optional>
 #include <string>
 #include <vector>
@@ -19,14 +16,6 @@ using std::string;
 using std::string_view;
 using std::vector;
 using opt_string = optional<string>;
-
-namespace {
-
-struct invalid_toolchain : std::runtime_error {
-    using std::runtime_error::runtime_error;
-};
-
-}  // namespace
 
 toolchain toolchain::realize(const toolchain_prep& prep) {
     toolchain ret;
@@ -44,96 +33,6 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
     ret._exe_prefix     = prep.exe_prefix;
     ret._exe_suffix     = prep.exe_suffix;
     return ret;
-}
-
-toolchain toolchain::load_from_file(fs::path p) {
-    opt_string inc_template;
-    opt_string def_template;
-
-    opt_string c_compile_template;
-    opt_string cxx_compile_template;
-    opt_string create_archive_template;
-    opt_string link_exe_template;
-    opt_string warning_flags;
-
-    opt_string archive_prefix;
-    opt_string archive_suffix;
-    opt_string object_suffix;
-    opt_string exe_suffix;
-
-    auto require_key = [](auto k, auto& opt) {
-        if (!opt.has_value()) {
-            throw invalid_toolchain(
-                fmt::format("Toolchain file is missing a required key '{}'", k));
-        }
-    };
-
-    auto kvs = lm::parse_file(p);
-    for (auto&& pair : kvs.items()) {
-        auto& key   = pair.key();
-        auto& value = pair.value();
-
-        auto try_single = [&](auto k, auto& opt) {
-            if (key == k) {
-                if (opt.has_value()) {
-                    throw invalid_toolchain(fmt::format("Duplicated key '{}'", key));
-                }
-                opt = value;
-                return true;
-            }
-            return false;
-        };
-
-        // clang-format off
-        bool found_single = false // Bool to force alignment
-            // Argument templates
-            || try_single("Include-Template", inc_template)
-            || try_single("Define-Template", def_template)
-            // Command templates
-            || try_single("Compile-C-Template", c_compile_template)
-            || try_single("Compile-C++-Template", cxx_compile_template)
-            || try_single("Create-Archive-Template", create_archive_template)
-            || try_single("Link-Executable-Template", link_exe_template)
-            || try_single("Warning-Flags", warning_flags)
-            || try_single("Archive-Prefix", archive_prefix)
-            || try_single("Archive-Suffix", archive_suffix)
-            || try_single("Object-Suffix", object_suffix)
-            || try_single("Executable-Suffix", exe_suffix)
-            || false;
-        // clang-format on
-
-        if (found_single) {
-            continue;
-        }
-
-        throw invalid_toolchain(fmt::format("Unknown toolchain file key '{}'", key));
-    }
-
-    require_key("Include-Template", inc_template);
-    require_key("Define-Template", def_template);
-
-    require_key("Compile-C-Template", c_compile_template);
-    require_key("Compile-C++-Template", cxx_compile_template);
-    require_key("Create-Archive-Template", create_archive_template);
-    require_key("Link-Executable-Template", link_exe_template);
-
-    require_key("Archive-Suffix", archive_suffix);
-    require_key("Object-Suffix", object_suffix);
-    require_key("Executable-Suffix", exe_suffix);
-
-    return toolchain{
-        c_compile_template.value(),
-        cxx_compile_template.value(),
-        inc_template.value(),
-        def_template.value(),
-        create_archive_template.value(),
-        link_exe_template.value(),
-        warning_flags.value_or(""),
-        archive_prefix.value_or("lib"),
-        archive_suffix.value(),
-        object_suffix.value(),
-        exe_suffix.value(),
-    };
 }
 
 vector<string> dds::split_shell_string(std::string_view shell) {

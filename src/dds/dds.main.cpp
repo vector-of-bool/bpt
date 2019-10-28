@@ -2,6 +2,7 @@
 #include <dds/logging.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
+#include <dds/toolchain/from_dds.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
@@ -40,7 +41,7 @@ struct toolchain_flag : string_flag {
             }
             return std::move(*tc);
         } else {
-            return dds::toolchain::load_from_file(tc_path);
+            return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
         }
     }
 };

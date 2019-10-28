@@ -1,5 +1,7 @@
 #pragma once
 
+#include <libman/parse_fwd.hpp>
+
 #include <cassert>
 #include <filesystem>
 #include <optional>
@@ -134,7 +136,7 @@ public:
         : _key(key)
         , _ref(ref) {}
 
-    int read_one(std::string_view context, std::string_view key, std::string_view value) {
+    int operator()(std::string_view context, std::string_view key, std::string_view value) {
         if (key != _key) {
             return 0;
         }
@@ -166,7 +168,7 @@ public:
         : _key(key)
         , _ref(ref) {}
 
-    int read_one(std::string_view context, std::string_view key, std::string_view value) {
+    int operator()(std::string_view context, std::string_view key, std::string_view value) {
         if (key != _key) {
             return 0;
         }
@@ -177,8 +179,39 @@ public:
         _ref = T(value);
         return 1;
     }
+};
 
-    void validate(std::string_view) {}
+template <typename T>
+class read_bool {
+    std::string_view _key;
+    T&               _ref;
+    bool             _did_read = false;
+
+public:
+    read_bool(std::string_view key, T& ref)
+        : _key(key)
+        , _ref(ref) {}
+
+    bool operator()(std::string_view context, std::string_view key, std::string_view value) {
+        if (key != _key) {
+            return false;
+        }
+        if (_did_read) {
+            throw std::runtime_error(std::string(context) + ": Duplicate key '" + std::string(key)
+                                     + "' is not allowed.");
+        }
+        if (value == "true" || value == "True") {
+            _ref = true;
+        } else if (value == "false" || value == "False") {
+            _ref = false;
+        } else {
+            throw std::runtime_error(std::string(context) + ": Invalid value '" + std::string(value)
+                                     + "' for key '" + std::string(key)
+                                     + ".' Expected `true` or `false`.");
+        }
+        _did_read = true;
+        return true;
+    }
 };
 
 class read_check_eq {
@@ -190,7 +223,7 @@ public:
         : _key(key)
         , _expect(value) {}
 
-    int read_one(std::string_view context, std::string_view key, std::string_view value) const {
+    int operator()(std::string_view context, std::string_view key, std::string_view value) const {
         if (key != _key) {
             return 0;
         }
@@ -201,8 +234,6 @@ public:
         }
         return 1;
     }
-
-    void validate(std::string_view) {}
 };
 
 template <typename Container>
@@ -215,36 +246,40 @@ public:
         : _key(key)
         , _items(c) {}
 
-    int read_one(std::string_view, std::string_view key, std::string_view value) const {
+    int operator()(std::string_view, std::string_view key, std::string_view value) const {
         if (key == _key) {
             _items.emplace_back(value);
             return 1;
         }
         return 0;
     }
-
-    void validate(std::string_view) {}
 };
 
 class reject_unknown {
 public:
-    int read_one(std::string_view context, std::string_view key, std::string_view) const {
+    int operator()(std::string_view context, std::string_view key, std::string_view) const {
         throw std::runtime_error(std::string(context) + ": Unknown key '" + std::string(key) + "'");
     }
-
-    void validate(std::string_view) {}
 };
 
+template <typename T>
+auto validate_reader(T&& t, std::string_view context, int) -> decltype(t.validate(context)) {
+    t.validate(context);
+}
+
+template <typename T>
+void validate_reader(T&&, std::string_view, ...) {}
+
 template <typename... Items>
-auto read(std::string_view context [[maybe_unused]], const pair_list& pairs, Items... is) {
+auto read(std::string_view context[[maybe_unused]], const pair_list& pairs, Items... is) {
     std::vector<pair> bad_pairs;
     for (auto [key, value] : pairs.items()) {
-        auto did_read = (is.read_one(context, key, value) || ...);
+        auto did_read = (is(context, key, value) || ...);
         if (did_read) {
             bad_pairs.emplace_back(key, value);
         }
     }
-    (is.validate(context), ...);
+    (validate_reader(is, context, 0), ...);
     return bad_pairs;
 }
 

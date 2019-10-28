@@ -39,7 +39,7 @@ void compile_file_plan::compile(const build_env& env) const {
     auto end_time = std::chrono::steady_clock::now();
     auto dur_ms   = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    spdlog::info("{} - {:>5n}ms", msg, dur_ms.count());
+    spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
 
     if (!compile_res.okay()) {
         spdlog::error("Compilation failed: {}", _source.path.string());
