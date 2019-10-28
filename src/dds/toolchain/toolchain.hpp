@@ -35,7 +35,7 @@ struct link_exe_spec {
     fs::path              output;
 };
 
-class toolchain_prep;
+struct toolchain_prep;
 
 class toolchain {
     using string_seq = std::vector<std::string>;
