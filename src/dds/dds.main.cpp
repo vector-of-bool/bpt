@@ -455,7 +455,7 @@ struct cli_deps {
 */
 
 int main(int argc, char** argv) {
-    spdlog::set_pattern("[%H:%M:%S] [%^%l%$] %v");
+    spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
     cli_base  cli{parser};
