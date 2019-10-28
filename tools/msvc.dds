@@ -1,12 +1,2 @@
-Include-Template: /I<PATH>
-Define-Template: /D<DEF>
-Warning-Flags: /W4
-
-Compile-C-Template: cl.exe /nologo <FLAGS> /c <IN> /Fo<out>
-Compile-C++-Template: cl.exe /nologo <FLAGS> /c <IN> /std:c++latest /permissive- /experimental:preprocessor /EHsc /Fo<OUT>
-Create-Archive-Template: lib /nologo /OUT:<OUT> <IN>
-Link-Executable-Template: cl.exe /nologo rpcrt4.lib /std:c++latest /EHsc <IN> /Fe<OUT>
-
-Archive-Suffix: .lib
-Object-Suffix: .obj
-Executable-Suffix: .exe
+Compiler-ID: MSVC
+C++-Version: c++17
