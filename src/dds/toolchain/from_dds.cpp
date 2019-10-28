@@ -28,6 +28,8 @@ toolchain dds::parse_toolchain_dds(strv str, strv context) {
     return parse_toolchain_dds(kvs, context);
 }
 
+namespace {
+
 struct read_argv_acc {
     strv         my_key;
     opt_str_seq& out;
@@ -69,6 +71,13 @@ T read_opt(const std::optional<T>& what, Func&& fn) {
     }
     return *what;
 }
+
+template <typename... Args>
+[[noreturn]] void fail(strv context, strv message, Args&&... args) {
+    throw std::runtime_error(
+        format("{} - Failed to read toolchain file: {}", context, message, args...));
+}
+}  // namespace
 
 toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     opt_string     compiler_id;
@@ -135,11 +144,6 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     toolchain_prep tc;
 
-    auto fail = [&](auto msg, auto... args)[[noreturn]]->void {
-        throw std::runtime_error(
-            format("{}: Failed to generate toolchain: {}", context, msg, args...));
-    };
-
     enum compiler_id_e_t {
         no_comp_id,
         msvc,
@@ -156,7 +160,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
               } else if (compiler_id == "Clang") {
                   return clang;
               } else {
-                  fail("Unknown Compiler-ID '{}'", *compiler_id);
+                  fail(context, "Unknown Compiler-ID '{}'", *compiler_id);
               }
           }();
 
@@ -174,7 +178,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             return *c_compiler_fpath;
         }
         if (!compiler_id.has_value()) {
-            fail("Unable to determine what compiler to use.");
+            fail(context, "Unable to determine what compiler to use.");
         }
         if (is_gnu) {
             return is_cxx ? "g++" : "gcc";
@@ -208,7 +212,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
               } else if (c_version == "c18") {
                   return c18;
               } else {
-                  fail("Unknown C-Version '{}'", *c_version);
+                  fail(context, "Unknown C-Version '{}'", *c_version);
               }
           }();
 
@@ -237,7 +241,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
               } else if (cxx_version == "c++20") {
                   return cxx20;
               } else {
-                  fail("Unknown C++-Version '{}'", *cxx_version);
+                  fail(context, "Unknown C++-Version '{}'", *cxx_version);
               }
           }();
 
@@ -261,7 +265,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     auto get_c_version_flags = [&]() -> string_seq {
         if (!compiler_id.has_value()) {
-            fail("Unable to deduce flags for 'C-Version' without setting 'Compiler-ID'");
+            fail(context, "Unable to deduce flags for 'C-Version' without setting 'Compiler-ID'");
         }
         auto c_ver_iter = c_version_flag_table.find({compiler_id_e, c_version_e});
         assert(c_ver_iter != c_version_flag_table.end());
@@ -294,7 +298,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     auto get_cxx_version_flags = [&]() -> string_seq {
         if (!compiler_id.has_value()) {
-            fail("Unable to deduce flags for 'C++-Version' without setting 'Compiler-ID'");
+            fail(context, "Unable to deduce flags for 'C++-Version' without setting 'Compiler-ID'");
         }
         auto cxx_ver_iter = cxx_version_flag_table.find({compiler_id_e, cxx_version_e});
         assert(cxx_ver_iter != cxx_version_flag_table.end());
@@ -373,7 +377,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     tc.include_template = read_opt(include_template, [&]() -> string_seq {
         if (!compiler_id) {
-            fail("Cannot deduce 'Include-Template' without 'Compiler-ID'");
+            fail(context, "Cannot deduce 'Include-Template' without 'Compiler-ID'");
         }
         if (is_gnu_like) {
             return {"-I", "<PATH>"};
@@ -386,7 +390,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     tc.define_template = read_opt(define_template, [&]() -> string_seq {
         if (!compiler_id) {
-            fail("Cannot deduce 'Define-Template' without 'Compiler-ID'");
+            fail(context, "Cannot deduce 'Define-Template' without 'Compiler-ID'");
         }
         if (is_gnu_like) {
             return {"-D", "<DEF>"};
@@ -400,7 +404,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     tc.archive_prefix = archive_prefix.value_or("lib");
     tc.archive_suffix = read_opt(archive_suffix, [&] {
         if (!compiler_id) {
-            fail("Cannot deduce library file extension without Compiler-ID");
+            fail(context, "Cannot deduce library file extension without Compiler-ID");
         }
         if (is_gnu) {
             return ".a";
@@ -414,7 +418,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     tc.object_prefix = obj_prefix.value_or("");
     tc.object_suffix = read_opt(obj_suffix, [&] {
         if (!compiler_id) {
-            fail("Cannot deduce object file extension without Compiler-ID");
+            fail(context, "Cannot deduce object file extension without Compiler-ID");
         }
         if (is_gnu) {
             return ".o";
@@ -450,7 +454,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     tc.link_archive = read_opt(create_archive, [&]() -> string_seq {
         if (!compiler_id) {
-            fail("Unable to deduce archive creation rules without a Compiler-ID");
+            fail(context, "Unable to deduce archive creation rules without a Compiler-ID");
         }
         if (is_msvc) {
             return {"lib", "/nologo", "/OUT:<OUT>", "<IN>"};
@@ -463,7 +467,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
 
     tc.link_exe = read_opt(link_executable, [&]() -> string_seq {
         if (!compiler_id) {
-            fail("Unable to deduce how to link executables without a Compiler-ID");
+            fail(context, "Unable to deduce how to link executables without a Compiler-ID");
         }
         if (is_msvc) {
             return {get_compiler(true), "/nologo", "/EHsc", "<IN>", "/Fe<OUT>"};
