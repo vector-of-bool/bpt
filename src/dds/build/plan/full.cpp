@@ -7,7 +7,9 @@
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>
+#include <range/v3/view/repeat_n.hpp>
 #include <range/v3/view/transform.hpp>
+#include <range/v3/view/zip.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -90,10 +92,18 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
     });
 }
 
-void build_plan::link_all(const build_env& env, int) const {
-    for (auto&& lib : iter_libraries(*this)) {
-        for (auto&& exe : lib.executables()) {
-            exe.link(env, lib);
-        }
-    }
+void build_plan::link_all(const build_env& env, int njobs) const {
+    auto executables =         //
+        iter_libraries(*this)  //
+        | ranges::views::transform([](const library_plan& lib) {
+              auto repeated = ranges::views::repeat_n(std::cref(lib), lib.executables().size());
+              return ranges::views::zip(repeated, lib.executables());
+          })                   //
+        | ranges::views::join  //
+        ;
+
+    parallel_run(executables, njobs, [&](const auto& pair) {
+        auto&& [lib, exe] = pair;
+        exe.link(env, lib);
+    });
 }
