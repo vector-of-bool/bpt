@@ -4,7 +4,6 @@
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 

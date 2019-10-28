@@ -1,12 +1,7 @@
 #pragma once
 
-#include <dds/build/params.hpp>
-#include <dds/build/plan/archive.hpp>
-#include <dds/build/plan/compile_file.hpp>
 #include <dds/build/plan/exe.hpp>
-#include <dds/build/plan/library.hpp>
 #include <dds/build/plan/package.hpp>
-#include <dds/library.hpp>
 
 namespace dds {
 

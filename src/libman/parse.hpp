@@ -271,7 +271,7 @@ template <typename T>
 void validate_reader(T&&, std::string_view, ...) {}
 
 template <typename... Items>
-auto read(std::string_view context[[maybe_unused]], const pair_list& pairs, Items... is) {
+auto read(std::string_view context [[maybe_unused]], const pair_list& pairs, Items... is) {
     std::vector<pair> bad_pairs;
     for (auto [key, value] : pairs.items()) {
         auto did_read = (is(context, key, value) || ...);

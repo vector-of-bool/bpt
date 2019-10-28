@@ -10,8 +10,6 @@
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>
 
-#include <libman/parse.hpp>
-
 #include <args.hxx>
 
 #include <filesystem>
@@ -456,9 +454,9 @@ struct cli_deps {
 */
 
 int main(int argc, char** argv) {
-    #if DDS_DEBUG
+#if DDS_DEBUG
     spdlog::set_level(spdlog::level::debug);
-    #endif
+#endif
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 

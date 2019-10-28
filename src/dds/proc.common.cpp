@@ -3,7 +3,6 @@
 #include <dds/util/string.hpp>
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 
 using namespace dds;

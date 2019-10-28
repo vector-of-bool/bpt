@@ -3,7 +3,6 @@
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
 #include <dds/usage_reqs.hpp>
-#include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
@@ -14,6 +13,7 @@
 
 #include <cctype>
 #include <map>
+#include <set>
 
 using namespace dds;
 

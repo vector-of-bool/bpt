@@ -6,9 +6,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include <atomic>
-#include <mutex>
-#include <thread>
+#include <string>
 #include <vector>
 
 using namespace dds;

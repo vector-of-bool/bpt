@@ -2,8 +2,8 @@
 
 #include <dds/build/plan/library.hpp>
 
-#include <map>
 #include <string>
+#include <vector>
 
 namespace dds {
 

@@ -6,7 +6,6 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 
 using namespace dds;

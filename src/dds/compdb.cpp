@@ -6,9 +6,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <range/v3/view/join.hpp>
-#include <range/v3/view/transform.hpp>
-
 using namespace dds;
 
 void dds::generate_compdb(const build_plan& plan, build_env_ref env) {

@@ -3,7 +3,6 @@
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
 
-#include <cassert>
 #include <functional>
 #include <optional>
 #include <shared_mutex>

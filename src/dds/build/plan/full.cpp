@@ -1,19 +1,14 @@
 #include "./full.hpp"
 
 #include <dds/build/iter_compilations.hpp>
-#include <dds/proc.hpp>
 
-#include <range/v3/action/join.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>
-#include <range/v3/view/repeat_n.hpp>
 #include <range/v3/view/transform.hpp>
-#include <range/v3/view/zip.hpp>
 
 #include <spdlog/spdlog.h>
 
-#include <chrono>
 #include <mutex>
 #include <thread>
 
@@ -96,7 +91,9 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
 }
 
 void build_plan::link_all(const build_env& env, int njobs) const {
-    std::vector<std::pair<std::reference_wrapper<const library_plan>, std::reference_wrapper<const link_executable_plan>>> executables;
+    std::vector<std::pair<std::reference_wrapper<const library_plan>,
+                          std::reference_wrapper<const link_executable_plan>>>
+        executables;
 
     for (auto&& lib : iter_libraries(*this)) {
         for (auto&& exe : lib.executables()) {

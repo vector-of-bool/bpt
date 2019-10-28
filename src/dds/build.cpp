@@ -1,35 +1,15 @@
 #include "./build.hpp"
 
-#include <dds/build/plan/compile_file.hpp>
 #include <dds/compdb.hpp>
 #include <dds/logging.hpp>
-#include <dds/proc.hpp>
-#include <dds/source.hpp>
-#include <dds/toolchain/toolchain.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/algo.hpp>
-#include <dds/util/string.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
 
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/drop.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
-
-#include <algorithm>
-#include <chrono>
-#include <iomanip>
-#include <iostream>
-#include <mutex>
-#include <sstream>
 #include <stdexcept>
-#include <thread>
 
 using namespace dds;
-
-using namespace ranges;
-using namespace ranges::views;
 
 namespace {
 

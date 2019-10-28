@@ -2,8 +2,6 @@
 
 #include <dds/util/string.hpp>
 
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
 #include <optional>
 #include <vector>

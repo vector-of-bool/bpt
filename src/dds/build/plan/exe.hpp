@@ -3,8 +3,7 @@
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/util/fs.hpp>
 
-#include <set>
-#include <tuple>
+#include <string>
 #include <vector>
 
 namespace dds {

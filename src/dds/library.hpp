@@ -5,7 +5,6 @@
 #include <dds/library_manifest.hpp>
 #include <dds/source.hpp>
 
-#include <optional>
 #include <string>
 
 namespace dds {
