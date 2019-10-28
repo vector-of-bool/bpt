@@ -60,10 +60,10 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
     auto end = std::chrono::high_resolution_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if (res.okay()) {
-        spdlog::info("{} - PASSED in {:>6n}μs", msg, dur.count());
+        spdlog::info("{} - PASSED - {:>9n}μs", msg, dur.count());
         return std::nullopt;
     } else {
-        spdlog::error("{} - FAILED in {:>6n}μs [exitted {}]", msg, dur.count(), res.retc);
+        spdlog::error("{} - FAILED - {:>9n}μs [exited {}]", msg, dur.count(), res.retc);
         test_failure f;
         f.executable_path = exe_path;
         f.output = res.output;
