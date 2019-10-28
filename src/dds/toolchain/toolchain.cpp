@@ -1,5 +1,6 @@
 #include "./toolchain.hpp"
 
+#include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
 
@@ -27,6 +28,24 @@ struct invalid_toolchain : std::runtime_error {
 
 }  // namespace
 
+toolchain toolchain::realize(const toolchain_prep& prep) {
+    toolchain ret;
+    ret._c_compile      = prep.c_compile;
+    ret._cxx_compile    = prep.cxx_compile;
+    ret._inc_template   = prep.include_template;
+    ret._def_template   = prep.define_template;
+    ret._link_archive   = prep.link_archive;
+    ret._link_exe       = prep.link_exe;
+    ret._warning_flags  = prep.warning_flags;
+    ret._archive_prefix = prep.archive_prefix;
+    ret._archive_suffix = prep.archive_suffix;
+    ret._object_prefix  = prep.object_prefix;
+    ret._object_suffix  = prep.object_suffix;
+    ret._exe_prefix     = prep.exe_prefix;
+    ret._exe_suffix     = prep.exe_suffix;
+    return ret;
+}
+
 toolchain toolchain::load_from_file(fs::path p) {
     opt_string inc_template;
     opt_string def_template;
@@ -37,6 +56,7 @@ toolchain toolchain::load_from_file(fs::path p) {
     opt_string link_exe_template;
     opt_string warning_flags;
 
+    opt_string archive_prefix;
     opt_string archive_suffix;
     opt_string object_suffix;
     opt_string exe_suffix;
@@ -75,6 +95,7 @@ toolchain toolchain::load_from_file(fs::path p) {
             || try_single("Create-Archive-Template", create_archive_template)
             || try_single("Link-Executable-Template", link_exe_template)
             || try_single("Warning-Flags", warning_flags)
+            || try_single("Archive-Prefix", archive_prefix)
             || try_single("Archive-Suffix", archive_suffix)
             || try_single("Object-Suffix", object_suffix)
             || try_single("Executable-Suffix", exe_suffix)
@@ -108,6 +129,7 @@ toolchain toolchain::load_from_file(fs::path p) {
         create_archive_template.value(),
         link_exe_template.value(),
         warning_flags.value_or(""),
+        archive_prefix.value_or("lib"),
         archive_suffix.value(),
         object_suffix.value(),
         exe_suffix.value(),
@@ -210,7 +232,7 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
 
 vector<string> toolchain::create_archive_command(const archive_spec& spec) const noexcept {
     vector<string> cmd;
-    for (auto& arg : _archive_template) {
+    for (auto& arg : _link_archive) {
         if (arg == "<IN>") {
             std::transform(spec.input_files.begin(),
                            spec.input_files.end(),
@@ -225,7 +247,7 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
 
 vector<string> toolchain::create_link_executable_command(const link_exe_spec& spec) const noexcept {
     vector<string> cmd;
-    for (auto& arg : _link_exe_template) {
+    for (auto& arg : _link_exe) {
         if (arg == "<IN>") {
             std::transform(spec.inputs.begin(),
                            spec.inputs.end(),
@@ -250,12 +272,12 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
     }
 
     if (starts_with(s, "gcc") || starts_with(s, "clang")) {
-        ret._inc_template     = {"-isystem", "<PATH>"};
-        ret._def_template     = {"-D", "<DEF>"};
-        ret._archive_suffix   = ".a";
-        ret._object_suffix    = ".o";
-        ret._warning_flags    = {"-Wall", "-Wextra"};
-        ret._archive_template = {"ar", "rcs", "<OUT>", "<IN>"};
+        ret._inc_template   = {"-isystem", "<PATH>"};
+        ret._def_template   = {"-D", "<DEF>"};
+        ret._archive_suffix = ".a";
+        ret._object_suffix  = ".o";
+        ret._warning_flags  = {"-Wall", "-Wextra"};
+        ret._link_archive   = {"ar", "rcs", "<OUT>", "<IN>"};
 
         std::vector<std::string> common_flags = {
             "<FLAGS>",
@@ -311,8 +333,8 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         extend(ret._cxx_compile, common_flags);
         extend(ret._cxx_compile, cxx_flags);
 
-        ret._link_exe_template.push_back(cxx_compiler_name);
-        extend(ret._link_exe_template,
+        ret._link_exe.push_back(cxx_compiler_name);
+        extend(ret._link_exe,
                {
                    "-g",
                    "-fPIC",
@@ -339,13 +361,12 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
         std::vector<std::string_view> common_flags = {"/Z7", "/O2", "/MT", "/DEBUG"};
         extend(ret._c_compile, common_flags);
         extend(ret._cxx_compile, common_flags);
-        ret._archive_suffix   = ".lib";
-        ret._object_suffix    = ".obj";
-        ret._exe_suffix       = ".exe";
-        ret._archive_template = {"lib", "/nologo", "/OUT:<OUT>", "<IN>"};
-        ret._link_exe_template
-            = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<IN>", "/Fe<OUT>"};
-        ret._warning_flags = {"/W4"};
+        ret._archive_suffix = ".lib";
+        ret._object_suffix  = ".obj";
+        ret._exe_suffix     = ".exe";
+        ret._link_archive   = {"lib", "/nologo", "/OUT:<OUT>", "<IN>"};
+        ret._link_exe       = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<IN>", "/Fe<OUT>"};
+        ret._warning_flags  = {"/W4"};
     } else {
         return std::nullopt;
     }

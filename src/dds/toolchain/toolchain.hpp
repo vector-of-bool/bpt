@@ -35,18 +35,24 @@ struct link_exe_spec {
     fs::path              output;
 };
 
+class toolchain_prep;
+
 class toolchain {
     using string_seq = std::vector<std::string>;
 
-    string_seq  _c_compile;
-    string_seq  _cxx_compile;
-    string_seq  _inc_template;
-    string_seq  _def_template;
-    string_seq  _archive_template;
-    string_seq  _link_exe_template;
-    string_seq  _warning_flags;
+    string_seq _c_compile;
+    string_seq _cxx_compile;
+    string_seq _inc_template;
+    string_seq _def_template;
+    string_seq _link_archive;
+    string_seq _link_exe;
+    string_seq _warning_flags;
+
+    std::string _archive_prefix;
     std::string _archive_suffix;
+    std::string _object_prefix;
     std::string _object_suffix;
+    std::string _exe_prefix;
     std::string _exe_suffix;
 
 public:
@@ -59,6 +65,7 @@ public:
               std::string_view archive_template,
               std::string_view link_exe_template,
               std::string_view warning_flags,
+              std::string_view archive_prefix,
               std::string_view archive_suffix,
               std::string_view object_suffix,
               std::string_view exe_suffix)
@@ -66,13 +73,15 @@ public:
         , _cxx_compile(split_shell_string(cxx_compile))
         , _inc_template(split_shell_string(inc_template))
         , _def_template(split_shell_string(def_template))
-        , _archive_template(split_shell_string(archive_template))
-        , _link_exe_template(split_shell_string(link_exe_template))
+        , _link_archive(split_shell_string(archive_template))
+        , _link_exe(split_shell_string(link_exe_template))
         , _warning_flags(split_shell_string(warning_flags))
+        , _archive_prefix(archive_prefix)
         , _archive_suffix(archive_suffix)
         , _object_suffix(object_suffix)
         , _exe_suffix(exe_suffix) {}
 
+    static toolchain realize(const toolchain_prep&);
     static toolchain load_from_file(fs::path);
 
     auto& archive_suffix() const noexcept { return _archive_suffix; }
