@@ -1,5 +1,4 @@
-#ifndef DDS_UTIL_TEST_HPP_INCLUDED
-#define DDS_UTIL_TEST_HPP_INCLUDED
+#pragma once
 
 #include <iostream>
 
@@ -43,5 +42,3 @@ struct requirement_failed {};
     static_assert(true)
 
 }  // namespace dds
-
-#endif  // DDS_UTIL_TEST_HPP_INCLUDED

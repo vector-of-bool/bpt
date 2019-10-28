@@ -1,5 +1,4 @@
-#ifndef DDS_TOOLCHAIN_HPP_INCLUDED
-#define DDS_TOOLCHAIN_HPP_INCLUDED
+#pragma once
 
 #include <dds/util/fs.hpp>
 
@@ -90,5 +89,3 @@ public:
 };
 
 }  // namespace dds
-
-#endif  // DDS_TOOLCHAIN_HPP_INCLUDED

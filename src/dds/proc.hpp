@@ -1,5 +1,4 @@
-#ifndef DDS_PROC_HPP_INCLUDED
-#define DDS_PROC_HPP_INCLUDED
+#pragma once
 
 #include <string>
 #include <string_view>
@@ -34,5 +33,3 @@ struct proc_result {
 proc_result run_proc(const std::vector<std::string>& args);
 
 }  // namespace dds
-
-#endif  // DDS_PROC_HPP_INCLUDED
