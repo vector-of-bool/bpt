@@ -19,20 +19,20 @@ void repository::_log_blocking(path_ref dirpath) noexcept {
 }
 
 void repository::_init_repo_dir(path_ref dirpath) noexcept {
-    fs::create_directories(dirpath / "dist");
+    fs::create_directories(dirpath);
 }
 
 fs::path repository::default_local_path() noexcept { return dds_data_dir() / "repo"; }
 
 repository repository::open_for_directory(path_ref dirpath) {
-    auto dist_dir = dirpath / "dist";
+    auto dist_dir = dirpath;
     auto entries  = fs::directory_iterator(dist_dir) | to_vector;
     return {dirpath};
 }
 
 void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     auto sd_dest
-        = _root / "dist" / fmt::format("{}_{}", sd.manifest.name, sd.manifest.version.to_string());
+        = _root / fmt::format("{}_{}", sd.manifest.name, sd.manifest.version.to_string());
     if (fs::exists(sd_dest)) {
         auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
                                sd.path.string());
@@ -79,7 +79,7 @@ std::vector<sdist> repository::load_sdists() const {
 
     return
         // Get the top-level `name-version` dirs
-        fs::directory_iterator(_dist_dir())  //
+        fs::directory_iterator(_root)  //
         // // Convert each dir into an `sdist` object
         | transform(try_read_sdist)  //
         // // Drop items that failed to load
@@ -90,7 +90,7 @@ std::vector<sdist> repository::load_sdists() const {
 }
 
 std::optional<sdist> repository::get_sdist(std::string_view name, std::string_view version) const {
-    auto expect_path = _dist_dir() / fmt::format("{}_{}", name, version);
+    auto expect_path = _root / fmt::format("{}_{}", name, version);
     if (!fs::is_directory(expect_path)) {
         return std::nullopt;
     }
