@@ -74,8 +74,8 @@ T read_opt(const std::optional<T>& what, Func&& fn) {
 
 template <typename... Args>
 [[noreturn]] void fail(strv context, strv message, Args&&... args) {
-    throw std::runtime_error(
-        format("{} - Failed to read toolchain file: {}", context, message, args...));
+    auto fmtd = format(message, args...);
+    throw std::runtime_error(format("{} - Failed to read toolchain file: {}", context, fmtd));
 }
 }  // namespace
 
