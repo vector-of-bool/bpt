@@ -4,6 +4,7 @@
 #include <dds/logging.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/time.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
 
@@ -138,18 +139,34 @@ void dds::build(const build_params& params, const package_manifest& man) {
     if (params.generate_compdb) {
         generate_compdb(plan, env);
     }
-    plan.compile_all(env, params.parallel_jobs);
-    plan.archive_all(env, params.parallel_jobs);
-    plan.link_all(env, params.parallel_jobs);
 
-    auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-    for (auto& failures : test_failures) {
-        spdlog::error("Test {} failed! Output:\n{}[dds - test output end]",
-                      failures.executable_path.string(),
-                      failures.output);
+    dds::stopwatch sw;
+    plan.compile_all(env, params.parallel_jobs);
+    spdlog::info("Compilation completed in {:n}ms", sw.elapsed_ms().count());
+
+    sw.reset();
+    plan.archive_all(env, params.parallel_jobs);
+    spdlog::info("Archiving completed in {:n}ms", sw.elapsed_ms().count());
+
+    if (params.build_apps || params.build_tests) {
+        sw.reset();
+        plan.link_all(env, params.parallel_jobs);
+        spdlog::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
     }
-    if (!test_failures.empty()) {
-        throw compile_failure("Test failures during the build!");
+
+    if (params.build_tests) {
+        sw.reset();
+        auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
+        spdlog::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
+
+        for (auto& failures : test_failures) {
+            spdlog::error("Test {} failed! Output:\n{}[dds - test output end]",
+                          failures.executable_path.string(),
+                          failures.output);
+        }
+        if (!test_failures.empty()) {
+            throw compile_failure("Test failures during the build!");
+        }
     }
 
     if (params.do_export) {
