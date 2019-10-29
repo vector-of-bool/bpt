@@ -20,7 +20,8 @@ def _do_bootstrap(opts: CIOptions) -> None:
     print('Running bootstrap')
     subprocess.check_call([
         sys.executable,
-        TOOLS_DIR / 'bootstrap.py',
+        '-u',
+        str(TOOLS_DIR / 'bootstrap.py'),
         f'--cxx={opts.cxx}',
     ])
 
@@ -51,7 +52,7 @@ def main(argv: Sequence[str]) -> int:
         _do_bootstrap(opts)
 
     subprocess.check_call([
-        PREBUILT_DDS,
+        str(PREBUILT_DDS),
         'deps',
         'build',
         f'-T{opts.toolchain}',
@@ -59,7 +60,7 @@ def main(argv: Sequence[str]) -> int:
     ])
 
     subprocess.check_call([
-        PREBUILT_DDS,
+        str(PREBUILT_DDS),
         'build',
         '--full',
         f'-T{opts.toolchain}',
@@ -67,7 +68,8 @@ def main(argv: Sequence[str]) -> int:
 
     subprocess.check_call([
         sys.executable,
-        TOOLS_DIR / 'test.py',
+        '-u',
+        str(TOOLS_DIR / 'test.py'),
         f'--exe={PROJECT_ROOT / "_build/dds"}',
         f'-T{opts.toolchain}',
     ])
