@@ -48,7 +48,7 @@ struct repo_where_flag : path_flag {
     repo_where_flag(args::Group& grp)
         : path_flag{grp,
                     "dir",
-                    "Directory in which to initialize the repository",
+                    "Path to the DDS repository directory",
                     {"repo-dir"},
                     dds::repository::default_local_path()} {}
 };
