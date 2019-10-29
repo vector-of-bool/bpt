@@ -5,3 +5,4 @@ __pycache__/
 .mypy_cache/
 *.dsd/
 _prebuilt/
+.dds-repo-lock
