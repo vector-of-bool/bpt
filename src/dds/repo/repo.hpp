@@ -74,7 +74,7 @@ public:
 
     void                 add_sdist(const sdist&, if_exists = if_exists::throw_exc);
     std::optional<sdist> get_sdist(std::string_view name, std::string_view version) const;
-    std::vector<sdist>   load_sdists() const noexcept;
+    std::vector<sdist>   load_sdists() const;
 };
 
 }  // namespace dds

@@ -59,7 +59,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     spdlog::info("Source distribution '{}' successfully exported", sd.ident());
 }
 
-std::vector<sdist> repository::load_sdists() const noexcept {
+std::vector<sdist> repository::load_sdists() const {
     using namespace ranges;
     using namespace ranges::views;
 
