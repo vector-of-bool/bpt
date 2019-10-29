@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:vector-of-bool/neo-buffer.git
+	branch = develop
+	commit = 9461eded7f661b31bcdf4f8760ebe4ebc83e9630
+	parent = 4bc28954ef34869a5b5ad65094c6f56a23937f8b
+	method = merge
+	cmdver = 0.4.0
