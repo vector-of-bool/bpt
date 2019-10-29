@@ -8,6 +8,7 @@ import shutil
 
 BOOTSTRAP_PHASES = [
     'bootstrap-p1',
+    'bootstrap-p2',
 ]
 
 HERE = Path(__file__).parent.absolute()
@@ -54,17 +55,19 @@ def _build_bootstrap_phase(ph: str, args: argparse.Namespace) -> None:
     )
 
 
-def _pull_executable() -> None:
+def _pull_executable() -> Path:
     prebuild_dir = (PROJECT_ROOT / '_prebuilt')
     prebuild_dir.mkdir(exist_ok=True)
     exe, = list(BOOTSTRAP_DIR.glob('_build/dds*'))
-    exe.rename(prebuild_dir / exe.name)
+    dest = prebuild_dir / exe.name
+    exe.rename(dest)
+    return dest
 
 
-def _run_boot_phase(phase: str, args: argparse.Namespace) -> None:
+def _run_boot_phase(phase: str, args: argparse.Namespace) -> Path:
     _clone_bootstrap_phase(phase)
     _build_bootstrap_phase(phase, args)
-    _pull_executable()
+    return _pull_executable()
 
 
 def main(argv: Sequence[str]) -> int:
@@ -73,7 +76,9 @@ def main(argv: Sequence[str]) -> int:
         '--cxx', help='The C++ compiler to use for the build', required=True)
     args = parser.parse_args(argv)
     for phase in BOOTSTRAP_PHASES:
-        _run_boot_phase(phase, args)
+        exe = _run_boot_phase(phase, args)
+
+    print(f'A bootstrapped DDS executable has been generated: {exe}')
 
     return 0
 
