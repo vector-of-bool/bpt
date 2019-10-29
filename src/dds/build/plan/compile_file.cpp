@@ -3,6 +3,7 @@
 #include <dds/proc.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/signal.hpp>
+#include <dds/util/time.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -29,14 +30,8 @@ void compile_file_plan::compile(const build_env& env) const {
                            fs::relative(_source.path, _source.basis_path).string());
 
     spdlog::info(msg);
-    auto start_time = std::chrono::steady_clock::now();
-
-    auto cmd         = generate_compile_command(env);
-    auto compile_res = run_proc(cmd);
-
-    auto end_time = std::chrono::steady_clock::now();
-    auto dur_ms   = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
+    auto cmd                     = generate_compile_command(env);
+    auto&& [dur_ms, compile_res] = timed<std::chrono::milliseconds>([&] { return run_proc(cmd); });
     spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
 
     if (!compile_res.okay()) {

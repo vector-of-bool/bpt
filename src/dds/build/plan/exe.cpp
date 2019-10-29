@@ -2,6 +2,7 @@
 
 #include <dds/build/plan/library.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/time.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -29,9 +30,14 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     std::reverse(spec.inputs.begin(), spec.inputs.end());
 
     const auto link_command = env.toolchain.create_link_executable_command(spec);
-    spdlog::info("Linking executable: {}", fs::relative(spec.output, env.output_root).string());
     fs::create_directories(out_path.parent_path());
-    auto proc_res = run_proc(link_command);
+    auto msg = fmt::format("[{}] Link: {:30}",
+                           lib.name(),
+                           fs::relative(spec.output, env.output_root).string());
+    spdlog::info(msg);
+    auto [dur_ms, proc_res]
+        = timed<std::chrono::milliseconds>([&] { return run_proc(link_command); });
+    spdlog::info("{} - {:>6n}ms", msg, dur_ms.count());
     if (!proc_res.okay()) {
         throw compile_failure(
             fmt::format("Failed to link test executable '{}'. Link command [{}] returned {}:\n{}",
@@ -54,10 +60,8 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
     auto exe_path = calc_executable_path(env);
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
     spdlog::info(msg);
-    auto start = std::chrono::high_resolution_clock::now();
-    auto res   = run_proc({exe_path.string()});
-    auto end   = std::chrono::high_resolution_clock::now();
-    auto dur   = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    auto&& [dur, res]
+        = timed<std::chrono::microseconds>([&] { return run_proc({exe_path.string()}); });
     if (res.okay()) {
         spdlog::info("{} - PASSED - {:>9n}μs", msg, dur.count());
         return std::nullopt;

@@ -1,6 +1,7 @@
 #include "./archive.hpp"
 
 #include <dds/proc.hpp>
+#include <dds/util/time.hpp>
 
 #include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
@@ -27,10 +28,7 @@ void create_archive_plan::archive(const build_env& env) const {
     }
 
     spdlog::info("[{}] Archive: {}", _name, out_relpath);
-    auto start_time = std::chrono::steady_clock::now();
-    auto ar_res     = run_proc(ar_cmd);
-    auto end_time   = std::chrono::steady_clock::now();
-    auto dur_ms     = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
     spdlog::info("[{}] Archive: {} - {:n}ms", _name, out_relpath, dur_ms.count());
 
     if (!ar_res.okay()) {
