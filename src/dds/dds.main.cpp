@@ -132,9 +132,8 @@ struct cli_repo {
                 for (const auto& [name, grp] : grp_by_name) {
                     spdlog::info("{}:", name);
                     for (const dds::sdist& sd : grp) {
-                        spdlog::info("  - {} [{}]",
-                                     sd.manifest.version.to_string(),
-                                     sd.md5_string());
+                        spdlog::info("  - {}",
+                                     sd.manifest.version.to_string());
                     }
                 }
 
