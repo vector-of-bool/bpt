@@ -1,3 +1,3 @@
 Compiler-ID: MSVC
-C++-Version: c++17
+C++-Version: C++17
 Flags: /experimental:preprocessor

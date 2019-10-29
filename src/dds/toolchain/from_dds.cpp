@@ -29,7 +29,6 @@ toolchain dds::parse_toolchain_dds(strv str, strv context) {
 }
 
 namespace {
-
 struct read_argv_acc {
     strv         my_key;
     opt_str_seq& out;
@@ -203,13 +202,13 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         = [&] {
               if (!c_version) {
                   return c_none;
-              } else if (c_version == "c89") {
+              } else if (c_version == "C89") {
                   return c89;
-              } else if (c_version == "c99") {
+              } else if (c_version == "C99") {
                   return c99;
-              } else if (c_version == "c11") {
+              } else if (c_version == "C11") {
                   return c11;
-              } else if (c_version == "c18") {
+              } else if (c_version == "C18") {
                   return c18;
               } else {
                   fail(context, "Unknown C-Version '{}'", *c_version);
@@ -228,17 +227,17 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         = [&] {
               if (!cxx_version) {
                   return cxx_none;
-              } else if (cxx_version == "c++98") {
+              } else if (cxx_version == "C++98") {
                   return cxx98;
-              } else if (cxx_version == "c++03") {
+              } else if (cxx_version == "C++03") {
                   return cxx03;
-              } else if (cxx_version == "c++11") {
+              } else if (cxx_version == "C++11") {
                   return cxx11;
-              } else if (cxx_version == "c++14") {
+              } else if (cxx_version == "C++14") {
                   return cxx14;
-              } else if (cxx_version == "c++17") {
+              } else if (cxx_version == "C++17") {
                   return cxx17;
-              } else if (cxx_version == "c++20") {
+              } else if (cxx_version == "C++20") {
                   return cxx20;
               } else {
                   fail(context, "Unknown C++-Version '{}'", *cxx_version);
