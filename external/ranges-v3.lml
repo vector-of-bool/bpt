@@ -1,0 +1,4 @@
+Type: Library
+
+Name: ranges-v3
+Include-Path: ranges-v3/include

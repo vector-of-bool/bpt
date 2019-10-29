@@ -1,0 +1,47 @@
+# Refer: https://aka.ms/yaml
+
+jobs:
+
+  - job: Windows_MSVC_VS2019
+    pool:
+      vmImage: windows-2019
+    steps:
+      - script: |
+          echo Loading VS environment
+          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
+          echo Executing build/test script
+          python -u tools/build.py --cxx cl.exe --test --static || exit 1
+        displayName: Build and Run Unit Tests
+      - publish: _build/dds.exe
+        artifact: DDS Executable - Windows VS2019
+      - script: |
+          echo Loading VS environment
+          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
+          python -u tools/test.py --exe _build/dds.exe -T tools/msvc.dds || exit 1
+        displayName: Smoke Tests
+
+  - job: Linux_GCC8
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+      - script: sudo apt update -y && sudo apt install -y python3-minimal g++-8
+        displayName: Prepare System
+      - script: python3 -u tools/build.py --cxx g++-8 --test --static
+        displayName: Build and Run Unit Tests
+      - publish: _build/dds
+        artifact: DDS Executable - Linux
+      - script: python3 -u tools/test.py --exe _build/dds -T:gcc-8
+        displayName: Smoke Tests
+
+  - job: macOS_GCC8
+    pool:
+      vmImage: macOS-10.14
+    steps:
+      - script: brew install gcc@8
+        displayName: Prepare System
+      - script: python3 -u tools/build.py --cxx g++-8 --test
+        displayName: Build and Run Unit Tests
+      - publish: _build/dds
+        artifact: DDS Executable - macOS
+      - script: python3 -u tools/test.py --exe _build/dds -T:gcc-8
+        displayName: Smoke Tests

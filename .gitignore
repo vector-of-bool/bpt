@@ -2,3 +2,5 @@ _build/
 __pycache__/
 .peru/
 .vscode/
+.mypy_cache/
+*.dsd/

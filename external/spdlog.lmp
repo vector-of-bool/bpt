@@ -1,0 +1,6 @@
+Type: Package
+
+Name: spdlog
+Namespace: spdlog
+
+Library: spdlog.lml
