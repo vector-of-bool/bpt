@@ -1,3 +1,4 @@
 Compiler-ID: MSVC
 C++-Version: C++17
 Flags: /experimental:preprocessor
+Link-Flags: rpcrt4.lib
