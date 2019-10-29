@@ -43,22 +43,49 @@ dependency dependency::parse_depends_string(std::string_view str) {
 }
 
 std::vector<sdist> dds::find_dependencies(const repository& repo, const dependency& dep) {
+    auto all_dists = repo.load_sdists();
+    detail::sort_sdists(all_dists);
     std::vector<sdist> acc;
-    detail::do_find_deps(repo, dep, acc);
+    detail::do_find_deps(all_dists, dep, acc);
     return acc;
 }
 
-void detail::do_find_deps(const repository& repo, const dependency& dep, std::vector<sdist>& sd) {
-    auto sdist_opt = repo.get_sdist(dep.name, dep.version.to_string());
+auto tie_sdist(const sdist& sd) {
+    return std::tuple(sd.manifest.name, sd.manifest.version.to_string());
+}
+
+auto sdist_compare = [](const sdist& lhs, const sdist& rhs) {
+    return tie_sdist(lhs) < tie_sdist(rhs);
+};
+
+void detail::sort_sdists(std::vector<sdist>& sd) { std::sort(sd.begin(), sd.end(), sdist_compare); }
+
+namespace {
+
+const sdist* get_sdist(const std::vector<sdist>& sorted_sds, std::string_view name, std::string_view version) {
+    auto found = std::partition_point(sorted_sds.begin(), sorted_sds.end(), [&](const auto& candidate) {
+        return tie_sdist(candidate) < std::tie(name, version);
+    });
+    if (found->manifest.name == name && found->manifest.version.to_string() == version) {
+        return &*found;
+    }
+    return nullptr;
+}
+}
+
+void detail::do_find_deps(const std::vector<sdist>& sdists,
+                          const dependency&         dep,
+                          std::vector<sdist>&       sd) {
+    auto sdist_opt = get_sdist(sdists, dep.name, dep.version.to_string());
     if (!sdist_opt) {
         throw std::runtime_error(
             fmt::format("Unable to find dependency to satisfy requirement: {} {}",
                         dep.name,
                         dep.version.to_string()));
     }
-    sdist& new_sd = *sdist_opt;
+    const sdist& new_sd = *sdist_opt;
     for (const auto& inner_dep : new_sd.manifest.dependencies) {
-        do_find_deps(repo, inner_dep, sd);
+        do_find_deps(sdists, inner_dep, sd);
     }
     auto insert_point = std::partition_point(sd.begin(), sd.end(), [&](const sdist& cand) {
         return cand.path < new_sd.path;

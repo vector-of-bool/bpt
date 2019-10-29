@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dds/build/plan/full.hpp>
+#include <dds/repo/repo.hpp>
 
 #include <semver/version.hpp>
 
@@ -8,7 +9,6 @@
 
 namespace dds {
 
-class repository;
 struct sdist;
 
 enum class version_strength {
@@ -27,7 +27,8 @@ struct dependency {
 
 namespace detail {
 
-void do_find_deps(const repository&, const dependency& dep, std::vector<sdist>& acc);
+void do_find_deps(const std::vector<sdist>&, const dependency& dep, std::vector<sdist>& acc);
+void sort_sdists(std::vector<sdist>& sds);
 
 }  // namespace detail
 
@@ -36,8 +37,10 @@ std::vector<sdist> find_dependencies(const repository& repo, const dependency& d
 template <typename Iter, typename Snt>
 inline std::vector<sdist> find_dependencies(const repository& repo, Iter it, Snt stop) {
     std::vector<sdist> acc;
+    auto               all_sds = repo.load_sdists();
+    detail::sort_sdists(all_sds);
     while (it != stop) {
-        detail::do_find_deps(repo, *it++, acc);
+        detail::do_find_deps(all_sds, *it++, acc);
     }
     return acc;
 }
