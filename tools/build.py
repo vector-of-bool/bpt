@@ -28,6 +28,7 @@ class BuildOptions(NamedTuple):
     jobs: int
     static: bool
     debug: bool
+    asan: bool
 
     @property
     def is_msvc(self) -> bool:
@@ -77,6 +78,8 @@ def _create_compile_command(opts: BuildOptions, cpp_file: Path,
             str(cpp_file),
             f'-o{obj_file}',
         ]
+        if opts.asan:
+            cmd.append('-fsanitize=address')
         if have_ccache():
             cmd.insert(0, 'ccache')
         elif have_sccache():
@@ -198,6 +201,8 @@ def _create_exe_link_command(opts: BuildOptions, obj: Path, lib: Path,
             '-lstdc++fs',
             f'-o{out}',
         ]
+        if opts.asan:
+            cmd.append('-fsanitize=address')
         if opts.static:
             cmd.extend((
                 '-static',
@@ -265,6 +270,7 @@ def main(argv: Sequence[str]) -> int:
         help='Build with debug information and disable optimizations')
     parser.add_argument(
         '--static', action='store_true', help='Build a static executable')
+    parser.add_argument('--asan', action='store_true', help='Enable Address Sanitizer')
     args = parser.parse_args(argv)
 
     all_sources = set(ROOT.glob('src/**/*.cpp'))
@@ -277,6 +283,7 @@ def main(argv: Sequence[str]) -> int:
         cxx=Path(args.cxx),
         jobs=args.jobs,
         static=args.static,
+        asan=args.asan,
         debug=args.debug)
 
     objects = compile_sources(build_opts, sorted(all_sources))
