@@ -64,6 +64,9 @@ std::vector<sdist> repository::load_sdists() const noexcept {
     using namespace ranges::views;
 
     auto try_read_sdist = [](path_ref p) -> std::optional<sdist> {
+        if (starts_with(p.filename().string(), ".")) {
+            return std::nullopt;
+        }
         try {
             return sdist::from_directory(p);
         } catch (const std::runtime_error& e) {
