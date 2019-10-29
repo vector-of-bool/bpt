@@ -98,6 +98,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     opt_str_seq    flags;
     opt_str_seq    c_flags;
     opt_str_seq    cxx_flags;
+    opt_str_seq    link_flags;
     opt_str_seq    c_compile_file;
     opt_str_seq    cxx_compile_file;
     opt_str_seq    create_archive;
@@ -121,6 +122,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
              read_argv_acc{"Flags", flags},
              read_argv_acc{"C-Flags", c_flags},
              read_argv_acc{"C++-Flags", cxx_flags},
+             read_argv_acc{"Link-Flags", link_flags},
              // Options for flags
              lm::read_bool("Optimize", do_optimize),
              lm::read_bool("Debug", do_debug),
@@ -169,21 +171,21 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     bool is_gnu_like = is_gnu || is_clang;
 
     // Now convert the flags we've been given into a real toolchain
-    auto get_compiler = [&](bool is_cxx) -> string {
-        if (is_cxx && cxx_compiler_fpath) {
+    auto get_compiler = [&](language lang) -> string {
+        if (lang == language::cxx && cxx_compiler_fpath) {
             return *cxx_compiler_fpath;
         }
-        if (!is_cxx && c_compiler_fpath) {
+        if (lang == language::c && c_compiler_fpath) {
             return *c_compiler_fpath;
         }
         if (!compiler_id.has_value()) {
             fail(context, "Unable to determine what compiler to use.");
         }
         if (is_gnu) {
-            return is_cxx ? "g++" : "gcc";
+            return (lang == language::cxx) ? "g++" : "gcc";
         }
         if (is_clang) {
-            return is_cxx ? "clang++" : "clang";
+            return (lang == language::cxx) ? "clang++" : "clang";
         }
         if (is_msvc) {
             return "cl.exe";
@@ -304,22 +306,22 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         return cxx_ver_iter->second;
     };
 
-    auto get_flags = [&](bool is_cxx) -> string_seq {
+    auto get_flags = [&](language lang) -> string_seq {
         string_seq ret;
         if (flags) {
             extend(ret, *flags);
         }
-        if (is_cxx && cxx_flags) {
+        if (lang == language::cxx && cxx_flags) {
             extend(ret, *cxx_flags);
         }
-        if (!is_cxx && c_flags) {
+        if (lang == language::cxx && cxx_version) {
+            extend(ret, get_cxx_version_flags());
+        }
+        if (lang == language::c && c_flags) {
             extend(ret, *c_flags);
         }
-        if (!is_cxx && c_version) {
+        if (lang == language::c && c_version) {
             extend(ret, get_c_version_flags());
-        }
-        if (is_cxx && cxx_version) {
-            extend(ret, get_cxx_version_flags());
         }
         if (is_msvc) {
             strv rt_lib = "/MT";
@@ -332,7 +334,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             }
             ret.emplace_back(rt_lib);
             extend(ret, {"/nologo", "<FLAGS>", "/c", "<IN>", "/permissive-", "/Fo<OUT>"});
-            if (is_cxx) {
+            if (lang == language::cxx) {
                 extend(ret, {"/EHsc"});
             }
         } else if (is_gnu_like) {
@@ -359,8 +361,8 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (compile_launcher) {
             extend(c, *compile_launcher);
         }
-        c.push_back(get_compiler(false));
-        extend(c, get_flags(false));
+        c.push_back(get_compiler(language::c));
+        extend(c, get_flags(language::c));
         return c;
     });
 
@@ -369,8 +371,8 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (compile_launcher) {
             extend(cxx, *compile_launcher);
         }
-        cxx.push_back(get_compiler(true));
-        extend(cxx, get_flags(true));
+        cxx.push_back(get_compiler(language::cxx));
+        extend(cxx, get_flags(language::cxx));
         return cxx;
     });
 
@@ -468,19 +470,25 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (!compiler_id) {
             fail(context, "Unable to deduce how to link executables without a Compiler-ID");
         }
+        string_seq ret;
         if (is_msvc) {
-            return {get_compiler(true), "/nologo", "/EHsc", "<IN>", "/Fe<OUT>"};
+            ret = {get_compiler(language::cxx), "/nologo", "/EHsc", "<IN>", "/Fe<OUT>"};
         } else if (is_gnu_like) {
-            return {get_compiler(true),
+            ret = {get_compiler(language::cxx),
                     "-fPIC",
                     "-fdiagnostics-color",
                     "<IN>",
                     "-pthread",
                     "-lstdc++fs",
                     "-o<OUT>"};
+        } else {
+            assert(false && "No link-exe command");
+            std::terminate();
         }
-        assert(false && "No link-exe command");
-        std::terminate();
+        if (link_flags) {
+            extend(ret, *link_flags);
+        }
+        return ret;
     });
 
     return tc.realize();
