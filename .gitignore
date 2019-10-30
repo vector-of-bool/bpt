@@ -4,3 +4,5 @@ __pycache__/
 .vscode/
 .mypy_cache/
 *.dsd/
+_prebuilt/
+.dds-repo-lock

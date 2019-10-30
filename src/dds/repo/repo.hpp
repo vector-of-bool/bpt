@@ -38,8 +38,6 @@ class repository {
     static void _log_blocking(path_ref dir) noexcept;
     static void _init_repo_dir(path_ref dir) noexcept;
 
-    fs::path _dist_dir() const noexcept { return _root / "dist"; }
-
 public:
     template <typename Func>
     static decltype(auto) with_repository(path_ref dirpath, repo_flags flags, Func&& fn) {
@@ -49,7 +47,7 @@ public:
             }
         }
 
-        shared_file_mutex mut{dirpath / ".lock"};
+        shared_file_mutex mut{dirpath / ".dds-repo-lock"};
         std::shared_lock  shared_lk{mut, std::defer_lock};
         std::unique_lock  excl_lk{mut, std::defer_lock};
 
@@ -74,7 +72,7 @@ public:
 
     void                 add_sdist(const sdist&, if_exists = if_exists::throw_exc);
     std::optional<sdist> get_sdist(std::string_view name, std::string_view version) const;
-    std::vector<sdist>   load_sdists() const noexcept;
+    std::vector<sdist>   load_sdists() const;
 };
 
 }  // namespace dds

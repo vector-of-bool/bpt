@@ -2,6 +2,6 @@ Name: dds
 
 Uses: taywee/args
 Uses: spdlog/spdlog
-Uses: ms/wil
-Uses: Niebler/ranges-v3
+Uses: Microsoft/WIL
+Uses: Niebler/range-v3
 Uses: nlohmann/json

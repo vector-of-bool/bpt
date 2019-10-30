@@ -1,4 +1,4 @@
 Type: Library
 
-Name: ranges-v3
-Include-Path: ranges-v3/include
+Name: range-v3
+Include-Path: repo/range-v3/include

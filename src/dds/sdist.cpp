@@ -5,10 +5,6 @@
 
 #include <libman/parse.hpp>
 
-#include <browns/md5.hpp>
-#include <browns/output.hpp>
-#include <neo/buffer.hpp>
-
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/view/filter.hpp>
 
@@ -18,30 +14,15 @@ using namespace dds;
 
 namespace {
 
-void hash_file(std::string_view prefix, path_ref fpath, browns::md5& hash) {
-    hash.feed(neo::buffer(prefix));
-    std::ifstream infile;
-    infile.exceptions(std::ios::failbit | std::ios::badbit);
-    using file_iter = std::istreambuf_iterator<char>;
-    infile.open(fpath, std::ios::binary);
-    assert(infile.good());
-    hash.feed(neo::buffer("\nfile_content: "));
-    hash.feed(file_iter(infile), file_iter());
-}
-
-void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath, browns::md5& hash) {
+void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     auto relpath = fs::relative(filepath, in_root);
     spdlog::info("Export file {}", relpath.string());
-    hash_file("filepath:" + relpath.generic_string(), filepath, hash);
     auto dest = out_root / relpath;
     fs::create_directories(dest.parent_path());
     fs::copy(filepath, dest);
 }
 
-void sdist_copy_library(path_ref            out_root,
-                        const library&      lib,
-                        const sdist_params& params,
-                        browns::md5&        hash) {
+void sdist_copy_library(path_ref out_root, const library& lib, const sdist_params& params) {
     auto sources_to_keep =  //
         lib.all_sources()   //
         | ranges::views::filter([&](const source_file& sf) {
@@ -66,12 +47,12 @@ void sdist_copy_library(path_ref            out_root,
             "Each library in a source distribution requires a library manifest (Expected [{}])",
             lib_dds_path.string()));
     }
-    sdist_export_file(out_root, params.project_dir, lib_dds_path, hash);
+    sdist_export_file(out_root, params.project_dir, lib_dds_path);
 
     spdlog::info("sdist: Export library from {}", lib.path().string());
     fs::create_directories(out_root);
     for (const auto& source : sources_to_keep) {
-        sdist_export_file(out_root, params.project_dir, source.path, hash);
+        sdist_export_file(out_root, params.project_dir, source.path);
     }
 }
 
@@ -100,10 +81,8 @@ sdist dds::create_sdist(const sdist_params& params) {
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto libs = collect_libraries(params.project_dir);
 
-    browns::md5 md5;
-
     for (const library& lib : libs) {
-        sdist_copy_library(out, lib, params, md5);
+        sdist_copy_library(out, lib, params);
     }
 
     auto man_path = params.project_dir / "package.dds";
@@ -111,29 +90,15 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
         throw std::runtime_error(fmt::format(
             "Creating a source distribution requires a package.dds file for the project"));
     }
-    sdist_export_file(out, params.project_dir, man_path, md5);
+    sdist_export_file(out, params.project_dir, man_path);
     auto pkg_man = package_manifest::load_from_file(man_path);
 
-    md5.pad();
-    auto hash_str = browns::format_digest(md5.digest());
-    spdlog::info("Generated export as {}-{}", pkg_man.name, hash_str);
-
-    std::vector<lm::pair> pairs;
-    pairs.emplace_back("MD5-Hash", hash_str);
-    lm::write_pairs(out / "_sdist.dds", pairs);
+    spdlog::info("Generated export as {}_{}", pkg_man.name, pkg_man.version.to_string());
 
     return sdist::from_directory(out);
 }
 
 sdist sdist::from_directory(path_ref where) {
-    auto        pkg_man    = package_manifest::load_from_file(where / "package.dds");
-    auto        meta_pairs = lm::parse_file(where / "_sdist.dds");
-    std::string hash_str;
-    lm::read(fmt::format("Loading source distribution manifest from {}/_sdist.dds", where.string()),
-             meta_pairs,
-             lm::read_required("MD5-Hash", hash_str),
-             lm::reject_unknown());
-    return sdist{std::move(pkg_man),
-                 browns::parse_digest<browns::md5::digest_type>(hash_str),
-                 where};
+    auto pkg_man = package_manifest::load_from_file(where / "package.dds");
+    return sdist{std::move(pkg_man), where};
 }
