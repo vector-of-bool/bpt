@@ -10,7 +10,11 @@ void test_simple() {
     auto kvs    = parse_string(lm_src);
     CHECK(kvs.size() == 0);
 
-    lm_src = "foo: bar";
+    CHECK(parse_string("    ").size() == 0);
+    CHECK(parse_string("\n    ").size() == 0);
+    CHECK(parse_string("#comment\n    ").size() == 0);
+
+    lm_src = "foo: bar\n ";
     kvs    = parse_string(lm_src);
     CHECK(kvs.size() == 1);
     REQUIRE(kvs.find("foo"));

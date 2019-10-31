@@ -21,13 +21,15 @@ inline std::string_view trim(std::string_view s) {
         ++iter;
     }
     auto riter = s.rbegin();
-    auto rend  = s.rend();
+    auto rend  = std::make_reverse_iterator(iter);
     while (riter != rend && std::isspace(*riter)) {
         ++riter;
     }
     auto new_end = riter.base();
     return sview(iter, new_end);
 }
+
+inline std::string_view trim(const char* str) { return trim(std::string_view(str)); }
 
 inline std::string trim(std::string&& s) { return std::string(trim(s)); }
 

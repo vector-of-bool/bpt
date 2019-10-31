@@ -33,6 +33,12 @@ void test_ends_with() {
     CHECK(!ends_with("foo.bar", "foo"));
 }
 
+void test_trim() {
+    CHECK(trim("foo") == "foo");
+    CHECK(trim("foo   ") == "foo");
+    CHECK(trim("   ").size() == 0);
+}
+
 void test_contains() {
     CHECK(contains("foo", "foo"));
     CHECK(contains("foo", ""));
@@ -48,6 +54,7 @@ void test_split() {
 }
 
 void run_tests() {
+    test_trim();
     test_starts_with();
     test_ends_with();
     test_contains();
