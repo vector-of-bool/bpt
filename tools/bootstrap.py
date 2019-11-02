@@ -67,6 +67,8 @@ def _pull_executable(bts_dir: Path) -> Path:
     assert len(generated) == 1, repr(generated)
     exe, = generated
     dest = prebuild_dir / exe.name
+    if dest.exists():
+        dest.unlink()
     exe.rename(dest)
     return dest
 

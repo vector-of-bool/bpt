@@ -2,4 +2,4 @@ Type: Library
 
 Name: WIL
 
-Include-Path: wil/include
+Include-Path: repo/wil/include

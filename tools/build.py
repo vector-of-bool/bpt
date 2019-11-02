@@ -17,7 +17,7 @@ BUILD_DIR = ROOT / '_build'
 @contextmanager
 def _generate_toolchain(cxx: str):
     with tempfile.NamedTemporaryFile(
-            suffix='-dds-toolchain.dds', mode='wb') as f:
+            suffix='-dds-toolchain.dds', mode='wb', delete=False) as f:
         comp_id = 'GNU'
         flags = ''
         link_flags = ''
@@ -34,8 +34,9 @@ def _generate_toolchain(cxx: str):
             Link-Flags: {link_flags}'''
         print('Using generated toolchain file: ' + content)
         f.write(content.encode('utf-8'))
-        f.flush()
+        f.close()
         yield Path(f.name)
+        os.unlink(f.name)
 
 
 def main(argv: Sequence[str]) -> int:
