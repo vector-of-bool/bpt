@@ -23,6 +23,12 @@ class shared_compile_file_rules {
 public:
     shared_compile_file_rules() = default;
 
+    auto clone() const noexcept {
+        auto cp = *this;
+        cp._impl = std::make_shared<rules_impl>(*_impl);
+        return cp;
+    }
+
     auto& include_dirs() noexcept { return _impl->inc_dirs; }
     auto& include_dirs() const noexcept { return _impl->inc_dirs; }
 

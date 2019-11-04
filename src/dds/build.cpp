@@ -1,5 +1,6 @@
 #include "./build.hpp"
 
+#include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
 #include <dds/logging.hpp>
 #include <dds/usage_reqs.hpp>
@@ -111,6 +112,76 @@ load_usage_requirements(path_ref project_root, path_ref build_root, path_ref use
     return usage_requirement_map::from_lm_index(idx);
 }
 
+void prepare_catch2_driver(library_build_params&   lib_params,
+                           test_lib                test_driver,
+                           const build_params&     params,
+                           const package_manifest& man) {
+    fs::path test_include_root = params.out_root / "_test_inc";
+    lib_params.test_include_dirs.emplace_back(test_include_root);
+
+    auto catch_hpp = test_include_root / "catch2/catch.hpp";
+    fs::create_directories(catch_hpp.parent_path());
+    auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
+    hpp_strm.write(detail::catch2_embedded_single_header_str,
+                   std::strlen(detail::catch2_embedded_single_header_str));
+    hpp_strm.close();
+
+    if (test_driver == test_lib::catch_) {
+        // Don't generate a test library helper
+    }
+
+    std::string fname;
+    std::string definition;
+
+    if (test_driver == test_lib::catch_main) {
+        fname      = "catch-main.cpp";
+        definition = "CATCH_CONFIG_MAIN";
+    } else if (test_driver == test_lib::catch_runner) {
+        fname      = "catch-runner.cpp";
+        definition = "CATCH_CONFIG_RUNNER";
+    } else {
+        assert(false && "Impossible: Invalid `test_driver` for catch library");
+        std::terminate();
+    }
+
+    shared_compile_file_rules comp_rules;
+    comp_rules.defs().push_back(definition);
+
+    auto catch_cpp = test_include_root / "catch2" / fname;
+    auto cpp_strm  = open(catch_cpp, std::ios::out | std::ios::binary);
+    cpp_strm << R"(#include "./catch.hpp"\n)";
+    cpp_strm.close();
+
+    auto sf = source_file::from_path(catch_cpp, test_include_root);
+    assert(sf.has_value());
+
+    compile_file_plan plan{comp_rules, std::move(*sf), "Catch2", "v1"};
+    build_env         env;
+    env.output_root = params.out_root / "_test-driver";
+    env.toolchain   = params.toolchain;
+    auto obj_file   = plan.calc_object_file_path(env);
+
+    if (!fs::exists(obj_file)) {
+        spdlog::info("Compiling Catch2 test driver (This will only happen once)...");
+        plan.compile(env);
+    }
+
+    lib_params.test_link_files.push_back(obj_file);
+}
+
+void prepare_test_driver(library_build_params&   lib_params,
+                         const build_params&     params,
+                         const package_manifest& man) {
+    auto& test_driver = *man.test_driver;
+    if (test_driver == test_lib::catch_ || test_driver == test_lib::catch_main
+        || test_driver == test_lib::catch_runner) {
+        prepare_catch2_driver(lib_params, test_driver, params, man);
+    } else {
+        assert(false && "Unreachable");
+        std::terminate();
+    }
+}
+
 }  // namespace
 
 void dds::build(const build_params& params, const package_manifest& man) {
@@ -130,6 +201,11 @@ void dds::build(const build_params& params, const package_manifest& man) {
     lib_params.build_tests     = params.build_tests;
     lib_params.build_apps      = params.build_apps;
     lib_params.enable_warnings = params.enable_warnings;
+
+    if (man.test_driver) {
+        prepare_test_driver(lib_params, params, man);
+    }
+
     for (const library& lib : libs) {
         lib_params.out_subdir = fs::relative(lib.path(), params.root);
         pkg.add_library(library_plan::create(lib, lib_params, ureqs));

@@ -63,11 +63,22 @@ library_plan library_plan::create(const library&               lib,
         extend(in_libs, ureqs.link_paths(link.namespace_, link.name));
     }
 
+    auto test_in_libs = in_libs;
+    extend(test_in_libs, params.test_link_files);
+
+    auto test_rules = compile_rules.clone();
+    extend(test_rules.include_dirs(), params.test_include_dirs);
     for (const source_file& source : ranges::views::concat(app_sources, test_sources)) {
+        // Pick a subdir based on app/test
         auto subdir
             = source.kind == source_kind::test ? params.out_subdir / "test" : params.out_subdir;
-        link_executables.emplace_back(in_libs,
-                                      compile_file_plan(compile_rules,
+        // Pick compile rules based on app/test
+        auto rules = source.kind == source_kind::test ? test_rules : compile_rules;
+        // Pick input libs based on app/test
+        auto& exe_link_libs = source.kind == source_kind::test ? test_in_libs : in_libs;
+        // TODO: Apps/tests should only see the _public_ include dir, not both
+        link_executables.emplace_back(exe_link_libs,
+                                      compile_file_plan(rules,
                                                         source,
                                                         lib.manifest().name,
                                                         params.out_subdir / "obj"),

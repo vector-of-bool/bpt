@@ -45,6 +45,10 @@ struct library_build_params {
     bool     build_tests     = false;
     bool     build_apps      = false;
     bool     enable_warnings = false;
+
+    // Extras for compiling tests:
+    std::vector<fs::path> test_include_dirs;
+    std::vector<fs::path> test_link_files;
 };
 
 std::vector<library> collect_libraries(path_ref where);
