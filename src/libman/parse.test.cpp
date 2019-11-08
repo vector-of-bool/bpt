@@ -80,9 +80,52 @@ void test_multi() {
     CHECK(!iter);
 }
 
+void test_nested_kvlist() {
+    auto check_1 = [](auto str) {
+        auto result = nested_kvlist::parse(str);
+        CHECK(result.primary == "Foo");
+        CHECK(result.pairs.size() == 1);
+        REQUIRE(result.pairs.find("bar"));
+        CHECK(result.pairs.find("bar")->value() == "baz");
+    };
+    check_1("Foo; bar=baz");
+    check_1("Foo ; bar=baz");
+    check_1("Foo ;   bar=baz");
+    check_1("Foo ;   bar=baz  ");
+    check_1("Foo;bar=baz  ");
+    check_1("Foo;bar=baz");
+
+    auto check_2 = [](auto str) {
+        auto result = nested_kvlist::parse(str);
+        CHECK(result.primary == "Foo");
+        CHECK(result.pairs.size() == 0);
+    };
+    check_2("Foo");
+    check_2("Foo;");
+    check_2("Foo  ;");
+    check_2("Foo  ; ");
+    check_2("Foo; ");
+
+    auto check_3 = [](auto str) {
+        auto result = nested_kvlist::parse(str);
+        CHECK(result.primary == "Foo bar");
+        CHECK(result.pairs.size() == 2);
+        REQUIRE(result.pairs.find("baz"));
+        CHECK(result.pairs.find("baz")->value() == "meow");
+        REQUIRE(result.pairs.find("quux"));
+        CHECK(result.pairs.find("quux")->value() == "");
+    };
+
+    check_3("Foo bar; baz=meow quux");
+    check_3("Foo bar  ; baz=meow quux=");
+    check_3("Foo bar  ; quux= baz=meow");
+    check_3("Foo bar  ;quux=   baz=meow");
+}
+
 void run_tests() {
     test_simple();
     test_multi();
+    test_nested_kvlist();
 }
 
 DDS_TEST_MAIN;

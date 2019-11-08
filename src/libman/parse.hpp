@@ -125,6 +125,13 @@ inline void write_pairs(const std::filesystem::path& fpath, const pair_list& pai
     write_pairs(fpath, pairs.items());
 }
 
+struct nested_kvlist {
+    std::string primary;
+    pair_list   pairs;
+
+    static nested_kvlist parse(std::string_view s);
+};
+
 template <typename What>
 class read_required {
     std::string_view _key;
