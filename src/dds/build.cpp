@@ -112,10 +112,10 @@ load_usage_requirements(path_ref project_root, path_ref build_root, path_ref use
     return usage_requirement_map::from_lm_index(idx);
 }
 
-void prepare_catch2_driver(library_build_params&   lib_params,
-                           test_lib                test_driver,
-                           const build_params&     params,
-                           const package_manifest& man) {
+void prepare_catch2_driver(library_build_params& lib_params,
+                           test_lib              test_driver,
+                           const build_params&   params,
+                           const package_manifest&) {
     fs::path test_include_root = params.out_root / "_test_inc";
     lib_params.test_include_dirs.emplace_back(test_include_root);
 

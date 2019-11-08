@@ -1,16 +1,16 @@
 #pragma once
 
+#include <dds/sdist.hpp>
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
 
 #include <functional>
 #include <optional>
+#include <set>
 #include <shared_mutex>
 #include <vector>
 
 namespace dds {
-
-struct sdist;
 
 enum repo_flags {
     none             = 0b00,
@@ -30,13 +30,20 @@ inline repo_flags operator|(repo_flags a, repo_flags b) {
 }
 
 class repository {
-    fs::path _root;
+    using sdist_set = std::set<sdist, sdist_compare_t>;
 
-    repository(path_ref p)
-        : _root(p) {}
+    bool      _write_enabled = false;
+    fs::path  _root;
+    sdist_set _sdists;
 
-    static void _log_blocking(path_ref dir) noexcept;
-    static void _init_repo_dir(path_ref dir) noexcept;
+    repository(bool writeable, path_ref p, sdist_set sds)
+        : _write_enabled(writeable)
+        , _root(p)
+        , _sdists(std::move(sds)) {}
+
+    static void       _log_blocking(path_ref dir) noexcept;
+    static void       _init_repo_dir(path_ref dir) noexcept;
+    static repository _open_for_directory(bool writeable, path_ref);
 
 public:
     template <typename Func>
@@ -51,7 +58,9 @@ public:
         std::shared_lock  shared_lk{mut, std::defer_lock};
         std::unique_lock  excl_lk{mut, std::defer_lock};
 
-        if (flags & repo_flags::write_lock) {
+        bool writeable = (flags & repo_flags::write_lock) != repo_flags::none;
+
+        if (writeable) {
             if (!excl_lk.try_lock()) {
                 _log_blocking(dirpath);
                 excl_lk.lock();
@@ -63,16 +72,29 @@ public:
             }
         }
 
-        return std::invoke((Func &&) fn, open_for_directory(dirpath));
+        auto repo = _open_for_directory(writeable, dirpath);
+        return std::invoke((Func &&) fn, std::move(repo));
     }
-
-    static repository open_for_directory(path_ref);
 
     static fs::path default_local_path() noexcept;
 
-    void                 add_sdist(const sdist&, if_exists = if_exists::throw_exc);
-    std::optional<sdist> get_sdist(std::string_view name, std::string_view version) const;
-    std::vector<sdist>   load_sdists() const;
+    void add_sdist(const sdist&, if_exists = if_exists::throw_exc);
+
+    const sdist* find(std::string_view name, semver::version ver) const noexcept;
+
+    auto iter_sdists() const noexcept {
+        class ret {
+            const sdist_set& s;
+
+        public:
+            ret(const sdist_set& s)
+                : s(s) {}
+
+            auto begin() const { return s.cbegin(); }
+            auto end() const { return s.cend(); }
+        } r{_sdists};
+        return r;
+    }
 };
 
 }  // namespace dds

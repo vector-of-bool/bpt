@@ -1,5 +1,6 @@
 #include <dds/build.hpp>
 #include <dds/logging.hpp>
+#include <dds/repo/remote.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
 #include <dds/toolchain/from_dds.hpp>
@@ -120,8 +121,8 @@ struct cli_repo {
                 auto same_name
                     = [](auto&& a, auto&& b) { return a.manifest.name == b.manifest.name; };
 
-                auto all_sdists  = repo.load_sdists();
-                auto grp_by_name = all_sdists                      //
+                auto all         = repo.iter_sdists();
+                auto grp_by_name = all                             //
                     | ranges::views::group_by(same_name)           //
                     | ranges::views::transform(ranges::to_vector)  //
                     | ranges::views::transform([](auto&& grp) {
@@ -132,8 +133,7 @@ struct cli_repo {
                 for (const auto& [name, grp] : grp_by_name) {
                     spdlog::info("{}:", name);
                     for (const dds::sdist& sd : grp) {
-                        spdlog::info("  - {}",
-                                     sd.manifest.version.to_string());
+                        spdlog::info("  - {}", sd.manifest.version.to_string());
                     }
                 }
 
@@ -383,6 +383,55 @@ struct cli_deps {
 
     struct {
         cli_deps&     parent;
+        args::Command cmd{parent.deps_group,
+                          "get",
+                          "Ensure we have local copies of the project dependencies"};
+        common_flags  _common{cmd};
+
+        repo_where_flag repo_where{cmd};
+        path_flag       remote_listing_file{
+            cmd,
+            "remote-listing",
+            "Path to a file containing listing of remote sdists and how to obtain them",
+            {'R', "remote-list"},
+            "remote.dds"};
+
+        int run() {
+            auto man    = parent.load_package_manifest();
+            auto rd     = dds::remote_directory::load_from_file(remote_listing_file.Get());
+            bool failed = false;
+            dds::repository::with_repository(  //
+                repo_where.Get(),
+                dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
+                [&](dds::repository repo) {
+                    for (auto& dep : man.dependencies) {
+                        auto exists = !!repo.find(dep.name, dep.version);
+                        if (!exists) {
+                            spdlog::info("Pull remote: {} {}", dep.name, dep.version.to_string());
+                            auto opt_remote = rd.find(dep.name, dep.version);
+                            if (opt_remote) {
+                                auto tsd = opt_remote->pull_sdist();
+                                repo.add_sdist(tsd.sdist, dds::if_exists::ignore);
+                            } else {
+                                spdlog::error("No remote listing for {} {}",
+                                              dep.name,
+                                              dep.version.to_string());
+                                failed = true;
+                            }
+                        } else {
+                            spdlog::info("Okay: {} {}", dep.name, dep.version.to_string());
+                        }
+                    }
+                });
+            if (failed) {
+                return 1;
+            }
+            return 0;
+        }
+    } get{*this};
+
+    struct {
+        cli_deps&     parent;
         args::Command cmd{parent.deps_group, "build", "Build project dependencies"};
         common_flags  _common{cmd};
 
@@ -435,6 +484,8 @@ struct cli_deps {
             return ls.run();
         } else if (build.cmd) {
             return build.run();
+        } else if (get.cmd) {
+            return get.run();
         }
         std::terminate();
     }
