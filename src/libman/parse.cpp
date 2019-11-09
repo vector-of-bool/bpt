@@ -79,7 +79,7 @@ lm::pair_list lm::parse_file(fs::path fpath) { return parse_string(dds::slurp_fi
 void lm::write_pairs(fs::path fpath, const std::vector<pair>& pairs) {
     auto fstream = dds::open(fpath, std::ios::out | std::ios::binary);
     for (auto& pair : pairs) {
-        fstream << pair.key() << ": " << pair.value() << '\n';
+        fstream << pair.key << ": " << pair.value << '\n';
     }
 }
 

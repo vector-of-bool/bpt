@@ -13,25 +13,13 @@
 namespace lm {
 
 class pair {
-    std::string _key;
-    std::string _value;
-
 public:
+    std::string key;
+    std::string value;
+
     pair(std::string_view k, std::string_view v)
-        : _key(k)
-        , _value(v) {}
-
-    auto& key() const noexcept { return _key; }
-    auto& value() const noexcept { return _value; }
-
-    template <std::size_t I>
-    std::string_view get() const {
-        if constexpr (I == 0) {
-            return key();
-        } else if constexpr (I == 1) {
-            return value();
-        }
-    }
+        : key(k)
+        , value(v) {}
 };
 
 class pair_iterator {
@@ -53,7 +41,7 @@ public:
     pair_iterator& operator++() & noexcept {
         assert(_iter != _end);
         ++_iter;
-        while (_iter != _end && _iter->key() != _key) {
+        while (_iter != _end && _iter->key != _key) {
             ++_iter;
         }
         return *this;
@@ -88,7 +76,7 @@ public:
 
     const pair* find(const std::string_view& key) const noexcept {
         for (auto&& item : items()) {
-            if (item.key() == key) {
+            if (item.key == key) {
                 return &item;
             }
         }
@@ -98,7 +86,7 @@ public:
     pair_iterator iter(std::string_view key) const noexcept {
         auto       iter = items().begin();
         const auto end  = items().end();
-        while (iter != end && iter->key() != key) {
+        while (iter != end && iter->key != key) {
             ++iter;
         }
         return pair_iterator{iter, end, key};
@@ -262,6 +250,13 @@ public:
     }
 };
 
+class ignore_x_keys {
+public:
+    bool operator()(std::string_view, std::string_view key, std::string_view) const {
+        return key.find("X-") == 0;
+    }
+};
+
 class reject_unknown {
 public:
     int operator()(std::string_view context, std::string_view key, std::string_view) const {
@@ -291,15 +286,3 @@ auto read(std::string_view context [[maybe_unused]], const pair_list& pairs, Ite
 }
 
 }  // namespace lm
-
-namespace std {
-
-template <>
-struct tuple_size<lm::pair> : std::integral_constant<int, 2> {};
-
-template <std::size_t N>
-struct tuple_element<N, lm::pair> {
-    using type = std::string_view;
-};
-
-}  // namespace std

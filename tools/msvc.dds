@@ -1,5 +1,5 @@
 Compiler-ID: MSVC
-C++-Version: C++17
-Flags: /experimental:preprocessor /D FMT_HEADER_ONLY=1 /wd5105
+# C++-Version: C++17
+Flags: /experimental:preprocessor /D FMT_HEADER_ONLY=1 /wd5105 /std:c++latest
 Link-Flags: rpcrt4.lib
 Optimize: True

@@ -18,13 +18,13 @@ void test_simple() {
     kvs    = parse_string(lm_src);
     CHECK(kvs.size() == 1);
     REQUIRE(kvs.find("foo"));
-    CHECK(kvs.find("foo")->value() == "bar");
+    CHECK(kvs.find("foo")->value == "bar");
 
     lm_src = "foo:bar: baz";
     kvs    = parse_string(lm_src);
     CHECK(kvs.size() == 1);
     REQUIRE(kvs.find("foo:bar"));
-    CHECK(kvs.find("foo:bar")->value() == "baz");
+    CHECK(kvs.find("foo:bar")->value == "baz");
 
     CHECK(parse_string("#comment").size() == 0);
     CHECK(parse_string("\n\n").size() == 0);
@@ -46,33 +46,33 @@ void test_simple() {
         kvs = parse_string(s);
         CHECK(kvs.size() == 1);
         REQUIRE(kvs.find("Foo"));
-        CHECK(kvs.find("Foo")->value() == "");
+        CHECK(kvs.find("Foo")->value == "");
     }
 
     kvs = parse_string("foo: # Not a comment");
     CHECK(kvs.size() == 1);
     REQUIRE(kvs.find("foo"));
-    CHECK(kvs.find("foo")->value() == "# Not a comment");
+    CHECK(kvs.find("foo")->value == "# Not a comment");
 }
 
 void test_multi() {
     auto kvs = parse_string("Foo: bar\nbaz: qux");
     CHECK(kvs.size() == 2);
     REQUIRE(kvs.find("Foo"));
-    CHECK(kvs.find("Foo")->value() == "bar");
+    CHECK(kvs.find("Foo")->value == "bar");
     REQUIRE(kvs.find("baz"));
-    CHECK(kvs.find("baz")->value() == "qux");
+    CHECK(kvs.find("baz")->value == "qux");
 
     kvs = parse_string("foo: first\nfoo: second\n");
     CHECK(kvs.size() == 2);
     auto iter = kvs.iter("foo");
     REQUIRE(iter);
-    CHECK(iter->key() == "foo");
-    CHECK(iter->value() == "first");
+    CHECK(iter->key == "foo");
+    CHECK(iter->value == "first");
     ++iter;
     REQUIRE(iter);
-    CHECK(iter->key() == "foo");
-    CHECK(iter->value() == "second");
+    CHECK(iter->key == "foo");
+    CHECK(iter->value == "second");
     ++iter;
     CHECK(!iter);
 
@@ -86,7 +86,7 @@ void test_nested_kvlist() {
         CHECK(result.primary == "Foo");
         CHECK(result.pairs.size() == 1);
         REQUIRE(result.pairs.find("bar"));
-        CHECK(result.pairs.find("bar")->value() == "baz");
+        CHECK(result.pairs.find("bar")->value == "baz");
     };
     check_1("Foo; bar=baz");
     check_1("Foo ; bar=baz");
@@ -111,9 +111,9 @@ void test_nested_kvlist() {
         CHECK(result.primary == "Foo bar");
         CHECK(result.pairs.size() == 2);
         REQUIRE(result.pairs.find("baz"));
-        CHECK(result.pairs.find("baz")->value() == "meow");
+        CHECK(result.pairs.find("baz")->value == "meow");
         REQUIRE(result.pairs.find("quux"));
-        CHECK(result.pairs.find("quux")->value() == "");
+        CHECK(result.pairs.find("quux")->value == "");
     };
 
     check_3("Foo bar; baz=meow quux");
