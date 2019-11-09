@@ -34,9 +34,9 @@ void test_ends_with() {
 }
 
 void test_trim() {
-    CHECK(trim("foo") == "foo");
-    CHECK(trim("foo   ") == "foo");
-    CHECK(trim("   ").size() == 0);
+    CHECK(trim_view("foo") == "foo");
+    CHECK(trim_view("foo   ") == "foo");
+    CHECK(trim_view("   ").size() == 0);
 }
 
 void test_contains() {

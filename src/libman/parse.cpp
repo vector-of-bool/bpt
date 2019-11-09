@@ -16,7 +16,7 @@ using namespace lm;
 namespace {
 
 void parse_line(std::vector<pair>& pairs, const std::string_view whole_line) {
-    const auto line = trim(whole_line);
+    const auto line = trim_view(whole_line);
     if (line.empty() || line[0] == '#') {
         return;
     }
@@ -46,8 +46,8 @@ void parse_line(std::vector<pair>& pairs, const std::string_view whole_line) {
     // `iter` now points to the space between the key and value
     auto key   = sview(begin, iter - 1);  // -1 to trim the colon in the key
     auto value = sview(iter, end);
-    key        = trim(key);
-    value      = trim(value);
+    key        = trim_view(key);
+    value      = trim_view(value);
     pairs.emplace_back(key, value);
 }
 

@@ -26,8 +26,8 @@ dependency dependency::parse_depends_string(std::string_view str) {
         ++str_iter;
     }
 
-    auto name        = trim(std::string_view(str_begin, str_iter - str_begin));
-    auto version_str = trim(std::string_view(str_iter, str_end - str_iter));
+    auto name        = trim_view(std::string_view(str_begin, str_iter - str_begin));
+    auto version_str = trim_view(std::string_view(str_iter, str_end - str_iter));
 
     semver::version version;
     try {
@@ -54,24 +54,25 @@ auto tie_sdist(const sdist& sd) {
     return std::tuple(sd.manifest.name, sd.manifest.version.to_string());
 }
 
-auto sdist_compare = [](const sdist& lhs, const sdist& rhs) {
-    return tie_sdist(lhs) < tie_sdist(rhs);
-};
+auto sdist_compare
+    = [](const sdist& lhs, const sdist& rhs) { return tie_sdist(lhs) < tie_sdist(rhs); };
 
 void detail::sort_sdists(std::vector<sdist>& sd) { std::sort(sd.begin(), sd.end(), sdist_compare); }
 
 namespace {
 
-const sdist* get_sdist(const std::vector<sdist>& sorted_sds, std::string_view name, std::string_view version) {
-    auto found = std::partition_point(sorted_sds.begin(), sorted_sds.end(), [&](const auto& candidate) {
-        return tie_sdist(candidate) < std::tie(name, version);
-    });
+const sdist*
+get_sdist(const std::vector<sdist>& sorted_sds, std::string_view name, std::string_view version) {
+    auto found
+        = std::partition_point(sorted_sds.begin(), sorted_sds.end(), [&](const auto& candidate) {
+              return tie_sdist(candidate) < std::tie(name, version);
+          });
     if (found->manifest.name == name && found->manifest.version.to_string() == version) {
         return &*found;
     }
     return nullptr;
 }
-}
+}  // namespace
 
 void detail::do_find_deps(const std::vector<sdist>& sdists,
                           const dependency&         dep,

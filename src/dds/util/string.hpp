@@ -11,10 +11,13 @@ inline namespace string_utils {
 
 inline std::string_view sview(std::string_view::const_iterator beg,
                               std::string_view::const_iterator end) {
+    if (beg == end) {
+        return "";
+    }
     return std::string_view(&*beg, static_cast<std::size_t>(std::distance(beg, end)));
 }
 
-inline std::string_view trim(std::string_view s) {
+inline std::string_view trim_view(std::string_view s) {
     auto iter = s.begin();
     auto end  = s.end();
     while (iter != end && std::isspace(*iter)) {
@@ -28,10 +31,6 @@ inline std::string_view trim(std::string_view s) {
     auto new_end = riter.base();
     return sview(iter, new_end);
 }
-
-inline std::string_view trim(const char* str) { return trim(std::string_view(str)); }
-
-inline std::string trim(std::string&& s) { return std::string(trim(s)); }
 
 inline bool ends_with(std::string_view s, std::string_view key) {
     auto found = s.rfind(key);
