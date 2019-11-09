@@ -20,9 +20,10 @@ PREBUILT_DIR = PROJECT_ROOT / '_prebuilt'
 EXE_SUFFIX = '.exe' if os.name == 'nt' else ''
 
 
-def _run_quiet(args) -> None:
-    cmd = [str(s) for s in args]
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+def _run_quiet(cmd, **kwargs) -> None:
+    cmd = [str(s) for s in cmd]
+    res = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, **kwargs)
     if res.returncode != 0:
         print(f'Subprocess command {cmd} failed '
               f'[{res.returncode}]:\n{res.stdout.decode()}')
@@ -30,7 +31,7 @@ def _run_quiet(args) -> None:
 
 
 def _clone_bootstrap_phase(ph: str) -> Path:
-    print(f'Cloning: {ph}')
+    print(f'Clone revision: {ph}')
     bts_dir = BOOTSTRAP_BASE_DIR / ph
     if bts_dir.exists():
         shutil.rmtree(bts_dir)
@@ -45,11 +46,12 @@ def _clone_bootstrap_phase(ph: str) -> Path:
     return bts_dir
 
 
-def _build_bootstrap_phase(ph: str, bts_dir: Path, args: argparse.Namespace) -> None:
-    print(f'Running build: {ph} (Please wait a moment...)')
+def _build_bootstrap_phase(ph: str, bts_dir: Path,
+                           args: argparse.Namespace) -> None:
+    print(f'Build revision: {ph} [This may take a moment]')
     env = os.environ.copy()
     env['DDS_BOOTSTRAP_PREV_EXE'] = str(PREBUILT_DIR / 'dds')
-    subprocess.check_call(
+    _run_quiet(
         [
             sys.executable,
             '-u',
@@ -84,7 +86,8 @@ def main(argv: Sequence[str]) -> int:
     parser.add_argument(
         '--cxx', help='The C++ compiler to use for the build', required=True)
     args = parser.parse_args(argv)
-    for phase in BOOTSTRAP_PHASES:
+    for idx, phase in enumerate(BOOTSTRAP_PHASES):
+        print(f'Bootstrap phase [{idx+1}/{len(BOOTSTRAP_PHASES)}]')
         exe = _run_boot_phase(phase, args)
 
     print(f'A bootstrapped DDS executable has been generated: {exe}')
