@@ -255,6 +255,13 @@ public:
     }
 };
 
+class ignore_x_keys {
+public:
+    bool operator()(std::string_view, std::string_view key, std::string_view) const {
+        return key.find("X-") == 0;
+    }
+};
+
 class reject_unknown {
 public:
     int operator()(std::string_view context, std::string_view key, std::string_view) const {

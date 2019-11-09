@@ -20,6 +20,7 @@ library_manifest library_manifest::load_from_file(const fs::path& fpath) {
              lm::read_accumulate("Uses", uses_strings),
              lm::read_accumulate("Links", links_strings),
              lm::read_required("Name", ret.name),
+             lm::ignore_x_keys(),
              lm::reject_unknown());
 
     extend(ret.uses, ranges::views::transform(uses_strings, lm::split_usage_string));
