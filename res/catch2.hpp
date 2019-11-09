@@ -1,8 +1,4 @@
-#include "./catch2_embedded.hpp"
-
-namespace dds::detail {
-
-const char* const catch2_embedded_single_header_str = R"catch2-embedded(/*
+/*
  *  Catch v2.10.2
  *  Generated: 2019-10-24 17:49:11.459934
  *  ----------------------------------------------------------
@@ -17473,6 +17469,3 @@ using Catch::Detail::Approx;
 // end catch.hpp
 #endif // TWOBLUECUBES_SINGLE_INCLUDE_CATCH_HPP_INCLUDED
 
-)catch2-embedded";
-
-}
