@@ -99,11 +99,12 @@ def main(argv: Sequence[str]) -> int:
         f'-T{opts.toolchain}',
     ])
 
+    exe_suffix = '.exe' if os.name == 'nt' else ''
     subprocess.check_call([
         sys.executable,
         '-u',
         str(TOOLS_DIR / 'test.py'),
-        f'--exe={PROJECT_ROOT / "_build/dds"}',
+        f'--exe={PROJECT_ROOT / f"_build/dds{exe_suffix}"}',
         f'-T{opts.toolchain}',
     ])
 
