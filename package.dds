@@ -7,4 +7,3 @@ Depends: spdlog 1.4.2
 Depends: ms-wil 0.0.0
 Depends: range-v3 0.9.1
 Depends: nlohmann-json 3.7.0
-Depends: nlohmann-json 3.7.0
