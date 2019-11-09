@@ -28,7 +28,9 @@ struct lock_data {
         auto       lockflags = lm == exclusive ? LOCKFILE_EXCLUSIVE_LOCK : 0;
         auto       failflags = fm == nonblocking ? LOCKFILE_FAIL_IMMEDIATELY : 0;
         auto       flags     = lockflags | failflags;
-        const auto okay      = ::LockFileEx(file.get(), flags, 0, 0, 0, nullptr);
+        auto       hndl      = file.get();
+        OVERLAPPED ovr       = {};
+        const auto okay      = ::LockFileEx(hndl, flags, 0, 0, 0, &ovr);
         if (!okay) {
             cancellation_point();
             if (::GetLastError() == ERROR_IO_PENDING) {
@@ -41,7 +43,8 @@ struct lock_data {
     }
 
     void unlock(path_ref p) {
-        const auto okay = ::UnlockFileEx(file.get(), 0, 0, 0, nullptr);
+        OVERLAPPED ovr  = {};
+        const auto okay = ::UnlockFileEx(file.get(), 0, 0, 0, &ovr);
         if (!okay) {
             cancellation_point();
             throw std::system_error(std::error_code(::GetLastError(), std::system_category()),
