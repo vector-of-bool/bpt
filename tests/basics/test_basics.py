@@ -1,0 +1,44 @@
+from contextlib import contextmanager
+from tests import DDS
+from tests.fileutil import ensure_dir, set_contents
+
+
+def test_build_empty(dds: DDS):
+    assert not dds.source_root.exists()
+    dds.scope.enter_context(ensure_dir(dds.source_root))
+    dds.build()
+
+
+def test_build_simple(dds: DDS):
+    dds.scope.enter_context(
+        set_contents(dds.source_root / 'src/f.cpp', b'void foo() {}'))
+    dds.build()
+
+
+def basic_pkg_dds(dds: DDS):
+    return set_contents(
+        dds.source_root / 'package.dds', b'''
+        Name: test-pkg
+        Version: 0.2.2
+    ''')
+
+
+def test_empty_with_pkg_dds(dds: DDS):
+    dds.scope.enter_context(basic_pkg_dds(dds))
+    dds.build()
+
+
+def test_empty_with_lib_dds(dds: DDS):
+    dds.scope.enter_context(basic_pkg_dds(dds))
+    dds.build()
+    pass
+
+
+def test_empty_sdist_create(dds: DDS):
+    dds.scope.enter_context(basic_pkg_dds(dds))
+    dds.sdist_create()
+
+
+def test_empty_sdist_export(dds: DDS):
+    dds.scope.enter_context(basic_pkg_dds(dds))
+    dds.sdist_export()
