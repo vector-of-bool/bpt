@@ -6,10 +6,12 @@ import shutil
 import subprocess
 import sys
 
+from dds_ci import cli
+
 ROOT = Path(__file__).parent.parent.absolute()
 
 
-def bootstrap_self(exe: Path, toolchain: str):
+def self_build(exe: Path, toolchain: str):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
     new_exe = ROOT / '_dds.bootstrap-test.exe'
@@ -23,19 +25,10 @@ def bootstrap_self(exe: Path, toolchain: str):
 
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--exe',
-        '-e',
-        help='Path to the dds executable to test',
-        required=True)
-    parser.add_argument(
-        '--toolchain',
-        '-T',
-        help='The dds toolchain to use while testing',
-        required=True,
-    )
+    cli.add_tc_arg(parser)
+    cli.add_dds_exe_arg(parser)
     args = parser.parse_args(argv)
-    bootstrap_self(Path(args.exe), args.toolchain)
+    self_build(Path(args.exe), args.toolchain)
     return 0
 
 

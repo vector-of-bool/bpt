@@ -8,27 +8,9 @@ import shutil
 
 import pytest
 
+from dds_ci import proc
+
 from . import fileutil
-
-CommandLineArg = Union[str, Path, int, float]
-CommandLineArg1 = Union[CommandLineArg, Iterable[CommandLineArg]]
-CommandLineArg2 = Union[CommandLineArg1, Iterable[CommandLineArg1]]
-CommandLineArg3 = Union[CommandLineArg2, Iterable[CommandLineArg2]]
-CommandLineArg4 = Union[CommandLineArg3, Iterable[CommandLineArg3]]
-CommandLine = Iterable[CommandLineArg4]
-
-
-def _flatten_cmd(cmd: CommandLine) -> Iterable[str]:
-    if isinstance(cmd, (str, Path)):
-        yield str(cmd)
-    elif isinstance(cmd, (int, float)):
-        yield str(cmd)
-    elif hasattr(cmd, '__iter__'):
-        each = (_flatten_cmd(arg) for arg in cmd)  # type: ignore
-        for item in each:
-            yield from item
-    else:
-        assert False, f'Invalid command line element: {repr(cmd)}'
 
 
 class DDS:
@@ -61,19 +43,14 @@ class DDS:
         if self.scratch_dir.exists():
             shutil.rmtree(self.scratch_dir)
 
-    def run_unchecked(self, cmd: CommandLine, *,
+    def run_unchecked(self, cmd: proc.CommandLine, *,
                       cwd: Path = None) -> subprocess.CompletedProcess:
-        full_cmd = list(_flatten_cmd(itertools.chain([self.dds_exe], cmd)))
-        return subprocess.run(
-            full_cmd,
-            cwd=cwd or self.source_root,
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.STDOUT,
-        )
+        full_cmd = itertools.chain([self.dds_exe], cmd)
+        return proc.run(full_cmd, cwd=cwd or self.source_root)
 
-    def run(self, cmd: CommandLine, *,
+    def run(self, cmd: proc.CommandLine, *,
             cwd: Path = None) -> subprocess.CompletedProcess:
-        cmdline = list(_flatten_cmd(cmd))
+        cmdline = list(proc.flatten_cmd(cmd))
         res = self.run_unchecked(cmd)
         if res.returncode != 0:
             raise subprocess.CalledProcessError(
@@ -133,7 +110,7 @@ class DDS:
             'sdist',
             'create',
             self.project_dir_arg,
-            f'--out={self.build_dir / "stuff.sds"}',
+            f'--out={self.build_dir / "created-sdist.sds"}',
         ])
 
     def sdist_export(self) -> subprocess.CompletedProcess:

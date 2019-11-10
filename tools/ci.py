@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Sequence, NamedTuple
 import subprocess
 import urllib.request
+import shutil
 
-HERE = Path(__file__).parent.absolute()
-TOOLS_DIR = HERE
-PROJECT_ROOT = HERE.parent
-PREBUILT_DDS = PROJECT_ROOT / '_prebuilt/dds'
+from self_build import self_build
+from self_deps_get import self_deps_get
+from dds_ci import paths, proc
 
 
 class CIOptions(NamedTuple):
@@ -23,7 +23,7 @@ def _do_bootstrap_build(opts: CIOptions) -> None:
     subprocess.check_call([
         sys.executable,
         '-u',
-        str(TOOLS_DIR / 'bootstrap.py'),
+        str(paths.TOOLS_DIR / 'bootstrap.py'),
         f'--cxx={opts.cxx}',
     ])
 
@@ -41,8 +41,8 @@ def _do_bootstrap_download() -> None:
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
-    PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
-    with PREBUILT_DDS.open('wb') as fd:
+    paths.PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
+    with paths.PREBUILT_DDS.open('wb') as fd:
         while True:
             buf = stream.read(1024 * 4)
             if not buf:
@@ -51,9 +51,9 @@ def _do_bootstrap_download() -> None:
 
     if os.name != 'nt':
         # Mark the binary executable. By default it won't be
-        mode = PREBUILT_DDS.stat().st_mode
+        mode = paths.PREBUILT_DDS.stat().st_mode
         mode |= 0b001_001_001
-        PREBUILT_DDS.chmod(mode)
+        paths.PREBUILT_DDS.chmod(mode)
 
 
 def main(argv: Sequence[str]) -> int:
@@ -87,29 +87,26 @@ def main(argv: Sequence[str]) -> int:
     else:
         assert False, 'impossible'
 
-    subprocess.check_call([
-        str(PREBUILT_DDS),
+    proc.check_run(
+        paths.PREBUILT_DDS,
         'deps',
         'build',
-        f'-T{opts.toolchain}',
-        f'--repo-dir={PROJECT_ROOT / "external/repo"}',
-    ])
+        ('-T', opts.toolchain),
+        ('--repo-dir', paths.EMBEDDED_REPO_DIR),
+    )
 
-    subprocess.check_call([
-        str(PREBUILT_DDS),
+    proc.check_run(
+        paths.PREBUILT_DDS,
         'build',
         '--full',
-        f'-T{opts.toolchain}',
-    ])
+        ('-T', opts.toolchain),
+    )
 
-    exe_suffix = '.exe' if os.name == 'nt' else ''
-    subprocess.check_call([
-        sys.executable,
-        '-u',
-        str(TOOLS_DIR / 'self-test.py'),
-        f'--exe={PROJECT_ROOT / f"_build/dds{exe_suffix}"}',
-        f'-T{opts.toolchain}',
-    ])
+    self_build(paths.CUR_BUILT_DDS, opts.toolchain)
+
+    if paths.SELF_TEST_REPO_DIR.exists():
+        shutil.rmtree(paths.SELF_TEST_REPO_DIR)
+    self_deps_get(paths.CUR_BUILT_DDS, paths.SELF_TEST_REPO_DIR)
 
     return pytest.main(['-v', '--durations=10'])
 
