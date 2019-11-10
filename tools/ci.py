@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import pytest
 from pathlib import Path
 from typing import Sequence, NamedTuple
 import subprocess
@@ -34,7 +35,8 @@ def _do_bootstrap_download() -> None:
         'darwin': 'dds-macos-x64',
     }.get(sys.platform)
     if filename is None:
-        raise RuntimeError(f'We do not have a prebuilt DDS binary for the "{sys.platform}" platform')
+        raise RuntimeError(f'We do not have a prebuilt DDS binary for '
+                           f'the "{sys.platform}" platform')
     url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p2/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
@@ -59,9 +61,8 @@ def main(argv: Sequence[str]) -> int:
     parser.add_argument(
         '-B',
         '--bootstrap-with',
-        help=
-        'Skip the prebuild-bootstrap step. This requires a _prebuilt/dds to exist!',
-        choices=('download', 'build'),
+        help='How are we to obtain a bootstrapped DDS executable?',
+        choices=('download', 'build', 'skip'),
         required=True,
     )
     parser.add_argument(
@@ -81,6 +82,8 @@ def main(argv: Sequence[str]) -> int:
         _do_bootstrap_build(opts)
     elif args.bootstrap_with == 'download':
         _do_bootstrap_download()
+    elif args.bootstrap_with == 'skip':
+        pass
     else:
         assert False, 'impossible'
 
@@ -103,12 +106,12 @@ def main(argv: Sequence[str]) -> int:
     subprocess.check_call([
         sys.executable,
         '-u',
-        str(TOOLS_DIR / 'test.py'),
+        str(TOOLS_DIR / 'self-test.py'),
         f'--exe={PROJECT_ROOT / f"_build/dds{exe_suffix}"}',
         f'-T{opts.toolchain}',
     ])
 
-    return 0
+    return pytest.main(['-v', '--durations=10'])
 
 
 if __name__ == "__main__":
