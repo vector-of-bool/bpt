@@ -31,7 +31,6 @@ def test_empty_with_pkg_dds(dds: DDS):
 def test_empty_with_lib_dds(dds: DDS):
     dds.scope.enter_context(basic_pkg_dds(dds))
     dds.build()
-    pass
 
 
 def test_empty_sdist_create(dds: DDS):
