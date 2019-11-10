@@ -294,7 +294,7 @@ struct cli_build {
     path_flag lm_index{cmd,
                        "lm_index",
                        "Path to a libman index (usually INDEX.lmi)",
-                       {"--lm-index", 'I'},
+                       {"lm-index", 'I'},
                        dds::fs::path()};
 
     args::Flag enable_warnings{cmd,
