@@ -2,7 +2,7 @@ imports:
   spdlog: external/repo/spdlog
   taywee-args: external/repo/taywee-args
   wil: external/repo/wil
-  ranges-v3: external/repo/ranges-v3
+  ranges-v3: external/repo/range-v3
   nlohmann-json: external/repo/nlohmann-json/include/nlohmann
 
 git module spdlog:
