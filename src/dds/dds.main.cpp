@@ -189,13 +189,13 @@ struct cli_sdist {
 
     common_flags _common{cmd};
 
-    common_project_flags project{cmd};
-
     args::Group sdist_group{cmd, "`sdist` commands"};
 
     struct {
         cli_sdist&    parent;
         args::Command cmd{parent.sdist_group, "create", "Create a source distribution"};
+
+        common_project_flags project{cmd};
 
         path_flag out{cmd,
                       "out",
@@ -210,7 +210,7 @@ struct cli_sdist {
 
         int run() {
             dds::sdist_params params;
-            params.project_dir = parent.project.root.Get();
+            params.project_dir = project.root.Get();
             params.dest_path   = out.Get();
             params.force       = force.Get();
             dds::create_sdist(params);
@@ -223,6 +223,8 @@ struct cli_sdist {
         args::Command cmd{parent.sdist_group,
                           "export",
                           "Export a source distribution to a repository"};
+
+        common_project_flags project{cmd};
 
         repo_where_flag repo_where{cmd};
         args::Flag      force{cmd,
@@ -238,7 +240,7 @@ struct cli_sdist {
                 dds::fs::remove_all(tmp_sdist);
             }
             dds::sdist_params params;
-            params.project_dir = parent.project.root.Get();
+            params.project_dir = project.root.Get();
             params.dest_path   = tmp_sdist;
             params.force       = true;
             auto sdist         = dds::create_sdist(params);
