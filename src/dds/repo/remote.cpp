@@ -92,6 +92,7 @@ temporary_sdist do_pull_sdist(const git_remote_listing& git) {
     params.project_dir = tmpdir.path();
     auto sd_tmp_dir    = dds::temporary_dir::create();
     params.dest_path   = sd_tmp_dir.path();
+    params.force       = true;
     auto sd            = create_sdist(params);
     return {sd_tmp_dir, sd};
 }
