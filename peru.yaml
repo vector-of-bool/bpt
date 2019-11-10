@@ -1,9 +1,9 @@
 imports:
-  spdlog: external/spdlog
-  taywee-args: external/taywee-args
-  wil: external/wil
-  ranges-v3: external/ranges-v3
-  nlohmann-json: external/nlohmann-json/include/nlohmann
+  spdlog: external/repo/spdlog
+  taywee-args: external/repo/taywee-args
+  wil: external/repo/wil
+  ranges-v3: external/repo/ranges-v3
+  nlohmann-json: external/repo/nlohmann-json/include/nlohmann
 
 git module spdlog:
   url: https://github.com/gabime/spdlog.git
@@ -28,4 +28,4 @@ git module ranges-v3:
   pick: include/
 
 curl module nlohmann-json:
-  url: https://raw.githubusercontent.com/nlohmann/json/v3.7.0/single_include/nlohmann/json.hpp
+  url: https://raw.githubusercontent.com/nlohmann/json/v3.7.1/single_include/nlohmann/json.hpp
