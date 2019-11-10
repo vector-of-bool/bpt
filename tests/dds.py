@@ -124,6 +124,7 @@ class DDS:
             ['--warnings'] if warnings else [],
             ['--export'] if export else [],
             f'--toolchain={toolchain or self.default_builtin_toolchain}',
+            f'--lm-index={self.lmi_path}',
             self.project_dir_arg,
         ])
 
