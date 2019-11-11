@@ -24,7 +24,7 @@ jobs:
       - script: |
           set -eu
           sudo apt update -y
-          sudo apt install -y python3-minimal g++-8
+          sudo apt install -y python3-minimal g++-8 ccache
           python3 -m pip install pytest pytest-xdist
         displayName: Prepare System
       - script: python3 -u tools/ci.py -B download --cxx g++-8 -T tools/gcc-8.dds
@@ -36,7 +36,7 @@ jobs:
     pool:
       vmImage: macOS-10.14
     steps:
-      - script: brew install gcc@8
+      - script: brew install gcc@8 ccache
         displayName: Prepare System
       - script: |
           set -eu
