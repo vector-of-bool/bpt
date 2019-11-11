@@ -120,6 +120,13 @@ struct nested_kvlist {
     static nested_kvlist parse(std::string_view s);
 };
 
+struct unchanged {
+    template <typename Item>
+    auto operator()(Item&& item) const {
+        return item;
+    }
+};
+
 template <typename What>
 class read_required {
     std::string_view _key;
@@ -152,16 +159,18 @@ public:
     }
 };
 
-template <typename T>
+template <typename T, typename Transform = unchanged>
 class read_opt {
     std::string_view _key;
     T&               _ref;
     bool             _did_read = false;
+    Transform        _tr;
 
 public:
-    read_opt(std::string_view key, T& ref)
+    read_opt(std::string_view key, T& ref, Transform tr = unchanged())
         : _key(key)
-        , _ref(ref) {}
+        , _ref(ref)
+        , _tr(std::move(tr)) {}
 
     int operator()(std::string_view context, std::string_view key, std::string_view value) {
         if (key != _key) {
@@ -171,7 +180,7 @@ public:
             throw std::runtime_error(std::string(context) + ": Duplicated key '" + std::string(key)
                                      + "' is not allowed.");
         }
-        _ref = T(value);
+        _ref = T(_tr(value));
         return 1;
     }
 };
@@ -209,6 +218,30 @@ public:
     }
 };
 
+struct read_empty_set_true {
+    std::string_view _key;
+    bool&            _bool;
+    bool             _seen = false;
+
+    bool operator()(std::string_view context, std::string_view key, std::string_view value) {
+        if (key != _key) {
+            return false;
+        }
+        if (value != "") {
+            throw std::runtime_error(std::string(context) + ": Key '" + std::string(key)
+                                     + "' does not expected a value (Got '" + std::string(value)
+                                     + "').");
+        }
+        if (_seen) {
+            throw std::runtime_error(std::string(context) + ": Duplicated key '" + std::string(key)
+                                     + "'");
+        }
+        _bool = true;
+        _seen = true;
+        return true;
+    }
+};
+
 class read_check_eq {
     std::string_view _key;
     std::string_view _expect;
@@ -231,19 +264,26 @@ public:
     }
 };
 
-template <typename Container>
+template <typename Container, typename Transform = unchanged>
 class read_accumulate {
     std::string_view _key;
     Container&       _items;
+    Transform        _tr;
 
 public:
+    read_accumulate(std::string_view key, Container& c, Transform tr)
+        : _key(key)
+        , _items(c)
+        , _tr(std::move(tr)) {}
+
     read_accumulate(std::string_view key, Container& c)
         : _key(key)
-        , _items(c) {}
+        , _items(c)
+        , _tr(unchanged()) {}
 
     int operator()(std::string_view, std::string_view key, std::string_view value) const {
         if (key == _key) {
-            _items.emplace_back(value);
+            _items.emplace_back(_tr(value));
             return 1;
         }
         return 0;

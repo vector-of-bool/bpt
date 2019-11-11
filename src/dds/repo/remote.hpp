@@ -5,6 +5,7 @@
 #include <dds/sdist.hpp>
 #include <dds/temp.hpp>
 #include <semver/version.hpp>
+#include <libman/library.hpp>
 
 #include <set>
 #include <string>
@@ -20,8 +21,9 @@ struct temporary_sdist {
 };
 
 struct git_remote_listing {
-    std::string url;
-    std::string ref;
+    std::string              url;
+    std::string              ref;
+    std::optional<lm::usage> auto_lib;
 
     void clone(path_ref path) const;
 };

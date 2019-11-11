@@ -43,18 +43,20 @@ struct read_listing_item {
                      semver::version      version,
                      const lm::pair_list& pairs) {
         if (pairs.find("git")) {
-            std::string url;
-            std::string ref;
+            std::string              url;
+            std::string              ref;
+            std::optional<lm::usage> auto_id;
             lm::read(fmt::format("{}: Parsing Git remote listing", context),
                      pairs,
                      lm::read_required("url", url),
                      lm::read_required("ref", ref),
                      lm::read_check_eq("git", ""),
+                     lm::read_opt("auto", auto_id, &lm::split_usage_string),
                      lm::reject_unknown());
-            auto did_insert
-                = out.emplace(
-                         remote_listing{std::move(name), version, git_remote_listing{url, ref}})
-                      .second;
+            auto did_insert = out.emplace(remote_listing{std::move(name),
+                                                         version,
+                                                         git_remote_listing{url, ref, auto_id}})
+                                  .second;
             if (!did_insert) {
                 spdlog::warn("Duplicate remote package defintion for {} {}",
                              name,
@@ -68,7 +70,7 @@ struct read_listing_item {
     }
 };
 
-temporary_sdist do_pull_sdist(const git_remote_listing& git) {
+temporary_sdist do_pull_sdist(const remote_listing& listing, const git_remote_listing& git) {
     auto tmpdir = dds::temporary_dir::create();
     using namespace std::literals;
     spdlog::info("Cloning repository: {} [{}] ...", git.url, git.ref);
@@ -88,6 +90,16 @@ temporary_sdist do_pull_sdist(const git_remote_listing& git) {
                         git_res.output));
     }
     spdlog::info("Create sdist from clone ...");
+    if (git.auto_lib.has_value()) {
+        spdlog::info("Generating library data automatically");
+        auto pkg_strm = dds::open(tmpdir.path() / "package.dds", std::ios::binary | std::ios::out);
+        pkg_strm << "Name: " << listing.name << '\n'                    //
+                 << "Version: " << listing.version.to_string() << '\n'  //
+                 << "Namespace: " << git.auto_lib->namespace_;
+        auto lib_strm = dds::open(tmpdir.path() / "library.dds", std::ios::binary | std::ios::out);
+        lib_strm << "Name: " << git.auto_lib->name;
+    }
+
     sdist_params params;
     params.project_dir = tmpdir.path();
     auto sd_tmp_dir    = dds::temporary_dir::create();
@@ -100,7 +112,7 @@ temporary_sdist do_pull_sdist(const git_remote_listing& git) {
 }  // namespace
 
 temporary_sdist remote_listing::pull_sdist() const {
-    auto tsd = visit([](auto&& actual) { return do_pull_sdist(actual); });
+    auto tsd = visit([&](auto&& actual) { return do_pull_sdist(*this, actual); });
     if (tsd.sdist.manifest.name != name) {
         throw std::runtime_error(
             fmt::format("The name in the generated sdist ('{}') does not match the name listed in "
