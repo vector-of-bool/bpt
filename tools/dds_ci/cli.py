@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
 
+from dds_ci import paths
+
 
 def add_tc_arg(parser: ArgumentParser, *, required=True) -> None:
     parser.add_argument(
@@ -14,4 +16,4 @@ def add_dds_exe_arg(parser: ArgumentParser, *, required=True) -> None:
         '--exe',
         '-e',
         help='Path to a DDS executable to use',
-        require=required)
+        required=required)
