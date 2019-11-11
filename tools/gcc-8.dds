@@ -1,5 +1,6 @@
 Compiler-ID: GNU
 C++-Version: C++17
 C++-Compiler: g++-8
-Flags: -D SPDLOG_COMPILED_LIB
+Flags: -D SPDLOG_COMPILED_LIB -fconcepts
 Optimize: True
+Compiler-Launcher: ccache
