@@ -6,3 +6,4 @@ __pycache__/
 *.dsd/
 _prebuilt/
 .dds-repo-lock
+.pytest_cache

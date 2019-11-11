@@ -3,6 +3,7 @@
 #include <dds/util/string.hpp>
 
 #include <algorithm>
+#include <cassert>
 #include <optional>
 #include <vector>
 
@@ -10,15 +11,16 @@ using namespace dds;
 
 std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
     static std::vector<std::string_view> header_exts = {
-        ".h",
         ".H",
         ".H++",
+        ".h",
         ".h++",
         ".hh",
         ".hpp",
         ".hxx",
         ".inl",
     };
+    assert(std::is_sorted(header_exts.begin(), header_exts.end()));
     static std::vector<std::string_view> source_exts = {
         ".C",
         ".c",
@@ -27,6 +29,7 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
         ".cpp",
         ".cxx",
     };
+    assert(std::is_sorted(source_exts.begin(), source_exts.end()));
     auto leaf = p.filename();
 
     auto ext_found

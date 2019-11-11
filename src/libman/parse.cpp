@@ -82,3 +82,32 @@ void lm::write_pairs(fs::path fpath, const std::vector<pair>& pairs) {
         fstream << pair.key << ": " << pair.value << '\n';
     }
 }
+
+nested_kvlist nested_kvlist::parse(const std::string_view line_) {
+    const auto line     = trim_view(line_);
+    const auto semi_pos = line.find(';');
+    const auto primary  = trim_view(line.substr(0, semi_pos));
+    auto       tail     = semi_pos == line.npos ? ""sv : trim_view(line.substr(semi_pos + 1));
+
+    std::vector<pair> pairs;
+    while (!tail.empty()) {
+        const auto space_pos = tail.find(' ');
+        const auto item      = tail.substr(0, space_pos);
+
+        const auto eq_pos = item.find('=');
+        if (eq_pos == item.npos) {
+            pairs.emplace_back(item, ""sv);
+        } else {
+            const auto key   = item.substr(0, eq_pos);
+            const auto value = item.substr(eq_pos + 1);
+            pairs.emplace_back(key, value);
+        }
+
+        if (space_pos == tail.npos) {
+            break;
+        }
+        tail = trim_view(tail.substr(space_pos + 1));
+    }
+
+    return nested_kvlist{std::string(primary), pair_list{std::move(pairs)}};
+}

@@ -1,20 +1,23 @@
 import argparse
 import os
 import sys
+import pytest
 from pathlib import Path
 from typing import Sequence, NamedTuple
 import subprocess
 import urllib.request
+import shutil
 
-HERE = Path(__file__).parent.absolute()
-TOOLS_DIR = HERE
-PROJECT_ROOT = HERE.parent
-PREBUILT_DDS = PROJECT_ROOT / '_prebuilt/dds'
+from self_build import self_build
+from self_deps_get import self_deps_get
+from self_deps_build import self_deps_build
+from dds_ci import paths, proc
 
 
 class CIOptions(NamedTuple):
     cxx: Path
     toolchain: str
+    toolchain_2: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -22,7 +25,7 @@ def _do_bootstrap_build(opts: CIOptions) -> None:
     subprocess.check_call([
         sys.executable,
         '-u',
-        str(TOOLS_DIR / 'bootstrap.py'),
+        str(paths.TOOLS_DIR / 'bootstrap.py'),
         f'--cxx={opts.cxx}',
     ])
 
@@ -34,13 +37,14 @@ def _do_bootstrap_download() -> None:
         'darwin': 'dds-macos-x64',
     }.get(sys.platform)
     if filename is None:
-        raise RuntimeError(f'We do not have a prebuilt DDS binary for the "{sys.platform}" platform')
+        raise RuntimeError(f'We do not have a prebuilt DDS binary for '
+                           f'the "{sys.platform}" platform')
     url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p2/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
-    PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
-    with PREBUILT_DDS.open('wb') as fd:
+    paths.PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
+    with paths.PREBUILT_DDS.open('wb') as fd:
         while True:
             buf = stream.read(1024 * 4)
             if not buf:
@@ -49,9 +53,9 @@ def _do_bootstrap_download() -> None:
 
     if os.name != 'nt':
         # Mark the binary executable. By default it won't be
-        mode = PREBUILT_DDS.stat().st_mode
+        mode = paths.PREBUILT_DDS.stat().st_mode
         mode |= 0b001_001_001
-        PREBUILT_DDS.chmod(mode)
+        paths.PREBUILT_DDS.chmod(mode)
 
 
 def main(argv: Sequence[str]) -> int:
@@ -59,9 +63,8 @@ def main(argv: Sequence[str]) -> int:
     parser.add_argument(
         '-B',
         '--bootstrap-with',
-        help=
-        'Skip the prebuild-bootstrap step. This requires a _prebuilt/dds to exist!',
-        choices=('download', 'build'),
+        help='How are we to obtain a bootstrapped DDS executable?',
+        choices=('download', 'build', 'skip'),
         required=True,
     )
     parser.add_argument(
@@ -73,42 +76,55 @@ def main(argv: Sequence[str]) -> int:
         '-T',
         help='The toolchain to use for the CI process',
         required=True)
+    parser.add_argument(
+        '--toolchain-2',
+        '-T2',
+        help='Toolchain for the second-phase self-test',
+        required=True)
     args = parser.parse_args(argv)
 
-    opts = CIOptions(cxx=Path(args.cxx), toolchain=args.toolchain)
+    opts = CIOptions(
+        cxx=Path(args.cxx),
+        toolchain=args.toolchain,
+        toolchain_2=args.toolchain_2)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
     elif args.bootstrap_with == 'download':
         _do_bootstrap_download()
+    elif args.bootstrap_with == 'skip':
+        pass
     else:
         assert False, 'impossible'
 
-    subprocess.check_call([
-        str(PREBUILT_DDS),
-        'deps',
-        'build',
-        f'-T{opts.toolchain}',
-        f'--repo-dir={PROJECT_ROOT / "external/repo"}',
-    ])
-
-    subprocess.check_call([
-        str(PREBUILT_DDS),
+    proc.check_run(
+        paths.PREBUILT_DDS,
         'build',
         '--full',
-        f'-T{opts.toolchain}',
-    ])
+        ('-T', opts.toolchain),
+    )
 
-    exe_suffix = '.exe' if os.name == 'nt' else ''
-    subprocess.check_call([
-        sys.executable,
-        '-u',
-        str(TOOLS_DIR / 'test.py'),
-        f'--exe={PROJECT_ROOT / f"_build/dds{exe_suffix}"}',
-        f'-T{opts.toolchain}',
-    ])
+    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain)
+    print('Bootstrap test PASSED!')
 
-    return 0
+    if paths.SELF_TEST_REPO_DIR.exists():
+        shutil.rmtree(paths.SELF_TEST_REPO_DIR)
+
+    self_deps_get(paths.CUR_BUILT_DDS, paths.SELF_TEST_REPO_DIR)
+    self_deps_build(paths.CUR_BUILT_DDS, opts.toolchain_2,
+                    paths.SELF_TEST_REPO_DIR,
+                    paths.PROJECT_ROOT / 'remote.dds')
+    self_build(
+        paths.CUR_BUILT_DDS,
+        toolchain=opts.toolchain,
+        lmi_path=paths.BUILD_DIR / 'INDEX.lmi')
+
+    return pytest.main([
+        '-v',
+        '--durations=10',
+        f'--basetemp={paths.BUILD_DIR / "_tmp"}',
+        '-n4',
+    ])
 
 
 if __name__ == "__main__":
