@@ -327,7 +327,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             }
         }
         if (link_flags) {
-            extend(ret, *flags);
+            extend(ret, *link_flags);
         }
         return ret;
     };
