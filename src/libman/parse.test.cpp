@@ -1,11 +1,12 @@
-#include <dds/util.test.hpp>
 #include <libman/parse.hpp>
+
+#include <catch2/catch.hpp>
 
 #include <iostream>
 
 using namespace lm;
 
-void test_simple() {
+TEST_CASE("Simple") {
     auto lm_src = "";
     auto kvs    = parse_string(lm_src);
     CHECK(kvs.size() == 0);
@@ -55,7 +56,7 @@ void test_simple() {
     CHECK(kvs.find("foo")->value == "# Not a comment");
 }
 
-void test_multi() {
+TEST_CASE("Multiple") {
     auto kvs = parse_string("Foo: bar\nbaz: qux");
     CHECK(kvs.size() == 2);
     REQUIRE(kvs.find("Foo"));
@@ -80,8 +81,9 @@ void test_multi() {
     CHECK(!iter);
 }
 
-void test_nested_kvlist() {
+TEST_CASE("Nested kv-lists") {
     auto check_1 = [](auto str) {
+        INFO("Testing string: '" << str << "'");
         auto result = nested_kvlist::parse(str);
         CHECK(result.primary == "Foo");
         CHECK(result.pairs.size() == 1);
@@ -96,6 +98,7 @@ void test_nested_kvlist() {
     check_1("Foo;bar=baz");
 
     auto check_2 = [](auto str) {
+        INFO("Testing string: '" << str << "'");
         auto result = nested_kvlist::parse(str);
         CHECK(result.primary == "Foo");
         CHECK(result.pairs.size() == 0);
@@ -107,6 +110,7 @@ void test_nested_kvlist() {
     check_2("Foo; ");
 
     auto check_3 = [](auto str) {
+        INFO("Testing string: '" << str << "'");
         auto result = nested_kvlist::parse(str);
         CHECK(result.primary == "Foo bar");
         CHECK(result.pairs.size() == 2);
@@ -121,11 +125,3 @@ void test_nested_kvlist() {
     check_3("Foo bar  ; quux= baz=meow");
     check_3("Foo bar  ;quux=   baz=meow");
 }
-
-void run_tests() {
-    test_simple();
-    test_multi();
-    test_nested_kvlist();
-}
-
-DDS_TEST_MAIN;
