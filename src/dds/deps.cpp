@@ -190,7 +190,7 @@ fs::path generate_lml(const library_plan& lib, path_ref libdir, const build_env&
     }
     auto pub_inc_dir = lib.source_root() / "include";
     auto src_dir     = lib.source_root() / "src";
-    if (fs::exists(src_dir)) {
+    if (!fs::exists(pub_inc_dir)) {
         pub_inc_dir = src_dir;
     }
     kvs.emplace_back("Include-Path", pub_inc_dir.string());
