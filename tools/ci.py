@@ -104,7 +104,8 @@ def main(argv: Sequence[str]) -> int:
         ('-T', opts.toolchain),
     )
 
-    self_build(paths.CUR_BUILT_DDS, opts.toolchain)
+    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain)
+    print('Bootstrap test PASSED!')
 
     if paths.SELF_TEST_REPO_DIR.exists():
         shutil.rmtree(paths.SELF_TEST_REPO_DIR)
@@ -113,14 +114,7 @@ def main(argv: Sequence[str]) -> int:
     self_deps_build(paths.CUR_BUILT_DDS, opts.toolchain_2,
                     paths.SELF_TEST_REPO_DIR,
                     paths.PROJECT_ROOT / 'remote.dds')
-    proc.check_run(
-        paths.CUR_BUILT_DDS,
-        'build',
-        '--full',
-        '-T',
-        opts.toolchain_2,
-        ('--lm-index', paths.BUILD_DIR / 'INDEX.lmi'),
-    )
+    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain, lmi_path=paths.BUILD_DIR / 'INDEX.lmi')
 
     return pytest.main(['-v', '--durations=10', '-n4'])
 

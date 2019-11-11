@@ -6,21 +6,26 @@ import shutil
 import subprocess
 import sys
 
-from dds_ci import cli
+from dds_ci import cli, proc
 
 ROOT = Path(__file__).parent.parent.absolute()
 
 
-def self_build(exe: Path, toolchain: str):
+def self_build(exe: Path, *, toolchain: str, lmi_path: Path = None):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
     new_exe = ROOT / '_dds.bootstrap-test.exe'
     shutil.copy2(exe, new_exe)
-    res = subprocess.run([str(new_exe), 'build', f'-FT{toolchain}'])
-    new_exe.unlink()
-    if res.returncode != 0:
-        raise RuntimeError('The bootstrap test failed!')
-    print('Bootstrap test PASSED!')
+    try:
+        proc.check_run(
+            new_exe,
+            'build',
+            '--full',
+            ('--toolchain', toolchain),
+            ('-I', lmi_path) if lmi_path else (),
+        )
+    finally:
+        new_exe.unlink()
 
 
 def main(argv: List[str]) -> int:
