@@ -114,9 +114,17 @@ def main(argv: Sequence[str]) -> int:
     self_deps_build(paths.CUR_BUILT_DDS, opts.toolchain_2,
                     paths.SELF_TEST_REPO_DIR,
                     paths.PROJECT_ROOT / 'remote.dds')
-    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain, lmi_path=paths.BUILD_DIR / 'INDEX.lmi')
+    self_build(
+        paths.CUR_BUILT_DDS,
+        toolchain=opts.toolchain,
+        lmi_path=paths.BUILD_DIR / 'INDEX.lmi')
 
-    return pytest.main(['-v', '--durations=10', '-n4'])
+    return pytest.main([
+        '-v',
+        '--durations=10',
+        f'--basetemp={paths.BUILD_DIR / "_tmp"}',
+        '-n4',
+    ])
 
 
 if __name__ == "__main__":

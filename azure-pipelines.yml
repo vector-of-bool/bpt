@@ -8,10 +8,11 @@ jobs:
     steps:
       - script: |
           echo Loading VS environment
-          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
           echo Executing Build and Tests
-          python -m pip install pytest pytest-xdist
-          python -u tools/ci.py -B download --cxx cl.exe -T tools\\msvc.dds -T2 tools\\msvc.p2.dds || exit 1
+          reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
+          python -m pip install pytest pytest-xdist || exit 1
+          python -u tools/ci.py -B download --cxx cl.exe -T tools\msvc.dds -T2 tools\msvc.p2.dds || exit 1
         displayName: Full CI
       - publish: _build/dds.exe
         artifact: DDS Executable - Windows VS2019
