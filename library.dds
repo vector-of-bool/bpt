@@ -1,6 +1,5 @@
 Name: dds
 
-Uses: taywee/args
 Uses: spdlog/spdlog
 Uses: Microsoft/WIL
 Uses: Niebler/range-v3
