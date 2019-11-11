@@ -4,7 +4,8 @@
 
 #define CHECK_SHLEX(str, ...)                                                                      \
     do {                                                                                           \
-        INFO("Shell-lexing string: '" << str << "'"); CHECK(dds::split_shell_string(str) == std::vector<std::string>(__VA_ARGS__));              \
+        INFO("Shell-lexing string: '" << str << "'");                                              \
+        CHECK(dds::split_shell_string(str) == std::vector<std::string>(__VA_ARGS__));              \
     } while (0)
 
 TEST_CASE("Shell lexer") {

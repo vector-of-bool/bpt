@@ -4,8 +4,8 @@
 
 #include <dds/sdist.hpp>
 #include <dds/temp.hpp>
-#include <semver/version.hpp>
 #include <libman/library.hpp>
+#include <semver/version.hpp>
 
 #include <set>
 #include <string>

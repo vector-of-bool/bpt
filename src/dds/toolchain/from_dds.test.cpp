@@ -12,7 +12,7 @@ void check_tc_compile(std::string_view tc_content,
                       std::string_view expected_compile_warnings,
                       std::string_view expected_ar,
                       std::string_view expected_exe) {
-    auto tc        = dds::parse_toolchain_dds(tc_content);
+    auto tc = dds::parse_toolchain_dds(tc_content);
 
     dds::compile_file_spec cf;
     cf.source_path  = "foo.cpp";

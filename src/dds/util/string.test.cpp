@@ -31,20 +31,20 @@ TEST_CASE("ends_with") {
     CHECK(!ends_with("foo.bar", "foo"));
 }
 
-TEST_CASE( "trim" )  {
+TEST_CASE("trim") {
     CHECK(trim_view("foo") == "foo");
     CHECK(trim_view("foo   ") == "foo");
     CHECK(trim_view("   ").size() == 0);
 }
 
-TEST_CASE( "contains" )  {
+TEST_CASE("contains") {
     CHECK(contains("foo", "foo"));
     CHECK(contains("foo", ""));
     CHECK(contains("foo", "o"));
     CHECK(!contains("foo", "bar"));
 }
 
-TEST_CASE( "split" )  {
+TEST_CASE("split") {
     CHECK_SPLIT("foo.bar", ".", {"foo", "bar"});
     CHECK_SPLIT("foo.bar.baz", ".", {"foo", "bar", "baz"});
     CHECK_SPLIT(".", ".", {"", ""});
