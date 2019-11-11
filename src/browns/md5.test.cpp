@@ -1,7 +1,7 @@
 #include <browns/md5.hpp>
 
 #include <browns/output.hpp>
-#include <neo/buffer.hpp>
+#include <neo/as_buffer.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -9,7 +9,7 @@
 
 auto md5_hash_str(std::string_view s) {
     browns::md5 hash;
-    hash.feed(neo::buffer(s));
+    hash.feed(neo::as_buffer(s));
     hash.pad();
     return browns::format_digest(hash.digest());
 }
