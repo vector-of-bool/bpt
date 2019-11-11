@@ -1,6 +1,6 @@
 Name: dds
 
 Uses: spdlog/spdlog
-Uses: Microsoft/WIL
+Uses: Microsoft/wil
 Uses: Niebler/range-v3
 Uses: nlohmann/json
