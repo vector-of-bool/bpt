@@ -39,7 +39,7 @@ def _do_bootstrap_download() -> None:
     if filename is None:
         raise RuntimeError(f'We do not have a prebuilt DDS binary for '
                            f'the "{sys.platform}" platform')
-    url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p2/{filename}'
+    url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p3/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
@@ -69,8 +69,7 @@ def main(argv: Sequence[str]) -> int:
     )
     parser.add_argument(
         '--cxx',
-        help='The name/path of the C++ compiler to use.',
-        required=True)
+        help='The name/path of the C++ compiler to use.')
     parser.add_argument(
         '--toolchain',
         '-T',
@@ -84,9 +83,11 @@ def main(argv: Sequence[str]) -> int:
     args = parser.parse_args(argv)
 
     opts = CIOptions(
-        cxx=Path(args.cxx), toolchain=args.toolchain, skip_deps=args.skip_deps)
+        cxx=Path(args.cxx or 'unspecified'), toolchain=args.toolchain, skip_deps=args.skip_deps)
 
     if args.bootstrap_with == 'build':
+        if args.cxx is None:
+            raise RuntimeError('`--cxx` must be given when using `--bootstrap-with=build`')
         _do_bootstrap_build(opts)
     elif args.bootstrap_with == 'download':
         _do_bootstrap_download()
