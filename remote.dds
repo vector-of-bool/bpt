@@ -1,7 +1,11 @@
+Remote-Package: range-v3 0.9.1; git url=https://github.com/ericniebler/range-v3.git ref=0.9.1 auto=Niebler/range-v3
+Remote-Package: spdlog 1.4.2; git url=https://github.com/gabime/spdlog.git ref=v1.4.2 auto=spdlog/spdlog
+
+# Even a shallow clone of nlohmann-json is HUGE. This fork has only the minimal
 Remote-Package: nlohmann-json 3.7.1; git url=https://github.com/vector-of-bool/json.git ref=dds/3.7.1
-Remote-Package: range-v3 0.9.1; git url=https://github.com/vector-of-bool/range-v3.git ref=dds/0.9.1
+
+# MS never tags anything in this repo, so we'll use a fork that has some tags.
 Remote-Package: ms-wil 2019.11.10; git url=https://github.com/vector-of-bool/wil.git ref=dds/2019.11.10
-Remote-Package: spdlog 1.4.2; git url=https://github.com/vector-of-bool/spdlog.git ref=dds/1.4.2
 
 # XXX: Don't depend on a moving revision!
 Remote-Package: neo-buffer 0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=develop
