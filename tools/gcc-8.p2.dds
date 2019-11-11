@@ -1,6 +1,0 @@
-Compiler-ID: GNU
-C++-Version: C++17
-C++-Compiler: g++-8
-Flags: -fconcepts -Werror=return-type
-Flags: -D SPDLOG_COMPILED_LIB
-Optimize: True

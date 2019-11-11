@@ -17,7 +17,7 @@ from dds_ci import paths, proc
 class CIOptions(NamedTuple):
     cxx: Path
     toolchain: str
-    toolchain_2: str
+    skip_deps: bool
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -77,16 +77,14 @@ def main(argv: Sequence[str]) -> int:
         help='The toolchain to use for the CI process',
         required=True)
     parser.add_argument(
-        '--toolchain-2',
-        '-T2',
-        help='Toolchain for the second-phase self-test',
-        required=True)
+        '--skip-deps',
+        action='store_true',
+        help='If specified, will skip getting and building '
+        'dependencies. (They must already be present)')
     args = parser.parse_args(argv)
 
     opts = CIOptions(
-        cxx=Path(args.cxx),
-        toolchain=args.toolchain,
-        toolchain_2=args.toolchain_2)
+        cxx=Path(args.cxx), toolchain=args.toolchain, skip_deps=args.skip_deps)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -97,27 +95,19 @@ def main(argv: Sequence[str]) -> int:
     else:
         assert False, 'impossible'
 
-    proc.check_run(
-        paths.PREBUILT_DDS,
-        'build',
-        '--full',
-        ('-T', opts.toolchain),
-    )
+    if not opts.skip_deps:
+        ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
+        if ci_repo_dir.exists():
+            shutil.rmtree(ci_repo_dir)
+        self_deps_get(paths.PREBUILT_DDS, ci_repo_dir)
+        self_deps_build(paths.PREBUILT_DDS, opts.toolchain, ci_repo_dir,
+                        paths.PROJECT_ROOT / 'remote.dds')
+
+    self_build(paths.PREBUILT_DDS, toolchain=opts.toolchain)
+    print('Main build PASSED!')
 
     self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain)
     print('Bootstrap test PASSED!')
-
-    if paths.SELF_TEST_REPO_DIR.exists():
-        shutil.rmtree(paths.SELF_TEST_REPO_DIR)
-
-    self_deps_get(paths.CUR_BUILT_DDS, paths.SELF_TEST_REPO_DIR)
-    self_deps_build(paths.CUR_BUILT_DDS, opts.toolchain_2,
-                    paths.SELF_TEST_REPO_DIR,
-                    paths.PROJECT_ROOT / 'remote.dds')
-    self_build(
-        paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain,
-        lmi_path=paths.BUILD_DIR / 'INDEX.lmi')
 
     return pytest.main([
         '-v',
