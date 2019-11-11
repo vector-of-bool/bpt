@@ -10,12 +10,14 @@ import shutil
 
 from self_build import self_build
 from self_deps_get import self_deps_get
+from self_deps_build import self_deps_build
 from dds_ci import paths, proc
 
 
 class CIOptions(NamedTuple):
     cxx: Path
     toolchain: str
+    toolchain_2: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -74,9 +76,17 @@ def main(argv: Sequence[str]) -> int:
         '-T',
         help='The toolchain to use for the CI process',
         required=True)
+    parser.add_argument(
+        '--toolchain-2',
+        '-T2',
+        help='Toolchain for the second-phase self-test',
+        required=True)
     args = parser.parse_args(argv)
 
-    opts = CIOptions(cxx=Path(args.cxx), toolchain=args.toolchain)
+    opts = CIOptions(
+        cxx=Path(args.cxx),
+        toolchain=args.toolchain,
+        toolchain_2=args.toolchain_2)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -89,14 +99,6 @@ def main(argv: Sequence[str]) -> int:
 
     proc.check_run(
         paths.PREBUILT_DDS,
-        'deps',
-        'build',
-        ('-T', opts.toolchain),
-        ('--repo-dir', paths.EMBEDDED_REPO_DIR),
-    )
-
-    proc.check_run(
-        paths.PREBUILT_DDS,
         'build',
         '--full',
         ('-T', opts.toolchain),
@@ -106,9 +108,21 @@ def main(argv: Sequence[str]) -> int:
 
     if paths.SELF_TEST_REPO_DIR.exists():
         shutil.rmtree(paths.SELF_TEST_REPO_DIR)
-    self_deps_get(paths.CUR_BUILT_DDS, paths.SELF_TEST_REPO_DIR)
 
-    return pytest.main(['-v', '--durations=10'])
+    self_deps_get(paths.CUR_BUILT_DDS, paths.SELF_TEST_REPO_DIR)
+    self_deps_build(paths.CUR_BUILT_DDS, opts.toolchain_2,
+                    paths.SELF_TEST_REPO_DIR,
+                    paths.PROJECT_ROOT / 'remote.dds')
+    proc.check_run(
+        paths.CUR_BUILT_DDS,
+        'build',
+        '--full',
+        '-T',
+        opts.toolchain_2,
+        ('--lm-index', paths.BUILD_DIR / 'INDEX.lmi'),
+    )
+
+    return pytest.main(['-v', '--durations=10', '-n4'])
 
 
 if __name__ == "__main__":
