@@ -1,5 +1,4 @@
 #include <dds/build.hpp>
-#include <dds/logging.hpp>
 #include <dds/repo/remote.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
@@ -12,6 +11,7 @@
 #include <range/v3/view/transform.hpp>
 
 #include <dds/3rd/args.hxx>
+#include <spdlog/spdlog.h>
 
 #include <filesystem>
 #include <iostream>

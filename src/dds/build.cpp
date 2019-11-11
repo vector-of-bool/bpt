@@ -2,12 +2,13 @@
 
 #include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
-#include <dds/logging.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/time.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
+
+#include <spdlog/spdlog.h>
 
 #include <stdexcept>
 
