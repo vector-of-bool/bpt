@@ -2,12 +2,13 @@
 
 #include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
-#include <dds/logging.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/time.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
+
+#include <spdlog/spdlog.h>
 
 #include <stdexcept>
 
@@ -149,7 +150,7 @@ void prepare_catch2_driver(library_build_params& lib_params,
 
     auto catch_cpp = test_include_root / "catch2" / fname;
     auto cpp_strm  = open(catch_cpp, std::ios::out | std::ios::binary);
-    cpp_strm << R"(#include "./catch.hpp"\n)";
+    cpp_strm << "#include \"./catch.hpp\"\n";
     cpp_strm.close();
 
     auto sf = source_file::from_path(catch_cpp, test_include_root);

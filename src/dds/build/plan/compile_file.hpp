@@ -24,7 +24,7 @@ public:
     shared_compile_file_rules() = default;
 
     auto clone() const noexcept {
-        auto cp = *this;
+        auto cp  = *this;
         cp._impl = std::make_shared<rules_impl>(*_impl);
         return cp;
     }

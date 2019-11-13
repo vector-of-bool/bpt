@@ -1,4 +1,0 @@
-Compiler-ID: MSVC
-Flags: /experimental:preprocessor /D SPDLOG_COMPILED_LIB /wd5105 /std:c++latest
-Link-Flags: rpcrt4.lib
-Optimize: True

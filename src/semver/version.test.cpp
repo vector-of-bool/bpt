@@ -1,10 +1,8 @@
 #include "./version.hpp"
 
-#include <dds/util.test.hpp>
+#include <catch2/catch.hpp>
 
-namespace {
-
-void test_simple_parse() {
+TEST_CASE("Parsing") {
     auto v1 = semver::version::parse("1.2.3");
     CHECK(v1.major == 1);
     CHECK(v1.minor == 2);
@@ -16,9 +14,3 @@ void test_simple_parse() {
     v1.major = 999999;
     CHECK(v1.to_string() == "999999.2.55");
 }
-
-void run_tests() { test_simple_parse(); }
-
-}  // namespace
-
-DDS_TEST_MAIN;

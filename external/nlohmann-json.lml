@@ -1,4 +1,0 @@
-Type: Library
-Name: json
-
-Include-Path: repo/nlohmann-json/include

@@ -16,8 +16,8 @@ struct sdist_params {
 };
 
 struct sdist {
-    package_manifest         manifest;
-    fs::path                 path;
+    package_manifest manifest;
+    fs::path         path;
 
     sdist(package_manifest man, path_ref path_)
         : manifest(std::move(man))

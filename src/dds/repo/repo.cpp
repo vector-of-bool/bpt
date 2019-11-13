@@ -57,7 +57,7 @@ void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_director
 fs::path repository::default_local_path() noexcept { return dds_data_dir() / "repo"; }
 
 repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
-    sdist_set entries  =  load_sdists(dirpath) | to<sdist_set>();
+    sdist_set entries = load_sdists(dirpath) | to<sdist_set>();
     return {writeable, dirpath, std::move(entries)};
 }
 

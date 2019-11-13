@@ -4,3 +4,4 @@ Uses: spdlog/spdlog
 Uses: Microsoft/wil
 Uses: Niebler/range-v3
 Uses: nlohmann/json
+Uses: neo/buffer

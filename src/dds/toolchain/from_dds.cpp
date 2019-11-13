@@ -501,12 +501,12 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             ret = {get_compiler(language::cxx), "/nologo", "/EHsc", "<IN>", "/Fe<OUT>"};
         } else if (is_gnu_like) {
             ret = {get_compiler(language::cxx),
-                    "-fPIC",
-                    "-fdiagnostics-color",
-                    "<IN>",
-                    "-pthread",
-                    "-lstdc++fs",
-                    "-o<OUT>"};
+                   "-fPIC",
+                   "-fdiagnostics-color",
+                   "<IN>",
+                   "-pthread",
+                   "-lstdc++fs",
+                   "-o<OUT>"};
         } else {
             assert(false && "No link-exe command");
             std::terminate();

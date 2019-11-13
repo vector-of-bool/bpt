@@ -1,17 +1,14 @@
 #include <dds/toolchain/toolchain.hpp>
 
-#include <dds/util.test.hpp>
-
-using namespace dds;
-
-namespace {
+#include <catch2/catch.hpp>
 
 #define CHECK_SHLEX(str, ...)                                                                      \
     do {                                                                                           \
+        INFO("Shell-lexing string: '" << str << "'");                                              \
         CHECK(dds::split_shell_string(str) == std::vector<std::string>(__VA_ARGS__));              \
     } while (0)
 
-void test_shlex() {
+TEST_CASE("Shell lexer") {
     CHECK_SHLEX("foo", {"foo"});
     CHECK_SHLEX("foo bar", {"foo", "bar"});
     CHECK_SHLEX("\"foo\" bar", {"foo", "bar"});
@@ -27,9 +24,3 @@ void test_shlex() {
     CHECK_SHLEX("Foo\nBar", {"Foo", "Bar"});
     CHECK_SHLEX("foo \"\" bar", {"foo", "", "bar"});
 }
-
-void run_tests() { test_shlex(); }
-
-}  // namespace
-
-DDS_TEST_MAIN;
