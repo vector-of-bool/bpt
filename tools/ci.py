@@ -124,6 +124,7 @@ def main(argv: Sequence[str]) -> int:
         '--durations=10',
         f'--basetemp={paths.BUILD_DIR / "_tmp"}',
         '-n4',
+        'tests/',
     ])
 
 

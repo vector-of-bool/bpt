@@ -76,6 +76,34 @@ void run_tests() {
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe");
 
+    check_tc_compile(
+        "Compiler-ID: GNU\nDebug: True",
+        "g++ -g -fPIC -fdiagnostics-color -pthread -c foo.cpp -ofoo.o",
+        "g++ -g -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
+        "-c foo.cpp -ofoo.o",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe -g");
+
+    check_tc_compile(
+        "Compiler-ID: GNU\nDebug: True\nOptimize: True",
+        "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -c foo.cpp -ofoo.o",
+        "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
+        "-c foo.cpp -ofoo.o",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe -O2 -g");
+
+    check_tc_compile("Compiler-ID: MSVC",
+                     "cl.exe /MT /nologo /permissive- /c foo.cpp /Fofoo.o /EHsc",
+                     "cl.exe /MT /nologo /W4 /permissive- /c foo.cpp /Fofoo.o /EHsc",
+                     "lib /nologo /OUT:stuff.a foo.o bar.o",
+                     "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
+
+    check_tc_compile("Compiler-ID: MSVC\nDebug: True",
+                     "cl.exe /Z7 /DEBUG /MTd /nologo /permissive- /c foo.cpp /Fofoo.o /EHsc",
+                     "cl.exe /Z7 /DEBUG /MTd /nologo /W4 /permissive- /c foo.cpp /Fofoo.o /EHsc",
+                     "lib /nologo /OUT:stuff.a foo.o bar.o",
+                     "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /Z7 /DEBUG /MTd");
+
     auto tc = dds::parse_toolchain_dds(R"(
     Compiler-ID: GNU
 )");

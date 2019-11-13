@@ -306,11 +306,34 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         return cxx_ver_iter->second;
     };
 
+    auto get_link_flags = [&]() -> string_seq {
+        string_seq ret;
+        if (is_msvc) {
+            strv rt_lib = "/MT";
+            if (do_optimize.value_or(false)) {
+                extend(ret, {"/O2"});
+            }
+            if (do_debug.value_or(false)) {
+                extend(ret, {"/Z7", "/DEBUG"});
+                rt_lib = "/MTd";
+            }
+            ret.emplace_back(rt_lib);
+        } else if (is_gnu_like) {
+            if (do_optimize.value_or(false)) {
+                extend(ret, {"-O2"});
+            }
+            if (do_debug.value_or(false)) {
+                extend(ret, {"-g"});
+            }
+        }
+        if (link_flags) {
+            extend(ret, *link_flags);
+        }
+        return ret;
+    };
+
     auto get_flags = [&](language lang) -> string_seq {
         string_seq ret;
-        if (flags) {
-            extend(ret, *flags);
-        }
         if (lang == language::cxx && cxx_flags) {
             extend(ret, *cxx_flags);
         }
@@ -329,11 +352,11 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
                 extend(ret, {"/O2"});
             }
             if (do_debug.has_value() && *do_debug) {
-                extend(ret, {"/Z7", "/DEBUG", "/MTd"});
+                extend(ret, {"/Z7", "/DEBUG"});
                 rt_lib = "/MTd";
             }
             ret.emplace_back(rt_lib);
-            extend(ret, {"/nologo", "<FLAGS>", "/c", "<IN>", "/permissive-", "/Fo<OUT>"});
+            extend(ret, {"/nologo", "<FLAGS>", "/permissive-", "/c", "<IN>", "/Fo<OUT>"});
             if (lang == language::cxx) {
                 extend(ret, {"/EHsc"});
             }
@@ -352,6 +375,9 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
                     "-c",
                     "<IN>",
                     "-o<OUT>"});
+        }
+        if (flags) {
+            extend(ret, *flags);
         }
         return ret;
     };
@@ -485,9 +511,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             assert(false && "No link-exe command");
             std::terminate();
         }
-        if (link_flags) {
-            extend(ret, *link_flags);
-        }
+        extend(ret, get_link_flags());
         return ret;
     });
 
