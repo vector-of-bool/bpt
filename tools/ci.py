@@ -104,10 +104,10 @@ def main(argv: Sequence[str]) -> int:
         self_deps_build(paths.PREBUILT_DDS, opts.toolchain, ci_repo_dir,
                         paths.PROJECT_ROOT / 'remote.dds')
 
-    self_build(paths.PREBUILT_DDS, toolchain=opts.toolchain)
+    self_build(paths.PREBUILT_DDS, toolchain=opts.toolchain, dds_flags=['--full'])
     print('Main build PASSED!')
 
-    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain)
+    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain, dds_flags=['--full'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([
