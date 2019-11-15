@@ -10,6 +10,11 @@ import sys
 import shutil
 import tempfile
 
+from dds_ci import paths
+from self_build import self_build
+from self_deps_get import self_deps_get
+from self_deps_build import self_deps_build
+
 ROOT = Path(__file__).parent.parent.absolute()
 BUILD_DIR = ROOT / '_build'
 
@@ -25,13 +30,17 @@ def _generate_toolchain(cxx: str):
             comp_id = 'MSVC'
             flags += '/experimental:preprocessor '
             link_flags += 'rpcrt4.lib '
+        else:
+            flags += '-fconcepts'
+        flags += ' -DSPDLOG_COMPILED_LIB'
         content = f'''
             Compiler-ID: {comp_id}
             C++-Compiler: {cxx}
             C++-Version: C++17
             Debug: True
             Flags: {flags}
-            Link-Flags: {link_flags}'''
+            Link-Flags: {link_flags}
+        '''
         print('Using generated toolchain file: ' + content)
         f.write(content.encode('utf-8'))
         f.close()
@@ -47,25 +56,21 @@ def main(argv: Sequence[str]) -> int:
 
     dds_bootstrap_env_key = 'DDS_BOOTSTRAP_PREV_EXE'
     if dds_bootstrap_env_key not in os.environ:
-        raise RuntimeError(
-            'A previous-phase bootstrapped executable must be available via $DDS_BOOTSTRAP_PREV_EXE'
-        )
-    dds_exe = os.environ[dds_bootstrap_env_key]
+        raise RuntimeError('A previous-phase bootstrapped executable '
+                           'must be available via $DDS_BOOTSTRAP_PREV_EXE')
 
-    print(f'Using previously built DDS executable: {dds_exe}')
+    dds_exe = Path(os.environ[dds_bootstrap_env_key])
 
     if BUILD_DIR.exists():
         shutil.rmtree(BUILD_DIR)
 
+    print(f'Using previously built DDS executable: {dds_exe}')
+    self_deps_get(dds_exe, paths.SELF_TEST_REPO_DIR)
+
     with _generate_toolchain(args.cxx) as tc_fpath:
-        subprocess.check_call([
-            dds_exe,
-            'build',
-            '-A',
-            f'-T{tc_fpath}',
-            f'-p{ROOT}',
-            f'--out={BUILD_DIR}',
-        ])
+        self_deps_build(dds_exe, tc_fpath, paths.SELF_TEST_REPO_DIR,
+                        ROOT / 'remote.dds')
+        self_build(dds_exe, toolchain=tc_fpath, dds_flags=['--apps'])
 
     return 0
 

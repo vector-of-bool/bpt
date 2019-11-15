@@ -60,6 +60,7 @@ def _build_bootstrap_phase(ph: str, bts_dir: Path,
             f'--cxx={args.cxx}',
         ],
         env=env,
+        cwd=bts_dir,
     )
 
 
@@ -92,7 +93,6 @@ def main(argv: Sequence[str]) -> int:
         exe = _run_boot_phase(phase, args)
 
     print(f'A bootstrapped DDS executable has been generated: {exe}')
-
     return 0
 
 

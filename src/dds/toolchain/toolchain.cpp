@@ -102,6 +102,17 @@ vector<string> toolchain::definition_args(std::string_view s) const noexcept {
 vector<string> toolchain::create_compile_command(const compile_file_spec& spec) const noexcept {
     vector<string> flags;
 
+    language lang = spec.lang;
+    if (lang == language::automatic) {
+        if (spec.source_path.extension() == ".c" || spec.source_path.extension() == ".C") {
+            lang = language::c;
+        } else {
+            lang = language::cxx;
+        }
+    }
+
+    auto& cmd_template = lang == language::c ? _c_compile : _cxx_compile;
+
     for (auto&& inc_dir : spec.include_dirs) {
         auto inc_args = include_args(inc_dir);
         extend(flags, inc_args);
@@ -117,7 +128,7 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
     }
 
     vector<string> command;
-    for (auto arg : _cxx_compile) {
+    for (auto arg : cmd_template) {
         if (arg == "<FLAGS>") {
             extend(command, flags);
         } else {

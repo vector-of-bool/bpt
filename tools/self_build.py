@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from pathlib import Path
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Iterable
 import shutil
 import subprocess
 import sys
@@ -11,7 +11,11 @@ from dds_ci import cli, proc
 ROOT = Path(__file__).parent.parent.absolute()
 
 
-def self_build(exe: Path, *, toolchain: str, lmi_path: Path = None):
+def self_build(exe: Path,
+               *,
+               toolchain: str,
+               lmi_path: Path = None,
+               dds_flags: Iterable[str] = ()):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
     new_exe = ROOT / '_dds.bootstrap-test.exe'
@@ -20,7 +24,7 @@ def self_build(exe: Path, *, toolchain: str, lmi_path: Path = None):
         proc.check_run(
             new_exe,
             'build',
-            '--full',
+            dds_flags,
             ('--toolchain', toolchain),
             ('-I', lmi_path) if lmi_path else (),
         )
@@ -33,7 +37,7 @@ def main(argv: List[str]) -> int:
     cli.add_tc_arg(parser)
     cli.add_dds_exe_arg(parser)
     args = parser.parse_args(argv)
-    self_build(Path(args.exe), args.toolchain)
+    self_build(Path(args.exe), toolchain=args.toolchain, dds_flags=['--full'])
     return 0
 
 
