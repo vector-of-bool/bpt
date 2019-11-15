@@ -39,7 +39,7 @@ def _do_bootstrap_download() -> None:
     if filename is None:
         raise RuntimeError(f'We do not have a prebuilt DDS binary for '
                            f'the "{sys.platform}" platform')
-    url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p3/{filename}'
+    url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p4/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)

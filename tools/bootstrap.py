@@ -8,8 +8,7 @@ import shutil
 
 BOOTSTRAP_PHASES = [
     'bootstrap-p1',
-    'bootstrap-p2',
-    'bootstrap-p3',
+    'bootstrap-p4',
 ]
 
 HERE = Path(__file__).parent.absolute()
