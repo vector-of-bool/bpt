@@ -8,7 +8,6 @@ import shutil
 
 BOOTSTRAP_PHASES = [
     'bootstrap-p1',
-    'bootstrap-p2',
 ]
 
 HERE = Path(__file__).parent.absolute()
@@ -59,6 +58,7 @@ def _build_bootstrap_phase(ph: str, bts_dir: Path,
             f'--cxx={args.cxx}',
         ],
         env=env,
+        cwd=bts_dir,
     )
 
 
