@@ -12,8 +12,7 @@
 
 using namespace dds;
 
-std::vector<std::string> compile_file_plan::generate_compile_command(build_env_ref env) const
-    noexcept {
+compile_command_info compile_file_plan::generate_compile_command(build_env_ref env) const noexcept {
     compile_file_spec spec{_source.path, calc_object_file_path(env)};
     spec.enable_warnings = _rules.enable_warnings();
     extend(spec.include_dirs, _rules.include_dirs());
@@ -21,7 +20,7 @@ std::vector<std::string> compile_file_plan::generate_compile_command(build_env_r
     return env.toolchain.create_compile_command(spec);
 }
 
-void compile_file_plan::compile(const build_env& env) const {
+std::optional<deps_info> compile_file_plan::compile(const build_env& env) const {
     const auto obj_path = calc_object_file_path(env);
     fs::create_directories(obj_path.parent_path());
 
@@ -30,13 +29,14 @@ void compile_file_plan::compile(const build_env& env) const {
                            fs::relative(_source.path, _source.basis_path).string());
 
     spdlog::info(msg);
-    auto cmd                     = generate_compile_command(env);
-    auto&& [dur_ms, compile_res] = timed<std::chrono::milliseconds>([&] { return run_proc(cmd); });
+    auto cmd = generate_compile_command(env);
+    auto&& [dur_ms, compile_res]
+        = timed<std::chrono::milliseconds>([&] { return run_proc(cmd.command); });
     spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
 
     if (!compile_res.okay()) {
         spdlog::error("Compilation failed: {}", _source.path.string());
-        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd), compile_res.output);
+        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd.command), compile_res.output);
         throw compile_failure(fmt::format("Compilation failed for {}", _source.path.string()));
     }
 
@@ -48,9 +48,11 @@ void compile_file_plan::compile(const build_env& env) const {
     if (!compile_res.output.empty()) {
         spdlog::warn("While compiling file {} [{}]:\n{}",
                      _source.path.string(),
-                     quote_command(cmd),
+                     quote_command(cmd.command),
                      compile_res.output);
     }
+
+    return std::nullopt;
 }
 
 fs::path compile_file_plan::calc_object_file_path(const build_env& env) const noexcept {

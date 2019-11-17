@@ -2,6 +2,7 @@
 
 #include <dds/build/plan/base.hpp>
 #include <dds/source.hpp>
+#include <dds/toolchain/deps.hpp>
 
 #include <memory>
 
@@ -55,13 +56,13 @@ public:
         , _qualifier(qual)
         , _subdir(subdir) {}
 
-    std::vector<std::string> generate_compile_command(build_env_ref) const noexcept;
+    compile_command_info generate_compile_command(build_env_ref) const noexcept;
 
     const source_file& source() const noexcept { return _source; }
     path_ref           source_path() const noexcept { return _source.path; }
 
-    fs::path calc_object_file_path(build_env_ref env) const noexcept;
-    void     compile(build_env_ref) const;
+    fs::path                 calc_object_file_path(build_env_ref env) const noexcept;
+    std::optional<deps_info> compile(build_env_ref) const;
 };
 
 }  // namespace dds

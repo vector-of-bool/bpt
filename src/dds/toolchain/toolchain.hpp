@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/toolchain/deps.hpp>
 #include <dds/util/fs.hpp>
 
 #include <optional>
@@ -24,6 +25,11 @@ struct compile_file_spec {
     std::vector<fs::path>    include_dirs    = {};
     language                 lang            = language::automatic;
     bool                     enable_warnings = false;
+};
+
+struct compile_command_info {
+    std::vector<std::string> command;
+    std::optional<fs::path>  gnu_depfile_path;
 };
 
 struct archive_spec {
@@ -56,6 +62,8 @@ class toolchain {
     std::string _exe_prefix;
     std::string _exe_suffix;
 
+    enum deps_mode _deps_mode;
+
 public:
     toolchain() = default;
 
@@ -64,10 +72,11 @@ public:
     auto& archive_suffix() const noexcept { return _archive_suffix; }
     auto& object_suffix() const noexcept { return _object_suffix; }
     auto& executable_suffix() const noexcept { return _exe_suffix; }
+    auto  deps_mode() const noexcept { return _deps_mode; }
 
     std::vector<std::string> definition_args(std::string_view s) const noexcept;
     std::vector<std::string> include_args(const fs::path& p) const noexcept;
-    std::vector<std::string> create_compile_command(const compile_file_spec&) const noexcept;
+    compile_command_info     create_compile_command(const compile_file_spec&) const noexcept;
     std::vector<std::string> create_archive_command(const archive_spec&) const noexcept;
     std::vector<std::string> create_link_executable_command(const link_exe_spec&) const noexcept;
 

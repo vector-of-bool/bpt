@@ -18,12 +18,12 @@ void check_tc_compile(std::string_view tc_content,
     cf.source_path  = "foo.cpp";
     cf.out_path     = "foo.o";
     auto cf_cmd     = tc.create_compile_command(cf);
-    auto cf_cmd_str = dds::quote_command(cf_cmd);
+    auto cf_cmd_str = dds::quote_command(cf_cmd.command);
     CHECK(cf_cmd_str == expected_compile);
 
     cf.enable_warnings = true;
     cf_cmd             = tc.create_compile_command(cf);
-    cf_cmd_str         = dds::quote_command(cf_cmd);
+    cf_cmd_str         = dds::quote_command(cf_cmd.command);
     CHECK(cf_cmd_str == expected_compile_warnings);
 
     dds::archive_spec ar_spec;
@@ -45,37 +45,37 @@ void check_tc_compile(std::string_view tc_content,
 
 TEST_CASE("Generating toolchain commands") {
     check_tc_compile("Compiler-ID: GNU",
-                     "g++ -fPIC -fdiagnostics-color -pthread -c foo.cpp -ofoo.o",
+                     "g++ -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -c foo.cpp -ofoo.o",
                      "g++ -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-c foo.cpp -ofoo.o",
+                     "-MD -MF foo.o.d -c foo.cpp -ofoo.o",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe");
 
     check_tc_compile(
         "Compiler-ID: GNU\nDebug: True",
-        "g++ -g -fPIC -fdiagnostics-color -pthread -c foo.cpp -ofoo.o",
+        "g++ -g -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -c foo.cpp -ofoo.o",
         "g++ -g -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
-        "-c foo.cpp -ofoo.o",
+        "-MD -MF foo.o.d -c foo.cpp -ofoo.o",
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe -g");
 
     check_tc_compile(
         "Compiler-ID: GNU\nDebug: True\nOptimize: True",
-        "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -c foo.cpp -ofoo.o",
+        "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -c foo.cpp -ofoo.o",
         "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
-        "-c foo.cpp -ofoo.o",
+        "-MD -MF foo.o.d -c foo.cpp -ofoo.o",
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe -O2 -g");
 
     check_tc_compile("Compiler-ID: MSVC",
-                     "cl.exe /MT /nologo /permissive- /c foo.cpp /Fofoo.o /EHsc",
-                     "cl.exe /MT /nologo /W4 /permissive- /c foo.cpp /Fofoo.o /EHsc",
+                     "cl.exe /MT /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
+                     "cl.exe /MT /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 
     check_tc_compile("Compiler-ID: MSVC\nDebug: True",
-                     "cl.exe /Z7 /DEBUG /MTd /nologo /permissive- /c foo.cpp /Fofoo.o /EHsc",
-                     "cl.exe /Z7 /DEBUG /MTd /nologo /W4 /permissive- /c foo.cpp /Fofoo.o /EHsc",
+                     "cl.exe /Z7 /DEBUG /MTd /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
+                     "cl.exe /Z7 /DEBUG /MTd /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /Z7 /DEBUG /MTd");
 
@@ -87,31 +87,37 @@ TEST_CASE("Generating toolchain commands") {
     cfs.source_path = "foo.cpp";
     cfs.out_path    = "foo.o";
     auto cmd        = tc.create_compile_command(cfs);
-    CHECK(cmd
+    CHECK(cmd.command
           == std::vector<std::string>{"g++",
                                       "-fPIC",
                                       "-fdiagnostics-color",
                                       "-pthread",
+                                      "-MD",
+                                      "-MF",
+                                      "foo.o.d",
                                       "-c",
                                       "foo.cpp",
                                       "-ofoo.o"});
 
     cfs.definitions.push_back("FOO=BAR");
     cmd = tc.create_compile_command(cfs);
-    CHECK(cmd
+    CHECK(cmd.command
           == std::vector<std::string>{"g++",
                                       "-fPIC",
                                       "-fdiagnostics-color",
                                       "-pthread",
                                       "-D",
                                       "FOO=BAR",
+                                      "-MD",
+                                      "-MF",
+                                      "foo.o.d",
                                       "-c",
                                       "foo.cpp",
                                       "-ofoo.o"});
 
     cfs.include_dirs.push_back("fake-dir");
     cmd = tc.create_compile_command(cfs);
-    CHECK(cmd
+    CHECK(cmd.command
           == std::vector<std::string>{"g++",
                                       "-fPIC",
                                       "-fdiagnostics-color",
@@ -120,6 +126,9 @@ TEST_CASE("Generating toolchain commands") {
                                       "fake-dir",
                                       "-D",
                                       "FOO=BAR",
+                                      "-MD",
+                                      "-MF",
+                                      "foo.o.d",
                                       "-c",
                                       "foo.cpp",
                                       "-ofoo.o"});

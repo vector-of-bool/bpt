@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dds/toolchain/deps.hpp>
+
 #include <string>
 #include <vector>
 
@@ -23,6 +25,8 @@ struct toolchain_prep {
     std::string object_suffix;
     std::string exe_prefix;
     std::string exe_suffix;
+
+    enum deps_mode deps_mode;
 
     toolchain realize() const;
 };

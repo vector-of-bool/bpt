@@ -32,6 +32,7 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
     ret._object_suffix  = prep.object_suffix;
     ret._exe_prefix     = prep.exe_prefix;
     ret._exe_suffix     = prep.exe_suffix;
+    ret._deps_mode      = prep.deps_mode;
     return ret;
 }
 
@@ -99,8 +100,11 @@ vector<string> toolchain::definition_args(std::string_view s) const noexcept {
     return replace(_def_template, "<DEF>", s);
 }
 
-vector<string> toolchain::create_compile_command(const compile_file_spec& spec) const noexcept {
+compile_command_info toolchain::create_compile_command(const compile_file_spec& spec) const
+    noexcept {
     vector<string> flags;
+
+    using namespace std::literals;
 
     language lang = spec.lang;
     if (lang == language::automatic) {
@@ -127,6 +131,16 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
         extend(flags, _warning_flags);
     }
 
+    std::optional<fs::path> gnu_depfile_path;
+
+    if (_deps_mode == deps_mode::gnu) {
+        gnu_depfile_path = spec.out_path;
+        gnu_depfile_path->replace_extension(gnu_depfile_path->extension().string() + ".d");
+        extend(flags, {"-MD"sv, "-MF"sv, std::string_view(gnu_depfile_path->string())});
+    } else if (_deps_mode == deps_mode::msvc) {
+        flags.push_back("/showIncludes");
+    }
+
     vector<string> command;
     for (auto arg : cmd_template) {
         if (arg == "<FLAGS>") {
@@ -137,7 +151,7 @@ vector<string> toolchain::create_compile_command(const compile_file_spec& spec) 
             command.push_back(arg);
         }
     }
-    return command;
+    return {command, gnu_depfile_path};
 }
 
 vector<string> toolchain::create_archive_command(const archive_spec& spec) const noexcept {
