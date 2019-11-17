@@ -60,6 +60,7 @@ public:
 
     const source_file& source() const noexcept { return _source; }
     path_ref           source_path() const noexcept { return _source.path; }
+    auto&              rules() const noexcept { return _rules; }
 
     fs::path                 calc_object_file_path(build_env_ref env) const noexcept;
     std::optional<deps_info> compile(build_env_ref) const;
