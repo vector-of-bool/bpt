@@ -24,3 +24,26 @@ TEST_CASE("Invalid deps") {
     CHECK(deps.output.empty());
     CHECK(deps.inputs.empty());
 }
+
+TEST_CASE("Parse MSVC deps") {
+    auto mscv_output = R"(
+Note: including file:    C:\foo\bar\filepath/thing.hpp
+Note: including file:  C:\foo\bar\filepath/baz.h
+Note: including file:      C:\foo\bar\filepath/quux.h
+Note: including file:   C:\foo\bar\filepath/cats/quux.h
+Other line
+Something else
+)";
+
+    auto  res        = dds::parse_msvc_output_for_deps(mscv_output, "Note: including file:");
+    auto& deps       = res.deps_info;
+    auto  new_output = res.cleaned_output;
+    CHECK(new_output == "\nOther line\nSomething else\n");
+    CHECK(deps.inputs
+          == std::vector<dds::fs::path>({
+                 "C:\\foo\\bar\\filepath/thing.hpp",
+                 "C:\\foo\\bar\\filepath/baz.h",
+                 "C:\\foo\\bar\\filepath/quux.h",
+                 "C:\\foo\\bar\\filepath/cats/quux.h",
+             }));
+}

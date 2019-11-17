@@ -44,6 +44,27 @@ deps_info dds::parse_mkfile_deps_str(std::string_view str) {
     return ret;
 }
 
+msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::string_view leader) {
+    auto lines = split_view(output, "\n");
+    std::string cleaned_output;
+    deps_info   deps;
+    for (auto line : lines) {
+        line = trim_view(line);
+        if (!starts_with(line, leader)) {
+            cleaned_output += std::string(line);
+            cleaned_output.push_back('\n');
+            continue;
+        }
+        auto remaining = trim_view(line.substr(leader.size()));
+        deps.inputs.emplace_back(fs::weakly_canonical(remaining));
+    }
+    if (!cleaned_output.empty()) {
+        // Remove the extra newline at the back
+        cleaned_output.pop_back();
+    }
+    return {deps, cleaned_output};
+}
+
 void dds::update_deps_info(database& db, const deps_info& deps) {
     db.store_mtime(deps.output, fs::last_write_time(deps.output));
     db.store_file_command(deps.output, {deps.command, deps.command_output});
