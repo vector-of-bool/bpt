@@ -6,6 +6,7 @@
 #include <dds/sdist.hpp>
 #include <dds/temp.hpp>
 #include <dds/toolchain/toolchain.hpp>
+#include <dds/util/shlex.hpp>
 
 #include <spdlog/spdlog.h>
 

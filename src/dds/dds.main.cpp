@@ -469,7 +469,8 @@ struct cli_deps {
 
             auto           tc   = tc_filepath.get_toolchain();
             auto           bdir = build_dir.Get();
-            dds::build_env env{std::move(tc), bdir};
+            auto           db   = dds::database::open(bdir / ".dds.db");
+            dds::build_env env{std::move(tc), bdir, db};
 
             auto plan = dds::create_deps_build_plan(deps, env);
             plan.compile_all(env, 6);

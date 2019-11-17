@@ -10,8 +10,6 @@
 
 namespace dds {
 
-std::vector<std::string> split_shell_string(std::string_view s);
-
 enum class language {
     automatic,
     c,

@@ -3,6 +3,7 @@
 #include <dds/toolchain/prep.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/shlex.hpp>
 #include <libman/parse.hpp>
 
 #include <spdlog/fmt/fmt.h>

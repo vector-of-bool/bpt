@@ -7,6 +7,7 @@
 #include <dds/util/time.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
+#include <dds/build/plan/compile_exec.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -116,16 +117,18 @@ load_usage_requirements(path_ref project_root, path_ref build_root, path_ref use
 void prepare_catch2_driver(library_build_params& lib_params,
                            test_lib              test_driver,
                            const build_params&   params,
-                           const package_manifest&) {
-    fs::path test_include_root = params.out_root / "_test_inc";
+                           build_env_ref         env_) {
+    fs::path test_include_root = params.out_root / "_catch-2.10.2";
     lib_params.test_include_dirs.emplace_back(test_include_root);
 
     auto catch_hpp = test_include_root / "catch2/catch.hpp";
-    fs::create_directories(catch_hpp.parent_path());
-    auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
-    hpp_strm.write(detail::catch2_embedded_single_header_str,
-                   std::strlen(detail::catch2_embedded_single_header_str));
-    hpp_strm.close();
+    if (!fs::exists(catch_hpp)) {
+        fs::create_directories(catch_hpp.parent_path());
+        auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
+        hpp_strm.write(detail::catch2_embedded_single_header_str,
+                    std::strlen(detail::catch2_embedded_single_header_str));
+        hpp_strm.close();
+    }
 
     if (test_driver == test_lib::catch_) {
         // Don't generate a test library helper
@@ -157,14 +160,14 @@ void prepare_catch2_driver(library_build_params& lib_params,
     assert(sf.has_value());
 
     compile_file_plan plan{comp_rules, std::move(*sf), "Catch2", "v1"};
-    build_env         env;
-    env.output_root = params.out_root / "_test-driver";
-    env.toolchain   = params.toolchain;
-    auto obj_file   = plan.calc_object_file_path(env);
+
+    build_env env2 = env_;
+    env2.output_root /= "_test-driver";
+    auto obj_file = plan.calc_object_file_path(env2);
 
     if (!fs::exists(obj_file)) {
         spdlog::info("Compiling Catch2 test driver (This will only happen once)...");
-        plan.compile(env);
+        compile_all(std::array{plan}, env2, 1);
     }
 
     lib_params.test_link_files.push_back(obj_file);
@@ -172,11 +175,12 @@ void prepare_catch2_driver(library_build_params& lib_params,
 
 void prepare_test_driver(library_build_params&   lib_params,
                          const build_params&     params,
-                         const package_manifest& man) {
+                         const package_manifest& man,
+                         build_env_ref           env) {
     auto& test_driver = *man.test_driver;
     if (test_driver == test_lib::catch_ || test_driver == test_lib::catch_main
         || test_driver == test_lib::catch_runner) {
-        prepare_catch2_driver(lib_params, test_driver, params, man);
+        prepare_catch2_driver(lib_params, test_driver, params, env);
     } else {
         assert(false && "Unreachable");
         std::terminate();
@@ -203,8 +207,11 @@ void dds::build(const build_params& params, const package_manifest& man) {
     lib_params.build_apps      = params.build_apps;
     lib_params.enable_warnings = params.enable_warnings;
 
+    auto           db = database::open(params.out_root / ".dds.db");
+    dds::build_env env{params.toolchain, params.out_root, db};
+
     if (man.test_driver) {
-        prepare_test_driver(lib_params, params, man);
+        prepare_test_driver(lib_params, params, man, env);
     }
 
     for (const library& lib : libs) {
@@ -212,7 +219,6 @@ void dds::build(const build_params& params, const package_manifest& man) {
         pkg.add_library(library_plan::create(lib, lib_params, ureqs));
     }
 
-    dds::build_env env{params.toolchain, params.out_root};
     if (params.generate_compdb) {
         generate_compdb(plan, env);
     }

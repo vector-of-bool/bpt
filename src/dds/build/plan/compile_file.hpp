@@ -56,13 +56,13 @@ public:
         , _qualifier(qual)
         , _subdir(subdir) {}
 
-    compile_command_info generate_compile_command(build_env_ref) const noexcept;
-
     const source_file& source() const noexcept { return _source; }
     path_ref           source_path() const noexcept { return _source.path; }
     auto&              rules() const noexcept { return _rules; }
+    auto&              qualifier() const noexcept { return _qualifier; }
 
     fs::path                 calc_object_file_path(build_env_ref env) const noexcept;
+    compile_command_info     generate_compile_command(build_env_ref) const noexcept;
     std::optional<deps_info> compile(build_env_ref) const;
 };
 

@@ -20,44 +20,9 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
     return env.toolchain.create_compile_command(spec);
 }
 
-std::optional<deps_info> compile_file_plan::compile(const build_env& env) const {
-    const auto obj_path = calc_object_file_path(env);
-    fs::create_directories(obj_path.parent_path());
-
-    auto msg = fmt::format("[{}] Compile: {:40}",
-                           _qualifier,
-                           fs::relative(_source.path, _source.basis_path).string());
-
-    spdlog::info(msg);
-    auto cmd = generate_compile_command(env);
-    auto&& [dur_ms, compile_res]
-        = timed<std::chrono::milliseconds>([&] { return run_proc(cmd.command); });
-    spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
-
-    if (!compile_res.okay()) {
-        spdlog::error("Compilation failed: {}", _source.path.string());
-        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(cmd.command), compile_res.output);
-        throw compile_failure(fmt::format("Compilation failed for {}", _source.path.string()));
-    }
-
-    // MSVC prints the filename of the source file. Dunno why, but they do.
-    if (compile_res.output.find(_source.path.filename().string() + "\r\n") == 0) {
-        compile_res.output.erase(0, _source.path.filename().string().length() + 2);
-    }
-
-    if (!compile_res.output.empty()) {
-        spdlog::warn("While compiling file {} [{}]:\n{}",
-                     _source.path.string(),
-                     quote_command(cmd.command),
-                     compile_res.output);
-    }
-
-    return std::nullopt;
-}
-
 fs::path compile_file_plan::calc_object_file_path(const build_env& env) const noexcept {
     auto relpath = fs::relative(_source.path, _source.basis_path);
     auto ret     = env.output_root / _subdir / relpath;
     ret.replace_filename(relpath.filename().string() + env.toolchain.object_suffix());
-    return ret;
+    return fs::weakly_canonical(ret);
 }
