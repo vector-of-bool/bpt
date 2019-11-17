@@ -11,6 +11,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <stdexcept>
 
 using namespace dds;

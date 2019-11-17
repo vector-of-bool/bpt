@@ -151,8 +151,8 @@ void database::record_dep(path_ref input, path_ref output) {
         )
     )"_sql);
     sqlite3::exec(st,
-                  std::forward_as_tuple(fs::weakly_canonical(input.string()),
-                                        fs::weakly_canonical(output.string())));
+                  std::forward_as_tuple(fs::weakly_canonical(input).string(),
+                                        fs::weakly_canonical(output).string()));
 }
 
 void database::store_file_command(path_ref file, const command_info& cmd) {
@@ -186,7 +186,7 @@ void database::forget_inputs_of(path_ref file) {
         DELETE FROM dds_deps
          WHERE output_file_id IN id_to_delete
     )"_sql);
-    sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file)));
+    sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).string()));
 }
 
 std::optional<std::vector<seen_file_info>> database::inputs_of(path_ref file_) {
