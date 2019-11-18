@@ -100,7 +100,8 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
                 "file to exist: [{}])",
                 df_path.string());
         } else {
-            auto dep_info           = dds::parse_mkfile_deps_file(df_path);
+            auto dep_info = dds::parse_mkfile_deps_file(df_path);
+            assert(dep_info.output == cf.object_file_path);
             dep_info.command        = quote_command(cf.cmd_info.command);
             dep_info.command_output = compile_res.output;
             ret_deps_info           = std::move(dep_info);

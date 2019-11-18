@@ -80,7 +80,12 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
     if (_deps_mode == deps_mode::gnu) {
         gnu_depfile_path = spec.out_path;
         gnu_depfile_path->replace_extension(gnu_depfile_path->extension().string() + ".d");
-        extend(flags, {"-MD"sv, "-MF"sv, std::string_view(gnu_depfile_path->string())});
+        extend(flags,
+               {"-MD"sv,
+                "-MF"sv,
+                std::string_view(gnu_depfile_path->string()),
+                "-MT"sv,
+                std::string_view(spec.out_path.string())});
     } else if (_deps_mode == deps_mode::msvc) {
         flags.push_back("/showIncludes");
     }
