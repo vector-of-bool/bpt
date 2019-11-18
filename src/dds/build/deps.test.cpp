@@ -30,15 +30,16 @@ TEST_CASE("Parse MSVC deps") {
 Note: including file:    C:\foo\bar\filepath/thing.hpp
 Note: including file:  C:\foo\bar\filepath/baz.h
 Note: including file:      C:\foo\bar\filepath/quux.h
-Note: including file:   C:\foo\bar\filepath/cats/quux.h
+    Note: including file:   C:\foo\bar\filepath/cats/quux.h
 Other line
+    indented line
 Something else
 )";
 
     auto  res        = dds::parse_msvc_output_for_deps(mscv_output, "Note: including file:");
     auto& deps       = res.deps_info;
     auto  new_output = res.cleaned_output;
-    CHECK(new_output == "\nOther line\nSomething else\n");
+    CHECK(new_output == "\nOther line\n    indented line\nSomething else\n");
     CHECK(deps.inputs
           == std::vector<dds::fs::path>({
                  "C:\\foo\\bar\\filepath/thing.hpp",

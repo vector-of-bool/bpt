@@ -48,14 +48,14 @@ msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::str
     auto lines = split_view(output, "\n");
     std::string cleaned_output;
     deps_info   deps;
-    for (auto line : lines) {
-        line = trim_view(line);
-        if (!starts_with(line, leader)) {
-            cleaned_output += std::string(line);
+    for (const auto full_line : lines) {
+        auto trimmed = trim_view(full_line);
+        if (!starts_with(trimmed, leader)) {
+            cleaned_output += std::string(full_line);
             cleaned_output.push_back('\n');
             continue;
         }
-        auto remaining = trim_view(line.substr(leader.size()));
+        auto remaining = trim_view(trimmed.substr(leader.size()));
         deps.inputs.emplace_back(fs::weakly_canonical(remaining));
     }
     if (!cleaned_output.empty()) {
