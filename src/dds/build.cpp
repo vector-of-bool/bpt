@@ -208,6 +208,7 @@ void dds::build(const build_params& params, const package_manifest& man) {
     lib_params.build_apps      = params.build_apps;
     lib_params.enable_warnings = params.enable_warnings;
 
+    fs::create_directories(params.out_root);
     auto           db = database::open(params.out_root / ".dds.db");
     dds::build_env env{params.toolchain, params.out_root, db};
 

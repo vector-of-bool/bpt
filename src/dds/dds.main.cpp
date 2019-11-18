@@ -467,9 +467,10 @@ struct cli_deps {
                                              man.dependencies.end());
                 });
 
-            auto           tc   = tc_filepath.get_toolchain();
-            auto           bdir = build_dir.Get();
-            auto           db   = dds::database::open(bdir / ".dds.db");
+            auto tc   = tc_filepath.get_toolchain();
+            auto bdir = build_dir.Get();
+            dds::fs::create_directories(bdir);
+            auto           db = dds::database::open(bdir / ".dds.db");
             dds::build_env env{std::move(tc), bdir, db};
 
             auto plan = dds::create_deps_build_plan(deps, env);
