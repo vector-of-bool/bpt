@@ -9,3 +9,4 @@ Remote-Package: ms-wil 2019.11.10; git url=https://github.com/vector-of-bool/wil
 
 # XXX: Don't depend on a moving revision!
 Remote-Package: neo-buffer 0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=develop
+Remote-Package: neo-sqlite3 0.2.0; git url=https://github.com/vector-of-bool/neo-sqlite3.git ref=0.2.0

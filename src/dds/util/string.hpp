@@ -41,6 +41,18 @@ inline bool starts_with(std::string_view s, std::string_view key) { return s.fin
 
 inline bool contains(std::string_view s, std::string_view key) { return s.find(key) != s.npos; }
 
+inline std::vector<std::string_view> split_view(std::string_view str, std::string_view sep) {
+    std::vector<std::string_view> ret;
+    std::string_view::size_type   prev_pos = 0;
+    auto                          pos      = prev_pos;
+    while ((pos = str.find(sep, prev_pos)) != str.npos) {
+        ret.emplace_back(str.substr(prev_pos, pos - prev_pos));
+        prev_pos = pos + sep.length();
+    }
+    ret.emplace_back(str.substr(prev_pos));
+    return ret;
+}
+
 inline std::vector<std::string> split(std::string_view str, std::string_view sep) {
     std::vector<std::string>    ret;
     std::string_view::size_type prev_pos = 0;

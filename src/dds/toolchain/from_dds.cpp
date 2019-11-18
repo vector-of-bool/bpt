@@ -3,6 +3,7 @@
 #include <dds/toolchain/prep.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/shlex.hpp>
 #include <libman/parse.hpp>
 
 #include <spdlog/fmt/fmt.h>
@@ -90,6 +91,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     opt_string     obj_suffix;
     opt_string     exe_prefix;
     opt_string     exe_suffix;
+    opt_string     deps_mode_str;
     optional<bool> do_debug;
     optional<bool> do_optimize;
     opt_str_seq    include_template;
@@ -128,6 +130,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
              lm::read_bool("Debug", do_debug),
              // Miscellaneous
              read_argv{"Compiler-Launcher", compile_launcher},
+             lm::read_opt("Deps-Mode", deps_mode_str),
              // Command templates
              read_argv{"C-Compile-File", c_compile_file},
              read_argv{"C++-Compile-File", cxx_compile_file},
@@ -169,6 +172,26 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     bool is_clang    = compiler_id_e == clang;
     bool is_msvc     = compiler_id_e == msvc;
     bool is_gnu_like = is_gnu || is_clang;
+
+    const enum deps_mode deps_mode = [&] {
+        if (!deps_mode_str.has_value()) {
+            if (is_gnu_like) {
+                return deps_mode::gnu;
+            } else if (is_msvc) {
+                return deps_mode::msvc;
+            } else {
+                return deps_mode::none;
+            }
+        } else if (deps_mode_str == "GNU") {
+            return deps_mode::gnu;
+        } else if (deps_mode_str == "MSVC") {
+            return deps_mode::msvc;
+        } else if (deps_mode_str == "None") {
+            return deps_mode::none;
+        } else {
+            fail(context, "Unknown Deps-Mode '{}'", *deps_mode_str);
+        }
+    }();
 
     // Now convert the flags we've been given into a real toolchain
     auto get_compiler = [&](language lang) -> string {
@@ -356,10 +379,10 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
                 rt_lib = "/MTd";
             }
             ret.emplace_back(rt_lib);
-            extend(ret, {"/nologo", "<FLAGS>", "/permissive-", "/c", "<IN>", "/Fo<OUT>"});
             if (lang == language::cxx) {
                 extend(ret, {"/EHsc"});
             }
+            extend(ret, {"/nologo", "/permissive-", "<FLAGS>", "/c", "<IN>", "/Fo<OUT>"});
         } else if (is_gnu_like) {
             if (do_optimize.has_value() && *do_optimize) {
                 extend(ret, {"-O2"});
@@ -381,6 +404,8 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         }
         return ret;
     };
+
+    tc.deps_mode = deps_mode;
 
     tc.c_compile = read_opt(c_compile_file, [&] {
         string_seq c;
@@ -408,7 +433,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         }
         if (is_gnu_like) {
             return {"-I", "<PATH>"};
-        } else if (compiler_id == "MSVC") {
+        } else if (is_msvc) {
             return {"/I", "<PATH>"};
         }
         assert(false && "Include-Template deduction failed");
@@ -421,7 +446,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         }
         if (is_gnu_like) {
             return {"-D", "<DEF>"};
-        } else if (compiler_id == "MSVC") {
+        } else if (is_msvc) {
             return {"/D", "<DEF>"};
         }
         assert(false && "Define-Template deduction failed");

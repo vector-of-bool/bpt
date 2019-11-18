@@ -1,6 +1,7 @@
 #include "./full.hpp"
 
 #include <dds/build/iter_compilations.hpp>
+#include <dds/build/plan/compile_exec.hpp>
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -36,7 +37,8 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
             if (iter == stop) {
                 break;
             }
-            auto&& item = *iter++;
+            auto&& item = *iter;
+            ++iter;
             lk.unlock();
             try {
                 fn(item);
@@ -71,9 +73,7 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 }  // namespace
 
 void build_plan::compile_all(const build_env& env, int njobs) const {
-    auto okay = parallel_run(iter_compilations(*this), njobs, [&](const compile_file_plan& cf) {
-        cf.compile(env);
-    });
+    auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
     if (!okay) {
         throw std::runtime_error("Compilation failed.");
     }
