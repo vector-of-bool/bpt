@@ -2,6 +2,7 @@
 
 #include <dds/build/deps.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
 
 #include <range/v3/view/filter.hpp>
@@ -87,14 +88,6 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
         = timed<std::chrono::milliseconds>([&] { return run_proc(cf.cmd_info.command); });
     spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
 
-    if (!compile_res.okay()) {
-        spdlog::error("Compilation failed: {}", source_path.string());
-        spdlog::error("Subcommand FAILED: {}\n{}",
-                      quote_command(cf.cmd_info.command),
-                      compile_res.output);
-        throw compile_failure(fmt::format("Compilation failed for {}", source_path.string()));
-    }
-
     std::optional<deps_info> ret_deps_info;
 
     if (env.toolchain.deps_mode() == deps_mode::gnu) {
@@ -112,11 +105,32 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
             dep_info.command_output = compile_res.output;
             ret_deps_info           = std::move(dep_info);
         }
+    } else if (env.toolchain.deps_mode() == deps_mode::msvc) {
+        auto msvc_deps = parse_msvc_output_for_deps(compile_res.output, "Note: including file:");
+        msvc_deps.deps_info.output         = cf.object_file_path;
+        msvc_deps.deps_info.command        = quote_command(cf.cmd_info.command);
+        msvc_deps.deps_info.command_output = msvc_deps.cleaned_output;
+        ret_deps_info                      = std::move(msvc_deps.deps_info);
+        compile_res.output                 = std::move(msvc_deps.cleaned_output);
     }
 
     // MSVC prints the filename of the source file. Dunno why, but they do.
-    if (compile_res.output.find(source_path.filename().string() + "\r\n") == 0) {
-        compile_res.output.erase(0, source_path.filename().string().length() + 2);
+    if (compile_res.output.find(source_path.filename().string()) == 0) {
+        compile_res.output.erase(0, source_path.filename().string().length());
+        if (starts_with(compile_res.output, "\r")) {
+            compile_res.output.erase(0, 1);
+        }
+        if (starts_with(compile_res.output, "\n")) {
+            compile_res.output.erase(0, 1);
+        }
+    }
+
+    if (!compile_res.okay()) {
+        spdlog::error("Compilation failed: {}", source_path.string());
+        spdlog::error("Subcommand FAILED: {}\n{}",
+                      quote_command(cf.cmd_info.command),
+                      compile_res.output);
+        throw compile_failure(fmt::format("Compilation failed for {}", source_path.string()));
     }
 
     if (!compile_res.output.empty()) {
