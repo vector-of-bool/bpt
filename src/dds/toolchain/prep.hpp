@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/toolchain/deps.hpp>
+#include <dds/build/deps.hpp>
 
 #include <string>
 #include <vector>

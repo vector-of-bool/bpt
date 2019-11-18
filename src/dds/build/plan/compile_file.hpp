@@ -2,7 +2,6 @@
 
 #include <dds/build/plan/base.hpp>
 #include <dds/source.hpp>
-#include <dds/toolchain/deps.hpp>
 
 #include <memory>
 

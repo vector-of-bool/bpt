@@ -1,12 +1,24 @@
 #pragma once
 
-#include <dds/toolchain/deps.hpp>
 #include <dds/util/fs.hpp>
 
 #include <string>
 #include <string_view>
 
 namespace dds {
+
+enum class deps_mode {
+    none,
+    msvc,
+    gnu,
+};
+
+struct deps_info {
+    fs::path              output;
+    std::vector<fs::path> inputs;
+    std::string           command;
+    std::string           command_output;
+};
 
 class database;
 

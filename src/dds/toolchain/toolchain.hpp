@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/toolchain/deps.hpp>
+#include <dds/build/deps.hpp>
 #include <dds/util/fs.hpp>
 
 #include <optional>
