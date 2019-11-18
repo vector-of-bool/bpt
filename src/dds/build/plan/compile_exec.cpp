@@ -84,9 +84,14 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
                            cf.plan.qualifier(),
                            fs::relative(source_path, cf.plan.source().basis_path).string());
     spdlog::info(msg);
-    auto&& [dur_ms, compile_res]
+    auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(cf.cmd_info.command); });
     spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
+
+    const bool  compiled_okay   = proc_res.okay();
+    const auto  compile_retc    = proc_res.retc;
+    const auto  compile_signal  = proc_res.signal;
+    std::string compiler_output = std::move(proc_res.output);
 
     std::optional<deps_info> ret_deps_info;
 
@@ -103,48 +108,51 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
             auto dep_info = dds::parse_mkfile_deps_file(df_path);
             assert(dep_info.output == cf.object_file_path);
             dep_info.command        = quote_command(cf.cmd_info.command);
-            dep_info.command_output = compile_res.output;
+            dep_info.command_output = compiler_output;
             ret_deps_info           = std::move(dep_info);
         }
     } else if (env.toolchain.deps_mode() == deps_mode::msvc) {
-        auto msvc_deps = parse_msvc_output_for_deps(compile_res.output, "Note: including file:");
+        auto msvc_deps = parse_msvc_output_for_deps(compiler_output, "Note: including file:");
         msvc_deps.deps_info.inputs.push_back(cf.plan.source_path());
         msvc_deps.deps_info.output         = cf.object_file_path;
         msvc_deps.deps_info.command        = quote_command(cf.cmd_info.command);
         msvc_deps.deps_info.command_output = msvc_deps.cleaned_output;
         ret_deps_info                      = std::move(msvc_deps.deps_info);
-        compile_res.output                 = std::move(msvc_deps.cleaned_output);
+        compiler_output                    = std::move(msvc_deps.cleaned_output);
     }
 
     // MSVC prints the filename of the source file. Dunno why, but they do.
-    if (compile_res.output.find(source_path.filename().string()) == 0) {
-        compile_res.output.erase(0, source_path.filename().string().length());
-        if (starts_with(compile_res.output, "\r")) {
-            compile_res.output.erase(0, 1);
+    if (compiler_output.find(source_path.filename().string()) == 0) {
+        compiler_output.erase(0, source_path.filename().string().length());
+        if (starts_with(compiler_output, "\r")) {
+            compiler_output.erase(0, 1);
         }
-        if (starts_with(compile_res.output, "\n")) {
-            compile_res.output.erase(0, 1);
+        if (starts_with(compiler_output, "\n")) {
+            compiler_output.erase(0, 1);
         }
     }
 
-    if (!compile_res.okay()) {
+    if (!compiled_okay) {
         spdlog::error("Compilation failed: {}", source_path.string());
-        spdlog::error("Subcommand FAILED: {}\n{}",
+        spdlog::error("Subcommand FAILED [Exitted {}]: {}\n{}",
+                      compile_retc,
                       quote_command(cf.cmd_info.command),
-                      compile_res.output);
+                      compiler_output);
+        if (compile_signal) {
+            spdlog::error("Process exited via signal {}", compile_signal);
+        }
         throw compile_failure(fmt::format("Compilation failed for {}", source_path.string()));
     }
 
-    if (!compile_res.output.empty()) {
+    if (!dds::trim_view(compiler_output).empty()) {
         spdlog::warn("While compiling file {} [{}]:\n{}",
                      source_path.string(),
                      quote_command(cf.cmd_info.command),
-                     compile_res.output);
+                     compiler_output);
     }
 
-    // Do not return deps info if compilation failed, or we will incrementally
-    // store the compile failure
-    assert(compile_res.okay() || (!ret_deps_info.has_value()));
+    // We must always generate deps info if it was possible:
+    assert(ret_deps_info.has_value() || env.toolchain.deps_mode() == deps_mode::none);
     return ret_deps_info;
 }
 
@@ -157,8 +165,7 @@ bool should_compile(const compile_file_full& comp, build_env_ref env) {
     database& db      = env.db;
     auto      rb_info = get_rebuild_info(db, comp.object_file_path);
     if (rb_info.previous_command.empty()) {
-        // We have no previous compile command for this file. Assume it is
-        // new.
+        // We have no previous compile command for this file. Assume it is new.
         return true;
     }
     if (!rb_info.newer_inputs.empty()) {
@@ -184,19 +191,18 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
         | views::transform([&](auto&& plan) { return realize_plan(plan, env); })  //
         | views::filter([&](auto&& real) { return should_compile(real, env); });
 
-    std::vector<deps_info> new_deps;
+    std::vector<deps_info> all_new_deps;
     std::mutex             mut;
     auto okay = parallel_run(each_realized, njobs, [&](const compile_file_full& full) {
-        auto nd = do_compile(full, env);
-        if (nd) {
+        auto new_dep = do_compile(full, env);
+        if (new_dep) {
             std::unique_lock lk{mut};
-            new_deps.push_back(std::move(*nd));
+            all_new_deps.push_back(std::move(*new_dep));
         }
     });
 
-    stopwatch sw;
-    for (auto& info : new_deps) {
-        auto tr = env.db.transaction();
+    auto tr = env.db.transaction();
+    for (auto& info : all_new_deps) {
         update_deps_info(env.db, info);
     }
     return okay;
