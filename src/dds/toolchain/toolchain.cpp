@@ -1,5 +1,6 @@
 #include "./toolchain.hpp"
 
+#include <dds/toolchain/from_dds.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/string.hpp>
@@ -133,116 +134,89 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
     return cmd;
 }
 
-std::optional<toolchain> toolchain::get_builtin(std::string_view s) noexcept {
-    toolchain ret;
-
+std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept {
     using namespace std::literals;
 
-    if (starts_with(s, "ccache:")) {
-        s = s.substr("ccache:"sv.length());
-        ret._c_compile.push_back("ccache");
-        ret._cxx_compile.push_back("ccache");
+    std::string tc_content;
+
+    if (starts_with(tc_id, "ccache:")) {
+        tc_id = tc_id.substr("ccache:"sv.length());
+        tc_content += "Compiler-Launcher: ccache\n";
     }
 
-    if (starts_with(s, "gcc") || starts_with(s, "clang")) {
-        ret._inc_template   = {"-isystem", "<PATH>"};
-        ret._def_template   = {"-D", "<DEF>"};
-        ret._archive_suffix = ".a";
-        ret._object_suffix  = ".o";
-        ret._warning_flags  = {"-Wall", "-Wextra"};
-        ret._link_archive   = {"ar", "rcs", "<OUT>", "<IN>"};
+#define CXX_VER_TAG(str, version)                                                                  \
+    if (starts_with(tc_id, str)) {                                                         \
+        tc_id = tc_id.substr(std::string_view(str).length());                                      \
+        tc_content += "C++-Version: "s + version + "\n";                                                  \
+    }                                                                                              \
+    static_assert(true)
 
-        std::vector<std::string> common_flags = {
-            "<FLAGS>",
-            "-g",
-            "-fPIC",
-            "-fdiagnostics-color",
-            "-pthread",
-            "-c",
-            "-o",
-            "<OUT>",
-            "<IN>",
-        };
-        std::vector<std::string> c_flags;
-        std::vector<std::string> cxx_flags = {"-std=c++17"};
+    CXX_VER_TAG("c++98:", "C++98");
+    CXX_VER_TAG("c++03:", "C++03");
+    CXX_VER_TAG("c++11:", "C++11");
+    CXX_VER_TAG("c++14:", "C++14");
+    CXX_VER_TAG("c++17:", "C++17");
+    CXX_VER_TAG("c++20:", "C++20");
 
-        std::string c_compiler_base;
-        std::string cxx_compiler_base;
-        std::string compiler_suffix;
+    struct compiler_info {
+        string c;
+        string cxx;
+        string id;
+    };
 
-        if (starts_with(s, "gcc")) {
-            c_compiler_base   = "gcc";
-            cxx_compiler_base = "g++";
-            common_flags.push_back("-O0");
-        } else if (starts_with(s, "clang")) {
-            c_compiler_base   = "clang";
-            cxx_compiler_base = "clang++";
+    auto opt_triple = [&]() -> std::optional<compiler_info> {
+        if (starts_with(tc_id, "gcc") || starts_with(tc_id, "clang")) {
+            const bool is_gcc   = starts_with(tc_id, "gcc");
+            const bool is_clang = starts_with(tc_id, "clang");
+
+            const auto [c_compiler_base, cxx_compiler_base, compiler_id] = [&]() -> compiler_info {
+                if (is_gcc) {
+                    return {"gcc", "g++", "GNU"};
+                } else if (is_clang) {
+                    return {"clang", "clang++", "Clang"};
+                }
+                assert(false && "Unreachable");
+                std::terminate();
+            }();
+
+            const auto compiler_suffix = [&]() -> std::string {
+                if (ends_with(tc_id, "-7")) {
+                    return "-7";
+                } else if (ends_with(tc_id, "-8")) {
+                    return "-8";
+                } else if (ends_with(tc_id, "-9")) {
+                    return "-9";
+                } else if (ends_with(tc_id, "-10")) {
+                    return "-10";
+                } else if (ends_with(tc_id, "-11")) {
+                    return "-11";
+                } else if (ends_with(tc_id, "-12")) {
+                    return "-12";
+                } else if (ends_with(tc_id, "-13")) {
+                    return "-13";
+                }
+                return "";
+            }();
+
+            auto c_compiler_name = c_compiler_base + compiler_suffix;
+            if (c_compiler_name != tc_id) {
+                return std::nullopt;
+            }
+            auto cxx_compiler_name = cxx_compiler_base + compiler_suffix;
+            return compiler_info{c_compiler_name, cxx_compiler_name, compiler_id};
+        } else if (tc_id == "msvc") {
+            return compiler_info{"cl.exe", "cl.exe", "MSVC"};
         } else {
-            assert(false && "Unreachable");
-            std::terminate();
-        }
-
-        if (ends_with(s, "-7")) {
-            compiler_suffix = "-7";
-        } else if (ends_with(s, "-8")) {
-            compiler_suffix = "-8";
-        } else if (ends_with(s, "-9")) {
-            compiler_suffix = "-9";
-        } else if (ends_with(s, "-10")) {
-            compiler_suffix = "-10";
-        }
-
-        auto c_compiler_name = c_compiler_base + compiler_suffix;
-        if (c_compiler_name != s) {
             return std::nullopt;
         }
-        auto cxx_compiler_name = cxx_compiler_base + compiler_suffix;
+    }();
 
-        ret._c_compile.push_back(c_compiler_name);
-        extend(ret._c_compile, common_flags);
-        extend(ret._c_compile, c_flags);
-
-        ret._cxx_compile.push_back(cxx_compiler_name);
-        extend(ret._cxx_compile, common_flags);
-        extend(ret._cxx_compile, cxx_flags);
-
-        ret._link_exe.push_back(cxx_compiler_name);
-        extend(ret._link_exe,
-               {
-                   "-g",
-                   "-fPIC",
-                   "-fdiagnostics-color",
-                   "<IN>",
-                   "-pthread",
-                   "-lstdc++fs",
-                   "-o",
-                   "<OUT>",
-               });
-    } else if (s == "msvc") {
-        ret._inc_template = {"/I<PATH>"};
-        ret._def_template = {"/D<DEF>"};
-        ret._c_compile    = {"cl.exe", "/nologo", "<FLAGS>", "/c", "<IN>", "/Fo<OUT>"};
-        ret._cxx_compile  = {"cl.exe",
-                            "/nologo",
-                            "<FLAGS>",
-                            "/std:c++latest",
-                            "/permissive-",
-                            "/EHsc",
-                            "/c",
-                            "<IN>",
-                            "/Fo<OUT>"};
-        std::vector<std::string_view> common_flags = {"/Z7", "/O2", "/MT", "/DEBUG"};
-        extend(ret._c_compile, common_flags);
-        extend(ret._cxx_compile, common_flags);
-        ret._archive_suffix = ".lib";
-        ret._object_suffix  = ".obj";
-        ret._exe_suffix     = ".exe";
-        ret._link_archive   = {"lib", "/nologo", "/OUT:<OUT>", "<IN>"};
-        ret._link_exe       = {"cl.exe", "/nologo", "/std:c++latest", "/EHsc", "<IN>", "/Fe<OUT>"};
-        ret._warning_flags  = {"/W4"};
-    } else {
+    if (!opt_triple) {
         return std::nullopt;
     }
 
-    return ret;
+    tc_content += "C-Compiler: "s + opt_triple->c + "\n";
+    tc_content += "C++-Compiler: "s + opt_triple->cxx + "\n";
+    tc_content += "Compiler-ID: " + opt_triple->id + "\n";
+    return parse_toolchain_dds(tc_content);
 }
