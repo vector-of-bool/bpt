@@ -107,6 +107,7 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
         }
     } else if (env.toolchain.deps_mode() == deps_mode::msvc) {
         auto msvc_deps = parse_msvc_output_for_deps(compile_res.output, "Note: including file:");
+        msvc_deps.deps_info.inputs.push_back(cf.plan.source_path());
         msvc_deps.deps_info.output         = cf.object_file_path;
         msvc_deps.deps_info.command        = quote_command(cf.cmd_info.command);
         msvc_deps.deps_info.command_output = msvc_deps.cleaned_output;
@@ -140,6 +141,9 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
                      compile_res.output);
     }
 
+    // Do not return deps info if compilation failed, or we will incrementally
+    // store the compile failure
+    assert(compile_res.okay() || (!ret_deps_info.has_value()));
     return ret_deps_info;
 }
 
