@@ -45,7 +45,7 @@ deps_info dds::parse_mkfile_deps_str(std::string_view str) {
 }
 
 msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::string_view leader) {
-    auto lines = split_view(output, "\n");
+    auto        lines = split_view(output, "\n");
     std::string cleaned_output;
     deps_info   deps;
     for (const auto full_line : lines) {
@@ -90,7 +90,7 @@ deps_rebuild_info dds::get_rebuild_info(database& db, path_ref output_path) {
     auto  changed_files =  //
         inputs             //
         | ranges::views::filter([](const seen_file_info& input) {
-              return fs::last_write_time(input.path) != input.last_mtime;
+              return !fs::exists(input.path) || fs::last_write_time(input.path) != input.last_mtime;
           })
         | ranges::views::transform([](auto& info) { return info.path; })  //
         | ranges::to_vector;
