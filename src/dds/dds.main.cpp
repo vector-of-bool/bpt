@@ -25,8 +25,8 @@ struct toolchain_flag : string_flag {
     toolchain_flag(args::Group& grp)
         : string_flag{grp,
                       "toolchain_file",
-                      "Path/ident of the toolchain file to use",
-                      {"toolchain", 'T'},
+                      "Path/ident of the toolchain to use",
+                      {"toolchain", 't'},
                       (dds::fs::current_path() / "toolchain.dds").string()} {}
 
     dds::toolchain get_toolchain() {
@@ -286,26 +286,20 @@ struct cli_build {
 
     common_project_flags project{cmd};
 
-    args::Flag     build_tests{cmd, "build_tests", "Build the tests", {"tests", 't'}};
+    args::Flag     build_tests{cmd, "build_tests", "Build and run the tests", {"tests", 'T'}};
     args::Flag     build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
     args::Flag     export_{cmd, "export", "Generate a library export", {"export", 'E'}};
     toolchain_flag tc_filepath{cmd};
+    args::Flag enable_warnings{cmd,
+                               "enable_warnings",
+                               "Enable compiler warnings",
+                               {"warnings", 'W'}};
 
     path_flag lm_index{cmd,
                        "lm_index",
                        "Path to a libman index (usually INDEX.lmi)",
                        {"lm-index", 'I'},
                        dds::fs::path()};
-
-    args::Flag enable_warnings{cmd,
-                               "enable_warnings",
-                               "Enable compiler warnings",
-                               {"warnings", 'W'}};
-
-    args::Flag full{cmd,
-                    "full",
-                    "Build all optional components (tests, apps, warnings, export)",
-                    {"full", 'F'}};
 
     args::ValueFlag<int> num_jobs{cmd,
                                   "jobs",
@@ -334,12 +328,6 @@ struct cli_build {
         const auto            man_filepath = params.root / "package.dds";
         if (exists(man_filepath)) {
             man = dds::package_manifest::load_from_file(man_filepath);
-        }
-        if (full.Get()) {
-            params.do_export       = true;
-            params.build_tests     = true;
-            params.build_apps      = true;
-            params.enable_warnings = true;
         }
         dds::build(params, man);
         return 0;

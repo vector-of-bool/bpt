@@ -68,8 +68,7 @@ def main(argv: Sequence[str]) -> int:
         required=True,
     )
     parser.add_argument(
-        '--cxx',
-        help='The name/path of the C++ compiler to use.')
+        '--cxx', help='The name/path of the C++ compiler to use.')
     parser.add_argument(
         '--toolchain',
         '-T',
@@ -83,11 +82,14 @@ def main(argv: Sequence[str]) -> int:
     args = parser.parse_args(argv)
 
     opts = CIOptions(
-        cxx=Path(args.cxx or 'unspecified'), toolchain=args.toolchain, skip_deps=args.skip_deps)
+        cxx=Path(args.cxx or 'unspecified'),
+        toolchain=args.toolchain,
+        skip_deps=args.skip_deps)
 
     if args.bootstrap_with == 'build':
         if args.cxx is None:
-            raise RuntimeError('`--cxx` must be given when using `--bootstrap-with=build`')
+            raise RuntimeError(
+                '`--cxx` must be given when using `--bootstrap-with=build`')
         _do_bootstrap_build(opts)
     elif args.bootstrap_with == 'download':
         _do_bootstrap_download()
@@ -104,10 +106,16 @@ def main(argv: Sequence[str]) -> int:
         self_deps_build(paths.PREBUILT_DDS, opts.toolchain, ci_repo_dir,
                         paths.PROJECT_ROOT / 'remote.dds')
 
-    self_build(paths.PREBUILT_DDS, toolchain=opts.toolchain, dds_flags=['--full'])
+    self_build(
+        paths.PREBUILT_DDS,
+        toolchain=opts.toolchain,
+        dds_flags=['--warnings', '--tests', '--apps'])
     print('Main build PASSED!')
 
-    self_build(paths.CUR_BUILT_DDS, toolchain=opts.toolchain, dds_flags=['--full'])
+    self_build(
+        paths.CUR_BUILT_DDS,
+        toolchain=opts.toolchain,
+        dds_flags=['--warnings', '--tests', '--apps'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([
