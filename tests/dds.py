@@ -124,7 +124,7 @@ class DDS:
     @property
     def default_builtin_toolchain(self) -> str:
         if os.name == 'posix':
-            return ':gcc-8'
+            return ':gcc-9'
         elif os.name == 'nt':
             return ':msvc'
         else:

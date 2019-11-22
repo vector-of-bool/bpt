@@ -27,7 +27,7 @@ jobs:
           sudo apt install -y python3-minimal g++-8 ccache
           python3 -m pip install pytest pytest-xdist
         displayName: Prepare System
-      - script: python3 -u tools/ci.py -B download --cxx g++-8 -T tools/gcc-8.dds
+      - script: python3 -u tools/ci.py -B download --cxx g++-8 -T tools/gcc-9.dds
         displayName: Full CI
       - publish: _build/dds
         artifact: DDS Executable - Linux
@@ -41,7 +41,7 @@ jobs:
       - script: |
           set -eu
           python3 -m pip install pytest pytest-xdist
-          python3 -u tools/ci.py -B download --cxx g++-8 -T tools/gcc-8.dds
+          python3 -u tools/ci.py -B download --cxx g++-8 -T tools/gcc-9.dds
         displayName: Build and Run Unit Tests
       - publish: _build/dds
         artifact: DDS Executable - macOS
