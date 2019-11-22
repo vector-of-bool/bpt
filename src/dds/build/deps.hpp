@@ -3,6 +3,7 @@
 #include <dds/util/fs.hpp>
 
 #include <string>
+#include <vector>
 #include <string_view>
 
 namespace dds {

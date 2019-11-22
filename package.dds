@@ -7,5 +7,6 @@ Depends: ms-wil 2019.11.10
 Depends: range-v3 0.9.1
 Depends: nlohmann-json 3.7.1
 Depends: neo-sqlite3 0.2.0
+Depends: semver 0.1.0
 
 Test-Driver: Catch-Main
