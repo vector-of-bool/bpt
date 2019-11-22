@@ -27,22 +27,13 @@ struct read_listing_item {
             return false;
         }
 
-        auto nested        = lm::nested_kvlist::parse(value);
-        auto name_ver_pair = split_shell_string(nested.primary);
-        if (name_ver_pair.size() != 2) {
-            throw std::runtime_error(
-                fmt::format("{}: Invalid Remote-Package identity: '{}'", context, nested.primary));
-        }
-        auto name    = name_ver_pair[0];
-        auto version = semver::version::parse(name_ver_pair[1]);
-        put_listing(context, name, version, nested.pairs);
+        auto nested = lm::nested_kvlist::parse(value);
+        auto pk_id  = package_id::parse(nested.primary);
+        put_listing(context, std::move(pk_id), nested.pairs);
         return true;
     }
 
-    void put_listing(std::string_view     context,
-                     std::string          name,
-                     semver::version      version,
-                     const lm::pair_list& pairs) {
+    void put_listing(std::string_view context, package_id pk_id, const lm::pair_list& pairs) {
         if (pairs.find("git")) {
             std::string              url;
             std::string              ref;
@@ -54,19 +45,15 @@ struct read_listing_item {
                      lm::read_check_eq("git", ""),
                      lm::read_opt("auto", auto_id, &lm::split_usage_string),
                      lm::reject_unknown());
-            auto did_insert = out.emplace(remote_listing{std::move(name),
-                                                         version,
+            auto did_insert = out.emplace(remote_listing{std::move(pk_id),
                                                          git_remote_listing{url, ref, auto_id}})
                                   .second;
             if (!did_insert) {
-                spdlog::warn("Duplicate remote package defintion for {} {}",
-                             name,
-                             version.to_string());
+                spdlog::warn("Duplicate remote package defintion for {}", pk_id.to_string());
             }
         } else {
-            throw std::runtime_error(fmt::format("Unable to determine remote type of package {} {}",
-                                                 name,
-                                                 version.to_string()));
+            throw std::runtime_error(
+                fmt::format("Unable to determine remote type of package {}", pk_id.to_string()));
         }
     }
 };
@@ -94,8 +81,8 @@ temporary_sdist do_pull_sdist(const remote_listing& listing, const git_remote_li
     if (git.auto_lib.has_value()) {
         spdlog::info("Generating library data automatically");
         auto pkg_strm = dds::open(tmpdir.path() / "package.dds", std::ios::binary | std::ios::out);
-        pkg_strm << "Name: " << listing.name << '\n'                    //
-                 << "Version: " << listing.version.to_string() << '\n'  //
+        pkg_strm << "Name: " << listing.pk_id.name << '\n'                    //
+                 << "Version: " << listing.pk_id.version.to_string() << '\n'  //
                  << "Namespace: " << git.auto_lib->namespace_;
         auto lib_strm = dds::open(tmpdir.path() / "library.dds", std::ios::binary | std::ios::out);
         lib_strm << "Name: " << git.auto_lib->name;
@@ -114,19 +101,12 @@ temporary_sdist do_pull_sdist(const remote_listing& listing, const git_remote_li
 
 temporary_sdist remote_listing::pull_sdist() const {
     auto tsd = visit([&](auto&& actual) { return do_pull_sdist(*this, actual); });
-    if (tsd.sdist.manifest.pk_id.name != name) {
-        throw std::runtime_error(
-            fmt::format("The name in the generated sdist ('{}') does not match the name listed in "
-                        "the remote listing file (expected '{}')",
-                        tsd.sdist.manifest.pk_id.name,
-                        name));
-    }
-    if (tsd.sdist.manifest.pk_id.version != version) {
-        throw std::runtime_error(
-            fmt::format("The version of the generated sdist is '{}', which does not match the "
-                        "expected version '{}'",
-                        tsd.sdist.manifest.pk_id.version.to_string(),
-                        version.to_string()));
+    if (!(tsd.sdist.manifest.pk_id == pk_id)) {
+        throw std::runtime_error(fmt::format(
+            "The package name@version in the generated sdist does not match the name listed in "
+            "the remote listing file (expected '{}', but got '{}')",
+            pk_id.to_string(),
+            tsd.sdist.manifest.pk_id.to_string()));
     }
     return tsd;
 }

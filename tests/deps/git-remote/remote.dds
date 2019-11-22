@@ -1,2 +1,2 @@
-Remote-Package: neo-buffer 0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=develop
-Remote-Package: range-v3 0.9.1; git url=https://github.com/ericniebler/range-v3.git ref=0.9.1 auto=Niebler/range-v3
+Remote-Package: neo-buffer@0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=develop
+Remote-Package: range-v3@0.9.1; git url=https://github.com/ericniebler/range-v3.git ref=0.9.1 auto=Niebler/range-v3

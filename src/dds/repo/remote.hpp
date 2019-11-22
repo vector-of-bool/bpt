@@ -29,8 +29,7 @@ struct git_remote_listing {
 };
 
 struct remote_listing {
-    std::string                      name;
-    semver::version                  version;
+    package_id                       pk_id;
     std::variant<git_remote_listing> remote;
 
     template <typename Func>
@@ -43,17 +42,18 @@ struct remote_listing {
 
 inline constexpr struct remote_listing_compare_t {
     using is_transparent = int;
-    auto tie(const remote_listing& rl) const { return std::tie(rl.name, rl.version); }
     bool operator()(const remote_listing& lhs, const remote_listing& rhs) const {
-        return tie(lhs) < tie(rhs);
+        return lhs.pk_id < rhs.pk_id;
     }
     template <typename Name, typename Version>
     bool operator()(const remote_listing& lhs, const std::tuple<Name, Version>& rhs) const {
-        return tie(lhs) < rhs;
+        auto&& [name, ver] = rhs;
+        return lhs.pk_id < package_id{name, ver};
     }
     template <typename Name, typename Version>
     bool operator()(const std::tuple<Name, Version>& lhs, const remote_listing& rhs) const {
-        return lhs < tie(rhs);
+        auto&& [name, ver] = lhs;
+        return package_id{name, ver} < rhs.pk_id;
     }
 } remote_listing_compare;
 
