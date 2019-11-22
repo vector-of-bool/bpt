@@ -1,9 +1,10 @@
 Compiler-ID: GNU
 C++-Version: C++17
-C-Compiler: gcc-8
-C++-Compiler: g++-8
+C-Compiler: gcc-9
+C++-Compiler: g++-9
 Flags: -D SPDLOG_COMPILED_LIB -fconcepts -Werror=return-type
-Optimize: True
-# Debug:  True
+# Optimize: True
+Debug:  True
 # Link-Flags: -fsanitize=address
+Link-Flags: -fuse-ld=lld
 Compiler-Launcher: ccache
