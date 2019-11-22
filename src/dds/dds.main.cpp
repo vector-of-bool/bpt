@@ -119,7 +119,7 @@ struct cli_repo {
         int run() {
             auto list_contents = [&](dds::repository repo) {
                 auto same_name
-                    = [](auto&& a, auto&& b) { return a.manifest.name == b.manifest.name; };
+                    = [](auto&& a, auto&& b) { return a.manifest.pk_id.name == b.manifest.pk_id.name; };
 
                 auto all         = repo.iter_sdists();
                 auto grp_by_name = all                             //
@@ -127,13 +127,13 @@ struct cli_repo {
                     | ranges::views::transform(ranges::to_vector)  //
                     | ranges::views::transform([](auto&& grp) {
                                        assert(grp.size() > 0);
-                                       return std::pair(grp[0].manifest.name, grp);
+                                       return std::pair(grp[0].manifest.pk_id.name, grp);
                                    });
 
                 for (const auto& [name, grp] : grp_by_name) {
                     spdlog::info("{}:", name);
                     for (const dds::sdist& sd : grp) {
-                        spdlog::info("  - {}", sd.manifest.version.to_string());
+                        spdlog::info("  - {}", sd.manifest.pk_id.version.to_string());
                     }
                 }
 

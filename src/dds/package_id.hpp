@@ -12,6 +12,9 @@ struct package_id {
     std::string     name;
     semver::version version;
 
+    package_id() = default;
+    package_id(std::string_view s, semver::version v);
+
     static package_id parse(std::string_view);
     std::string       to_string() const noexcept;
 

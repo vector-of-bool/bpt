@@ -69,7 +69,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
             "repository, we'll hard-exit immediately.");
         std::terminate();
     }
-    auto sd_dest = _root / fmt::format("{}_{}", sd.manifest.name, sd.manifest.version.to_string());
+    auto sd_dest = _root / sd.manifest.pk_id.to_string();
     if (fs::exists(sd_dest)) {
         auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
                                sd.path.string());
@@ -93,7 +93,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
         fs::remove_all(sd_dest);
     }
     fs::rename(tmp_copy, sd_dest);
-    spdlog::info("Source distribution '{}' successfully exported", sd.ident());
+    spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pk_id.to_string());
 }
 
 const sdist* repository::find(std::string_view name, semver::version ver) const noexcept {

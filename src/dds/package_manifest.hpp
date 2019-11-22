@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dds/deps.hpp>
+#include <dds/package_id.hpp>
 #include <dds/util/fs.hpp>
 #include <semver/version.hpp>
 
@@ -17,10 +18,9 @@ enum class test_lib {
 };
 
 struct package_manifest {
-    std::string             name;
+    package_id              pk_id;
     std::string             namespace_;
     std::optional<test_lib> test_driver;
-    semver::version         version;
     std::vector<dependency> dependencies;
     static package_manifest load_from_file(path_ref);
 };

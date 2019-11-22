@@ -18,14 +18,14 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     std::optional<std::string> opt_test_driver;
     lm::read(fmt::format("Reading package manifest '{}'", fpath.string()),
              kvs,
-             lm::read_required("Name", ret.name),
+             lm::read_required("Name", ret.pk_id.name),
              lm::read_opt("Namespace", ret.namespace_),
              lm::read_required("Version", version_str),
              lm::read_accumulate("Depends", depends_strs),
              lm::read_opt("Test-Driver", opt_test_driver),
              lm::reject_unknown());
 
-    if (ret.name.empty()) {
+    if (ret.pk_id.name.empty()) {
         throw std::runtime_error(
             fmt::format("'Name' field in [{}] may not be an empty string", fpath.string()));
     }
@@ -47,10 +47,10 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     }
 
     if (ret.namespace_.empty()) {
-        ret.namespace_ = ret.name;
+        ret.namespace_ = ret.pk_id.name;
     }
 
-    ret.version = semver::version::parse(version_str);
+    ret.pk_id.version = semver::version::parse(version_str);
 
     ret.dependencies = depends_strs                                   //
         | ranges::views::transform(dependency::parse_depends_string)  //

@@ -18,4 +18,13 @@ package_id package_id::parse(std::string_view s) {
     return {std::string(name), semver::version::parse(ver_str)};
 }
 
+package_id::package_id(std::string_view n, semver::version v)
+    : name(n)
+    , version(std::move(v)) {
+    if (name.find('@') != name.npos) {
+        throw std::runtime_error(
+            fmt::format("Invalid package name '{}' (The '@' character is not allowed)"));
+    }
+}
+
 std::string package_id::to_string() const noexcept { return name + "@" + version.to_string(); }

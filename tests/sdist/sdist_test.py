@@ -11,3 +11,6 @@ def test_create_sdist(dds: DDS):
     assert header_hpp.is_file()
     header_h = sd_dir / 'include/header.h'
     assert header_h.is_file()
+
+    dds.sdist_export()
+    assert (dds.repo_dir / 'foo@1.2.3').is_dir()

@@ -114,18 +114,18 @@ temporary_sdist do_pull_sdist(const remote_listing& listing, const git_remote_li
 
 temporary_sdist remote_listing::pull_sdist() const {
     auto tsd = visit([&](auto&& actual) { return do_pull_sdist(*this, actual); });
-    if (tsd.sdist.manifest.name != name) {
+    if (tsd.sdist.manifest.pk_id.name != name) {
         throw std::runtime_error(
             fmt::format("The name in the generated sdist ('{}') does not match the name listed in "
                         "the remote listing file (expected '{}')",
-                        tsd.sdist.manifest.name,
+                        tsd.sdist.manifest.pk_id.name,
                         name));
     }
-    if (tsd.sdist.manifest.version != version) {
+    if (tsd.sdist.manifest.pk_id.version != version) {
         throw std::runtime_error(
             fmt::format("The version of the generated sdist is '{}', which does not match the "
                         "expected version '{}'",
-                        tsd.sdist.manifest.version.to_string(),
+                        tsd.sdist.manifest.pk_id.version.to_string(),
                         version.to_string()));
     }
     return tsd;
