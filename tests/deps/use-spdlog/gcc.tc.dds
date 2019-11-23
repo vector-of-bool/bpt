@@ -1,4 +1,4 @@
 Compiler-ID: GNU
 C++-Version: C++17
-C++-Compiler: g++-8
+C++-Compiler: g++-9
 Flags: -D SPDLOG_COMPILED_LIB

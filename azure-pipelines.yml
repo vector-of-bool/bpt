@@ -36,7 +36,7 @@ jobs:
     pool:
       vmImage: macOS-10.14
     steps:
-      - script: brew install gcc@9 ccache
+      - script: brew install gcc@8 gcc@9 ccache
         displayName: Prepare System
       - script: |
           set -eu

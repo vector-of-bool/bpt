@@ -3,5 +3,6 @@ C++-Version: C++17
 C-Compiler: gcc-9
 C++-Compiler: g++-9
 Flags: -D SPDLOG_COMPILED_LIB -fconcepts -Werror=return-type
+Link-Flags: -static-libgcc -static-libstdc++
 Debug:  True
 Compiler-Launcher: ccache
