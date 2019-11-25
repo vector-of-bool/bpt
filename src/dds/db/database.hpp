@@ -20,7 +20,7 @@ struct command_info {
     std::string output;
 };
 
-struct seen_file_info {
+struct input_file_info {
     fs::path           path;
     fs::file_time_type last_mtime;
 };
@@ -33,6 +33,8 @@ class database {
     explicit database(neo::sqlite3::database db);
     database(const database&) = delete;
 
+    std::int64_t _record_file(path_ref p);
+
 public:
     static database open(const std::string& db_path);
     static database open(path_ref db_path) { return open(db_path.string()); }
@@ -43,13 +45,11 @@ public:
         return neo::sqlite3::transaction_guard(_db);
     }
 
-    std::optional<fs::file_time_type> last_mtime_of(path_ref file);
-    void                              store_mtime(path_ref file, fs::file_time_type time);
-    void                              record_dep(path_ref input, path_ref output);
-    void                              store_file_command(path_ref file, const command_info& cmd);
-    void                              forget_inputs_of(path_ref file);
+    void record_dep(path_ref input, path_ref output, fs::file_time_type input_mtime);
+    void store_file_command(path_ref file, const command_info& cmd);
+    void forget_inputs_of(path_ref file);
 
-    std::optional<std::vector<seen_file_info>> inputs_of(path_ref file);
+    std::optional<std::vector<input_file_info>> inputs_of(path_ref file);
     std::optional<command_info>                command_of(path_ref file);
 };
 

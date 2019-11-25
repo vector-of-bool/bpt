@@ -152,6 +152,7 @@ std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref e
     }
 
     // We must always generate deps info if it was possible:
+    assert(compiled_okay);
     assert(ret_deps_info.has_value() || env.toolchain.deps_mode() == deps_mode::none);
     return ret_deps_info;
 }
