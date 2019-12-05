@@ -1,5 +1,6 @@
 #include "./build.hpp"
 
+#include <dds/build/plan/compile_exec.hpp>
 #include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
 #include <dds/usage_reqs.hpp>
@@ -7,7 +8,6 @@
 #include <dds/util/time.hpp>
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
-#include <dds/build/plan/compile_exec.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -127,7 +127,7 @@ void prepare_catch2_driver(library_build_params& lib_params,
         fs::create_directories(catch_hpp.parent_path());
         auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
         hpp_strm.write(detail::catch2_embedded_single_header_str,
-                    std::strlen(detail::catch2_embedded_single_header_str));
+                       std::strlen(detail::catch2_embedded_single_header_str));
         hpp_strm.close();
     }
 
@@ -195,7 +195,7 @@ void dds::build(const build_params& params, const package_manifest& man) {
     }
 
     build_plan plan;
-    auto&      pkg = plan.add_package(package_plan(man.name, man.namespace_));
+    auto&      pkg = plan.add_package(package_plan(man.pk_id.name, man.namespace_));
 
     usage_requirement_map ureqs
         = load_usage_requirements(params.root, params.out_root, params.lm_index);

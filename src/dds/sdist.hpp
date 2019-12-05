@@ -24,24 +24,21 @@ struct sdist {
         , path(path_) {}
 
     static sdist from_directory(path_ref p);
-
-    std::string ident() const noexcept {
-        return manifest.name + "_" + manifest.version.to_string();
-    }
 };
 
 inline constexpr struct sdist_compare_t {
     bool operator()(const sdist& lhs, const sdist& rhs) const {
-        return std::tie(lhs.manifest.name, lhs.manifest.version)
-            < std::tie(rhs.manifest.name, rhs.manifest.version);
+        return lhs.manifest.pk_id < rhs.manifest.pk_id;
     }
     template <typename Name, typename Version>
     bool operator()(const sdist& lhs, const std::tuple<Name, Version>& rhs) const {
-        return std::tie(lhs.manifest.name, lhs.manifest.version) < rhs;
+        auto&& [name, ver] = rhs;
+        return lhs.manifest.pk_id < package_id{name, ver};
     }
     template <typename Name, typename Version>
     bool operator()(const std::tuple<Name, Version>& lhs, const sdist& rhs) const {
-        return lhs < std::tie(rhs.manifest.name, rhs.manifest.version);
+        auto&& [name, ver] = lhs;
+        return package_id{name, ver} < rhs.manifest.pk_id;
     }
     using is_transparent = int;
 } sdist_compare;

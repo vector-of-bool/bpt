@@ -63,8 +63,9 @@ void detail::do_find_deps(const repository& repo, const dependency& dep, std::ve
     auto insert_point = std::partition_point(sd.begin(), sd.end(), [&](const sdist& cand) {
         return cand.path < new_sd.path;
     });
-    if (insert_point != sd.end() && insert_point->manifest.name == new_sd.manifest.name) {
-        if (insert_point->manifest.version != new_sd.manifest.version) {
+    if (insert_point != sd.end()
+        && insert_point->manifest.pk_id.name == new_sd.manifest.pk_id.name) {
+        if (insert_point->manifest.pk_id.version != new_sd.manifest.pk_id.version) {
             assert(false && "Version conflict resolution not implemented yet");
             std::terminate();
         }
@@ -87,7 +88,7 @@ void resolve_ureqs_(shared_compile_file_rules& rules,
             throw std::runtime_error(
                 fmt::format("Unable to resolve dependency '{}' (required by '{}')",
                             dep.name,
-                            man.name));
+                            man.pk_id.to_string()));
         }
         resolve_ureqs_(rules, found->second.get().manifest, sd_idx);
         auto lib_src     = found->second.get().path / "src";
@@ -129,11 +130,11 @@ void add_sdist_to_dep_plan(build_plan&             plan,
                            const sdist_index_type& sd_idx,
                            usage_requirement_map&  ureqs,
                            sdist_names&            already_added) {
-    if (already_added.find(sd.manifest.name) != already_added.end()) {
+    if (already_added.find(sd.manifest.pk_id.name) != already_added.end()) {
         // We've already loaded this package into the plan.
         return;
     }
-    spdlog::debug("Add to plan: {}", sd.manifest.name);
+    spdlog::debug("Add to plan: {}", sd.manifest.pk_id.name);
     // First, load every dependency
     for (const auto& dep : sd.manifest.dependencies) {
         auto other = sd_idx.find(dep.name);
@@ -142,9 +143,9 @@ void add_sdist_to_dep_plan(build_plan&             plan,
         add_sdist_to_dep_plan(plan, other->second, env, sd_idx, ureqs, already_added);
     }
     // Record that we have been processed:
-    already_added.insert(sd.manifest.name);
+    already_added.insert(sd.manifest.pk_id.name);
     // Add the package:
-    auto& pkg  = plan.add_package(package_plan(sd.manifest.name, sd.manifest.namespace_));
+    auto& pkg  = plan.add_package(package_plan(sd.manifest.pk_id.name, sd.manifest.namespace_));
     auto  libs = collect_libraries(sd.path);
     for (const auto& lib : libs) {
         shared_compile_file_rules comp_rules = lib.base_compile_rules();
@@ -159,15 +160,16 @@ void add_sdist_to_dep_plan(build_plan&             plan,
 
 build_plan dds::create_deps_build_plan(const std::vector<sdist>& deps, build_env_ref env) {
     auto sd_idx = deps  //
-        | ranges::views::transform(
-                      [](const auto& sd) { return std::pair(sd.manifest.name, std::cref(sd)); })  //
+        | ranges::views::transform([](const auto& sd) {
+                      return std::pair(sd.manifest.pk_id.name, std::cref(sd));
+                  })  //
         | ranges::to<sdist_index_type>();
 
     build_plan            plan;
     usage_requirement_map ureqs;
     sdist_names           already_added;
     for (const sdist& sd : deps) {
-        spdlog::info("Recording dependency: {}", sd.manifest.name);
+        spdlog::info("Recording dependency: {}", sd.manifest.pk_id.name);
         add_sdist_to_dep_plan(plan, sd, env, sd_idx, ureqs, already_added);
     }
     return plan;
