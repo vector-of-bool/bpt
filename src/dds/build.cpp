@@ -133,6 +133,7 @@ void prepare_catch2_driver(library_build_params& lib_params,
 
     if (test_driver == test_lib::catch_) {
         // Don't generate a test library helper
+        return;
     }
 
     std::string fname;
@@ -141,9 +142,6 @@ void prepare_catch2_driver(library_build_params& lib_params,
     if (test_driver == test_lib::catch_main) {
         fname      = "catch-main.cpp";
         definition = "CATCH_CONFIG_MAIN";
-    } else if (test_driver == test_lib::catch_runner) {
-        fname      = "catch-runner.cpp";
-        definition = "CATCH_CONFIG_RUNNER";
     } else {
         assert(false && "Impossible: Invalid `test_driver` for catch library");
         std::terminate();
@@ -179,8 +177,7 @@ void prepare_test_driver(library_build_params&   lib_params,
                          const package_manifest& man,
                          build_env_ref           env) {
     auto& test_driver = *man.test_driver;
-    if (test_driver == test_lib::catch_ || test_driver == test_lib::catch_main
-        || test_driver == test_lib::catch_runner) {
+    if (test_driver == test_lib::catch_ || test_driver == test_lib::catch_main) {
         prepare_catch2_driver(lib_params, test_driver, params, env);
     } else {
         assert(false && "Unreachable");
