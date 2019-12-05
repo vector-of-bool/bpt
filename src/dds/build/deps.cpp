@@ -66,12 +66,11 @@ msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::str
 }
 
 void dds::update_deps_info(database& db, const deps_info& deps) {
-    db.store_mtime(deps.output, fs::last_write_time(deps.output));
     db.store_file_command(deps.output, {deps.command, deps.command_output});
     db.forget_inputs_of(deps.output);
     for (auto&& inp : deps.inputs) {
-        db.store_mtime(inp, fs::last_write_time(inp));
-        db.record_dep(inp, deps.output);
+        auto mtime = fs::last_write_time(inp);
+        db.record_dep(inp, deps.output, mtime);
     }
 }
 
@@ -89,7 +88,7 @@ deps_rebuild_info dds::get_rebuild_info(database& db, path_ref output_path) {
     auto& inputs        = *inputs_;
     auto  changed_files =  //
         inputs             //
-        | ranges::views::filter([](const seen_file_info& input) {
+        | ranges::views::filter([](const input_file_info& input) {
               return !fs::exists(input.path) || fs::last_write_time(input.path) != input.last_mtime;
           })
         | ranges::views::transform([](auto& info) { return info.path; })  //

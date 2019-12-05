@@ -22,19 +22,7 @@ void migrate_1(sqlite3::database& db) {
     db.exec(R"(
         CREATE TABLE dds_files (
             file_id INTEGER PRIMARY KEY,
-            path TEXT NOT NULL UNIQUE,
-            mtime INTEGER NOT NULL
-        );
-        CREATE TABLE dds_deps (
-            input_file_id
-                INTEGER
-                NOT NULL
-                REFERENCES dds_files(file_id),
-            output_file_id
-                INTEGER
-                NOT NULL
-                REFERENCES dds_files(file_id),
-            UNIQUE(input_file_id, output_file_id)
+            path TEXT NOT NULL UNIQUE
         );
         CREATE TABLE dds_file_commands (
             command_id INTEGER PRIMARY KEY,
@@ -45,6 +33,18 @@ void migrate_1(sqlite3::database& db) {
                 REFERENCES dds_files(file_id),
             command TEXT NOT NULL,
             output TEXT NOT NULL
+        );
+        CREATE TABLE dds_deps (
+            input_file_id
+                INTEGER
+                NOT NULL
+                REFERENCES dds_files(file_id),
+            output_file_id
+                INTEGER
+                NOT NULL
+                REFERENCES dds_files(file_id),
+            input_mtime INTEGER NOT NULL,
+            UNIQUE(input_file_id, output_file_id)
         );
     )");
 }
@@ -106,72 +106,45 @@ database database::open(const std::string& db_path) {
 database::database(sqlite3::database db)
     : _db(std::move(db)) {}
 
-std::optional<fs::file_time_type> database::last_mtime_of(path_ref file_) {
+std::int64_t database::_record_file(path_ref path_) {
+    auto path = fs::weakly_canonical(path_);
+    sqlite3::exec(_stmt_cache(R"(
+                    INSERT OR IGNORE INTO dds_files (path)
+                    VALUES (?)
+                  )"_sql),
+                  std::forward_as_tuple(path.generic_string()));
     auto& st = _stmt_cache(R"(
-        SELECT mtime FROM dds_files WHERE path = ?
+        SELECT file_id
+          FROM dds_files
+         WHERE path = ?1
     )"_sql);
     st.reset();
-    auto path      = fs::weakly_canonical(file_);
-    st.bindings[1] = path.string();
-    auto maybe_res = sqlite3::unpack_single_opt<std::int64_t>(st);
-    if (!maybe_res) {
-        return std::nullopt;
-    }
-    auto [timestamp] = *maybe_res;
-    return fs::file_time_type(fs::file_time_type::duration(timestamp));
+    auto str       = path.generic_string();
+    st.bindings[1] = str;
+    auto [rowid]   = sqlite3::unpack_single<std::int64_t>(st);
+    return rowid;
 }
 
-void database::store_mtime(path_ref file, fs::file_time_type time) {
-    auto& st = _stmt_cache(R"(
-        INSERT INTO dds_files (path, mtime)
-        VALUES (?1, ?2)
-        ON CONFLICT(path) DO UPDATE SET mtime = ?2
+void database::record_dep(path_ref input, path_ref output, fs::file_time_type input_mtime) {
+    auto  in_id  = _record_file(input);
+    auto  out_id = _record_file(output);
+    auto& st     = _stmt_cache(R"(
+        INSERT OR IGNORE INTO dds_deps (input_file_id, output_file_id, input_mtime)
+        VALUES (?, ?, ?)
     )"_sql);
-    sqlite3::exec(st,
-                  std::forward_as_tuple(fs::weakly_canonical(file).string(),
-                                        time.time_since_epoch().count()));
-}
-
-void database::record_dep(path_ref input, path_ref output) {
-    auto& st = _stmt_cache(R"(
-        WITH input AS (
-            SELECT file_id
-              FROM dds_files
-             WHERE path = ?1
-        ),
-        output AS (
-            SELECT file_id
-              FROM dds_files
-             WHERE path = ?2
-        )
-        INSERT OR IGNORE INTO dds_deps (input_file_id, output_file_id)
-        VALUES (
-            (SELECT * FROM input),
-            (SELECT * FROM output)
-        )
-    )"_sql);
-    sqlite3::exec(st,
-                  std::forward_as_tuple(fs::weakly_canonical(input).string(),
-                                        fs::weakly_canonical(output).string()));
+    sqlite3::exec(st, std::forward_as_tuple(in_id, out_id, input_mtime.time_since_epoch().count()));
 }
 
 void database::store_file_command(path_ref file, const command_info& cmd) {
+    auto file_id = _record_file(file);
+
     auto& st = _stmt_cache(R"(
-        WITH file AS (
-            SELECT file_id
-            FROM dds_files
-            WHERE path = ?1
-        )
         INSERT OR REPLACE
           INTO dds_file_commands(file_id, command, output)
-        VALUES (
-            (SELECT * FROM file),
-            ?2,
-            ?3
-        )
+        VALUES (?1, ?2, ?3)
     )"_sql);
     sqlite3::exec(st,
-                  std::forward_as_tuple(fs::weakly_canonical(file).string(),
+                  std::forward_as_tuple(file_id,
                                         std::string_view(cmd.command),
                                         std::string_view(cmd.output)));
 }
@@ -189,31 +162,27 @@ void database::forget_inputs_of(path_ref file) {
     sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).string()));
 }
 
-std::optional<std::vector<seen_file_info>> database::inputs_of(path_ref file_) {
+std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) {
     auto  file = fs::weakly_canonical(file_);
     auto& st   = _stmt_cache(R"(
         WITH file AS (
             SELECT file_id
               FROM dds_files
              WHERE path = ?
-        ),
-        input_ids AS (
-            SELECT input_file_id
-              FROM dds_deps
-             WHERE output_file_id IN file
         )
-        SELECT path, mtime
-          FROM dds_files
-         WHERE file_id IN input_ids
+        SELECT path, input_mtime
+          FROM dds_deps
+          JOIN dds_files ON input_file_id = file_id
+         WHERE output_file_id IN file
     )"_sql);
     st.reset();
     st.bindings[1] = file.string();
     auto tup_iter  = sqlite3::iter_tuples<std::string, std::int64_t>(st);
 
-    std::vector<seen_file_info> ret;
+    std::vector<input_file_info> ret;
     for (auto& [path, mtime] : tup_iter) {
         ret.emplace_back(
-            seen_file_info{path, fs::file_time_type(fs::file_time_type::duration(mtime))});
+            input_file_info{path, fs::file_time_type(fs::file_time_type::duration(mtime))});
     }
 
     if (ret.empty()) {
