@@ -14,7 +14,6 @@ namespace dds {
 enum class test_lib {
     catch_,
     catch_main,
-    catch_runner,
 };
 
 struct package_manifest {

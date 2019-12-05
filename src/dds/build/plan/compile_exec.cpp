@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <thread>
 
@@ -77,16 +78,30 @@ struct compile_file_full {
     compile_command_info     cmd_info;
 };
 
-std::optional<deps_info> do_compile(const compile_file_full& cf, build_env_ref env) {
+struct compile_counter {
+    std::atomic_size_t n;
+    const std::size_t  max;
+    const std::size_t  max_digits;
+};
+
+std::optional<deps_info>
+do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& counter) {
     fs::create_directories(cf.object_file_path.parent_path());
     auto source_path = cf.plan.source_path();
-    auto msg         = fmt::format("[{}] Compile: {:40}",
+    auto msg         = fmt::format("[{}] Compile: {}",
                            cf.plan.qualifier(),
                            fs::relative(source_path, cf.plan.source().basis_path).string());
     spdlog::info(msg);
     auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(cf.cmd_info.command); });
-    spdlog::info("{} - {:>7n}ms", msg, dur_ms.count());
+
+    auto nth = counter.n.fetch_add(1);
+    spdlog::info("{:60} - {:>7n}ms [{:{}}/{}]",
+                 msg,
+                 dur_ms.count(),
+                 nth,
+                 counter.max_digits,
+                 counter.max);
 
     const bool  compiled_okay   = proc_res.okay();
     const auto  compile_retc    = proc_res.retc;
@@ -192,10 +207,14 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
         | views::transform([&](auto&& plan) { return realize_plan(plan, env); })  //
         | views::filter([&](auto&& real) { return should_compile(real, env); });
 
+    const auto      total      = compiles.size();
+    const auto      max_digits = fmt::format("{}", total).size();
+    compile_counter counter{{0}, total, max_digits};
+
     std::vector<deps_info> all_new_deps;
     std::mutex             mut;
     auto okay = parallel_run(each_realized, njobs, [&](const compile_file_full& full) {
-        auto new_dep = do_compile(full, env);
+        auto new_dep = do_compile(full, env, counter);
         if (new_dep) {
             std::unique_lock lk{mut};
             all_new_deps.push_back(std::move(*new_dep));

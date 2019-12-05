@@ -37,8 +37,6 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
         auto& test_driver_str = *opt_test_driver;
         if (test_driver_str == "Catch-Main") {
             ret.test_driver = test_lib::catch_main;
-        } else if (test_driver_str == "Catch-Runner") {
-            ret.test_driver = test_lib::catch_runner;
         } else if (test_driver_str == "Catch") {
             ret.test_driver = test_lib::catch_;
         } else {
