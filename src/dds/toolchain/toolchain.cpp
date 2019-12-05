@@ -139,6 +139,11 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
 
     std::string tc_content;
 
+    if (starts_with(tc_id, "debug:")) {
+        tc_id = tc_id.substr("debug:"sv.length());
+        tc_content += "Debug: True\n";
+    }
+
     if (starts_with(tc_id, "ccache:")) {
         tc_id = tc_id.substr("ccache:"sv.length());
         tc_content += "Compiler-Launcher: ccache\n";
