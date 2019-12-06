@@ -6,8 +6,7 @@ from tests.fileutil import ensure_dir
 
 def test_get(dds: DDS):
     dds.scope.enter_context(ensure_dir(dds.build_dir))
-    cat_path = dds.build_dir / 'catalog.db'
-    dds.catalog_create(cat_path)
+    dds.catalog_create()
 
     json_path = dds.build_dir / 'catalog.json'
     import_data = {
@@ -28,8 +27,8 @@ def test_get(dds: DDS):
         dds.set_contents(json_path,
                          json.dumps(import_data).encode()))
 
-    dds.catalog_import(cat_path, json_path)
+    dds.catalog_import(json_path)
 
-    dds.catalog_get(cat_path, 'neo-sqlite3@0.2.2')
+    dds.catalog_get('neo-sqlite3@0.2.2')
     assert (dds.source_root / 'neo-sqlite3@0.2.2').is_dir()
     assert (dds.source_root / 'neo-sqlite3@0.2.2/package.dds').is_file()

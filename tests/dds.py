@@ -28,6 +28,10 @@ class DDS:
         return self.scratch_dir / 'repo'
 
     @property
+    def catalog_path(self) -> Path:
+        return self.scratch_dir / 'catalog.db'
+
+    @property
     def deps_build_dir(self) -> Path:
         return self.scratch_dir / 'deps-build'
 
@@ -72,6 +76,7 @@ class DDS:
         return self.run([
             'deps',
             'get',
+            f'--catalog={self.catalog_path}',
             self.repo_dir_arg,
         ])
 
@@ -143,24 +148,26 @@ class DDS:
                 f'We don\'t know the executable suffix for the platform "{os.name}"'
             )
 
-    def catalog_create(self, path: Path) -> subprocess.CompletedProcess:
-        return self.run(['catalog', 'create', f'--catalog={path}'],
-                        cwd=self.test_dir)
+    def catalog_create(self) -> subprocess.CompletedProcess:
+        self.scratch_dir.mkdir(parents=True, exist_ok=True)
+        return self.run(
+            ['catalog', 'create', f'--catalog={self.catalog_path}'],
+            cwd=self.test_dir)
 
-    def catalog_import(self, path: Path,
-                       json_path: Path) -> subprocess.CompletedProcess:
+    def catalog_import(self, json_path: Path) -> subprocess.CompletedProcess:
+        self.scratch_dir.mkdir(parents=True, exist_ok=True)
         return self.run([
             'catalog',
             'import',
-            f'--catalog={path}',
-            json_path,
+            f'--catalog={self.catalog_path}',
+            f'--json={json_path}',
         ])
 
-    def catalog_get(self, path: Path, req: str) -> subprocess.CompletedProcess:
+    def catalog_get(self, req: str) -> subprocess.CompletedProcess:
         return self.run([
             'catalog',
             'get',
-            f'--catalog={path}',
+            f'--catalog={self.catalog_path}',
             req,
         ])
 
