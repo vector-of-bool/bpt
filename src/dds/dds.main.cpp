@@ -115,9 +115,9 @@ struct cli_catalog {
         catalog_path_flag(args::Group& cmd)
             : path_flag(cmd,
                         "catalog-path",
-                        "Path to the catalog database",
+                        "Override the path to the catalog database",
                         {"catalog", 'c'},
-                        args::Options::Required) {}
+                        dds::dds_data_dir() / "catalog.db") {}
     };
 
     struct {
@@ -163,7 +163,7 @@ struct cli_catalog {
         int run() {
             auto cat = dds::catalog::open(path.Get());
             for (const auto& req : requirements.Get()) {
-                auto id = dds::package_id::parse(req);
+                auto id   = dds::package_id::parse(req);
                 auto info = cat.get(id);
                 if (!info) {
                     throw std::runtime_error(
