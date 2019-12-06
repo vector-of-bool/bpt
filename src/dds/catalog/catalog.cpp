@@ -165,6 +165,62 @@ void catalog::store(const package_info& pkg) {
     }
 }
 
+std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept {
+    auto& st = _stmt_cache(R"(
+        SELECT
+            pkg_id,
+            name,
+            version,
+            git_url,
+            git_ref,
+            lm_name,
+            lm_namespace
+        FROM dds_cat_pkgs
+        WHERE name = ? AND version = ?
+    )"_sql);
+    st.reset();
+    st.bindings  = std::forward_as_tuple(pk_id.name, pk_id.version.to_string());
+    auto opt_tup = sqlite3::unpack_single_opt<std::int64_t,
+                                              std::string,
+                                              std::string,
+                                              std::optional<std::string>,
+                                              std::optional<std::string>,
+                                              std::optional<std::string>,
+                                              std::optional<std::string>>(st);
+    if (!opt_tup) {
+        return std::nullopt;
+    }
+    const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace] = *opt_tup;
+    assert(pk_id.name == name);
+    assert(pk_id.version == semver::version::parse(version));
+    assert(git_url);
+    assert(git_ref);
+
+    auto deps = sqlite3::exec_iter<std::string, std::string>(  //
+                    _stmt_cache,
+                    R"(
+                        SELECT dep_name, low
+                          FROM dds_cat_pkg_deps
+                         WHERE pkg_id = ?
+                    )"_sql,
+                    std::tie(pkg_id))
+        | ranges::views::transform([](auto&& pair) {
+                    const auto& [name, ver] = pair;
+                    return dependency{name, semver::version::parse(ver)};
+                })  //
+        | ranges::to_vector;
+
+    return package_info{
+        pk_id,
+        deps,
+        git_remote_listing{
+            *git_url,
+            *git_ref,
+            lm_name ? std::make_optional(lm::usage{*lm_name, *lm_namespace}) : std::nullopt,
+        },
+    };
+}
+
 std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
     return sqlite3::exec_iter<std::string, std::string>(  //
                _stmt_cache,

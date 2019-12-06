@@ -1,5 +1,6 @@
 #include <dds/build.hpp>
 #include <dds/catalog/catalog.hpp>
+#include <dds/catalog/get.hpp>
 #include <dds/repo/remote.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
@@ -159,7 +160,19 @@ struct cli_catalog {
                                                        "requirement",
                                                        "The package IDs to obtain"};
 
-        int run() { return 23; }
+        int run() {
+            auto cat = dds::catalog::open(path.Get());
+            for (const auto& req : requirements.Get()) {
+                auto id = dds::package_id::parse(req);
+                auto info = cat.get(id);
+                if (!info) {
+                    throw std::runtime_error(
+                        fmt::format("No package in the catalog matched the given ID"));
+                }
+                dds::get_package_sdist(*info);
+            }
+            return 0;
+        }
     } get{*this};
 
     int run() {

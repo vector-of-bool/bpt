@@ -4,6 +4,7 @@
 #include <dds/package_id.hpp>
 #include <dds/repo/remote.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/catalog/git.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
@@ -38,6 +39,7 @@ public:
     static catalog open(path_ref db_path) { return open(db_path.string()); }
 
     void store(const package_info& info);
+    std::optional<package_info> get(const package_id& id) const noexcept;
 
     std::vector<package_id> by_name(std::string_view sv) const noexcept;
     std::vector<dependency> dependencies_of(const package_id& pkg) const noexcept;
