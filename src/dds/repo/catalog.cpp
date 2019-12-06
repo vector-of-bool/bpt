@@ -1,4 +1,4 @@
-#include "./repodb.hpp"
+#include "./catalog.hpp"
 
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
@@ -88,7 +88,7 @@ void ensure_migrated(sqlite3::database& db) {
 
 }  // namespace
 
-repo_database repo_database::open(const std::string& db_path) {
+catalog catalog::open(const std::string& db_path) {
     auto db = sqlite3::database::open(db_path);
     try {
         ensure_migrated(db);
@@ -99,13 +99,13 @@ repo_database repo_database::open(const std::string& db_path) {
             e.what());
         throw;
     }
-    return repo_database(std::move(db));
+    return catalog(std::move(db));
 }
 
-repo_database::repo_database(sqlite3::database db)
+catalog::catalog(sqlite3::database db)
     : _db(std::move(db)) {}
 
-void repo_database::_store_pkg(const package_info& pkg, const git_remote_listing& git) {
+void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git) {
     auto lm_usage = git.auto_lib.value_or(lm::usage{});
     sqlite3::exec(  //
         _stmt_cache,
@@ -135,7 +135,7 @@ void repo_database::_store_pkg(const package_info& pkg, const git_remote_listing
             lm_usage.namespace_));
 }
 
-void repo_database::store(const package_info& pkg) {
+void catalog::store(const package_info& pkg) {
     sqlite3::transaction_guard tr{_db};
 
     std::visit([&](auto&& remote) { _store_pkg(pkg, remote); }, pkg.remote);
@@ -164,7 +164,7 @@ void repo_database::store(const package_info& pkg) {
     }
 }
 
-std::vector<package_id> repo_database::by_name(std::string_view sv) const noexcept {
+std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
     return sqlite3::exec_iter<std::string, std::string>(  //
                _stmt_cache,
                R"(
@@ -180,7 +180,7 @@ std::vector<package_id> repo_database::by_name(std::string_view sv) const noexce
         | ranges::to_vector;
 }
 
-std::vector<dependency> repo_database::dependencies_of(const package_id& pkg) const noexcept {
+std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const noexcept {
     return sqlite3::exec_iter<std::string,
                               std::string>(  //
                _stmt_cache,
@@ -213,7 +213,7 @@ void check_json(bool b, std::string_view what) {
 
 }  // namespace
 
-void repo_database::import_json_str(std::string_view content) {
+void catalog::import_json_str(std::string_view content) {
     using nlohmann::json;
 
     auto root = json::parse(content);

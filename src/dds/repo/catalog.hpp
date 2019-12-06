@@ -21,21 +21,21 @@ struct package_info {
     std::variant<git_remote_listing> remote;
 };
 
-class repo_database {
+class catalog {
     neo::sqlite3::database                _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
 
-    explicit repo_database(neo::sqlite3::database db);
-    repo_database(const repo_database&) = delete;
+    explicit catalog(neo::sqlite3::database db);
+    catalog(const catalog&) = delete;
 
     void _store_pkg(const package_info&, const git_remote_listing&);
 
 public:
-    repo_database(repo_database&&) = default;
-    repo_database& operator=(repo_database&&) = default;
+    catalog(catalog&&) = default;
+    catalog& operator=(catalog&&) = default;
 
-    static repo_database open(const std::string& db_path);
-    static repo_database open(path_ref db_path) { return open(db_path.string()); }
+    static catalog open(const std::string& db_path);
+    static catalog open(path_ref db_path) { return open(db_path.string()); }
 
     void store(const package_info& info);
 

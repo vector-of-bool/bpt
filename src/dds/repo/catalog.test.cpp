@@ -1,4 +1,4 @@
-#include <dds/repo/repodb.hpp>
+#include <dds/repo/catalog.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -6,15 +6,15 @@ using namespace std::literals;
 
 TEST_CASE("Create a simple database") {
     // Just create and run migrations on an in-memory database
-    auto repo = dds::repo_database::open(":memory:"s);
+    auto repo = dds::catalog::open(":memory:"s);
 }
 
-class repo_test_case {
+class catalog_test_case {
 public:
-    dds::repo_database db = dds::repo_database::open(":memory:"s);
+    dds::catalog db = dds::catalog::open(":memory:"s);
 };
 
-TEST_CASE_METHOD(repo_test_case, "Store a simple package") {
+TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
     db.store(dds::package_info{
         dds::package_id("foo", semver::version::parse("1.2.3")),
         {},
@@ -30,7 +30,7 @@ TEST_CASE_METHOD(repo_test_case, "Store a simple package") {
     REQUIRE(pkgs.size() == 1);
 }
 
-TEST_CASE_METHOD(repo_test_case, "Package requirements") {
+TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
     db.store(dds::package_info{
         dds::package_id{"foo", semver::version::parse("1.2.3")},
         {
@@ -48,7 +48,7 @@ TEST_CASE_METHOD(repo_test_case, "Package requirements") {
     CHECK(deps[1].name == "baz");
 }
 
-TEST_CASE_METHOD(repo_test_case, "Parse JSON repo") {
+TEST_CASE_METHOD(catalog_test_case, "Parse JSON repo") {
     db.import_json_str(R"({
         "version": 1,
         "packages": {
