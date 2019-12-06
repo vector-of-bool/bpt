@@ -56,6 +56,17 @@ struct repo_path_flag : path_flag {
                     dds::repository::default_local_path()} {}
 };
 
+struct catalog_path_flag : path_flag {
+    catalog_path_flag(args::Group& cmd)
+        : path_flag(cmd,
+                    "catalog-path",
+                    "Override the path to the catalog database",
+                    {"catalog", 'c'},
+                    dds::dds_data_dir() / "catalog.db") {}
+
+    dds::catalog open() { return dds::catalog::open(Get()); }
+};
+
 /**
  * Base class holds the actual argument parser
  */
@@ -111,39 +122,34 @@ struct cli_catalog {
 
     args::Group cat_group{cmd, "Catalog subcommands"};
 
-    struct catalog_path_flag : path_flag {
-        catalog_path_flag(args::Group& cmd)
-            : path_flag(cmd,
-                        "catalog-path",
-                        "Override the path to the catalog database",
-                        {"catalog", 'c'},
-                        dds::dds_data_dir() / "catalog.db") {}
-    };
-
     struct {
         cli_catalog&  parent;
         args::Command cmd{parent.cat_group, "create", "Create a catalog database"};
+        common_flags  _common{cmd};
 
-        catalog_path_flag path{cmd};
+        catalog_path_flag cat_path{cmd};
 
         int run() {
             // Simply opening the DB will initialize the catalog
-            dds::catalog::open(path.Get());
+            cat_path.open();
             return 0;
         }
     } create{*this};
 
     struct {
         cli_catalog&  parent;
-        args::Command cmd{parent.cat_group, "import", "Import json data into a catalog"};
+        args::Command cmd{parent.cat_group, "import", "Import entries into a catalog"};
+        common_flags  _common{cmd};
 
-        catalog_path_flag                 path{cmd};
-        args::PositionalList<std::string> json_paths{cmd,
-                                                     "json",
-                                                     "Path to the JSON files to import"};
+        catalog_path_flag cat_path{cmd};
+        args::ValueFlagList<std::string>
+            json_paths{cmd,
+                       "json",
+                       "Import catalog entries from the given JSON files",
+                       {"json", 'j'}};
 
         int run() {
-            auto cat = dds::catalog::open(path.Get());
+            auto cat = cat_path.open();
             for (const auto& json_fpath : json_paths.Get()) {
                 cat.import_json_file(json_fpath);
             }
@@ -154,8 +160,9 @@ struct cli_catalog {
     struct {
         cli_catalog&  parent;
         args::Command cmd{parent.cat_group, "get", "Obtain an sdist from a catalog listing"};
+        common_flags  _common{cmd};
 
-        catalog_path_flag path{cmd};
+        catalog_path_flag cat_path{cmd};
 
         path_flag out{cmd,
                       "out",
@@ -168,7 +175,7 @@ struct cli_catalog {
                                                        "The package IDs to obtain"};
 
         int run() {
-            auto cat = dds::catalog::open(path.Get());
+            auto cat = cat_path.open();
             for (const auto& req : requirements.Get()) {
                 auto id   = dds::package_id::parse(req);
                 auto info = cat.get(id);
@@ -176,7 +183,7 @@ struct cli_catalog {
                     throw std::runtime_error(
                         fmt::format("No package in the catalog matched the ID '{}'", req));
                 }
-                auto tsd = dds::get_package_sdist(*info);
+                auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();
                 auto dest     = out_path / id.to_string();
                 spdlog::info("Create sdist at {}", dest.string());
@@ -187,6 +194,62 @@ struct cli_catalog {
         }
     } get{*this};
 
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group, "add", "Manually add an entry to the catalog database"};
+        common_flags  _common{cmd};
+
+        catalog_path_flag cat_path{cmd};
+
+        args::Positional<std::string> pkg_id{cmd,
+                                             "id",
+                                             "The name@version ID of the package to add",
+                                             args::Options::Required};
+
+        string_flag auto_lib{cmd,
+                             "auto-lib",
+                             "Set the auto-library information for this package",
+                             {"auto-lib"}};
+
+        args::ValueFlagList<std::string> deps{cmd,
+                                              "depends",
+                                              "The dependencies of this package",
+                                              {"depends", 'd'}};
+
+        string_flag git_url{cmd, "git-url", "The Git url for the package", {"git-url"}};
+        string_flag git_ref{cmd,
+                            "git-ref",
+                            "The Git ref to from which the source distribution should be created",
+                            {"git-ref"}};
+
+        int run() {
+            auto ident = dds::package_id::parse(pkg_id.Get());
+
+            std::vector<dds::dependency> deps;
+            for (const auto& dep : this->deps.Get()) {
+                auto dep_id = dds::package_id::parse(dep);
+                deps.push_back({dep_id.name, dep_id.version});
+            }
+
+            dds::package_info info{ident, std::move(deps), {}};
+
+            if (git_url) {
+                if (!git_ref) {
+                    throw std::runtime_error(
+                        "`--git-ref` must be specified when using `--git-url`");
+                }
+                auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt};
+                if (auto_lib) {
+                    git.auto_lib = lm::split_usage_string(auto_lib.Get());
+                }
+                info.remote = std::move(git);
+            }
+
+            cat_path.open().store(info);
+            return 0;
+        }
+    } add{*this};
+
     int run() {
         if (create.cmd) {
             return create.run();
@@ -194,6 +257,8 @@ struct cli_catalog {
             return import.run();
         } else if (get.cmd) {
             return get.run();
+        } else if (add.cmd) {
+            return add.run();
         } else {
             assert(false);
             std::terminate();
@@ -489,18 +554,14 @@ struct cli_deps {
                           "Ensure we have local copies of the project dependencies"};
         common_flags  _common{cmd};
 
-        repo_path_flag repo_where{cmd};
-        path_flag      remote_listing_file{
-            cmd,
-            "remote-listing",
-            "Path to a file containing listing of remote sdists and how to obtain them",
-            {'R', "remote-list"},
-            "remote.dds"};
+        repo_path_flag    repo_where{cmd};
+        catalog_path_flag catalog_path{cmd};
+
 
         int run() {
-            auto man    = parent.load_package_manifest();
-            auto rd     = dds::remote_directory::load_from_file(remote_listing_file.Get());
-            bool failed = false;
+            auto man     = parent.load_package_manifest();
+            auto catalog = catalog_path.open();
+            bool failed  = false;
             dds::repository::with_repository(  //
                 repo_where.Get(),
                 dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
@@ -508,13 +569,13 @@ struct cli_deps {
                     for (auto& dep : man.dependencies) {
                         auto exists = !!repo.find(dep.name, dep.version);
                         if (!exists) {
-                            spdlog::info("Pull remote: {} {}", dep.name, dep.version.to_string());
-                            auto opt_remote = rd.find(dep.name, dep.version);
-                            if (opt_remote) {
-                                auto tsd = opt_remote->pull_sdist();
+                            spdlog::info("Pull remote: {}@{}", dep.name, dep.version.to_string());
+                            auto opt_pkg = catalog.get(dds::package_id{dep.name, dep.version});
+                            if (opt_pkg) {
+                                auto tsd = dds::get_package_sdist(*opt_pkg);
                                 repo.add_sdist(tsd.sdist, dds::if_exists::ignore);
                             } else {
-                                spdlog::error("No remote listing for {} {}",
+                                spdlog::error("No remote listing for {}@{}",
                                               dep.name,
                                               dep.version.to_string());
                                 failed = true;
