@@ -31,3 +31,5 @@ def test_get(dds: DDS):
     dds.catalog_import(cat_path, json_path)
 
     dds.catalog_get(cat_path, 'neo-sqlite3@0.2.2')
+    assert (dds.source_root / 'neo-sqlite3@0.2.2').is_dir()
+    assert (dds.source_root / 'neo-sqlite3@0.2.2/package.dds').is_file()

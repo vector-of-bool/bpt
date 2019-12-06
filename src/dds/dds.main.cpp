@@ -47,8 +47,8 @@ struct toolchain_flag : string_flag {
     }
 };
 
-struct repo_where_flag : path_flag {
-    repo_where_flag(args::Group& grp)
+struct repo_path_flag : path_flag {
+    repo_path_flag(args::Group& grp)
         : path_flag{grp,
                     "dir",
                     "Path to the DDS repository directory",
@@ -155,7 +155,14 @@ struct cli_catalog {
         cli_catalog&  parent;
         args::Command cmd{parent.cat_group, "get", "Obtain an sdist from a catalog listing"};
 
-        catalog_path_flag                 path{cmd};
+        catalog_path_flag path{cmd};
+
+        path_flag out{cmd,
+                      "out",
+                      "The directory where the source distributions will be placed",
+                      {"out-dir", 'o'},
+                      dds::fs::current_path()};
+
         args::PositionalList<std::string> requirements{cmd,
                                                        "requirement",
                                                        "The package IDs to obtain"};
@@ -167,9 +174,14 @@ struct cli_catalog {
                 auto info = cat.get(id);
                 if (!info) {
                     throw std::runtime_error(
-                        fmt::format("No package in the catalog matched the given ID"));
+                        fmt::format("No package in the catalog matched the ID '{}'", req));
                 }
-                dds::get_package_sdist(*info);
+                auto tsd = dds::get_package_sdist(*info);
+                auto out_path = out.Get();
+                auto dest     = out_path / id.to_string();
+                spdlog::info("Create sdist at {}", dest.string());
+                dds::fs::remove_all(dest);
+                dds::safe_rename(tsd.sdist.path, dest);
             }
             return 0;
         }
@@ -204,7 +216,7 @@ struct cli_repo {
     args::Command cmd{base.cmd_group, "repo", "Manage the package repository"};
     common_flags  _common{cmd};
 
-    repo_where_flag where{cmd};
+    repo_path_flag where{cmd};
 
     args::Group repo_group{cmd, "Repo subcommands"};
 
@@ -324,8 +336,8 @@ struct cli_sdist {
 
         common_project_flags project{cmd};
 
-        repo_where_flag repo_where{cmd};
-        args::Flag      force{cmd,
+        repo_path_flag repo_where{cmd};
+        args::Flag     force{cmd,
                          "replace-if-exists",
                          "Replace an existing export in the repository",
                          {"replace"}};
@@ -477,8 +489,8 @@ struct cli_deps {
                           "Ensure we have local copies of the project dependencies"};
         common_flags  _common{cmd};
 
-        repo_where_flag repo_where{cmd};
-        path_flag       remote_listing_file{
+        repo_path_flag repo_where{cmd};
+        path_flag      remote_listing_file{
             cmd,
             "remote-listing",
             "Path to a file containing listing of remote sdists and how to obtain them",
@@ -539,7 +551,7 @@ struct cli_deps {
                           "If specified, will not generate an INDEX.lmi",
                           {"skip-lmi"}};
 
-        repo_where_flag repo_where{cmd};
+        repo_path_flag repo_where{cmd};
 
         toolchain_flag tc_filepath{cmd};
 
