@@ -51,7 +51,7 @@ class DDS:
     def run(self, cmd: proc.CommandLine, *,
             cwd: Path = None) -> subprocess.CompletedProcess:
         cmdline = list(proc.flatten_cmd(cmd))
-        res = self.run_unchecked(cmd)
+        res = self.run_unchecked(cmd, cwd=cwd)
         if res.returncode != 0:
             raise subprocess.CalledProcessError(
                 res.returncode, [self.dds_exe] + cmdline, res.stdout)
@@ -142,6 +142,27 @@ class DDS:
             raise RuntimeError(
                 f'We don\'t know the executable suffix for the platform "{os.name}"'
             )
+
+    def catalog_create(self, path: Path) -> subprocess.CompletedProcess:
+        return self.run(['catalog', 'create', f'--catalog={path}'],
+                        cwd=self.test_dir)
+
+    def catalog_import(self, path: Path,
+                       json_path: Path) -> subprocess.CompletedProcess:
+        return self.run([
+            'catalog',
+            'import',
+            f'--catalog={path}',
+            json_path,
+        ])
+
+    def catalog_get(self, path: Path, req: str) -> subprocess.CompletedProcess:
+        return self.run([
+            'catalog',
+            'get',
+            f'--catalog={path}',
+            req,
+        ])
 
     def set_contents(self, path: Union[str, Path],
                      content: bytes) -> ContextManager[Path]:
