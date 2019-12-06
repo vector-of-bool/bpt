@@ -2,7 +2,6 @@
 
 #include <dds/deps.hpp>
 #include <dds/package_id.hpp>
-#include <dds/repo/remote.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/catalog/git.hpp>
 
@@ -11,6 +10,7 @@
 #include <neo/sqlite3/statement_cache.hpp>
 #include <neo/sqlite3/transaction.hpp>
 
+#include <variant>
 #include <vector>
 
 namespace dds {

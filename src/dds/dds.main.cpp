@@ -1,7 +1,6 @@
 #include <dds/build.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
-#include <dds/repo/remote.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
 #include <dds/toolchain/from_dds.hpp>
