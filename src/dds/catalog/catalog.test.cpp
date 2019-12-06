@@ -1,4 +1,4 @@
-#include <dds/repo/catalog.hpp>
+#include <dds/catalog/catalog.hpp>
 
 #include <catch2/catch.hpp>
 

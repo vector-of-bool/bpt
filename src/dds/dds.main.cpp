@@ -1,4 +1,5 @@
 #include <dds/build.hpp>
+#include <dds/catalog/catalog.hpp>
 #include <dds/repo/remote.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/sdist.hpp>
@@ -93,6 +94,89 @@ struct common_project_flags {
 };
 
 /*
+ ######     ###    ########    ###    ##        #######   ######
+##    ##   ## ##      ##      ## ##   ##       ##     ## ##    ##
+##        ##   ##     ##     ##   ##  ##       ##     ## ##
+##       ##     ##    ##    ##     ## ##       ##     ## ##   ####
+##       #########    ##    ######### ##       ##     ## ##    ##
+##    ## ##     ##    ##    ##     ## ##       ##     ## ##    ##
+ ######  ##     ##    ##    ##     ## ########  #######   ######
+*/
+
+struct cli_catalog {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "catalog", "Manage the package catalog"};
+    common_flags  _common{cmd};
+
+    args::Group cat_group{cmd, "Catalog subcommands"};
+
+    struct catalog_path_flag : path_flag {
+        catalog_path_flag(args::Group& cmd)
+            : path_flag(cmd,
+                        "catalog-path",
+                        "Path to the catalog database",
+                        {"catalog", 'c'},
+                        args::Options::Required) {}
+    };
+
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group, "create", "Create a catalog database"};
+
+        catalog_path_flag path{cmd};
+
+        int run() {
+            // Simply opening the DB will initialize the catalog
+            dds::catalog::open(path.Get());
+            return 0;
+        }
+    } create{*this};
+
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group, "import", "Import json data into a catalog"};
+
+        catalog_path_flag                 path{cmd};
+        args::PositionalList<std::string> json_paths{cmd,
+                                                     "json",
+                                                     "Path to the JSON files to import"};
+
+        int run() {
+            auto cat = dds::catalog::open(path.Get());
+            for (const auto& json_fpath : json_paths.Get()) {
+                cat.import_json_file(json_fpath);
+            }
+            return 0;
+        }
+    } import{*this};
+
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group, "get", "Obtain an sdist from a catalog listing"};
+
+        catalog_path_flag                 path{cmd};
+        args::PositionalList<std::string> requirements{cmd,
+                                                       "requirement",
+                                                       "The package IDs to obtain"};
+
+        int run() { return 23; }
+    } get{*this};
+
+    int run() {
+        if (create.cmd) {
+            return create.run();
+        } else if (import.cmd) {
+            return import.run();
+        } else if (get.cmd) {
+            return get.run();
+        } else {
+            assert(false);
+            std::terminate();
+        }
+    }
+};
+
+/*
 ########  ######## ########   #######
 ##     ## ##       ##     ## ##     ##
 ##     ## ##       ##     ## ##     ##
@@ -118,8 +202,9 @@ struct cli_repo {
 
         int run() {
             auto list_contents = [&](dds::repository repo) {
-                auto same_name
-                    = [](auto&& a, auto&& b) { return a.manifest.pk_id.name == b.manifest.pk_id.name; };
+                auto same_name = [](auto&& a, auto&& b) {
+                    return a.manifest.pk_id.name == b.manifest.pk_id.name;
+                };
 
                 auto all         = repo.iter_sdists();
                 auto grp_by_name = all                             //
@@ -290,6 +375,7 @@ struct cli_build {
     args::Flag     build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
     args::Flag     export_{cmd, "export", "Generate a library export", {"export", 'E'}};
     toolchain_flag tc_filepath{cmd};
+
     args::Flag enable_warnings{cmd,
                                "enable_warnings",
                                "Enable compiler warnings",
@@ -502,11 +588,12 @@ int main(int argc, char** argv) {
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
-    cli_base  cli{parser};
-    cli_build build{cli};
-    cli_sdist sdist{cli};
-    cli_repo  repo{cli};
-    cli_deps  deps{cli};
+    cli_base    cli{parser};
+    cli_build   build{cli};
+    cli_sdist   sdist{cli};
+    cli_repo    repo{cli};
+    cli_deps    deps{cli};
+    cli_catalog catalog{cli};
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -532,6 +619,8 @@ int main(int argc, char** argv) {
             return repo.run();
         } else if (deps.cmd) {
             return deps.run();
+        } else if (catalog.cmd) {
+            return catalog.run();
         } else {
             assert(false);
             std::terminate();

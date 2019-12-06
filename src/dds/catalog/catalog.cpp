@@ -19,7 +19,7 @@ namespace {
 
 void migrate_repodb_1(sqlite3::database& db) {
     db.exec(R"(
-        CREATE TABLE dds_repo_pkgs (
+        CREATE TABLE dds_cat_pkgs (
             pkg_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             version TEXT NOT NULL,
@@ -39,17 +39,18 @@ void migrate_repodb_1(sqlite3::database& db) {
                     lm_name NOT NULL
                     AND lm_namespace NOT NULL
                 )
-                !=
+                +
                 (
                     lm_name ISNULL
                     AND lm_namespace ISNULL
                 )
+                = 1
             )
         );
 
-        CREATE TABLE dds_repo_pkg_deps (
+        CREATE TABLE dds_cat_pkg_deps (
             dep_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pkg_id INTEGER NOT NULL REFERENCES dds_repo_pkgs(pkg_id),
+            pkg_id INTEGER NOT NULL REFERENCES dds_cat_pkgs(pkg_id),
             dep_name TEXT NOT NULL,
             low TEXT NOT NULL,
             high TEXT NOT NULL,
@@ -62,11 +63,11 @@ void ensure_migrated(sqlite3::database& db) {
     sqlite3::transaction_guard tr{db};
     db.exec(R"(
         PRAGMA foreign_keys = 1;
-        CREATE TABLE IF NOT EXISTS dds_repo_meta AS
+        CREATE TABLE IF NOT EXISTS dds_cat_meta AS
             WITH init(meta) AS (VALUES ('{"version": 0}'))
             SELECT * FROM init;
     )");
-    auto meta_st     = db.prepare("SELECT meta FROM dds_repo_meta");
+    auto meta_st     = db.prepare("SELECT meta FROM dds_cat_meta");
     auto [meta_json] = sqlite3::unpack_single<std::string>(meta_st);
 
     auto meta = nlohmann::json::parse(meta_json);
@@ -83,7 +84,7 @@ void ensure_migrated(sqlite3::database& db) {
         migrate_repodb_1(db);
     }
     meta["version"] = 1;
-    exec(db, "UPDATE dds_repo_meta SET meta=?", std::forward_as_tuple(meta.dump()));
+    exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
 }
 
 }  // namespace
@@ -110,7 +111,7 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
     sqlite3::exec(  //
         _stmt_cache,
         R"(
-            INSERT INTO dds_repo_pkgs (
+            INSERT INTO dds_cat_pkgs (
                 name,
                 version,
                 git_url,
@@ -142,7 +143,7 @@ void catalog::store(const package_info& pkg) {
 
     auto  db_pkg_id  = _db.last_insert_rowid();
     auto& new_dep_st = _stmt_cache(R"(
-        INSERT INTO dds_repo_pkg_deps (
+        INSERT INTO dds_cat_pkg_deps (
             pkg_id,
             dep_name,
             low,
@@ -169,7 +170,7 @@ std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
                _stmt_cache,
                R"(
                 SELECT name, version
-                  FROM dds_repo_pkgs
+                  FROM dds_cat_pkgs
                  WHERE name = ?
                 )"_sql,
                std::tie(sv))  //
@@ -187,11 +188,11 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                R"(
                 WITH this_pkg_id AS (
                     SELECT pkg_id
-                      FROM dds_repo_pkgs
+                      FROM dds_cat_pkgs
                      WHERE name = ? AND version = ?
                 )
                 SELECT dep_name, low
-                  FROM dds_repo_pkg_deps
+                  FROM dds_cat_pkg_deps
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
                 )"_sql,
