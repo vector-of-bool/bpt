@@ -160,8 +160,8 @@ void catalog::store(const package_info& pkg) {
         sqlite3::exec(new_dep_st,
                       std::forward_as_tuple(db_pkg_id,
                                             dep.name,
-                                            dep.version.to_string(),
-                                            "[placeholder]"));
+                                            dep.version_range.low().to_string(),
+                                            dep.version_range.high().to_string()));
     }
 }
 
@@ -196,23 +196,11 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
     assert(git_url);
     assert(git_ref);
 
-    auto deps = sqlite3::exec_iter<std::string, std::string>(  //
-                    _stmt_cache,
-                    R"(
-                        SELECT dep_name, low
-                          FROM dds_cat_pkg_deps
-                         WHERE pkg_id = ?
-                    )"_sql,
-                    std::tie(pkg_id))
-        | ranges::views::transform([](auto&& pair) {
-                    const auto& [name, ver] = pair;
-                    return dependency{name, semver::version::parse(ver)};
-                })  //
-        | ranges::to_vector;
+    auto deps = dependencies_of(pk_id);
 
     return package_info{
         pk_id,
-        deps,
+        std::move(deps),
         git_remote_listing{
             *git_url,
             *git_ref,
@@ -239,6 +227,7 @@ std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
 
 std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const noexcept {
     return sqlite3::exec_iter<std::string,
+                              std::string,
                               std::string>(  //
                _stmt_cache,
                R"(
@@ -247,15 +236,17 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                       FROM dds_cat_pkgs
                      WHERE name = ? AND version = ?
                 )
-                SELECT dep_name, low
+                SELECT dep_name, low, high
                   FROM dds_cat_pkg_deps
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
                 )"_sql,
                std::forward_as_tuple(pkg.name, pkg.version.to_string()))  //
         | ranges::views::transform([](auto&& pair) {
-               auto& [name, ver] = pair;
-               return dependency{name, semver::version::parse(ver)};
+               auto& [name, low, high] = pair;
+               return dependency{name,
+                                 semver::range(semver::version::parse(low),
+                                               semver::version::parse(high))};
            })  //
         | ranges::to_vector;
 }
@@ -310,7 +301,7 @@ void catalog::import_json_str(std::string_view content) {
                                        dep_name));
                 info.deps.push_back({
                     std::string(dep_name),
-                    semver::version::parse(std::string(dep_version)),
+                    semver::range::parse(std::string(dep_version)),
                 });
             }
 

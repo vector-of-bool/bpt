@@ -29,17 +29,16 @@ dependency dependency::parse_depends_string(std::string_view str) {
     auto name        = trim_view(std::string_view(str_begin, str_iter - str_begin));
     auto version_str = trim_view(std::string_view(str_iter, str_end - str_iter));
 
-    semver::version version;
     try {
-        version = semver::version::parse(version_str);
-    } catch (const semver::invalid_version&) {
-        throw std::runtime_error(
-            fmt::format("Invalid version string '{}' in dependency declaration '{}' (Should be a "
-                        "semver string. See https://semver.org/ for info)",
-                        version_str,
-                        str));
+        auto rng = semver::range::parse_restricted(version_str);
+        return dependency{std::string(name), rng};
+    } catch (const semver::invalid_range&) {
+        throw std::runtime_error(fmt::format(
+            "Invalid version range string '{}' in dependency declaration '{}' (Should be a "
+            "semver range string. See https://semver.org/ for info)",
+            version_str,
+            str));
     }
-    return dependency{std::string(name), version};
 }
 
 std::vector<sdist> dds::find_dependencies(const repository& repo, const dependency& dep) {
@@ -49,12 +48,12 @@ std::vector<sdist> dds::find_dependencies(const repository& repo, const dependen
 }
 
 void detail::do_find_deps(const repository& repo, const dependency& dep, std::vector<sdist>& sd) {
-    auto sdist_opt = repo.find(dep.name, dep.version);
+    auto sdist_opt = repo.find(dep.name, dep.version_range.low());
     if (!sdist_opt) {
         throw std::runtime_error(
             fmt::format("Unable to find dependency to satisfy requirement: {} {}",
                         dep.name,
-                        dep.version.to_string()));
+                        dep.version_range.to_string()));
     }
     const sdist& new_sd = *sdist_opt;
     for (const auto& inner_dep : new_sd.manifest.dependencies) {

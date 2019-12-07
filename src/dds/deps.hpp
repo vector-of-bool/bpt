@@ -2,6 +2,7 @@
 
 #include <dds/build/plan/full.hpp>
 
+#include <semver/range.hpp>
 #include <semver/version.hpp>
 
 #include <string_view>
@@ -19,8 +20,8 @@ enum class version_strength {
 };
 
 struct dependency {
-    std::string     name;
-    semver::version version;
+    std::string   name;
+    semver::range version_range;
 
     static dependency parse_depends_string(std::string_view str);
 };

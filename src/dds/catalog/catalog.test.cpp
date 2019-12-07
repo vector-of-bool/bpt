@@ -34,8 +34,8 @@ TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
     db.store(dds::package_info{
         dds::package_id{"foo", semver::version::parse("1.2.3")},
         {
-            {"bar", semver::version::parse("1.2.5")},
-            {"baz", semver::version::parse("5.3.2")},
+            {"bar", semver::range::parse("=1.2.5")},
+            {"baz", semver::range::parse("^5.3.2")},
         },
         dds::git_remote_listing{"http://example.com", "master", std::nullopt},
     });
@@ -55,7 +55,7 @@ TEST_CASE_METHOD(catalog_test_case, "Parse JSON repo") {
             "foo": {
                 "1.2.3": {
                     "depends": {
-                        "bar": "4.2.1"
+                        "bar": "~4.2.1"
                     },
                     "git": {
                         "url": "http://example.com",
@@ -72,5 +72,5 @@ TEST_CASE_METHOD(catalog_test_case, "Parse JSON repo") {
     auto deps = db.dependencies_of(pkgs[0]);
     REQUIRE(deps.size() == 1);
     CHECK(deps[0].name == "bar");
-    CHECK(deps[0].version == semver::version::parse("4.2.1"));
+    CHECK(deps[0].version_range == semver::range::parse("~4.2.1"));
 }
