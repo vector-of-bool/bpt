@@ -28,6 +28,10 @@ class DDS:
         return self.scratch_dir / 'repo'
 
     @property
+    def catalog_path(self) -> Path:
+        return self.scratch_dir / 'catalog.db'
+
+    @property
     def deps_build_dir(self) -> Path:
         return self.scratch_dir / 'deps-build'
 
@@ -51,7 +55,7 @@ class DDS:
     def run(self, cmd: proc.CommandLine, *,
             cwd: Path = None) -> subprocess.CompletedProcess:
         cmdline = list(proc.flatten_cmd(cmd))
-        res = self.run_unchecked(cmd)
+        res = self.run_unchecked(cmd, cwd=cwd)
         if res.returncode != 0:
             raise subprocess.CalledProcessError(
                 res.returncode, [self.dds_exe] + cmdline, res.stdout)
@@ -72,6 +76,7 @@ class DDS:
         return self.run([
             'deps',
             'get',
+            f'--catalog={self.catalog_path}',
             self.repo_dir_arg,
         ])
 
@@ -142,6 +147,29 @@ class DDS:
             raise RuntimeError(
                 f'We don\'t know the executable suffix for the platform "{os.name}"'
             )
+
+    def catalog_create(self) -> subprocess.CompletedProcess:
+        self.scratch_dir.mkdir(parents=True, exist_ok=True)
+        return self.run(
+            ['catalog', 'create', f'--catalog={self.catalog_path}'],
+            cwd=self.test_dir)
+
+    def catalog_import(self, json_path: Path) -> subprocess.CompletedProcess:
+        self.scratch_dir.mkdir(parents=True, exist_ok=True)
+        return self.run([
+            'catalog',
+            'import',
+            f'--catalog={self.catalog_path}',
+            f'--json={json_path}',
+        ])
+
+    def catalog_get(self, req: str) -> subprocess.CompletedProcess:
+        return self.run([
+            'catalog',
+            'get',
+            f'--catalog={self.catalog_path}',
+            req,
+        ])
 
     def set_contents(self, path: Union[str, Path],
                      content: bytes) -> ContextManager[Path]:
