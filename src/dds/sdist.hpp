@@ -30,15 +30,11 @@ inline constexpr struct sdist_compare_t {
     bool operator()(const sdist& lhs, const sdist& rhs) const {
         return lhs.manifest.pk_id < rhs.manifest.pk_id;
     }
-    template <typename Name, typename Version>
-    bool operator()(const sdist& lhs, const std::tuple<Name, Version>& rhs) const {
-        auto&& [name, ver] = rhs;
-        return lhs.manifest.pk_id < package_id{name, ver};
+    bool operator()(const sdist& lhs, const package_id& rhs) const {
+        return lhs.manifest.pk_id < rhs;
     }
-    template <typename Name, typename Version>
-    bool operator()(const std::tuple<Name, Version>& lhs, const sdist& rhs) const {
-        auto&& [name, ver] = lhs;
-        return package_id{name, ver} < rhs.manifest.pk_id;
+    bool operator()(const package_id& lhs, const sdist& rhs) const {
+        return lhs < rhs.manifest.pk_id;
     }
     using is_transparent = int;
 } sdist_compare;

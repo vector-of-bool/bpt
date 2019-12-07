@@ -541,7 +541,7 @@ struct cli_deps {
         int run() {
             const auto man = parent.load_package_manifest();
             for (const auto& dep : man.dependencies) {
-                std::cout << dep.name << " " << dep.version_range.to_string() << '\n';
+                std::cout << dep.name << " " << dep.versions << '\n';
             }
             return 0;
         }
@@ -557,34 +557,30 @@ struct cli_deps {
         repo_path_flag    repo_where{cmd};
         catalog_path_flag catalog_path{cmd};
 
-
         int run() {
-            auto man     = parent.load_package_manifest();
-            auto catalog = catalog_path.open();
-            bool failed  = false;
+            auto man         = parent.load_package_manifest();
+            auto catalog     = catalog_path.open();
+            bool failed      = false;
+            auto solved_deps = catalog.solve_requirements(man.dependencies);
             dds::repository::with_repository(  //
                 repo_where.Get(),
                 dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
                 [&](dds::repository repo) {
-                    for (auto& dep : man.dependencies) {
-                        assert(false && "Not ready yet");
-                        // auto exists = !!repo.find(dep.name, dep.version_range);
-                        // if (!exists) {
-                        //     spdlog::info("Pull remote: {}@{}", dep.name,
-                        //     dep.version_range.to_string()); auto opt_pkg =
-                        //     catalog.get(dds::package_id{dep.name, dep.version_range}); if
-                        //     (opt_pkg) {
-                        //         auto tsd = dds::get_package_sdist(*opt_pkg);
-                        //         repo.add_sdist(tsd.sdist, dds::if_exists::ignore);
-                        //     } else {
-                        //         spdlog::error("No remote listing for {}@{}",
-                        //                       dep.name,
-                        //                       dep.version_range.to_string());
-                        //         failed = true;
-                        //     }
-                        // } else {
-                        //     spdlog::info("Okay: {} {}", dep.name, dep.version_range.to_string());
-                        // }
+                    for (const dds::package_id& pk : solved_deps) {
+                        auto exists = !!repo.find(pk);
+                        if (!exists) {
+                            spdlog::info("Pull remote: {}", pk.to_string());
+                            auto opt_pkg = catalog.get(pk);
+                            if (opt_pkg) {
+                                auto tsd = dds::get_package_sdist(*opt_pkg);
+                                repo.add_sdist(tsd.sdist, dds::if_exists::ignore);
+                            } else {
+                                spdlog::error("No remote listing for {}", pk.to_string());
+                                failed = true;
+                            }
+                        } else {
+                            spdlog::info("Okay: {}", pk.to_string());
+                        }
                     }
                 });
             if (failed) {
@@ -624,9 +620,7 @@ struct cli_deps {
                 repo_where.Get(),
                 dds::repo_flags::read,
                 [&](dds::repository repo) {
-                    return find_dependencies(repo,
-                                             man.dependencies.begin(),
-                                             man.dependencies.end());
+                    return repo.solve(man.dependencies);
                 });
 
             auto tc   = tc_filepath.get_toolchain();

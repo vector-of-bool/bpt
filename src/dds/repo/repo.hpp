@@ -80,7 +80,7 @@ public:
 
     void add_sdist(const sdist&, if_exists = if_exists::throw_exc);
 
-    const sdist* find(std::string_view name, semver::version ver) const noexcept;
+    const sdist* find(const package_id& pk) const noexcept;
 
     auto iter_sdists() const noexcept {
         class ret {
@@ -95,6 +95,8 @@ public:
         } r{_sdists};
         return r;
     }
+
+    std::vector<sdist> solve(const std::vector<dependency>& deps) const;
 };
 
 }  // namespace dds

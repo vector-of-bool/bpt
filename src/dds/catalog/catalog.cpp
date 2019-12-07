@@ -1,5 +1,7 @@
 #include "./catalog.hpp"
 
+#include <dds/solve/solve.hpp>
+
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
@@ -157,11 +159,16 @@ void catalog::store(const package_info& pkg) {
     )"_sql);
     for (const auto& dep : pkg.deps) {
         new_dep_st.reset();
+        if (dep.versions.num_intervals() != 1) {
+            throw std::runtime_error(
+                "Package dependency may only contain a single version interval");
+        }
+        auto iv_1 = *dep.versions.iter_intervals().begin();
         sqlite3::exec(new_dep_st,
                       std::forward_as_tuple(db_pkg_id,
                                             dep.name,
-                                            dep.version_range.low().to_string(),
-                                            dep.version_range.high().to_string()));
+                                            iv_1.low.to_string(),
+                                            iv_1.high.to_string()));
     }
 }
 
@@ -244,9 +251,7 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                std::forward_as_tuple(pkg.name, pkg.version.to_string()))  //
         | ranges::views::transform([](auto&& pair) {
                auto& [name, low, high] = pair;
-               return dependency{name,
-                                 semver::range(semver::version::parse(low),
-                                               semver::version::parse(high))};
+               return dependency{name, {semver::version::parse(low), semver::version::parse(high)}};
            })  //
         | ranges::to_vector;
 }
@@ -299,9 +304,10 @@ void catalog::import_json_str(std::string_view content) {
                                        pkg_name,
                                        version_,
                                        dep_name));
+                auto range = semver::range::parse(std::string(dep_version));
                 info.deps.push_back({
                     std::string(dep_name),
-                    semver::range::parse(std::string(dep_version)),
+                    {range.low(), range.high()},
                 });
             }
 
@@ -324,4 +330,10 @@ void catalog::import_json_str(std::string_view content) {
             store(info);
         }
     }
+}
+
+std::vector<package_id> catalog::solve_requirements(const std::vector<dependency>& deps) const {
+    return dds::solve(deps,
+                      [&](std::string_view pkg_name) { return this->by_name(pkg_name); },
+                      [&](const package_id& pkg) { return this->dependencies_of(pkg); });
 }
