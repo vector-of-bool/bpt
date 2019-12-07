@@ -1,4 +1,5 @@
 Remote-Package: range-v3 0.9.1; git url=https://github.com/ericniebler/range-v3.git ref=0.9.1 auto=Niebler/range-v3
+Remote-Package: range-v3 0.10.0; git url=https://github.com/ericniebler/range-v3.git ref=0.10.0 auto=Niebler/range-v3
 Remote-Package: spdlog 1.4.2; git url=https://github.com/gabime/spdlog.git ref=v1.4.2 auto=spdlog/spdlog
 
 # Even a shallow clone of nlohmann-json is HUGE. This fork has only the minimal
@@ -11,4 +12,5 @@ Remote-Package: ms-wil 2019.11.10; git url=https://github.com/vector-of-bool/wil
 Remote-Package: neo-buffer 0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=develop
 
 Remote-Package: neo-sqlite3 0.2.2; git url=https://github.com/vector-of-bool/neo-sqlite3.git ref=0.2.2
-Remote-Package: semver 0.2.0; git url=https://github.com/vector-of-bool/semver.git ref=0.2.0
+Remote-Package: semver 0.2.1; git url=https://github.com/vector-of-bool/semver.git ref=0.2.1
+Remote-Package: pubgrub 0.1.0; git url=https://github.com/vector-of-bool/pubgrub.git ref=0.1.0
