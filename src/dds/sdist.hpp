@@ -2,7 +2,7 @@
 
 #include <tuple>
 
-#include <dds/package_manifest.hpp>
+#include <dds/package/manifest.hpp>
 #include <dds/util/fs.hpp>
 
 namespace dds {

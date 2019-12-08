@@ -1,4 +1,4 @@
-#include <dds/package_id.hpp>
+#include <dds/package/id.hpp>
 
 #include <catch2/catch.hpp>
 

@@ -1,4 +1,4 @@
-#include "./package_manifest.hpp"
+#include "./manifest.hpp"
 
 #include <dds/util/string.hpp>
 #include <libman/parse.hpp>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/deps.hpp>
-#include <dds/package_id.hpp>
+#include <dds/package/id.hpp>
 #include <dds/util/fs.hpp>
 #include <semver/version.hpp>
 
