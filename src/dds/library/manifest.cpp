@@ -1,4 +1,4 @@
-#include "./library_manifest.hpp"
+#include "./manifest.hpp"
 
 #include <dds/util/algo.hpp>
 #include <range/v3/view/transform.hpp>
