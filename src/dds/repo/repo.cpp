@@ -1,11 +1,13 @@
 #include "./repo.hpp"
 
 #include <dds/sdist.hpp>
+#include <dds/solve/solve.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
 #include <spdlog/spdlog.h>
 
+#include <range/v3/action/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
@@ -96,10 +98,37 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pk_id.to_string());
 }
 
-const sdist* repository::find(std::string_view name, semver::version ver) const noexcept {
-    auto found = _sdists.find(std::tie(name, ver));
+const sdist* repository::find(const package_id& pkg) const noexcept {
+    auto found = _sdists.find(pkg);
     if (found == _sdists.end()) {
         return nullptr;
     }
     return &*found;
+}
+
+std::vector<sdist> repository::solve(const std::vector<dependency>& deps) const {
+    auto ids = dds::solve(deps,
+                          [&](std::string_view name) -> std::vector<package_id> {
+                              auto items = ranges::views::all(_sdists)  //
+                                  | ranges::views::filter([&](const sdist& sd) {
+                                               return sd.manifest.pk_id.name == name;
+                                           })
+                                  | ranges::views::transform(
+                                               [](const sdist& sd) { return sd.manifest.pk_id; })
+                                  | ranges::to_vector;
+                              ranges::sort(items, std::less<>{});
+                              return items;
+                          },
+                          [&](const package_id& pkg_id) {
+                              auto found = find(pkg_id);
+                              assert(found);
+                              return found->manifest.dependencies;
+                          });
+    return ids  //
+        | ranges::views::transform([&](const package_id& pk_id) {
+               auto found = find(pk_id);
+               assert(found);
+               return *found;
+           })  //
+        | ranges::to_vector;
 }

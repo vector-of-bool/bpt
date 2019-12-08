@@ -58,6 +58,7 @@ public:
     }
 
     inline bool operator!=(const pair_iterator& o) const noexcept { return _iter != o._iter; }
+    inline bool operator==(const pair_iterator& o) const noexcept { return _iter == o._iter; }
 
     auto begin() const noexcept { return *this; }
     auto end() const noexcept { return pair_iterator(_end, _end, _key); }

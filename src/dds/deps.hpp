@@ -2,6 +2,8 @@
 
 #include <dds/build/plan/full.hpp>
 
+#include <pubgrub/interval.hpp>
+#include <semver/range.hpp>
 #include <semver/version.hpp>
 
 #include <string_view>
@@ -18,29 +20,14 @@ enum class version_strength {
     major,
 };
 
+using version_range_set = pubgrub::interval_set<semver::version>;
+
 struct dependency {
-    std::string     name;
-    semver::version version;
+    std::string       name;
+    version_range_set versions;
 
     static dependency parse_depends_string(std::string_view str);
 };
-
-namespace detail {
-
-void do_find_deps(const repository&, const dependency& dep, std::vector<sdist>& acc);
-
-}  // namespace detail
-
-std::vector<sdist> find_dependencies(const repository& repo, const dependency& dep);
-
-template <typename Iter, typename Snt>
-inline std::vector<sdist> find_dependencies(const repository& repo, Iter it, Snt stop) {
-    std::vector<sdist> acc;
-    while (it != stop) {
-        detail::do_find_deps(repo, *it++, acc);
-    }
-    return acc;
-}
 
 build_plan create_deps_build_plan(const std::vector<sdist>& deps, build_env_ref env);
 
