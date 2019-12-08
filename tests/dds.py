@@ -69,17 +69,6 @@ class DDS:
     def project_dir_arg(self) -> str:
         return f'--project-dir={self.source_root}'
 
-    def deps_ls(self) -> subprocess.CompletedProcess:
-        return self.run(['deps', 'ls'])
-
-    def deps_get(self) -> subprocess.CompletedProcess:
-        return self.run([
-            'deps',
-            'get',
-            f'--catalog={self.catalog_path}',
-            self.repo_dir_arg,
-        ])
-
     def deps_build(self, *,
                    toolchain: str = None) -> subprocess.CompletedProcess:
         return self.run([
@@ -101,12 +90,13 @@ class DDS:
         return self.run([
             'build',
             f'--out={self.build_dir}',
+            f'--toolchain={toolchain or self.default_builtin_toolchain}',
+            f'--catalog={self.catalog_path}',
+            f'--repo-dir={self.repo_dir}',
             ['--no-tests'] if not tests else [],
             ['--no-apps'] if not apps else [],
             ['--no-warnings'] if not warnings else [],
             ['--export'] if export else [],
-            f'--toolchain={toolchain or self.default_builtin_toolchain}',
-            f'--repo-dir={self.repo_dir}',
             self.project_dir_arg,
         ])
 

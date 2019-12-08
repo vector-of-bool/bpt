@@ -483,11 +483,6 @@ struct cli_build {
     catalog_path_flag cat_path{cmd};
     repo_path_flag    repo_path{cmd};
 
-    args::Flag do_download_deps{cmd,
-                                "download-deps",
-                                "Download any missing dependencies from the catalog",
-                                {"download-deps"}};
-
     args::Flag     no_tests{cmd, "no-tests", "Do not build and run tests", {"no-tests"}};
     args::Flag     no_apps{cmd, "no-apps", "Do not compile and link applications", {"no-apps"}};
     args::Flag     no_warnings{cmd, "no-warings", "Disable build warnings", {"no-warnings"}};
@@ -531,104 +526,30 @@ struct cli_build {
         if (lm_index) {
             params.existing_lm_index = lm_index.Get();
         } else {
+            // Download and build dependencies
             // Build the dependencies
+            auto cat          = cat_path.open();
+            auto solved_deps  = cat.solve_requirements(man.dependencies);
             params.dep_sdists = dds::repository::with_repository(  //
                 this->repo_path.Get(),
-                dds::repo_flags::read | dds::repo_flags::create_if_absent,
-                [&](dds::repository repo) { return repo.solve(man.dependencies); });
-        }
-        dds::build(params, man);
-        return 0;
-    }
-};
-
-/*
-########  ######## ########   ######
-##     ## ##       ##     ## ##    ##
-##     ## ##       ##     ## ##
-##     ## ######   ########   ######
-##     ## ##       ##              ##
-##     ## ##       ##        ##    ##
-########  ######## ##         ######
-*/
-
-struct cli_deps {
-    cli_base&     base;
-    args::Command cmd{base.cmd_group, "deps", "Obtain/inspect/build deps for the project"};
-
-    common_flags         _flags{cmd};
-    common_project_flags project{cmd};
-
-    args::Group deps_group{cmd, "Subcommands"};
-
-    dds::package_manifest load_package_manifest() {
-        return dds::package_manifest::load_from_file(project.root.Get() / "package.dds");
-    }
-
-    struct {
-        cli_deps&     parent;
-        args::Command cmd{parent.deps_group, "ls", "List project dependencies"};
-        common_flags  _common{cmd};
-
-        int run() {
-            const auto man = parent.load_package_manifest();
-            for (const auto& dep : man.dependencies) {
-                std::cout << dep.name << " " << dep.versions << '\n';
-            }
-            return 0;
-        }
-    } ls{*this};
-
-    struct {
-        cli_deps&     parent;
-        args::Command cmd{parent.deps_group,
-                          "get",
-                          "Ensure we have local copies of the project dependencies"};
-        common_flags  _common{cmd};
-
-        repo_path_flag    repo_where{cmd};
-        catalog_path_flag catalog_path{cmd};
-
-        int run() {
-            auto man         = parent.load_package_manifest();
-            auto catalog     = catalog_path.open();
-            bool failed      = false;
-            auto solved_deps = catalog.solve_requirements(man.dependencies);
-            dds::repository::with_repository(  //
-                repo_where.Get(),
                 dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
                 [&](dds::repository repo) {
+                    // Download dependencies
                     for (const dds::package_id& pk : solved_deps) {
                         auto exists = !!repo.find(pk);
                         if (!exists) {
-                            spdlog::info("Pull remote: {}", pk.to_string());
-                            auto opt_pkg = catalog.get(pk);
-                            if (opt_pkg) {
-                                auto tsd = dds::get_package_sdist(*opt_pkg);
-                                repo.add_sdist(tsd.sdist, dds::if_exists::ignore);
-                            } else {
-                                spdlog::error("No remote listing for {}", pk.to_string());
-                                failed = true;
-                            }
-                        } else {
-                            spdlog::info("Okay: {}", pk.to_string());
+                            spdlog::info("Download dependency: {}", pk.to_string());
+                            auto opt_pkg = cat.get(pk);
+                            assert(opt_pkg);
+                            auto tsd = dds::get_package_sdist(*opt_pkg);
+                            repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
                         }
                     }
+                    return repo.solve(man.dependencies);
                 });
-            if (failed) {
-                return 1;
-            }
-            return 0;
         }
-    } get{*this};
-
-    int run() {
-        if (ls.cmd) {
-            return ls.run();
-        } else if (get.cmd) {
-            return get.run();
-        }
-        std::terminate();
+        dds::build(params, man);
+        return 0;
     }
 };
 
@@ -655,7 +576,6 @@ int main(int argc, char** argv) {
     cli_build   build{cli};
     cli_sdist   sdist{cli};
     cli_repo    repo{cli};
-    cli_deps    deps{cli};
     cli_catalog catalog{cli};
     try {
         parser.ParseCLI(argc, argv);
@@ -680,8 +600,6 @@ int main(int argc, char** argv) {
             return sdist.run();
         } else if (repo.cmd) {
             return repo.run();
-        } else if (deps.cmd) {
-            return deps.run();
         } else if (catalog.cmd) {
             return catalog.run();
         } else {

@@ -1,0 +1,79 @@
+{
+    "version": 1,
+    "packages": {
+        "range-v3": {
+            "0.10.0": {
+                "git": {
+                    "url": "https://github.com/ericniebler/range-v3.git",
+                    "ref": "0.10.0",
+                    "auto-lib": "Niebler/range-v3"
+                },
+                "depends": {}
+            }
+        },
+        "spdlog": {
+            "1.4.2": {
+                "git": {
+                    "url": "https://github.com/gabime/spdlog.git",
+                    "ref": "v1.4.2",
+                    "auto-lib": "spdlog/spdlog"
+                },
+                "depends": {}
+            }
+        },
+        "nlohmann-json": {
+            "3.7.1": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/json.git",
+                    "ref": "dds/3.7.1"
+                },
+                "depends": {}
+            }
+        },
+        "ms-wil": {
+            "2019.11.10": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/wil.git",
+                    "ref": "dds/2019.11.10"
+                },
+                "depends": {}
+            }
+        },
+        "neo-buffer": {
+            "0.1.0": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/neo-buffer.git",
+                    "ref": "0.1.0"
+                },
+                "depends": {}
+            }
+        },
+        "neo-sqlite3": {
+            "0.2.2": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/neo-sqlite3.git",
+                    "ref": "0.2.2"
+                },
+                "depends": {}
+            }
+        },
+        "semver": {
+            "0.2.1": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/semver.git",
+                    "ref": "0.2.1"
+                },
+                "depends": {}
+            }
+        },
+        "pubgrub": {
+            "0.1.2": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/pubgrub.git",
+                    "ref": "0.1.2"
+                },
+                "depends": {}
+            }
+        }
+    }
+}

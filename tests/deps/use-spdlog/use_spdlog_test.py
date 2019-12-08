@@ -5,7 +5,6 @@ from dds_ci import proc
 
 def test_get_build_use_spdlog(dds: DDS):
     dds.catalog_import(dds.source_root / 'catalog.json')
-    dds.deps_get()
     tc_fname = 'gcc.tc.dds' if 'gcc' in dds.default_builtin_toolchain else 'msvc.tc.dds'
     tc = str(dds.test_dir / tc_fname)
     dds.build(toolchain=tc, apps=True)

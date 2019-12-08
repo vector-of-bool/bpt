@@ -10,22 +10,16 @@ dds_conf = dds_fixture_conf(
 
 
 @dds_conf
-def test_ls(dds: DDS):
-    dds.run(['deps', 'ls'])
-
-
-@dds_conf
 def test_deps_build(dds: DDS):
     dds.catalog_import(dds.source_root / 'catalog.json')
     assert not dds.repo_dir.exists()
-    dds.deps_get()
-    assert dds.repo_dir.exists(), '`deps get` did not generate a repo directory'
+    dds.build()
+    assert dds.repo_dir.exists(), '`Building` did not generate a repo directory'
 
 
 @dds_fixture_conf_1('use-remote')
 def test_use_nlohmann_json_remote(dds: DDS):
     dds.catalog_import(dds.source_root / 'catalog.json')
-    dds.deps_get()
     dds.build(apps=True)
 
     app_exe = dds.build_dir / f'app{dds.exe_suffix}'

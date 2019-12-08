@@ -95,6 +95,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
         fs::remove_all(sd_dest);
     }
     fs::rename(tmp_copy, sd_dest);
+    _sdists.insert(sdist::from_directory(sd_dest));
     spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
 }
 

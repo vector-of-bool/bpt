@@ -98,8 +98,8 @@ def main(argv: Sequence[str]) -> int:
     else:
         assert False, 'impossible'
 
+    ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
     if not opts.skip_deps:
-        ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
         if ci_repo_dir.exists():
             shutil.rmtree(ci_repo_dir)
         self_deps_get(paths.PREBUILT_DDS, ci_repo_dir)
@@ -112,10 +112,18 @@ def main(argv: Sequence[str]) -> int:
         dds_flags=['--warnings', '--tests', '--apps'])
     print('Main build PASSED!')
 
+    cat_path = paths.BUILD_DIR / 'catalog.db'
+    proc.check_run([
+        paths.CUR_BUILT_DDS,
+        'catalog',
+        'import',
+        ('--catalog', cat_path),
+        ('--json', paths.PROJECT_ROOT / 'catalog.json'),
+    ])
     self_build(
         paths.CUR_BUILT_DDS,
         toolchain=opts.toolchain,
-        dds_flags=[f'--repo-dir={ci_repo_dir}'])
+        dds_flags=[f'--repo-dir={ci_repo_dir}', f'--catalog={cat_path}'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([
