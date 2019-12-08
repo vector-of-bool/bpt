@@ -205,11 +205,12 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     auto each_realized =                                                          //
         compiles                                                                  //
         | views::transform([&](auto&& plan) { return realize_plan(plan, env); })  //
-        | views::filter([&](auto&& real) { return should_compile(real, env); });
+        | views::filter([&](auto&& real) { return should_compile(real, env); })   //
+        | ranges::to_vector;
 
-    const auto      total      = compiles.size();
+    const auto      total      = each_realized.size();
     const auto      max_digits = fmt::format("{}", total).size();
-    compile_counter counter{{0}, total, max_digits};
+    compile_counter counter{{1}, total, max_digits};
 
     std::vector<deps_info> all_new_deps;
     std::mutex             mut;
