@@ -8,6 +8,6 @@ Depends: range-v3 0.10.0
 Depends: nlohmann-json 3.7.1
 Depends: neo-sqlite3 0.2.2
 Depends: semver 0.2.1
-Depends: pubgrub 0.1.0
+Depends: pubgrub 0.1.1
 
 Test-Driver: Catch-Main
