@@ -9,9 +9,14 @@
 #include <libman/index.hpp>
 #include <libman/parse.hpp>
 
+#include <range/v3/algorithm/transform.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
 #include <array>
+#include <map>
+#include <set>
 #include <stdexcept>
 
 using namespace dds;
@@ -185,29 +190,110 @@ void prepare_test_driver(library_build_params&   lib_params,
     }
 }
 
+void add_ureqs(usage_requirement_map& ureqs,
+               const sdist&           sd,
+               const library&         lib,
+               const library_plan&    lib_plan,
+               build_env_ref          env) {
+    lm::library& reqs = ureqs.add(sd.manifest.namespace_, lib.manifest().name);
+    reqs.include_paths.push_back(lib.public_include_dir());
+    reqs.name  = lib.manifest().name;
+    reqs.uses  = lib.manifest().uses;
+    reqs.links = lib.manifest().links;
+    if (lib_plan.create_archive()) {
+        reqs.linkable_path = lib_plan.create_archive()->calc_archive_file_path(env);
+    }
+    // TODO: preprocessor definitions
+}
+
+using sdist_index_type = std::map<std::string, std::reference_wrapper<const sdist>>;
+using sdist_names      = std::set<std::string>;
+
+void add_sdist_to_build(build_plan&             plan,
+                        const sdist&            sd,
+                        const sdist_index_type& sd_idx,
+                        build_env_ref           env,
+                        usage_requirement_map&  ureqs,
+                        sdist_names&            already_added) {
+    if (already_added.find(sd.manifest.pk_id.name) != already_added.end()) {
+        // This one has already been added
+        return;
+    }
+    spdlog::debug("Adding dependent build: {}", sd.manifest.pk_id.name);
+    // Ensure that ever dependency is loaded up first)
+    for (const auto& dep : sd.manifest.dependencies) {
+        auto other = sd_idx.find(dep.name);
+        assert(other != sd_idx.end()
+               && "Failed to load a transitive dependency shortly after initializing them. What?");
+        add_sdist_to_build(plan, other->second, sd_idx, env, ureqs, already_added);
+    }
+    // Record that we have been processed
+    already_added.insert(sd.manifest.pk_id.name);
+    // Finally, actually add the package:
+    auto& pkg  = plan.add_package(package_plan(sd.manifest.pk_id.name, sd.manifest.namespace_));
+    auto  libs = collect_libraries(sd.path);
+    for (const auto& lib : libs) {
+        shared_compile_file_rules comp_rules = lib.base_compile_rules();
+        library_build_params      lib_params;
+        auto                      lib_plan = library_plan::create(lib, lib_params, ureqs);
+        // Create usage requirements for this libary.
+        add_ureqs(ureqs, sd, lib, lib_plan, env);
+        // Add it to the plan:
+        pkg.add_library(std::move(lib_plan));
+    }
+}
+
+void add_deps_to_build(build_plan&             plan,
+                       usage_requirement_map&  ureqs,
+                       const build_params&     params,
+                       const package_manifest& man,
+                       build_env_ref           env) {
+    auto sd_idx = params.dep_sdists  //
+        | ranges::views::transform([](const auto& sd) {
+                      return std::pair(sd.manifest.pk_id.name, std::cref(sd));
+                  })  //
+        | ranges::to<sdist_index_type>();
+
+    sdist_names already_added;
+    for (const sdist& sd : params.dep_sdists) {
+        add_sdist_to_build(plan, sd, sd_idx, env, ureqs, already_added);
+    }
+}
+
 }  // namespace
 
 void dds::build(const build_params& params, const package_manifest& man) {
+    fs::create_directories(params.out_root);
+    auto           db = database::open(params.out_root / ".dds.db");
+    dds::build_env env{params.toolchain, params.out_root, db};
+
+    // The build plan we will fill out:
+    build_plan plan;
+
+    // Collect libraries for the current project
     auto libs = collect_libraries(params.root);
     if (!libs.size()) {
         spdlog::warn("Nothing found to build!");
         return;
     }
 
-    build_plan plan;
-    auto&      pkg = plan.add_package(package_plan(man.pk_id.name, man.namespace_));
+    usage_requirement_map ureqs;
 
-    usage_requirement_map ureqs
-        = load_usage_requirements(params.root, params.out_root, params.lm_index);
+    if (params.existing_lm_index) {
+        ureqs = load_usage_requirements(params.root, params.out_root, *params.existing_lm_index);
+    } else {
+        add_deps_to_build(plan, ureqs, params, man, env);
+    }
+
+    // Initialize the build plan for this project.
+    auto& pkg = plan.add_package(package_plan(man.pk_id.name, man.namespace_));
+
+    // assert(false && "Not ready yet!");
 
     library_build_params lib_params;
     lib_params.build_tests     = params.build_tests;
     lib_params.build_apps      = params.build_apps;
     lib_params.enable_warnings = params.enable_warnings;
-
-    fs::create_directories(params.out_root);
-    auto           db = database::open(params.out_root / ".dds.db");
-    dds::build_env env{params.toolchain, params.out_root, db};
 
     if (man.test_driver) {
         prepare_test_driver(lib_params, params, man, env);

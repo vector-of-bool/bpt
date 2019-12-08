@@ -276,6 +276,8 @@ struct cli_catalog {
             return get.run();
         } else if (add.cmd) {
             return add.run();
+        } else if (list.cmd) {
+            return list.run();
         } else {
             assert(false);
             std::terminate();
@@ -478,6 +480,14 @@ struct cli_build {
 
     common_project_flags project{cmd};
 
+    catalog_path_flag cat_path{cmd};
+    repo_path_flag    repo_path{cmd};
+
+    args::Flag do_download_deps{cmd,
+                                "download-deps",
+                                "Download any missing dependencies from the catalog",
+                                {"download-deps"}};
+
     args::Flag     build_tests{cmd, "build_tests", "Build and run the tests", {"tests", 'T'}};
     args::Flag     build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
     args::Flag     export_{cmd, "export", "Generate a library export", {"export", 'E'}};
@@ -488,11 +498,11 @@ struct cli_build {
                                "Enable compiler warnings",
                                {"warnings", 'W'}};
 
-    path_flag lm_index{cmd,
-                       "lm_index",
-                       "Path to a libman index (usually INDEX.lmi)",
-                       {"lm-index", 'I'},
-                       dds::fs::path()};
+    path_flag
+        lm_index{cmd,
+                 "lm_index",
+                 "Path to an existing libman index from which to load deps (usually INDEX.lmi)",
+                 {"lm-index", 'I'}};
 
     args::ValueFlag<int> num_jobs{cmd,
                                   "jobs",
@@ -516,11 +526,19 @@ struct cli_build {
         params.build_apps      = build_apps.Get();
         params.enable_warnings = enable_warnings.Get();
         params.parallel_jobs   = num_jobs.Get();
-        params.lm_index        = lm_index.Get();
         dds::package_manifest man;
         const auto            man_filepath = params.root / "package.dds";
         if (exists(man_filepath)) {
             man = dds::package_manifest::load_from_file(man_filepath);
+        }
+        if (lm_index) {
+            params.existing_lm_index = lm_index.Get();
+        } else {
+            // Build the dependencies
+            params.dep_sdists = dds::repository::with_repository(  //
+                this->repo_path.Get(),
+                dds::repo_flags::read | dds::repo_flags::create_if_absent,
+                [&](dds::repository repo) { return repo.solve(man.dependencies); });
         }
         dds::build(params, man);
         return 0;
@@ -636,9 +654,7 @@ struct cli_deps {
             auto deps = dds::repository::with_repository(  //
                 repo_where.Get(),
                 dds::repo_flags::read,
-                [&](dds::repository repo) {
-                    return repo.solve(man.dependencies);
-                });
+                [&](dds::repository repo) { return repo.solve(man.dependencies); });
 
             auto tc   = tc_filepath.get_toolchain();
             auto bdir = build_dir.Get();
