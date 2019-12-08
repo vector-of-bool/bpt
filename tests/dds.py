@@ -101,9 +101,9 @@ class DDS:
         return self.run([
             'build',
             f'--out={self.build_dir}',
-            ['--tests'] if tests else [],
-            ['--apps'] if apps else [],
-            ['--warnings'] if warnings else [],
+            ['--no-tests'] if not tests else [],
+            ['--no-apps'] if not apps else [],
+            ['--no-warnings'] if not warnings else [],
             ['--export'] if export else [],
             f'--toolchain={toolchain or self.default_builtin_toolchain}',
             f'--lm-index={self.lmi_path}',

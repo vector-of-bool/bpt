@@ -115,7 +115,7 @@ def main(argv: Sequence[str]) -> int:
     self_build(
         paths.CUR_BUILT_DDS,
         toolchain=opts.toolchain,
-        dds_flags=['--warnings', '--tests', '--apps', f'--repo-dir={ci_repo_dir}'])
+        dds_flags=[f'--repo-dir={ci_repo_dir}'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([

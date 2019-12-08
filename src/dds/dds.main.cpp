@@ -488,15 +488,12 @@ struct cli_build {
                                 "Download any missing dependencies from the catalog",
                                 {"download-deps"}};
 
-    args::Flag     build_tests{cmd, "build_tests", "Build and run the tests", {"tests", 'T'}};
-    args::Flag     build_apps{cmd, "build_apps", "Build applications", {"apps", 'A'}};
-    args::Flag     export_{cmd, "export", "Generate a library export", {"export", 'E'}};
+    args::Flag     no_tests{cmd, "no-tests", "Do not build and run tests", {"no-tests"}};
+    args::Flag     no_apps{cmd, "no-apps", "Do not compile and link applications", {"no-apps"}};
+    args::Flag     no_warnings{cmd, "no-warings", "Disable build warnings", {"no-warnings"}};
     toolchain_flag tc_filepath{cmd};
 
-    args::Flag enable_warnings{cmd,
-                               "enable_warnings",
-                               "Enable compiler warnings",
-                               {"warnings", 'W'}};
+    args::Flag export_{cmd, "export", "Generate a library export", {"export", 'E'}};
 
     path_flag
         lm_index{cmd,
@@ -522,9 +519,9 @@ struct cli_build {
         params.out_root        = out.Get();
         params.toolchain       = tc_filepath.get_toolchain();
         params.do_export       = export_.Get();
-        params.build_tests     = build_tests.Get();
-        params.build_apps      = build_apps.Get();
-        params.enable_warnings = enable_warnings.Get();
+        params.build_tests     = !no_tests.Get();
+        params.build_apps      = !no_apps.Get();
+        params.enable_warnings = !no_warnings.Get();
         params.parallel_jobs   = num_jobs.Get();
         dds::package_manifest man;
         const auto            man_filepath = params.root / "package.dds";
