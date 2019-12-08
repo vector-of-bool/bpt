@@ -622,58 +622,9 @@ struct cli_deps {
         }
     } get{*this};
 
-    struct {
-        cli_deps&     parent;
-        args::Command cmd{parent.deps_group, "build", "Build project dependencies"};
-        common_flags  _common{cmd};
-
-        path_flag  build_dir{cmd,
-                            "build_dir",
-                            "Directory where build results will be stored",
-                            {"deps-build-dir"},
-                            dds::fs::current_path() / "_build/deps"};
-        path_flag  lmi_path{cmd,
-                           "lmi_path",
-                           "Destination for the INDEX.lmi file",
-                           {"lmi-path"},
-                           dds::fs::current_path() / "_build/INDEX.lmi"};
-        args::Flag no_lmi{cmd,
-                          "no_lmi",
-                          "If specified, will not generate an INDEX.lmi",
-                          {"skip-lmi"}};
-
-        repo_path_flag repo_where{cmd};
-
-        toolchain_flag tc_filepath{cmd};
-
-        int run() {
-            auto man  = parent.load_package_manifest();
-            auto deps = dds::repository::with_repository(  //
-                repo_where.Get(),
-                dds::repo_flags::read,
-                [&](dds::repository repo) { return repo.solve(man.dependencies); });
-
-            auto tc   = tc_filepath.get_toolchain();
-            auto bdir = build_dir.Get();
-            dds::fs::create_directories(bdir);
-            auto           db = dds::database::open(bdir / ".dds.db");
-            dds::build_env env{std::move(tc), bdir, db};
-
-            auto plan = dds::create_deps_build_plan(deps, env);
-            plan.compile_all(env, 6);
-            plan.archive_all(env, 6);
-            if (!no_lmi.Get()) {
-                write_libman_index(lmi_path.Get(), plan, env);
-            }
-            return 0;
-        }
-    } build{*this};
-
     int run() {
         if (ls.cmd) {
             return ls.run();
-        } else if (build.cmd) {
-            return build.run();
         } else if (get.cmd) {
             return get.run();
         }

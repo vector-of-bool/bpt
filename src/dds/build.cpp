@@ -247,7 +247,6 @@ void add_sdist_to_build(build_plan&             plan,
 void add_deps_to_build(build_plan&             plan,
                        usage_requirement_map&  ureqs,
                        const build_params&     params,
-                       const package_manifest& man,
                        build_env_ref           env) {
     auto sd_idx = params.dep_sdists  //
         | ranges::views::transform([](const auto& sd) {
@@ -283,7 +282,7 @@ void dds::build(const build_params& params, const package_manifest& man) {
     if (params.existing_lm_index) {
         ureqs = load_usage_requirements(params.root, params.out_root, *params.existing_lm_index);
     } else {
-        add_deps_to_build(plan, ureqs, params, man, env);
+        add_deps_to_build(plan, ureqs, params, env);
     }
 
     // Initialize the build plan for this project.

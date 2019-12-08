@@ -21,16 +21,11 @@ def test_deps_build(dds: DDS):
     dds.deps_get()
     assert dds.repo_dir.exists(), '`deps get` did not generate a repo directory'
 
-    assert not dds.lmi_path.exists()
-    dds.deps_build()
-    assert dds.lmi_path.exists(), '`deps build` did not generate the build dir'
-
 
 @dds_fixture_conf_1('use-remote')
 def test_use_nlohmann_json_remote(dds: DDS):
     dds.catalog_import(dds.source_root / 'catalog.json')
     dds.deps_get()
-    dds.deps_build()
     dds.build(apps=True)
 
     app_exe = dds.build_dir / f'app{dds.exe_suffix}'
