@@ -28,13 +28,13 @@ struct sdist {
 
 inline constexpr struct sdist_compare_t {
     bool operator()(const sdist& lhs, const sdist& rhs) const {
-        return lhs.manifest.pk_id < rhs.manifest.pk_id;
+        return lhs.manifest.pkg_id < rhs.manifest.pkg_id;
     }
     bool operator()(const sdist& lhs, const package_id& rhs) const {
-        return lhs.manifest.pk_id < rhs;
+        return lhs.manifest.pkg_id < rhs;
     }
     bool operator()(const package_id& lhs, const sdist& rhs) const {
-        return lhs < rhs.manifest.pk_id;
+        return lhs < rhs.manifest.pkg_id;
     }
     using is_transparent = int;
 } sdist_compare;

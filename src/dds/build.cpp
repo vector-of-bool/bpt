@@ -215,11 +215,11 @@ void add_sdist_to_build(build_plan&             plan,
                         build_env_ref           env,
                         usage_requirement_map&  ureqs,
                         sdist_names&            already_added) {
-    if (already_added.find(sd.manifest.pk_id.name) != already_added.end()) {
+    if (already_added.find(sd.manifest.pkg_id.name) != already_added.end()) {
         // This one has already been added
         return;
     }
-    spdlog::debug("Adding dependent build: {}", sd.manifest.pk_id.name);
+    spdlog::debug("Adding dependent build: {}", sd.manifest.pkg_id.name);
     // Ensure that ever dependency is loaded up first)
     for (const auto& dep : sd.manifest.dependencies) {
         auto other = sd_idx.find(dep.name);
@@ -228,9 +228,9 @@ void add_sdist_to_build(build_plan&             plan,
         add_sdist_to_build(plan, other->second, sd_idx, env, ureqs, already_added);
     }
     // Record that we have been processed
-    already_added.insert(sd.manifest.pk_id.name);
+    already_added.insert(sd.manifest.pkg_id.name);
     // Finally, actually add the package:
-    auto& pkg  = plan.add_package(package_plan(sd.manifest.pk_id.name, sd.manifest.namespace_));
+    auto& pkg  = plan.add_package(package_plan(sd.manifest.pkg_id.name, sd.manifest.namespace_));
     auto  libs = collect_libraries(sd.path);
     for (const auto& lib : libs) {
         shared_compile_file_rules comp_rules = lib.base_compile_rules();
@@ -250,7 +250,7 @@ void add_deps_to_build(build_plan&             plan,
                        build_env_ref           env) {
     auto sd_idx = params.dep_sdists  //
         | ranges::views::transform([](const auto& sd) {
-                      return std::pair(sd.manifest.pk_id.name, std::cref(sd));
+                      return std::pair(sd.manifest.pkg_id.name, std::cref(sd));
                   })  //
         | ranges::to<sdist_index_type>();
 
@@ -286,7 +286,7 @@ void dds::build(const build_params& params, const package_manifest& man) {
     }
 
     // Initialize the build plan for this project.
-    auto& pkg = plan.add_package(package_plan(man.pk_id.name, man.namespace_));
+    auto& pkg = plan.add_package(package_plan(man.pkg_id.name, man.namespace_));
 
     // assert(false && "Not ready yet!");
 
