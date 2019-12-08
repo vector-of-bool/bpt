@@ -250,6 +250,23 @@ struct cli_catalog {
         }
     } add{*this};
 
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group, "list", "List the contents of the catalog"};
+
+        catalog_path_flag cat_path{cmd};
+        string_flag name{cmd, "name", "Only list packages with the given name", {"name", 'n'}};
+
+        int run() {
+            auto cat  = cat_path.open();
+            auto pkgs = name ? cat.by_name(name.Get()) : cat.all();
+            for (const dds::package_id& pk : pkgs) {
+                std::cout << pk.to_string() << '\n';
+            }
+            return 0;
+        }
+    } list{*this};
+
     int run() {
         if (create.cmd) {
             return create.run();
