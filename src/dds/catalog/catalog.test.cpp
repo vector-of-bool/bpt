@@ -20,14 +20,28 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
         {},
         dds::git_remote_listing{"http://example.com", "master", std::nullopt},
     });
-    CHECK_THROWS(db.store(dds::package_info{
-        dds::package_id("foo", semver::version::parse("1.2.3")),
-        {},
-        dds::git_remote_listing{"http://example.com", "master", std::nullopt},
-    }));
 
     auto pkgs = db.by_name("foo");
     REQUIRE(pkgs.size() == 1);
+    CHECK(pkgs[0].name == "foo");
+    CHECK(pkgs[0].version == semver::version::parse("1.2.3"));
+    auto info = db.get(pkgs[0]);
+    REQUIRE(info);
+    CHECK(info->ident == pkgs[0]);
+    CHECK(info->deps.empty());
+    CHECK(std::holds_alternative<dds::git_remote_listing>(info->remote));
+    CHECK(std::get<dds::git_remote_listing>(info->remote).ref == "master");
+
+    // Update the entry with a new git remote ref
+    CHECK_NOTHROW(db.store(dds::package_info{
+        dds::package_id("foo", semver::version::parse("1.2.3")),
+        {},
+        dds::git_remote_listing{"http://example.com", "develop", std::nullopt},
+    }));
+    // The previous pkg_id is still a valid lookup key
+    info = db.get(pkgs[0]);
+    REQUIRE(info);
+    CHECK(std::get<dds::git_remote_listing>(info->remote).ref == "develop");
 }
 
 TEST_CASE_METHOD(catalog_test_case, "Package requirements") {

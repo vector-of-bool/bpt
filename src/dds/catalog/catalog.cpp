@@ -113,7 +113,7 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
     sqlite3::exec(  //
         _stmt_cache,
         R"(
-            INSERT INTO dds_cat_pkgs (
+            INSERT OR REPLACE INTO dds_cat_pkgs (
                 name,
                 version,
                 git_url,
@@ -216,6 +216,19 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
     };
 }
 
+auto pair_to_pkg_id = [](auto&& pair) {
+    const auto& [name, ver] = pair;
+    return package_id{name, semver::version::parse(ver)};
+};
+
+std::vector<package_id> catalog::all() const noexcept {
+    return sqlite3::exec_iter<std::string, std::string>(  //
+               _stmt_cache,
+               "SELECT name, version FROM dds_cat_pkgs"_sql)
+        | ranges::views::transform(pair_to_pkg_id)  //
+        | ranges::to_vector;
+}
+
 std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
     return sqlite3::exec_iter<std::string, std::string>(  //
                _stmt_cache,
@@ -224,11 +237,8 @@ std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
                   FROM dds_cat_pkgs
                  WHERE name = ?
                 )"_sql,
-               std::tie(sv))  //
-        | ranges::views::transform([](auto& pair) {
-               auto& [name, ver] = pair;
-               return package_id{name, semver::version::parse(ver)};
-           })
+               std::tie(sv))                        //
+        | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
