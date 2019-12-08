@@ -178,6 +178,10 @@ compile_file_full realize_plan(const compile_file_plan& plan, build_env_ref env)
 }
 
 bool should_compile(const compile_file_full& comp, build_env_ref env) {
+    if (!fs::exists(comp.object_file_path)) {
+        // The output file simply doesn't exist. We have to recompile, of course.
+        return true;
+    }
     database& db      = env.db;
     auto      rb_info = get_rebuild_info(db, comp.object_file_path);
     if (rb_info.previous_command.empty()) {
