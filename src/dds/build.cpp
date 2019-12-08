@@ -235,7 +235,8 @@ void add_sdist_to_build(build_plan&             plan,
     for (const auto& lib : libs) {
         shared_compile_file_rules comp_rules = lib.base_compile_rules();
         library_build_params      lib_params;
-        auto                      lib_plan = library_plan::create(lib, lib_params, ureqs);
+        lib_params.out_subdir = fs::path("deps") / sd.manifest.pkg_id.name;
+        auto lib_plan         = library_plan::create(lib, lib_params, ureqs);
         // Create usage requirements for this libary.
         add_ureqs(ureqs, sd, lib, lib_plan, env);
         // Add it to the plan:
