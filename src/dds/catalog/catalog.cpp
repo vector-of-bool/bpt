@@ -92,6 +92,9 @@ void ensure_migrated(sqlite3::database& db) {
 }  // namespace
 
 catalog catalog::open(const std::string& db_path) {
+    if (db_path != ":memory:") {
+        fs::create_directories(fs::weakly_canonical(db_path).parent_path());
+    }
     auto db = sqlite3::database::open(db_path);
     try {
         ensure_migrated(db);
