@@ -1,4 +1,4 @@
-#include "./deps.hpp"
+#include "./file_deps.hpp"
 
 #include <dds/db/database.hpp>
 #include <dds/proc.hpp>
@@ -11,13 +11,13 @@
 
 using namespace dds;
 
-deps_info dds::parse_mkfile_deps_file(path_ref where) {
+file_deps_info dds::parse_mkfile_deps_file(path_ref where) {
     auto content = slurp_file(where);
     return parse_mkfile_deps_str(content);
 }
 
-deps_info dds::parse_mkfile_deps_str(std::string_view str) {
-    deps_info ret;
+file_deps_info dds::parse_mkfile_deps_str(std::string_view str) {
+    file_deps_info ret;
 
     // Remove escaped newlines
     auto no_newlines = replace(str, "\\\n", " ");
@@ -45,9 +45,9 @@ deps_info dds::parse_mkfile_deps_str(std::string_view str) {
 }
 
 msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::string_view leader) {
-    auto        lines = split_view(output, "\n");
-    std::string cleaned_output;
-    deps_info   deps;
+    auto           lines = split_view(output, "\n");
+    std::string    cleaned_output;
+    file_deps_info deps;
     for (const auto full_line : lines) {
         auto trimmed = trim_view(full_line);
         if (!starts_with(trimmed, leader)) {
@@ -65,7 +65,7 @@ msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::str
     return {deps, cleaned_output};
 }
 
-void dds::update_deps_info(database& db, const deps_info& deps) {
+void dds::update_deps_info(database& db, const file_deps_info& deps) {
     db.store_file_command(deps.output, {deps.command, deps.command_output});
     db.forget_inputs_of(deps.output);
     for (auto&& inp : deps.inputs) {

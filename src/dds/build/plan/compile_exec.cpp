@@ -1,6 +1,6 @@
 #include "./compile_exec.hpp"
 
-#include <dds/build/deps.hpp>
+#include <dds/build/file_deps.hpp>
 #include <dds/proc.hpp>
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
@@ -93,7 +93,7 @@ struct compile_counter {
  * @param env The build environment
  * @param counter A thread-safe counter for display progress to the user
  */
-std::optional<deps_info>
+std::optional<file_deps_info>
 do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& counter) {
     // Create the parent directory
     fs::create_directories(cf.object_file_path.parent_path());
@@ -122,9 +122,9 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
     std::string compiler_output = std::move(proc_res.output);
 
     // Build dependency information, if applicable to the toolchain
-    std::optional<deps_info> ret_deps_info;
+    std::optional<file_deps_info> ret_deps_info;
 
-    if (env.toolchain.deps_mode() == deps_mode::gnu) {
+    if (env.toolchain.deps_mode() == file_deps_mode::gnu) {
         // GNU-style deps using Makefile generation
         assert(cf.cmd_info.gnu_depfile_path.has_value());
         auto& df_path = *cf.cmd_info.gnu_depfile_path;
@@ -140,7 +140,7 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
             dep_info.command_output = compiler_output;
             ret_deps_info           = std::move(dep_info);
         }
-    } else if (env.toolchain.deps_mode() == deps_mode::msvc) {
+    } else if (env.toolchain.deps_mode() == file_deps_mode::msvc) {
         // Uglier deps generation by parsing the output from cl.exe
         /// TODO: Handle different #include Note: prefixes, since those are localized
         auto msvc_deps = parse_msvc_output_for_deps(compiler_output, "Note: including file:");
@@ -250,8 +250,8 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     compile_counter counter{{1}, total, max_digits};
 
     // Ass we execute, accumulate new dependency information from successful compilations
-    std::vector<deps_info> all_new_deps;
-    std::mutex             mut;
+    std::vector<file_deps_info> all_new_deps;
+    std::mutex                  mut;
     // Do it!
     auto okay = parallel_run(each_realized, njobs, [&](const compile_file_full& full) {
         auto new_dep = do_compile(full, env, counter);

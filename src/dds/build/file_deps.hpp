@@ -3,18 +3,18 @@
 #include <dds/util/fs.hpp>
 
 #include <string>
-#include <vector>
 #include <string_view>
+#include <vector>
 
 namespace dds {
 
-enum class deps_mode {
+enum class file_deps_mode {
     none,
     msvc,
     gnu,
 };
 
-struct deps_info {
+struct file_deps_info {
     fs::path              output;
     std::vector<fs::path> inputs;
     std::string           command;
@@ -23,17 +23,17 @@ struct deps_info {
 
 class database;
 
-deps_info parse_mkfile_deps_file(path_ref where);
-deps_info parse_mkfile_deps_str(std::string_view str);
+file_deps_info parse_mkfile_deps_file(path_ref where);
+file_deps_info parse_mkfile_deps_str(std::string_view str);
 
 struct msvc_deps_info {
-    struct deps_info deps_info;
-    std::string      cleaned_output;
+    struct file_deps_info deps_info;
+    std::string           cleaned_output;
 };
 
 msvc_deps_info parse_msvc_output_for_deps(std::string_view output, std::string_view leader);
 
-void update_deps_info(database& db, const deps_info&);
+void update_deps_info(database& db, const file_deps_info&);
 
 struct deps_rebuild_info {
     std::vector<fs::path> newer_inputs;

@@ -173,21 +173,21 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     bool is_msvc     = compiler_id_e == msvc;
     bool is_gnu_like = is_gnu || is_clang;
 
-    const enum deps_mode deps_mode = [&] {
+    const enum file_deps_mode deps_mode = [&] {
         if (!deps_mode_str.has_value()) {
             if (is_gnu_like) {
-                return deps_mode::gnu;
+                return file_deps_mode::gnu;
             } else if (is_msvc) {
-                return deps_mode::msvc;
+                return file_deps_mode::msvc;
             } else {
-                return deps_mode::none;
+                return file_deps_mode::none;
             }
         } else if (deps_mode_str == "GNU") {
-            return deps_mode::gnu;
+            return file_deps_mode::gnu;
         } else if (deps_mode_str == "MSVC") {
-            return deps_mode::msvc;
+            return file_deps_mode::msvc;
         } else if (deps_mode_str == "None") {
-            return deps_mode::none;
+            return file_deps_mode::none;
         } else {
             fail(context, "Unknown Deps-Mode '{}'", *deps_mode_str);
         }

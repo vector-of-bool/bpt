@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/build/deps.hpp>
+#include <dds/build/file_deps.hpp>
 #include <dds/util/fs.hpp>
 
 #include <optional>
@@ -60,7 +60,7 @@ class toolchain {
     std::string _exe_prefix;
     std::string _exe_suffix;
 
-    enum deps_mode _deps_mode;
+    enum file_deps_mode _deps_mode;
 
 public:
     toolchain() = default;
