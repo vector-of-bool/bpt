@@ -9,7 +9,6 @@
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <cctype>
