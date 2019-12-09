@@ -14,4 +14,4 @@ struct temporary_sdist {
 
 temporary_sdist get_package_sdist(const package_info&);
 
-} // namespace dds
+}  // namespace dds

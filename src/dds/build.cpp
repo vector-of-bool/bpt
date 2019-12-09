@@ -244,10 +244,10 @@ void add_sdist_to_build(build_plan&             plan,
     }
 }
 
-void add_deps_to_build(build_plan&             plan,
-                       usage_requirement_map&  ureqs,
-                       const build_params&     params,
-                       build_env_ref           env) {
+void add_deps_to_build(build_plan&            plan,
+                       usage_requirement_map& ureqs,
+                       const build_params&    params,
+                       build_env_ref          env) {
     auto sd_idx = params.dep_sdists  //
         | ranges::views::transform([](const auto& sd) {
                       return std::pair(sd.manifest.pkg_id.name, std::cref(sd));

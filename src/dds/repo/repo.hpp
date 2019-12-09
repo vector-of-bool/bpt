@@ -1,8 +1,8 @@
 #pragma once
 
+#include <dds/catalog/catalog.hpp>
 #include <dds/sdist.hpp>
 #include <dds/util/flock.hpp>
-#include <dds/catalog/catalog.hpp>
 #include <dds/util/fs.hpp>
 
 #include <functional>

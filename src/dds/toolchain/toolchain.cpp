@@ -45,8 +45,8 @@ vector<string> toolchain::definition_args(std::string_view s) const noexcept {
     return replace(_def_template, "<DEF>", s);
 }
 
-compile_command_info toolchain::create_compile_command(const compile_file_spec& spec) const
-    noexcept {
+compile_command_info
+toolchain::create_compile_command(const compile_file_spec& spec) const noexcept {
     vector<string> flags;
 
     using namespace std::literals;

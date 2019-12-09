@@ -44,12 +44,13 @@ void check_tc_compile(std::string_view tc_content,
 }
 
 TEST_CASE("Generating toolchain commands") {
-    check_tc_compile("Compiler-ID: GNU",
-                     "g++ -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
-                     "g++ -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
-                     "ar rcs stuff.a foo.o bar.o",
-                     "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe");
+    check_tc_compile(
+        "Compiler-ID: GNU",
+        "g++ -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+        "g++ -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
+        "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -lstdc++fs -omeow.exe");
 
     check_tc_compile(
         "Compiler-ID: GNU\nDebug: True",
