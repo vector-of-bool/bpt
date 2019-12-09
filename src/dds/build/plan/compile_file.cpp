@@ -21,8 +21,10 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
 }
 
 fs::path compile_file_plan::calc_object_file_path(const build_env& env) const noexcept {
+    // `relpath` is just the path from the root of the source directory to the source file.
     auto relpath = fs::relative(_source.path, _source.basis_path);
-    auto ret     = env.output_root / _subdir / relpath;
+    // The full output directory is prefixed by `_subdir`
+    auto ret = env.output_root / _subdir / relpath;
     ret.replace_filename(relpath.filename().string() + env.toolchain.object_suffix());
     return fs::weakly_canonical(ret);
 }
