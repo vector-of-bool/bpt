@@ -9,6 +9,9 @@
 
 namespace dds {
 
+/**
+ * Iterate over every library defined as part of the build plan
+ */
 inline auto iter_libraries(const build_plan& plan) {
     return                                                    //
         plan.packages()                                       //
@@ -17,6 +20,9 @@ inline auto iter_libraries(const build_plan& plan) {
         ;
 }
 
+/**
+ * Return a range iterating over ever file compilation defined in the given build plan
+ */
 inline auto iter_compilations(const build_plan& plan) {
     auto lib_compiles =                                                                        //
         iter_libraries(plan)                                                                   //

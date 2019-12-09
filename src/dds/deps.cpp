@@ -1,7 +1,7 @@
 #include "./deps.hpp"
 
 #include <dds/repo/repo.hpp>
-#include <dds/sdist.hpp>
+#include <dds/source/dist.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/string.hpp>
 #include <libman/index.hpp>
@@ -10,7 +10,6 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
 
 #include <cctype>
 #include <map>

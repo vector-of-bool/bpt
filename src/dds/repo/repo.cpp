@@ -1,8 +1,8 @@
 #include "./repo.hpp"
 
 #include <dds/catalog/catalog.hpp>
-#include <dds/sdist.hpp>
 #include <dds/solve/solve.hpp>
+#include <dds/source/dist.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
@@ -111,26 +111,25 @@ const sdist* repository::find(const package_id& pkg) const noexcept {
 }
 
 std::vector<package_id> repository::solve(const std::vector<dependency>& deps,
-                                     const catalog&                 ctlg) const {
-    return dds::solve(deps,
-                      [&](std::string_view name) -> std::vector<package_id> {
-                          auto mine = ranges::views::all(_sdists)  //
-                              | ranges::views::filter([&](const sdist& sd) {
-                                          return sd.manifest.pkg_id.name == name;
-                                      })
-                              | ranges::views::transform(
-                                          [](const sdist& sd) { return sd.manifest.pkg_id; });
-                          auto avail = ctlg.by_name(name);
-                          auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
-                          ranges::sort(all, std::less<>{});
-                          ranges::unique(all, std::less<>{});
-                          return all;
-                      },
-                      [&](const package_id& pkg_id) {
-                          auto found = find(pkg_id);
-                          if (found) {
-                              return found->manifest.dependencies;
-                          }
-                          return ctlg.dependencies_of(pkg_id);
-                      });
+                                          const catalog&                 ctlg) const {
+    return dds::solve(
+        deps,
+        [&](std::string_view name) -> std::vector<package_id> {
+            auto mine = ranges::views::all(_sdists)  //
+                | ranges::views::filter(
+                            [&](const sdist& sd) { return sd.manifest.pkg_id.name == name; })
+                | ranges::views::transform([](const sdist& sd) { return sd.manifest.pkg_id; });
+            auto avail = ctlg.by_name(name);
+            auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
+            ranges::sort(all, std::less<>{});
+            ranges::unique(all, std::less<>{});
+            return all;
+        },
+        [&](const package_id& pkg_id) {
+            auto found = find(pkg_id);
+            if (found) {
+                return found->manifest.dependencies;
+            }
+            return ctlg.dependencies_of(pkg_id);
+        });
 }

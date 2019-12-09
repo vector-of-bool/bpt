@@ -13,7 +13,7 @@ void dds::generate_compdb(const build_plan& plan, build_env_ref env) {
 
     for (const compile_file_plan& cf : iter_compilations(plan)) {
         auto cmd_info = cf.generate_compile_command(env);
-        auto entry   = nlohmann::json::object({
+        auto entry    = nlohmann::json::object({
             {"directory", env.output_root.string()},
             {"arguments", cmd_info.command},
             {"file", cf.source_path().string()},

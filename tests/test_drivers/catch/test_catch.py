@@ -8,6 +8,6 @@ from dds_ci import proc
 )
 def test_catch_testdriver(dds: DDS):
     dds.build(tests=True)
-    test_exe = dds.build_dir / f'test/calc{dds.exe_suffix}'
+    test_exe = dds.build_dir / f'test/testlib/calc{dds.exe_suffix}'
     assert test_exe.exists()
     assert proc.run([test_exe]).returncode == 0

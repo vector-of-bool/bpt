@@ -1,4 +1,4 @@
-#include <dds/build/deps.hpp>
+#include <dds/build/file_deps.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -42,9 +42,9 @@ Something else
     CHECK(new_output == "\nOther line\n    indented line\nSomething else\n");
     CHECK(deps.inputs
           == std::vector<dds::fs::path>({
-                 "C:\\foo\\bar\\filepath/thing.hpp",
-                 "C:\\foo\\bar\\filepath/baz.h",
-                 "C:\\foo\\bar\\filepath/quux.h",
-                 "C:\\foo\\bar\\filepath/cats/quux.h",
-             }));
+              "C:\\foo\\bar\\filepath/thing.hpp",
+              "C:\\foo\\bar\\filepath/baz.h",
+              "C:\\foo\\bar\\filepath/quux.h",
+              "C:\\foo\\bar\\filepath/cats/quux.h",
+          }));
 }

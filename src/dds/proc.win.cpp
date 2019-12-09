@@ -1,8 +1,8 @@
 #ifdef _WIN32
 #include "./proc.hpp"
 
-#include <wil/resource.h>
 #include <spdlog/spdlog.h>
+#include <wil/resource.h>
 
 #include <windows.h>
 

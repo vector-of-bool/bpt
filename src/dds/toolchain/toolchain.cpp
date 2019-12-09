@@ -45,8 +45,8 @@ vector<string> toolchain::definition_args(std::string_view s) const noexcept {
     return replace(_def_template, "<DEF>", s);
 }
 
-compile_command_info toolchain::create_compile_command(const compile_file_spec& spec) const
-    noexcept {
+compile_command_info
+toolchain::create_compile_command(const compile_file_spec& spec) const noexcept {
     vector<string> flags;
 
     using namespace std::literals;
@@ -78,7 +78,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
 
     std::optional<fs::path> gnu_depfile_path;
 
-    if (_deps_mode == deps_mode::gnu) {
+    if (_deps_mode == file_deps_mode::gnu) {
         gnu_depfile_path = spec.out_path;
         gnu_depfile_path->replace_extension(gnu_depfile_path->extension().string() + ".d");
         extend(flags,
@@ -87,7 +87,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                 std::string_view(gnu_depfile_path->string()),
                 "-MT"sv,
                 std::string_view(spec.out_path.string())});
-    } else if (_deps_mode == deps_mode::msvc) {
+    } else if (_deps_mode == file_deps_mode::msvc) {
         flags.push_back("/showIncludes");
     }
 
@@ -150,9 +150,9 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
     }
 
 #define CXX_VER_TAG(str, version)                                                                  \
-    if (starts_with(tc_id, str)) {                                                         \
+    if (starts_with(tc_id, str)) {                                                                 \
         tc_id = tc_id.substr(std::string_view(str).length());                                      \
-        tc_content += "C++-Version: "s + version + "\n";                                                  \
+        tc_content += "C++-Version: "s + version + "\n";                                           \
     }                                                                                              \
     static_assert(true)
 

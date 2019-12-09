@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/sdist.hpp>
+#include <dds/source/dist.hpp>
 #include <dds/temp.hpp>
 
 namespace dds {
@@ -14,4 +14,4 @@ struct temporary_sdist {
 
 temporary_sdist get_package_sdist(const package_info&);
 
-} // namespace dds
+}  // namespace dds

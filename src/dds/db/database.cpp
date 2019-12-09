@@ -129,7 +129,7 @@ void database::record_dep(path_ref input, path_ref output, fs::file_time_type in
     auto  in_id  = _record_file(input);
     auto  out_id = _record_file(output);
     auto& st     = _stmt_cache(R"(
-        INSERT OR IGNORE INTO dds_deps (input_file_id, output_file_id, input_mtime)
+        INSERT OR REPLACE INTO dds_deps (input_file_id, output_file_id, input_mtime)
         VALUES (?, ?, ?)
     )"_sql);
     sqlite3::exec(st, std::forward_as_tuple(in_id, out_id, input_mtime.time_since_epoch().count()));
@@ -159,10 +159,10 @@ void database::forget_inputs_of(path_ref file) {
         DELETE FROM dds_deps
          WHERE output_file_id IN id_to_delete
     )"_sql);
-    sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).string()));
+    sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).generic_string()));
 }
 
-std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) {
+std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) const {
     auto  file = fs::weakly_canonical(file_);
     auto& st   = _stmt_cache(R"(
         WITH file AS (
@@ -176,7 +176,7 @@ std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) 
          WHERE output_file_id IN file
     )"_sql);
     st.reset();
-    st.bindings[1] = file.string();
+    st.bindings[1] = file.generic_string();
     auto tup_iter  = sqlite3::iter_tuples<std::string, std::int64_t>(st);
 
     std::vector<input_file_info> ret;
@@ -191,7 +191,7 @@ std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) 
     return ret;
 }
 
-std::optional<command_info> database::command_of(path_ref file_) {
+std::optional<command_info> database::command_of(path_ref file_) const {
     auto  file = fs::weakly_canonical(file_);
     auto& st   = _stmt_cache(R"(
         WITH file AS (
@@ -204,7 +204,7 @@ std::optional<command_info> database::command_of(path_ref file_) {
          WHERE file_id IN file
     )"_sql);
     st.reset();
-    st.bindings[1] = file.string();
+    st.bindings[1] = file.generic_string();
     auto opt_res   = sqlite3::unpack_single_opt<std::string, std::string>(st);
     if (!opt_res) {
         return std::nullopt;
