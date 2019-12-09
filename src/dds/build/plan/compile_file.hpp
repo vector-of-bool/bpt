@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/build/plan/base.hpp>
-#include <dds/source.hpp>
+#include <dds/source/file.hpp>
 
 #include <memory>
 

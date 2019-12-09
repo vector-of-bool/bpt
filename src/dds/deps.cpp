@@ -1,7 +1,7 @@
 #include "./deps.hpp"
 
 #include <dds/repo/repo.hpp>
-#include <dds/sdist.hpp>
+#include <dds/source/dist.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/string.hpp>
 #include <libman/index.hpp>

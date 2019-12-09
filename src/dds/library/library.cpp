@@ -1,7 +1,7 @@
 #include <dds/library/library.hpp>
 
 #include <dds/build/plan/compile_file.hpp>
-#include <dds/build/source_dir.hpp>
+#include <dds/source/dir.hpp>
 #include <dds/util/algo.hpp>
 
 #include <range/v3/view/filter.hpp>

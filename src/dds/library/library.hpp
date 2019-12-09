@@ -1,9 +1,9 @@
 #pragma once
 
 #include <dds/build/plan/compile_file.hpp>
-#include <dds/build/source_dir.hpp>
 #include <dds/library/manifest.hpp>
-#include <dds/source.hpp>
+#include <dds/source/dir.hpp>
+#include <dds/source/file.hpp>
 
 #include <string>
 

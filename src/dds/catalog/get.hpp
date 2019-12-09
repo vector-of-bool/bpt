@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/sdist.hpp>
+#include <dds/source/dist.hpp>
 #include <dds/temp.hpp>
 
 namespace dds {
