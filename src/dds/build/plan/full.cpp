@@ -17,6 +17,7 @@ using namespace dds;
 
 namespace {
 
+/// XXX: Duplicated in compile_exec.cpp !!
 template <typename Range, typename Fn>
 bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
     // We don't bother with a nice thread pool, as the overhead of most build
@@ -91,10 +92,10 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
 }
 
 void build_plan::link_all(const build_env& env, int njobs) const {
+    // Generate a pairing between executables and the libraries that own them
     std::vector<std::pair<std::reference_wrapper<const library_plan>,
                           std::reference_wrapper<const link_executable_plan>>>
         executables;
-
     for (auto&& lib : iter_libraries(*this)) {
         for (auto&& exe : lib.executables()) {
             executables.emplace_back(lib, exe);
@@ -112,6 +113,7 @@ void build_plan::link_all(const build_env& env, int njobs) const {
 
 std::vector<test_failure> build_plan::run_all_tests(build_env_ref env, int njobs) const {
     using namespace ranges::views;
+    // Collect executables that are tests
     auto test_executables =                       //
         iter_libraries(*this)                     //
         | transform(&library_plan::executables)   //
