@@ -529,13 +529,13 @@ struct cli_build {
             // Download and build dependencies
             // Build the dependencies
             auto cat          = cat_path.open();
-            auto solved_deps  = cat.solve_requirements(man.dependencies);
             params.dep_sdists = dds::repository::with_repository(  //
                 this->repo_path.Get(),
                 dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
                 [&](dds::repository repo) {
                     // Download dependencies
-                    for (const dds::package_id& pk : solved_deps) {
+                    auto deps = repo.solve(man.dependencies, cat);
+                    for (const dds::package_id& pk : deps) {
                         auto exists = !!repo.find(pk);
                         if (!exists) {
                             spdlog::info("Download dependency: {}", pk.to_string());
@@ -545,7 +545,13 @@ struct cli_build {
                             repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
                         }
                     }
-                    return repo.solve(man.dependencies);
+                    return deps  //
+                        | ranges::views::transform([&](auto& id) {
+                               auto ptr = repo.find(id);
+                               assert(ptr);
+                               return *ptr;
+                           })
+                        | ranges::to_vector;
                 });
         }
         dds::build(params, man);

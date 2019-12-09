@@ -50,8 +50,6 @@ public:
         auto content = dds::slurp_file(json_path);
         import_json_str(content);
     }
-
-    std::vector<package_id> solve_requirements(const std::vector<dependency>& deps) const;
 };
 
 }  // namespace dds

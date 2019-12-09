@@ -90,39 +90,3 @@ TEST_CASE_METHOD(catalog_test_case, "Parse JSON repo") {
           == dds::version_range_set{semver::version::parse("4.2.1"),
                                     semver::version::parse("4.3.0")});
 }
-
-TEST_CASE_METHOD(catalog_test_case, "Simple solve") {
-    db.import_json_str(R"({
-        "version": 1,
-        "packages": {
-            "foo": {
-                "1.2.3": {
-                    "depends": {
-                        "bar": "~4.2.1"
-                    },
-                    "git": {
-                        "url": "http://example.com",
-                        "ref": "master"
-                    }
-                }
-            },
-            "bar": {
-                "4.2.3": {
-                    "depends": {},
-                    "git": {
-                        "url": "http://example.com",
-                        "ref": "master"
-                    }
-                }
-            }
-        }
-    })");
-    auto sln = db.solve_requirements({{"foo",
-                                       dds::version_range_set{semver::version::parse("1.0.0"),
-                                                              semver::version::parse("2.0.0")}}});
-    REQUIRE(sln.size() == 2);
-    CHECK(sln[0].name == "foo");
-    CHECK(sln[0].version == semver::version::parse("1.2.3"));
-    CHECK(sln[1].name == "bar");
-    CHECK(sln[1].version == semver::version::parse("4.2.3"));
-}
