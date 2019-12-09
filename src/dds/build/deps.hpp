@@ -41,6 +41,6 @@ struct deps_rebuild_info {
     std::string           previous_command_output;
 };
 
-deps_rebuild_info get_rebuild_info(database& db, path_ref output_path);
+deps_rebuild_info get_rebuild_info(const database& db, path_ref output_path);
 
 }  // namespace dds

@@ -162,7 +162,7 @@ void database::forget_inputs_of(path_ref file) {
     sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).string()));
 }
 
-std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) {
+std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) const {
     auto  file = fs::weakly_canonical(file_);
     auto& st   = _stmt_cache(R"(
         WITH file AS (
@@ -191,7 +191,7 @@ std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) 
     return ret;
 }
 
-std::optional<command_info> database::command_of(path_ref file_) {
+std::optional<command_info> database::command_of(path_ref file_) const {
     auto  file = fs::weakly_canonical(file_);
     auto& st   = _stmt_cache(R"(
         WITH file AS (

@@ -74,7 +74,7 @@ void dds::update_deps_info(database& db, const deps_info& deps) {
     }
 }
 
-deps_rebuild_info dds::get_rebuild_info(database& db, path_ref output_path) {
+deps_rebuild_info dds::get_rebuild_info(const database& db, path_ref output_path) {
     std::unique_lock lk{db.mutex()};
     auto             cmd_ = db.command_of(output_path);
     if (!cmd_) {

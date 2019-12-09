@@ -26,9 +26,9 @@ struct input_file_info {
 };
 
 class database {
-    neo::sqlite3::database        _db;
-    neo::sqlite3::statement_cache _stmt_cache{_db};
-    mutable std::shared_mutex     _mutex;
+    neo::sqlite3::database                _db;
+    mutable neo::sqlite3::statement_cache _stmt_cache{_db};
+    mutable std::shared_mutex             _mutex;
 
     explicit database(neo::sqlite3::database db);
     database(const database&) = delete;
@@ -49,8 +49,8 @@ public:
     void store_file_command(path_ref file, const command_info& cmd);
     void forget_inputs_of(path_ref file);
 
-    std::optional<std::vector<input_file_info>> inputs_of(path_ref file);
-    std::optional<command_info>                command_of(path_ref file);
+    std::optional<std::vector<input_file_info>> inputs_of(path_ref file) const;
+    std::optional<command_info>                 command_of(path_ref file) const;
 };
 
 }  // namespace dds
