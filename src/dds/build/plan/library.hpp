@@ -2,7 +2,7 @@
 
 #include <dds/build/plan/archive.hpp>
 #include <dds/build/plan/exe.hpp>
-#include <dds/library.hpp>
+#include <dds/library/library.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs.hpp>
 
@@ -11,6 +11,17 @@
 #include <vector>
 
 namespace dds {
+
+struct library_build_params {
+    fs::path out_subdir;
+    bool     build_tests     = false;
+    bool     build_apps      = false;
+    bool     enable_warnings = false;
+
+    // Extras for compiling tests:
+    std::vector<fs::path> test_include_dirs;
+    std::vector<fs::path> test_link_files;
+};
 
 class library_plan {
     std::string                        _name;

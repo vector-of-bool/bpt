@@ -2,6 +2,7 @@
 
 #include <dds/sdist.hpp>
 #include <dds/util/flock.hpp>
+#include <dds/catalog/catalog.hpp>
 #include <dds/util/fs.hpp>
 
 #include <functional>
@@ -96,7 +97,7 @@ public:
         return r;
     }
 
-    std::vector<sdist> solve(const std::vector<dependency>& deps) const;
+    std::vector<package_id> solve(const std::vector<dependency>& deps, const catalog&) const;
 };
 
 }  // namespace dds

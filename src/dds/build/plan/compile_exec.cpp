@@ -178,6 +178,10 @@ compile_file_full realize_plan(const compile_file_plan& plan, build_env_ref env)
 }
 
 bool should_compile(const compile_file_full& comp, build_env_ref env) {
+    if (!fs::exists(comp.object_file_path)) {
+        // The output file simply doesn't exist. We have to recompile, of course.
+        return true;
+    }
     database& db      = env.db;
     auto      rb_info = get_rebuild_info(db, comp.object_file_path);
     if (rb_info.previous_command.empty()) {
@@ -205,11 +209,12 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     auto each_realized =                                                          //
         compiles                                                                  //
         | views::transform([&](auto&& plan) { return realize_plan(plan, env); })  //
-        | views::filter([&](auto&& real) { return should_compile(real, env); });
+        | views::filter([&](auto&& real) { return should_compile(real, env); })   //
+        | ranges::to_vector;
 
-    const auto      total      = compiles.size();
+    const auto      total      = each_realized.size();
     const auto      max_digits = fmt::format("{}", total).size();
-    compile_counter counter{{0}, total, max_digits};
+    compile_counter counter{{1}, total, max_digits};
 
     std::vector<deps_info> all_new_deps;
     std::mutex             mut;

@@ -2,7 +2,7 @@
 
 #include <dds/catalog/git.hpp>
 #include <dds/deps.hpp>
-#include <dds/package_id.hpp>
+#include <dds/package/id.hpp>
 #include <dds/util/fs.hpp>
 
 #include <neo/sqlite3/database.hpp>
@@ -50,8 +50,6 @@ public:
         auto content = dds::slurp_file(json_path);
         import_json_str(content);
     }
-
-    std::vector<package_id> solve_requirements(const std::vector<dependency>& deps) const;
 };
 
 }  // namespace dds

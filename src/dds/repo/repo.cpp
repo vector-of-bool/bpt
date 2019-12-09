@@ -1,5 +1,6 @@
 #include "./repo.hpp"
 
+#include <dds/catalog/catalog.hpp>
 #include <dds/sdist.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/paths.hpp>
@@ -8,7 +9,9 @@
 #include <spdlog/spdlog.h>
 
 #include <range/v3/action/sort.hpp>
+#include <range/v3/action/unique.hpp>
 #include <range/v3/range/conversion.hpp>
+#include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -71,7 +74,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
             "repository, we'll hard-exit immediately.");
         std::terminate();
     }
-    auto sd_dest = _root / sd.manifest.pk_id.to_string();
+    auto sd_dest = _root / sd.manifest.pkg_id.to_string();
     if (fs::exists(sd_dest)) {
         auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
                                sd.path.string());
@@ -95,7 +98,8 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
         fs::remove_all(sd_dest);
     }
     fs::rename(tmp_copy, sd_dest);
-    spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pk_id.to_string());
+    _sdists.insert(sdist::from_directory(sd_dest));
+    spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
 }
 
 const sdist* repository::find(const package_id& pkg) const noexcept {
@@ -106,29 +110,27 @@ const sdist* repository::find(const package_id& pkg) const noexcept {
     return &*found;
 }
 
-std::vector<sdist> repository::solve(const std::vector<dependency>& deps) const {
-    auto ids = dds::solve(deps,
-                          [&](std::string_view name) -> std::vector<package_id> {
-                              auto items = ranges::views::all(_sdists)  //
-                                  | ranges::views::filter([&](const sdist& sd) {
-                                               return sd.manifest.pk_id.name == name;
-                                           })
-                                  | ranges::views::transform(
-                                               [](const sdist& sd) { return sd.manifest.pk_id; })
-                                  | ranges::to_vector;
-                              ranges::sort(items, std::less<>{});
-                              return items;
-                          },
-                          [&](const package_id& pkg_id) {
-                              auto found = find(pkg_id);
-                              assert(found);
+std::vector<package_id> repository::solve(const std::vector<dependency>& deps,
+                                     const catalog&                 ctlg) const {
+    return dds::solve(deps,
+                      [&](std::string_view name) -> std::vector<package_id> {
+                          auto mine = ranges::views::all(_sdists)  //
+                              | ranges::views::filter([&](const sdist& sd) {
+                                          return sd.manifest.pkg_id.name == name;
+                                      })
+                              | ranges::views::transform(
+                                          [](const sdist& sd) { return sd.manifest.pkg_id; });
+                          auto avail = ctlg.by_name(name);
+                          auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
+                          ranges::sort(all, std::less<>{});
+                          ranges::unique(all, std::less<>{});
+                          return all;
+                      },
+                      [&](const package_id& pkg_id) {
+                          auto found = find(pkg_id);
+                          if (found) {
                               return found->manifest.dependencies;
-                          });
-    return ids  //
-        | ranges::views::transform([&](const package_id& pk_id) {
-               auto found = find(pk_id);
-               assert(found);
-               return *found;
-           })  //
-        | ranges::to_vector;
+                          }
+                          return ctlg.dependencies_of(pkg_id);
+                      });
 }

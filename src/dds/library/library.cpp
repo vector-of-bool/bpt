@@ -1,4 +1,4 @@
-#include <dds/library.hpp>
+#include <dds/library/library.hpp>
 
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/build/source_dir.hpp>

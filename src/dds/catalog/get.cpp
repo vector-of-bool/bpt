@@ -52,12 +52,12 @@ temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_list
 
 temporary_sdist dds::get_package_sdist(const package_info& pkg) {
     auto tsd = std::visit([&](auto&& remote) { return do_pull_sdist(pkg, remote); }, pkg.remote);
-    if (!(tsd.sdist.manifest.pk_id == pkg.ident)) {
+    if (!(tsd.sdist.manifest.pkg_id == pkg.ident)) {
         throw std::runtime_error(fmt::format(
             "The package name@version in the generated sdist does not match the name listed in "
             "the remote listing file (expected '{}', but got '{}')",
             pkg.ident.to_string(),
-            tsd.sdist.manifest.pk_id.to_string()));
+            tsd.sdist.manifest.pkg_id.to_string()));
     }
     return tsd;
 }

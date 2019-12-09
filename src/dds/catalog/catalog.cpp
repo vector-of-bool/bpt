@@ -30,11 +30,12 @@ void migrate_repodb_1(sqlite3::database& db) {
             lm_name TEXT,
             lm_namespace TEXT,
             UNIQUE(name, version),
-            CONSTRAINT has_remote_info CHECK(
+            CONSTRAINT has_source_info CHECK(
                 (
                     git_url NOT NULL
                     AND git_ref NOT NULL
                 )
+                = 1
             ),
             CONSTRAINT valid_lm_info CHECK(
                 (
@@ -92,6 +93,9 @@ void ensure_migrated(sqlite3::database& db) {
 }  // namespace
 
 catalog catalog::open(const std::string& db_path) {
+    if (db_path != ":memory:") {
+        fs::create_directories(fs::weakly_canonical(db_path).parent_path());
+    }
     auto db = sqlite3::database::open(db_path);
     try {
         ensure_migrated(db);
@@ -211,7 +215,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         git_remote_listing{
             *git_url,
             *git_ref,
-            lm_name ? std::make_optional(lm::usage{*lm_name, *lm_namespace}) : std::nullopt,
+            lm_name ? std::make_optional(lm::usage{*lm_namespace, *lm_name}) : std::nullopt,
         },
     };
 }
@@ -340,10 +344,4 @@ void catalog::import_json_str(std::string_view content) {
             store(info);
         }
     }
-}
-
-std::vector<package_id> catalog::solve_requirements(const std::vector<dependency>& deps) const {
-    return dds::solve(deps,
-                      [&](std::string_view pkg_name) { return this->by_name(pkg_name); },
-                      [&](const package_id& pkg) { return this->dependencies_of(pkg); });
 }

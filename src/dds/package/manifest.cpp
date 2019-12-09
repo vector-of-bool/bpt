@@ -1,4 +1,4 @@
-#include "./package_manifest.hpp"
+#include "./manifest.hpp"
 
 #include <dds/util/string.hpp>
 #include <libman/parse.hpp>
@@ -18,14 +18,14 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     std::optional<std::string> opt_test_driver;
     lm::read(fmt::format("Reading package manifest '{}'", fpath.string()),
              kvs,
-             lm::read_required("Name", ret.pk_id.name),
+             lm::read_required("Name", ret.pkg_id.name),
              lm::read_opt("Namespace", ret.namespace_),
              lm::read_required("Version", version_str),
              lm::read_accumulate("Depends", depends_strs),
              lm::read_opt("Test-Driver", opt_test_driver),
              lm::reject_unknown());
 
-    if (ret.pk_id.name.empty()) {
+    if (ret.pkg_id.name.empty()) {
         throw std::runtime_error(
             fmt::format("'Name' field in [{}] may not be an empty string", fpath.string()));
     }
@@ -45,10 +45,10 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     }
 
     if (ret.namespace_.empty()) {
-        ret.namespace_ = ret.pk_id.name;
+        ret.namespace_ = ret.pkg_id.name;
     }
 
-    ret.pk_id.version = semver::version::parse(version_str);
+    ret.pkg_id.version = semver::version::parse(version_str);
 
     ret.dependencies = depends_strs                                   //
         | ranges::views::transform(dependency::parse_depends_string)  //

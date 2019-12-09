@@ -9,7 +9,8 @@
 using namespace dds;
 
 fs::path create_archive_plan::calc_archive_file_path(const build_env& env) const noexcept {
-    return env.output_root / fmt::format("{}{}{}", "lib", _name, env.toolchain.archive_suffix());
+    return env.output_root / _subdir
+        / fmt::format("{}{}{}", "lib", _name, env.toolchain.archive_suffix());
 }
 
 void create_archive_plan::archive(const build_env& env) const {
@@ -28,6 +29,7 @@ void create_archive_plan::archive(const build_env& env) const {
     }
 
     spdlog::info("[{}] Archive: {}", _name, out_relpath);
+    fs::create_directories(ar.out_path.parent_path());
     auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
     spdlog::info("[{}] Archive: {} - {:n}ms", _name, out_relpath, dur_ms.count());
 
