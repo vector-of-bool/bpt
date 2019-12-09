@@ -7,11 +7,22 @@
 
 namespace dds {
 
+/**
+ * A `source_directory` is a simple wrapper type that provides type safety and utilities to
+ * represent a source directory.
+ */
 struct source_directory {
+    /// The actual path to the directory
     fs::path path;
 
-    std::vector<source_file> sources() const;
+    /**
+     * Generate a vector of every source file contained in this directory (including subdirectories)
+     */
+    std::vector<source_file> collect_sources() const;
 
+    /**
+     * Check if the directory exists
+     */
     bool exists() const noexcept { return fs::exists(path); }
 };
 

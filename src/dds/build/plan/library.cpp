@@ -24,7 +24,7 @@ library_plan library_plan::create(const library&               lib,
     if (src_dir.exists()) {
         // Sort each source file between the three source arrays, depending on
         // the kind of source that we are looking at.
-        auto all_sources = src_dir.sources();
+        auto all_sources = src_dir.collect_sources();
         for (const auto& sfile : all_sources) {
             if (sfile.kind == source_kind::test) {
                 test_sources.push_back(sfile);

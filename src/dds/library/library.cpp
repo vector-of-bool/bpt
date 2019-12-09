@@ -22,7 +22,7 @@ auto collect_pf_sources(path_ref path) {
         if (!fs::is_directory(include_dir.path)) {
             throw std::runtime_error("The `include` at the root of the project is not a directory");
         }
-        auto inc_sources = include_dir.sources();
+        auto inc_sources = include_dir.collect_sources();
         // Drop any source files we found within `include/`
         erase_if(sources, [&](auto& info) {
             if (info.kind != source_kind::header) {
@@ -39,7 +39,7 @@ auto collect_pf_sources(path_ref path) {
         if (!fs::is_directory(src_dir.path)) {
             throw std::runtime_error("The `src` at the root of the project is not a directory");
         }
-        auto src_sources = src_dir.sources();
+        auto src_sources = src_dir.collect_sources();
         extend(sources, src_sources);
     }
 
