@@ -69,15 +69,15 @@ class DDS:
     def project_dir_arg(self) -> str:
         return f'--project-dir={self.source_root}'
 
-    def deps_build(self, *,
+    def build_deps(self, args: proc.CommandLine, *,
                    toolchain: str = None) -> subprocess.CompletedProcess:
         return self.run([
-            'deps',
-            'build',
+            'build-deps',
             f'--toolchain={toolchain or self.default_builtin_toolchain}',
-            self.repo_dir_arg,
-            f'--deps-build-dir={self.deps_build_dir}',
+            f'--repo-dir={self.repo_dir}',
+            f'--out={self.deps_build_dir}',
             f'--lmi-path={self.lmi_path}',
+            args,
         ])
 
     def build(self,
@@ -117,9 +117,9 @@ class DDS:
     @property
     def default_builtin_toolchain(self) -> str:
         if os.name == 'posix':
-            return ':gcc-9'
+            return ':c++17:gcc-9'
         elif os.name == 'nt':
-            return ':msvc'
+            return ':c++17:msvc'
         else:
             raise RuntimeError(
                 f'No default builtin toolchain defined for tests on platform "{os.name}"'
