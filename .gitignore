@@ -2,7 +2,5 @@ _build/
 __pycache__/
 .vscode/
 .mypy_cache/
-*.dsd/
 _prebuilt/
-.dds-repo-lock
 .pytest_cache
