@@ -145,6 +145,49 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
     return ureqs;
 }
 
+void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
+    fs::create_directories(lml_path.parent_path());
+    auto out = open(lml_path, std::ios::binary | std::ios::out);
+    out << "Type: Library\n"
+        << "Name: " << lib.name() << '\n'
+        << "Include-Path: " << lib.library_().public_include_dir().generic_string() << '\n';
+    for (auto&& use : lib.uses()) {
+        out << "Uses: " << use.namespace_ << "/" << use.name << '\n';
+    }
+    for (auto&& link : lib.links()) {
+        out << "Links: " << link.namespace_ << "/" << link.name << '\n';
+    }
+    if (auto&& arc = lib.create_archive()) {
+        out << "Path: "
+            << (env.output_root / arc->calc_archive_file_path(env.toolchain)).generic_string()
+            << '\n';
+    }
+}
+
+void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
+    fs::create_directories(lmp_path.parent_path());
+    auto out = open(lmp_path, std::ios::binary | std::ios::out);
+    out << "Type: Package\n"
+        << "Name: " << pkg.name() << '\n'
+        << "Namespace: " << pkg.namespace_() << '\n';
+    for (const auto& lib : pkg.libraries()) {
+        auto lml_path = lmp_path.parent_path() / pkg.namespace_() / (lib.name() + ".lml");
+        write_lml(env, lib, lml_path);
+        out << "Library: " << lml_path.generic_string() << '\n';
+    }
+}
+
+void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, path_ref lmi_path) {
+    fs::create_directories(lmi_path.parent_path());
+    auto out = open(lmi_path, std::ios::binary | std::ios::out);
+    out << "Type: Index\n";
+    for (const auto& pkg : plan.packages()) {
+        auto lmp_path = base_dir / "_libman" / (pkg.name() + ".lmp");
+        write_lmp(env, pkg, lmp_path);
+        out << "Package: " << pkg.name() << "; " << lmp_path.generic_string() << '\n';
+    }
+}
+
 }  // namespace
 
 void builder::build(const build_params& params) const {
@@ -192,5 +235,9 @@ void builder::build(const build_params& params) const {
     }
     if (!test_failures.empty()) {
         throw compile_failure("Test failures during the build!");
+    }
+
+    if (params.emit_lmi) {
+        write_lmi(env, plan, params.out_root, *params.emit_lmi);
     }
 }

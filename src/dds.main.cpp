@@ -611,6 +611,7 @@ struct cli_build_deps {
         params.out_root      = out_path.Get();
         params.toolchain     = tc.get_toolchain();
         params.parallel_jobs = n_jobs.Get();
+        params.emit_lmi      = lmi_path.Get();
 
         dds::builder            bd;
         dds::sdist_build_params sdist_params;
