@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/build/plan/full.hpp>
+#include <dds/util/fs.hpp>
 
 #include <pubgrub/interval.hpp>
 #include <semver/range.hpp>
@@ -17,6 +17,15 @@ struct dependency {
     version_range_set versions;
 
     static dependency parse_depends_string(std::string_view str);
+};
+
+/**
+ * Represents a dependency listing file, which is a subset of a package manifest
+ */
+struct dependency_manifest {
+    std::vector<dependency> dependencies;
+
+    static dependency_manifest from_file(path_ref where);
 };
 
 }  // namespace dds

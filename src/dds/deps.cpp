@@ -40,3 +40,20 @@ dependency dependency::parse_depends_string(std::string_view str) {
             str));
     }
 }
+
+dependency_manifest dependency_manifest::from_file(path_ref fpath) {
+    auto                kvs = lm::parse_file(fpath);
+    dependency_manifest ret;
+    lm::read(
+        fmt::format("Reading dependencies from '{}'", fpath.string()),
+        kvs,
+        [&](auto, auto key, auto val) {
+            if (key == "Depends") {
+                ret.dependencies.push_back(dependency::parse_depends_string(val));
+                return true;
+            }
+            return false;
+        },
+        lm::reject_unknown());
+    return ret;
+}

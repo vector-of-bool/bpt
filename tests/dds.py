@@ -74,6 +74,7 @@ class DDS:
         return self.run([
             'build-deps',
             f'--toolchain={toolchain or self.default_builtin_toolchain}',
+            f'--catalog={self.catalog_path}',
             f'--repo-dir={self.repo_dir}',
             f'--out={self.deps_build_dir}',
             f'--lmi-path={self.lmi_path}',

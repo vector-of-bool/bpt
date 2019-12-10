@@ -1,5 +1,6 @@
 #include "./dist.hpp"
 
+#include <dds/library/library.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 

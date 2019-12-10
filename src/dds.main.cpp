@@ -615,12 +615,11 @@ struct cli_build_deps {
         dds::builder            bd;
         dds::sdist_build_params sdist_params;
 
-        auto all_file_deps
-            = deps_files.Get()  //
+        auto all_file_deps = deps_files.Get()  //
             | ranges::views::transform([&](auto dep_fpath) {
-                  spdlog::info("Reading deps from {}", dep_fpath.string());
-                  return dds::package_manifest::load_from_file(dep_fpath).dependencies;
-              })
+                                 spdlog::info("Reading deps from {}", dep_fpath.string());
+                                 return dds::dependency_manifest::from_file(dep_fpath).dependencies;
+                             })
             | ranges::actions::join;
 
         auto cmd_deps = ranges::views::transform(deps.Get(), [&](auto dep_str) {
@@ -650,6 +649,7 @@ struct cli_build_deps {
                     assert(sdist_ptr);
                     dds::sdist_build_params deps_params;
                     deps_params.subdir = sdist_ptr->manifest.pkg_id.to_string();
+                    spdlog::info("Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
                     bd.add(*sdist_ptr, deps_params);
                 }
             });
