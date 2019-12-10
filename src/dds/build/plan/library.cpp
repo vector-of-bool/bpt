@@ -10,9 +10,7 @@
 
 using namespace dds;
 
-library_plan library_plan::create(const library&               lib,
-                                  const library_build_params&  params,
-                                  const usage_requirement_map& ureqs) {
+library_plan library_plan::create(const library& lib, const library_build_params& params) {
     // Source files are kept in three groups:
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
@@ -41,12 +39,7 @@ library_plan library_plan::create(const library&               lib,
     // Load up the compile rules
     auto compile_rules              = lib.base_compile_rules();
     compile_rules.enable_warnings() = params.enable_warnings;
-
-    // Apply our transitive usage requirements. This gives us the search directories for our
-    // dependencies.
-    for (const auto& use : lib.manifest().uses) {
-        ureqs.apply(compile_rules, use.namespace_, use.name);
-    }
+    compile_rules.uses()            = lib.manifest().uses;
 
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
@@ -70,21 +63,19 @@ library_plan library_plan::create(const library&               lib,
 
     // Collect the paths to linker inputs that should be used when generating executables for this
     // library.
-    std::vector<fs::path> link_libs;
-    for (auto& use : lib.manifest().uses) {
-        extend(link_libs, ureqs.link_paths(use.namespace_, use.name));
-    }
-    for (auto& link : lib.manifest().links) {
-        extend(link_libs, ureqs.link_paths(link.namespace_, link.name));
-    }
+    std::vector<lm::usage> links;
+    extend(links, lib.manifest().uses);
+    extend(links, lib.manifest().links);
 
     // Linker inputs for tests may contain additional code for test execution
-    auto test_link_libs = link_libs;
-    extend(test_link_libs, params.test_link_files);
+    std::vector<fs::path> link_libs;
+    std::vector<fs::path> test_link_libs = params.test_link_files;
 
-    // There may also be additional #include paths for test source files
+    // There may also be additional usage requirements for tests
     auto test_rules = compile_rules.clone();
-    extend(test_rules.include_dirs(), params.test_include_dirs);
+    auto test_links = links;
+    extend(test_rules.uses(), params.test_uses);
+    extend(test_links, params.test_uses);
 
     // Generate the plans to link any executables for this library
     std::vector<link_executable_plan> link_executables;
@@ -99,21 +90,19 @@ library_plan library_plan::create(const library&               lib,
         auto rules = is_test ? test_rules : compile_rules;
         // Pick input libs based on app/test
         auto& exe_link_libs = is_test ? test_link_libs : link_libs;
+        auto& exe_links     = is_test ? test_links : links;
         // TODO: Apps/tests should only see the _public_ include dir, not both
-        link_executables.emplace_back(exe_link_libs,
-                                      compile_file_plan(rules,
-                                                        source,
-                                                        lib.manifest().name,
-                                                        params.out_subdir / "obj"),
-                                      subdir,
-                                      source.path.stem().stem().string());
+        auto exe = link_executable_plan{exe_link_libs,
+                                        exe_links,
+                                        compile_file_plan(rules,
+                                                          source,
+                                                          lib.manifest().name,
+                                                          params.out_subdir / "obj"),
+                                        subdir,
+                                        source.path.stem().stem().string()};
+        link_executables.emplace_back(std::move(exe));
     }
 
     // Done!
-    return library_plan{lib.manifest().name,
-                        lib.path(),
-                        std::move(create_archive),
-                        std::move(link_executables),
-                        lib.manifest().uses,
-                        lib.manifest().links};
+    return library_plan{lib, std::move(create_archive), std::move(link_executables)};
 }

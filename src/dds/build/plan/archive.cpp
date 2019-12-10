@@ -8,9 +8,8 @@
 
 using namespace dds;
 
-fs::path create_archive_plan::calc_archive_file_path(const build_env& env) const noexcept {
-    return env.output_root / _subdir
-        / fmt::format("{}{}{}", "lib", _name, env.toolchain.archive_suffix());
+fs::path create_archive_plan::calc_archive_file_path(const toolchain& tc) const noexcept {
+    return _subdir / fmt::format("{}{}{}", "lib", _name, tc.archive_suffix());
 }
 
 void create_archive_plan::archive(const build_env& env) const {
@@ -23,7 +22,7 @@ void create_archive_plan::archive(const build_env& env) const {
     // Build up the archive command
     archive_spec ar;
     ar.input_files = std::move(objects);
-    ar.out_path    = calc_archive_file_path(env);
+    ar.out_path    = env.output_root / calc_archive_file_path(env.toolchain);
     auto ar_cmd    = env.toolchain.create_archive_command(ar);
 
     // `out_relpath` is purely for the benefit of the user to have a short name

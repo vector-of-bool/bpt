@@ -1,4 +1,5 @@
 #include <dds/build.hpp>
+#include <dds/build/builder.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
 #include <dds/repo/repo.hpp>
@@ -523,6 +524,14 @@ struct cli_build {
         if (exists(man_filepath)) {
             man = dds::package_manifest::load_from_file(man_filepath);
         }
+
+        dds::builder            bd;
+        dds::sdist_build_params main_params;
+        main_params.build_apps      = !no_apps.Get();
+        main_params.enable_warnings = !no_warnings.Get();
+        main_params.run_tests = main_params.build_tests = !no_tests.Get();
+
+        bd.add(dds::sdist{man, project.root.Get()}, main_params);
         if (lm_index) {
             params.existing_lm_index = lm_index.Get();
         } else {
@@ -553,8 +562,13 @@ struct cli_build {
                            })
                         | ranges::to_vector;
                 });
+            for (auto sd : params.dep_sdists) {
+                dds::sdist_build_params deps_params;
+                deps_params.subdir = dds::fs::path("_deps") / sd.manifest.pkg_id.to_string();
+                bd.add(std::move(sd), deps_params);
+            }
         }
-        dds::build(params, man);
+        bd.build(params);
         return 0;
     }
 };

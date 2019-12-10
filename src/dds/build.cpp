@@ -1,5 +1,6 @@
 #include "./build.hpp"
 
+#include <dds/build/builder.hpp>
 #include <dds/build/plan/compile_exec.hpp>
 #include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
@@ -61,7 +62,8 @@ fs::path export_project_library(const library_plan& lib, build_env_ref env, path
     }
 
     if (lib.create_archive()) {
-        auto ar_path = lib.create_archive()->calc_archive_file_path(env);
+        auto ar_path
+            = env.output_root / lib.create_archive()->calc_archive_file_path(env.toolchain);
         auto ar_dest = lib_out_root / ar_path.filename();
         fs::create_directories(ar_dest.parent_path());
         fs::copy_file(ar_path, ar_dest);
@@ -120,76 +122,6 @@ load_usage_requirements(path_ref project_root, path_ref build_root, path_ref use
     return usage_requirement_map::from_lm_index(idx);
 }
 
-void prepare_catch2_driver(library_build_params& lib_params,
-                           test_lib              test_driver,
-                           const build_params&   params,
-                           build_env_ref         env_) {
-    fs::path test_include_root = params.out_root / "_catch-2.10.2";
-    lib_params.test_include_dirs.emplace_back(test_include_root);
-
-    auto catch_hpp = test_include_root / "catch2/catch.hpp";
-    if (!fs::exists(catch_hpp)) {
-        fs::create_directories(catch_hpp.parent_path());
-        auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
-        hpp_strm.write(detail::catch2_embedded_single_header_str,
-                       std::strlen(detail::catch2_embedded_single_header_str));
-        hpp_strm.close();
-    }
-
-    if (test_driver == test_lib::catch_) {
-        // Don't generate a test library helper
-        return;
-    }
-
-    std::string fname;
-    std::string definition;
-
-    if (test_driver == test_lib::catch_main) {
-        fname      = "catch-main.cpp";
-        definition = "CATCH_CONFIG_MAIN";
-    } else {
-        assert(false && "Impossible: Invalid `test_driver` for catch library");
-        std::terminate();
-    }
-
-    shared_compile_file_rules comp_rules;
-    comp_rules.defs().push_back(definition);
-
-    auto catch_cpp = test_include_root / "catch2" / fname;
-    auto cpp_strm  = open(catch_cpp, std::ios::out | std::ios::binary);
-    cpp_strm << "#include \"./catch.hpp\"\n";
-    cpp_strm.close();
-
-    auto sf = source_file::from_path(catch_cpp, test_include_root);
-    assert(sf.has_value());
-
-    compile_file_plan plan{comp_rules, std::move(*sf), "Catch2", "v1"};
-
-    build_env env2 = env_;
-    env2.output_root /= "_test-driver";
-    auto obj_file = plan.calc_object_file_path(env2);
-
-    if (!fs::exists(obj_file)) {
-        spdlog::info("Compiling Catch2 test driver (This will only happen once)...");
-        compile_all(std::array{plan}, env2, 1);
-    }
-
-    lib_params.test_link_files.push_back(obj_file);
-}
-
-void prepare_test_driver(library_build_params&   lib_params,
-                         const build_params&     params,
-                         const package_manifest& man,
-                         build_env_ref           env) {
-    auto& test_driver = *man.test_driver;
-    if (test_driver == test_lib::catch_ || test_driver == test_lib::catch_main) {
-        prepare_catch2_driver(lib_params, test_driver, params, env);
-    } else {
-        assert(false && "Unreachable");
-        std::terminate();
-    }
-}
-
 void add_ureqs(usage_requirement_map& ureqs,
                const sdist&           sd,
                const library&         lib,
@@ -197,11 +129,11 @@ void add_ureqs(usage_requirement_map& ureqs,
                build_env_ref          env) {
     lm::library& reqs = ureqs.add(sd.manifest.namespace_, lib.manifest().name);
     reqs.include_paths.push_back(lib.public_include_dir());
-    reqs.name  = lib.manifest().name;
     reqs.uses  = lib.manifest().uses;
     reqs.links = lib.manifest().links;
     if (lib_plan.create_archive()) {
-        reqs.linkable_path = lib_plan.create_archive()->calc_archive_file_path(env);
+        reqs.linkable_path
+            = env.output_root / lib_plan.create_archive()->calc_archive_file_path(env.toolchain);
     }
     // TODO: preprocessor definitions
 }
@@ -236,7 +168,7 @@ void add_sdist_to_build(build_plan&             plan,
         shared_compile_file_rules comp_rules = lib.base_compile_rules();
         library_build_params      lib_params;
         lib_params.out_subdir = fs::path("deps") / sd.manifest.pkg_id.name;
-        auto lib_plan         = library_plan::create(lib, lib_params, ureqs);
+        auto lib_plan         = library_plan::create(lib, lib_params);
         // Create usage requirements for this libary.
         add_ureqs(ureqs, sd, lib, lib_plan, env);
         // Add it to the plan:
@@ -265,10 +197,12 @@ void add_deps_to_build(build_plan&            plan,
 void dds::build(const build_params& params, const package_manifest& man) {
     fs::create_directories(params.out_root);
     auto           db = database::open(params.out_root / ".dds.db");
-    dds::build_env env{params.toolchain, params.out_root, db};
 
     // The build plan we will fill out:
     build_plan plan;
+
+    // Create a source distribution for the project, even if it doesn't have a manifest of its own
+    sdist root_sdist{man, params.root};
 
     // Collect libraries for the current project
     auto libs = collect_libraries(params.root);
@@ -278,6 +212,8 @@ void dds::build(const build_params& params, const package_manifest& man) {
     }
 
     usage_requirement_map ureqs;
+
+    dds::build_env env{params.toolchain, params.out_root, db, ureqs};
 
     if (params.existing_lm_index) {
         ureqs = load_usage_requirements(params.root, params.out_root, *params.existing_lm_index);
@@ -295,13 +231,9 @@ void dds::build(const build_params& params, const package_manifest& man) {
     lib_params.build_apps      = params.build_apps;
     lib_params.enable_warnings = params.enable_warnings;
 
-    if (man.test_driver) {
-        prepare_test_driver(lib_params, params, man, env);
-    }
-
     for (const library& lib : libs) {
         lib_params.out_subdir = fs::relative(lib.path(), params.root);
-        pkg.add_library(library_plan::create(lib, lib_params, ureqs));
+        pkg.add_library(library_plan::create(lib, lib_params));
     }
 
     if (params.generate_compdb) {
