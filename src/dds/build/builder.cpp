@@ -177,24 +177,20 @@ void builder::build(const build_params& params) const {
     plan.archive_all(env, params.parallel_jobs);
     spdlog::info("Archiving completed in {:n}ms", sw.elapsed_ms().count());
 
-    if (params.build_tests || params.build_apps) {
-        sw.reset();
-        plan.link_all(env, params.parallel_jobs);
-        spdlog::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
+    sw.reset();
+    plan.link_all(env, params.parallel_jobs);
+    spdlog::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
+
+    sw.reset();
+    auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
+    spdlog::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
+
+    for (auto& failures : test_failures) {
+        spdlog::error("Test {} failed! Output:\n{}[dds - test output end]",
+                      failures.executable_path.string(),
+                      failures.output);
     }
-
-    if (params.build_tests) {
-        sw.reset();
-        auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-        spdlog::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
-
-        for (auto& failures : test_failures) {
-            spdlog::error("Test {} failed! Output:\n{}[dds - test output end]",
-                          failures.executable_path.string(),
-                          failures.output);
-        }
-        if (!test_failures.empty()) {
-            throw compile_failure("Test failures during the build!");
-        }
+    if (!test_failures.empty()) {
+        throw compile_failure("Test failures during the build!");
     }
 }

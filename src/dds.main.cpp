@@ -1,4 +1,3 @@
-#include <dds/build.hpp>
 #include <dds/build/builder.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
@@ -489,8 +488,6 @@ struct cli_build {
     args::Flag     no_warnings{cmd, "no-warings", "Disable build warnings", {"no-warnings"}};
     toolchain_flag tc_filepath{cmd};
 
-    args::Flag export_{cmd, "export", "Generate a library export", {"export", 'E'}};
-
     path_flag
         lm_index{cmd,
                  "lm_index",
@@ -511,16 +508,11 @@ struct cli_build {
 
     int run() {
         dds::build_params params;
-        params.root            = project.root.Get();
-        params.out_root        = out.Get();
-        params.toolchain       = tc_filepath.get_toolchain();
-        params.do_export       = export_.Get();
-        params.build_tests     = !no_tests.Get();
-        params.build_apps      = !no_apps.Get();
-        params.enable_warnings = !no_warnings.Get();
-        params.parallel_jobs   = num_jobs.Get();
+        params.out_root      = out.Get();
+        params.toolchain     = tc_filepath.get_toolchain();
+        params.parallel_jobs = num_jobs.Get();
         dds::package_manifest man;
-        const auto            man_filepath = params.root / "package.dds";
+        const auto            man_filepath = project.root.Get() / "package.dds";
         if (exists(man_filepath)) {
             man = dds::package_manifest::load_from_file(man_filepath);
         }
@@ -537,8 +529,8 @@ struct cli_build {
         } else {
             // Download and build dependencies
             // Build the dependencies
-            auto cat          = cat_path.open();
-            params.dep_sdists = dds::repository::with_repository(  //
+            auto cat = cat_path.open();
+            dds::repository::with_repository(  //
                 this->repo_path.Get(),
                 dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
                 [&](dds::repository repo) {
@@ -553,20 +545,14 @@ struct cli_build {
                             auto tsd = dds::get_package_sdist(*opt_pkg);
                             repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
                         }
+                        auto sdist_ptr = repo.find(pk);
+                        assert(sdist_ptr);
+                        dds::sdist_build_params deps_params;
+                        deps_params.subdir
+                            = dds::fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
+                        bd.add(*sdist_ptr, deps_params);
                     }
-                    return deps  //
-                        | ranges::views::transform([&](auto& id) {
-                               auto ptr = repo.find(id);
-                               assert(ptr);
-                               return *ptr;
-                           })
-                        | ranges::to_vector;
                 });
-            for (auto sd : params.dep_sdists) {
-                dds::sdist_build_params deps_params;
-                deps_params.subdir = dds::fs::path("_deps") / sd.manifest.pkg_id.to_string();
-                bd.add(std::move(sd), deps_params);
-            }
         }
         bd.build(params);
         return 0;

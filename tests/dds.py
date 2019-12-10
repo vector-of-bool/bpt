@@ -85,8 +85,7 @@ class DDS:
               toolchain: str = None,
               apps: bool = True,
               warnings: bool = True,
-              tests: bool = True,
-              export: bool = False) -> subprocess.CompletedProcess:
+              tests: bool = True) -> subprocess.CompletedProcess:
         return self.run([
             'build',
             f'--out={self.build_dir}',
@@ -96,7 +95,6 @@ class DDS:
             ['--no-tests'] if not tests else [],
             ['--no-apps'] if not apps else [],
             ['--no-warnings'] if not warnings else [],
-            ['--export'] if export else [],
             self.project_dir_arg,
         ])
 
