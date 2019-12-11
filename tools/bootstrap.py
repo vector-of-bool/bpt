@@ -23,7 +23,7 @@ class BootstrapPhase(NamedTuple):
 BOOTSTRAP_PHASES = [
     BootstrapPhase('bootstrap-p1', 'g++-8', 'cl.exe'),
     BootstrapPhase('bootstrap-p4', 'g++-8', 'cl.exe'),
-    BootstrapPhase('release/0.0.1', 'g++-9', 'cl.exe'),
+    BootstrapPhase('bootstrap-p5', 'g++-9', 'cl.exe'),
 ]
 
 HERE = Path(__file__).parent.absolute()
