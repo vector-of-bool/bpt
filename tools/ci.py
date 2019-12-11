@@ -16,7 +16,6 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
-    skip_deps: bool
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
