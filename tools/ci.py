@@ -9,8 +9,6 @@ import urllib.request
 import shutil
 
 from self_build import self_build
-from self_deps_get import self_deps_get
-from self_deps_build import self_deps_build
 from dds_ci import paths, proc
 
 

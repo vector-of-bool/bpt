@@ -23,7 +23,16 @@ def self_build(exe: Path,
     try:
         proc.check_run(
             new_exe,
+            'catalog',
+            'import',
+            f'--catalog=_build/catalog.db',
+            f'--json=catalog.json',
+        )
+        proc.check_run(
+            new_exe,
             'build',
+            f'--catalog=_build/catalog.db',
+            f'--repo-dir=_build/ci-repo',
             dds_flags,
             ('--toolchain', toolchain),
             ('-I', lmi_path) if lmi_path else (),
