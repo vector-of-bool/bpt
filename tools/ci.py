@@ -15,9 +15,7 @@ from dds_ci import paths, proc
 
 
 class CIOptions(NamedTuple):
-    cxx: Path
     toolchain: str
-    skip_deps: bool
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -26,7 +24,6 @@ def _do_bootstrap_build(opts: CIOptions) -> None:
         sys.executable,
         '-u',
         str(paths.TOOLS_DIR / 'bootstrap.py'),
-        f'--cxx={opts.cxx}',
     ])
 
 
@@ -68,28 +65,15 @@ def main(argv: Sequence[str]) -> int:
         required=True,
     )
     parser.add_argument(
-        '--cxx', help='The name/path of the C++ compiler to use.')
-    parser.add_argument(
         '--toolchain',
         '-T',
         help='The toolchain to use for the CI process',
         required=True)
-    parser.add_argument(
-        '--skip-deps',
-        action='store_true',
-        help='If specified, will skip getting and building '
-        'dependencies. (They must already be present)')
     args = parser.parse_args(argv)
 
-    opts = CIOptions(
-        cxx=Path(args.cxx or 'unspecified'),
-        toolchain=args.toolchain,
-        skip_deps=args.skip_deps)
+    opts = CIOptions(toolchain=args.toolchain)
 
     if args.bootstrap_with == 'build':
-        if args.cxx is None:
-            raise RuntimeError(
-                '`--cxx` must be given when using `--bootstrap-with=build`')
         _do_bootstrap_build(opts)
     elif args.bootstrap_with == 'download':
         _do_bootstrap_download()
@@ -98,21 +82,27 @@ def main(argv: Sequence[str]) -> int:
     else:
         assert False, 'impossible'
 
+    cat_path = paths.BUILD_DIR / 'catalog.db'
     ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
-    if not opts.skip_deps:
-        if ci_repo_dir.exists():
-            shutil.rmtree(ci_repo_dir)
-        self_deps_get(paths.PREBUILT_DDS, ci_repo_dir)
-        self_deps_build(paths.PREBUILT_DDS, opts.toolchain, ci_repo_dir,
-                        paths.PROJECT_ROOT / 'remote.dds')
+    if ci_repo_dir.exists():
+        shutil.rmtree(ci_repo_dir)
 
+    proc.check_run([
+        paths.PREBUILT_DDS,
+        'catalog',
+        'import',
+        ('--catalog', cat_path),
+        ('--json', paths.PROJECT_ROOT / 'catalog.json'),
+    ])
     self_build(
         paths.PREBUILT_DDS,
         toolchain=opts.toolchain,
-        dds_flags=['--warnings', '--tests', '--apps'])
+        dds_flags=[
+            ('--catalog', cat_path),
+            ('--repo-dir', ci_repo_dir),
+        ])
     print('Main build PASSED!')
 
-    cat_path = paths.BUILD_DIR / 'catalog.db'
     proc.check_run([
         paths.CUR_BUILT_DDS,
         'catalog',
