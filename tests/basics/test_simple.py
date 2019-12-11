@@ -25,6 +25,6 @@ def test_simple_lib(dds: DDS, scope: ExitStack):
             ''',
         ))
 
-    dds.build(tests=True, apps=False, warnings=False, export=True)
+    dds.build(tests=True, apps=False, warnings=False)
     assert (dds.build_dir / 'compile_commands.json').is_file()
     assert list(dds.build_dir.glob('libTestLibrary*')) != []

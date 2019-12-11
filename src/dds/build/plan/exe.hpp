@@ -3,6 +3,8 @@
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/util/fs.hpp>
 
+#include <libman/library.hpp>
+
 #include <string>
 #include <vector>
 
@@ -26,6 +28,8 @@ struct test_failure {
 class link_executable_plan {
     /// The linker inputs that should be linked into the executable
     std::vector<fs::path> _input_libs;
+    /// Usage requirements for this executable
+    std::vector<lm::usage> _links;
     /// The compilation plan for the entry-point source file
     compile_file_plan _main_compile;
     /// The subdirectory in which the executable should be generated
@@ -37,15 +41,18 @@ public:
     /**
      * Create a new instance
      * @param in_libs Linker inputs for the executable
+     * @param links The library identifiers that the executable should link with
      * @param cfp The file compilation that defines the entrypoint of the application
      * @param out_subdir The subdirectory of the build root in which the executable should be placed
      * @param name_ The name of the executable
      */
-    link_executable_plan(std::vector<fs::path> in_libs,
-                         compile_file_plan     cfp,
-                         path_ref              out_subdir,
-                         std::string           name_)
+    link_executable_plan(std::vector<fs::path>  in_libs,
+                         std::vector<lm::usage> links,
+                         compile_file_plan      cfp,
+                         path_ref               out_subdir,
+                         std::string            name_)
         : _input_libs(std::move(in_libs))
+        , _links(std::move(links))
         , _main_compile(std::move(cfp))
         , _out_subdir(out_subdir)
         , _name(std::move(name_)) {}

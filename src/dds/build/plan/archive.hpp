@@ -43,11 +43,11 @@ public:
     const std::string& name() const noexcept { return _name; }
 
     /**
-     * Calculate the absolute path where the generated archive libary file will
-     * be generated after execution.
-     * @param env The build environment for the archival.
+     * Calculate the path relative to the build output root where the static library archive will be
+     * placed upon creation.
+     * @param tc The toolchain that will be used
      */
-    fs::path calc_archive_file_path(build_env_ref env) const noexcept;
+    fs::path calc_archive_file_path(const toolchain& tc) const noexcept;
 
     /**
      * Get the compilation plans for this library.

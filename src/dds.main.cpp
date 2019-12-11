@@ -1,4 +1,4 @@
-#include <dds/build.hpp>
+#include <dds/build/builder.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
 #include <dds/repo/repo.hpp>
@@ -8,6 +8,8 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
 
+#include <range/v3/action/join.hpp>
+#include <range/v3/view/concat.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -64,6 +66,15 @@ struct catalog_path_flag : path_flag {
                     dds::dds_data_dir() / "catalog.db") {}
 
     dds::catalog open() { return dds::catalog::open(Get()); }
+};
+
+struct num_jobs_flag : args::ValueFlag<int> {
+    num_jobs_flag(args::Group& cmd)
+        : ValueFlag(cmd,
+                    "jobs",
+                    "Set the number of parallel jobs when compiling files",
+                    {"jobs", 'j'},
+                    0) {}
 };
 
 /**
@@ -488,19 +499,13 @@ struct cli_build {
     args::Flag     no_warnings{cmd, "no-warings", "Disable build warnings", {"no-warnings"}};
     toolchain_flag tc_filepath{cmd};
 
-    args::Flag export_{cmd, "export", "Generate a library export", {"export", 'E'}};
-
     path_flag
         lm_index{cmd,
                  "lm_index",
                  "Path to an existing libman index from which to load deps (usually INDEX.lmi)",
                  {"lm-index", 'I'}};
 
-    args::ValueFlag<int> num_jobs{cmd,
-                                  "jobs",
-                                  "Set the number of parallel jobs when compiling files",
-                                  {"jobs", 'j'},
-                                  0};
+    num_jobs_flag n_jobs{cmd};
 
     path_flag out{cmd,
                   "out",
@@ -510,26 +515,29 @@ struct cli_build {
 
     int run() {
         dds::build_params params;
-        params.root            = project.root.Get();
-        params.out_root        = out.Get();
-        params.toolchain       = tc_filepath.get_toolchain();
-        params.do_export       = export_.Get();
-        params.build_tests     = !no_tests.Get();
-        params.build_apps      = !no_apps.Get();
-        params.enable_warnings = !no_warnings.Get();
-        params.parallel_jobs   = num_jobs.Get();
+        params.out_root      = out.Get();
+        params.toolchain     = tc_filepath.get_toolchain();
+        params.parallel_jobs = n_jobs.Get();
         dds::package_manifest man;
-        const auto            man_filepath = params.root / "package.dds";
+        const auto            man_filepath = project.root.Get() / "package.dds";
         if (exists(man_filepath)) {
             man = dds::package_manifest::load_from_file(man_filepath);
         }
+
+        dds::builder            bd;
+        dds::sdist_build_params main_params;
+        main_params.build_apps      = !no_apps.Get();
+        main_params.enable_warnings = !no_warnings.Get();
+        main_params.run_tests = main_params.build_tests = !no_tests.Get();
+
+        bd.add(dds::sdist{man, project.root.Get()}, main_params);
         if (lm_index) {
             params.existing_lm_index = lm_index.Get();
         } else {
             // Download and build dependencies
             // Build the dependencies
-            auto cat          = cat_path.open();
-            params.dep_sdists = dds::repository::with_repository(  //
+            auto cat = cat_path.open();
+            dds::repository::with_repository(  //
                 this->repo_path.Get(),
                 dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
                 [&](dds::repository repo) {
@@ -544,17 +552,110 @@ struct cli_build {
                             auto tsd = dds::get_package_sdist(*opt_pkg);
                             repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
                         }
+                        auto sdist_ptr = repo.find(pk);
+                        assert(sdist_ptr);
+                        dds::sdist_build_params deps_params;
+                        deps_params.subdir
+                            = dds::fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
+                        bd.add(*sdist_ptr, deps_params);
                     }
-                    return deps  //
-                        | ranges::views::transform([&](auto& id) {
-                               auto ptr = repo.find(id);
-                               assert(ptr);
-                               return *ptr;
-                           })
-                        | ranges::to_vector;
                 });
         }
-        dds::build(params, man);
+        bd.build(params);
+        return 0;
+    }
+};
+
+/*
+########  ##     ## #### ##       ########          ########  ######## ########   ######
+##     ## ##     ##  ##  ##       ##     ##         ##     ## ##       ##     ## ##    ##
+##     ## ##     ##  ##  ##       ##     ##         ##     ## ##       ##     ## ##
+########  ##     ##  ##  ##       ##     ## ####### ##     ## ######   ########   ######
+##     ## ##     ##  ##  ##       ##     ##         ##     ## ##       ##              ##
+##     ## ##     ##  ##  ##       ##     ##         ##     ## ##       ##        ##    ##
+########   #######  #### ######## ########          ########  ######## ##         ######
+*/
+
+struct cli_build_deps {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group,
+                      "build-deps",
+                      "Build a set of dependencies and emit a libman index"};
+
+    toolchain_flag    tc{cmd};
+    repo_path_flag    repo_path{cmd};
+    catalog_path_flag cat_path{cmd};
+    num_jobs_flag     n_jobs{cmd};
+
+    args::ValueFlagList<dds::fs::path> deps_files{cmd,
+                                                  "deps-file",
+                                                  "Install dependencies from the named files",
+                                                  {"deps", 'd'}};
+
+    path_flag out_path{cmd,
+                       "out-path",
+                       "Directory where build results should be placed",
+                       {"out", 'o'},
+                       dds::fs::current_path() / "_deps"};
+
+    path_flag lmi_path{cmd,
+                       "lmi-path",
+                       "Path to the output libman index file (INDEX.lmi)",
+                       {"lmi-path"},
+                       dds::fs::current_path() / "INDEX.lmi"};
+
+    args::PositionalList<std::string> deps{cmd, "deps", "List of dependencies to install"};
+
+    int run() {
+        dds::build_params params;
+        params.out_root      = out_path.Get();
+        params.toolchain     = tc.get_toolchain();
+        params.parallel_jobs = n_jobs.Get();
+        params.emit_lmi      = lmi_path.Get();
+
+        dds::builder            bd;
+        dds::sdist_build_params sdist_params;
+
+        auto all_file_deps = deps_files.Get()  //
+            | ranges::views::transform([&](auto dep_fpath) {
+                                 spdlog::info("Reading deps from {}", dep_fpath.string());
+                                 return dds::dependency_manifest::from_file(dep_fpath).dependencies;
+                             })
+            | ranges::actions::join;
+
+        auto cmd_deps = ranges::views::transform(deps.Get(), [&](auto dep_str) {
+            return dds::dependency::parse_depends_string(dep_str);
+        });
+
+        auto all_deps = ranges::views::concat(all_file_deps, cmd_deps) | ranges::to_vector;
+
+        auto cat = cat_path.open();
+        dds::repository::with_repository(  //
+            repo_path.Get(),
+            dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
+            [&](dds::repository repo) {
+                // Download dependencies
+                spdlog::info("Loading {} dependencies", all_deps.size());
+                auto deps = repo.solve(all_deps, cat);
+                for (const dds::package_id& pk : deps) {
+                    auto exists = !!repo.find(pk);
+                    if (!exists) {
+                        spdlog::info("Download dependency: {}", pk.to_string());
+                        auto opt_pkg = cat.get(pk);
+                        assert(opt_pkg);
+                        auto tsd = dds::get_package_sdist(*opt_pkg);
+                        repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
+                    }
+                    auto sdist_ptr = repo.find(pk);
+                    assert(sdist_ptr);
+                    dds::sdist_build_params deps_params;
+                    deps_params.subdir = sdist_ptr->manifest.pkg_id.to_string();
+                    spdlog::info("Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
+                    bd.add(*sdist_ptr, deps_params);
+                }
+            });
+
+        bd.build(params);
         return 0;
     }
 };
@@ -578,11 +679,12 @@ int main(int argc, char** argv) {
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
-    cli_base    cli{parser};
-    cli_build   build{cli};
-    cli_sdist   sdist{cli};
-    cli_repo    repo{cli};
-    cli_catalog catalog{cli};
+    cli_base       cli{parser};
+    cli_build      build{cli};
+    cli_sdist      sdist{cli};
+    cli_repo       repo{cli};
+    cli_catalog    catalog{cli};
+    cli_build_deps build_deps{cli};
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -608,6 +710,8 @@ int main(int argc, char** argv) {
             return repo.run();
         } else if (catalog.cmd) {
             return catalog.run();
+        } else if (build_deps.cmd) {
+            return build_deps.run();
         } else {
             assert(false);
             std::terminate();

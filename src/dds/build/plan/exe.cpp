@@ -2,6 +2,7 @@
 
 #include <dds/build/plan/library.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/algo.hpp>
 #include <dds/util/time.hpp>
 
 #include <spdlog/spdlog.h>
@@ -20,10 +21,14 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     link_exe_spec spec;
     spec.output = calc_executable_path(env);
     spec.inputs = _input_libs;
+    for (const lm::usage& links : _links) {
+        extend(spec.inputs, env.ureqs.link_paths(links));
+    }
     if (lib.create_archive()) {
         // The associated library has compiled components. Add the static library a as a linker
         // input
-        spec.inputs.push_back(lib.create_archive()->calc_archive_file_path(env));
+        spec.inputs.push_back(env.output_root
+                              / lib.create_archive()->calc_archive_file_path(env.toolchain));
     }
 
     // The main object should be a linker input, of course.

@@ -10,5 +10,5 @@ def test_lib_with_just_test(dds: DDS, scope: ExitStack):
             b'int main() {}',
         ))
 
-    dds.build(tests=True, apps=False, warnings=False, export=False)
+    dds.build(tests=True, apps=False, warnings=False)
     assert (dds.build_dir / f'test/foo{dds.exe_suffix}').is_file()

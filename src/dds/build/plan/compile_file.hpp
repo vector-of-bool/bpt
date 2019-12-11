@@ -3,6 +3,8 @@
 #include <dds/build/plan/base.hpp>
 #include <dds/source/file.hpp>
 
+#include <libman/library.hpp>
+
 #include <memory>
 
 namespace dds {
@@ -25,6 +27,7 @@ class shared_compile_file_rules {
     struct rules_impl {
         std::vector<fs::path>    inc_dirs;
         std::vector<std::string> defs;
+        std::vector<lm::usage>   uses;
         bool                     enable_warnings = false;
     };
 
@@ -52,6 +55,12 @@ public:
      */
     auto& defs() noexcept { return _impl->defs; }
     auto& defs() const noexcept { return _impl->defs; }
+
+    /**
+     * Access the named usage requirements for this set of rules
+     */
+    auto& uses() noexcept { return _impl->uses; }
+    auto& uses() const noexcept { return _impl->uses; }
 
     /**
      * A boolean to toggle compile warnings for the associated compiles

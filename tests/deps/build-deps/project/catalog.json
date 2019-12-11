@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "packages": {
+        "neo-sqlite3": {
+            "0.1.0": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/neo-sqlite3.git",
+                    "ref": "0.1.0"
+                },
+                "depends": {}
+            },
+            "0.2.2": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/neo-sqlite3.git",
+                    "ref": "0.2.2"
+                },
+                "depends": {}
+            }
+        }
+    }
+}
