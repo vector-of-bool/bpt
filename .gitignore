@@ -1,4 +1,6 @@
 _build/
 __pycache__/
-.peru/
 .vscode/
+.mypy_cache/
+_prebuilt/
+.pytest_cache
