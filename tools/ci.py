@@ -70,14 +70,9 @@ def main(argv: Sequence[str]) -> int:
         '-T',
         help='The toolchain to use for the CI process',
         required=True)
-    parser.add_argument(
-        '--skip-deps',
-        action='store_true',
-        help='If specified, will skip getting and building '
-        'dependencies. (They must already be present)')
     args = parser.parse_args(argv)
 
-    opts = CIOptions(toolchain=args.toolchain, skip_deps=args.skip_deps)
+    opts = CIOptions(toolchain=args.toolchain)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
