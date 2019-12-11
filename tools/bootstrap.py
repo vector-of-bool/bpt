@@ -68,7 +68,7 @@ def _clone_bootstrap_phase(ref: str) -> Path:
 def _build_bootstrap_phase(ph: BootstrapPhase, bts_dir: Path) -> None:
     print(f'Build revision: {ph.ref} [This may take a moment]')
     env = os.environ.copy()
-    env['DDS_BOOTSTRAP_PREV_EXE'] = str(PREBUILT_DIR / 'dds')
+    env['DDS_BOOTSTRAP_PREV_EXE'] = str(PREBUILT_DIR / F'dds{EXE_SUFFIX}')
     _run_quiet(
         [
             sys.executable,

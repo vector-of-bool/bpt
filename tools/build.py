@@ -38,7 +38,7 @@ def main(argv: Sequence[str]) -> int:
     if os.name == 'nt':
         tc_fpath = ROOT / 'tools/msvc.dds'
     else:
-        tc_fpath = ROOT / 'gcc-9.dds'
+        tc_fpath = ROOT / 'tools/gcc-9.dds'
 
     self_deps_build(dds_exe, str(tc_fpath), paths.SELF_TEST_REPO_DIR,
                     ROOT / 'remote.dds')
