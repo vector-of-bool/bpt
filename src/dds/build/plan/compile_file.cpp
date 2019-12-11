@@ -17,7 +17,7 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
     spec.enable_warnings = _rules.enable_warnings();
     extend(spec.include_dirs, _rules.include_dirs());
     for (const auto& use : _rules.uses()) {
-        extend(spec.include_dirs, env.ureqs.include_paths(use));
+        extend(spec.external_include_dirs, env.ureqs.include_paths(use));
     }
     extend(spec.definitions, _rules.defs());
     return env.toolchain.create_compile_command(spec);

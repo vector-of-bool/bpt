@@ -95,6 +95,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     optional<bool> do_debug;
     optional<bool> do_optimize;
     opt_str_seq    include_template;
+    opt_str_seq    external_include_template;
     opt_str_seq    define_template;
     opt_str_seq    warning_flags;
     opt_str_seq    flags;
@@ -118,6 +119,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
              lm::read_opt("C++-Version", cxx_version),
              // Flag templates
              read_argv{"Include-Template", include_template},
+             read_argv{"External-Include-Template", include_template},
              read_argv{"Define-Template", define_template},
              // Flags
              read_argv_acc{"Warning-Flags", warning_flags},
@@ -437,6 +439,21 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             return {"/I", "<PATH>"};
         }
         assert(false && "Include-Template deduction failed");
+        std::terminate();
+    });
+
+    tc.external_include_template = read_opt(external_include_template, [&]() -> string_seq {
+        if (!compiler_id) {
+            // Just reuse the include template for regular files
+            return tc.include_template;
+        }
+        if (is_gnu_like) {
+            return {"-isystem", "<PATH>"};
+        } else if (is_msvc) {
+            // MSVC has external-header support inbound, but it is not fully ready yet
+            return {"/I", "<PATH>"};
+        }
+        assert(false && "External-Include-Template deduction failed");
         std::terminate();
     });
 
