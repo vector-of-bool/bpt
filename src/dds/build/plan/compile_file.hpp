@@ -126,7 +126,7 @@ public:
      * Generate a concrete compile command object for this source file for the given build
      * environment.
      */
-    compile_command_info generate_compile_command(build_env_ref) const noexcept;
+    compile_command_info generate_compile_command(build_env_ref) const;
 };
 
 }  // namespace dds

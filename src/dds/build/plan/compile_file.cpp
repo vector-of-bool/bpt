@@ -12,7 +12,7 @@
 
 using namespace dds;
 
-compile_command_info compile_file_plan::generate_compile_command(build_env_ref env) const noexcept {
+compile_command_info compile_file_plan::generate_compile_command(build_env_ref env) const {
     compile_file_spec spec{_source.path, calc_object_file_path(env)};
     spec.enable_warnings = _rules.enable_warnings();
     extend(spec.include_dirs, _rules.include_dirs());
