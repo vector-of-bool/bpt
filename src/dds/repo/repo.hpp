@@ -5,6 +5,8 @@
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
 
+#include <neo/fwd.hpp>
+
 #include <functional>
 #include <optional>
 #include <set>
@@ -74,7 +76,7 @@ public:
         }
 
         auto repo = _open_for_directory(writeable, dirpath);
-        return std::invoke((Func &&) fn, std::move(repo));
+        return std::invoke(NEO_FWD(fn), std::move(repo));
     }
 
     static fs::path default_local_path() noexcept;

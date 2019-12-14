@@ -264,7 +264,7 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     // Update compile dependency information
     auto tr = env.db.transaction();
     for (auto& info : all_new_deps) {
-        update_deps_info(env.db, info);
+        update_deps_info(neo::into(env.db), info);
     }
 
     // Return whether or not there were any failures.

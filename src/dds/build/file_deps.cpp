@@ -65,7 +65,8 @@ msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::str
     return {deps, cleaned_output};
 }
 
-void dds::update_deps_info(database& db, const file_deps_info& deps) {
+void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps) {
+    database& db = db_;
     db.store_file_command(deps.output, {deps.command, deps.command_output});
     db.forget_inputs_of(deps.output);
     for (auto&& inp : deps.inputs) {
@@ -75,8 +76,7 @@ void dds::update_deps_info(database& db, const file_deps_info& deps) {
 }
 
 deps_rebuild_info dds::get_rebuild_info(const database& db, path_ref output_path) {
-    std::unique_lock lk{db.mutex()};
-    auto             cmd_ = db.command_of(output_path);
+    auto cmd_ = db.command_of(output_path);
     if (!cmd_) {
         return {};
     }

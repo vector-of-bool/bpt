@@ -27,23 +27,6 @@ lm::library& usage_requirement_map::add(std::string ns, std::string name) {
     return inserted->second;
 }
 
-void usage_requirement_map::apply(shared_compile_file_rules rules,
-                                  std::string               ns,
-                                  std::string               name) const {
-    auto reqs = get(ns, name);
-    if (!reqs) {
-        throw std::runtime_error(
-            fmt::format("Unable to resolve usage requirements for '{}/{}'", ns, name));
-    }
-
-    for (auto&& use : reqs->uses) {
-        apply(rules, use.namespace_, use.name);
-    }
-
-    extend(rules.include_dirs(), reqs->include_paths);
-    extend(rules.defs(), reqs->preproc_defs);
-}
-
 usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx) noexcept {
     usage_requirement_map ret;
     for (const auto& pkg : idx.packages) {

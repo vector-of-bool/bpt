@@ -1,7 +1,8 @@
 #include "./index.hpp"
 
-#include <libman/fmt.hpp>
 #include <libman/parse.hpp>
+
+#include <spdlog/fmt/fmt.h>
 
 using namespace lm;
 
