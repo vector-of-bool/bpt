@@ -18,6 +18,12 @@ will be compiled, archived, and linked using the same toolchain.
 This page provides an introduction on how one can make use of toolchains most
 effectively in your project.
 
+.. note::
+    **IMPORTANT**: ``dds`` will *not* automatically load the Visual C++
+    environment. To use Visual C++, ``dds`` must be executed from the
+    appropriate environment in order for the Visual C++ toolchain executables
+    and files to be available.
+
 
 Passing a Toolchain
 *******************
@@ -27,9 +33,9 @@ describes the entire toolchain, and uses the extension ``.tc.dds`` by
 convention. When running a build for a project, the ``dds`` executable will
 look for a file named ``toolchain.tc.dds`` by default, and will error out if
 this file does not exist. A different toolchain can be provided by passing the
-toolchain file for the ``--toolchain`` (or ``-T``) option on the command line::
+toolchain file for the ``--toolchain`` (or ``-t``) option on the command line::
 
-    $ dds build -T my-toolchain.tc.dds
+    $ dds build -t my-toolchain.tc.dds
 
 Alternatively, you can pass the name of a built-in toolchain. See below.
 
@@ -67,14 +73,12 @@ There are several built-in toolchains that may be specified:
 
 The following pseudo-toolchains are also available:
 
+``:debug:XYZ``
+    Uses built-in toolchain ``:XYZ``, but generates debugging information.
+
 ``:ccache:XYZ``
     Uses built-in toolchain ``:XYZ``, but prefixes all compile commands with
     ``ccache``.
 
-.. note::
-    **IMPORTANT**: ``dds`` will *not* automatically load the Visual C++
-    environment. To use Visual C++, ``dds`` must be executed from the
-    appropriate environment in order for the Visual C++ toolchain executables
-    and files to be available.
-
-
+``:c++UV:XYZ`` (for two integers ``UV``)
+    Sets the C++ version to ``C++UV`` and uses the ``:XYZ`` toolchain.
