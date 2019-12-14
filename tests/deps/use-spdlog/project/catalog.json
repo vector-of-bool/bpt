@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "packages": {
+        "spdlog": {
+            "1.4.2": {
+                "git": {
+                    "url": "https://github.com/gabime/spdlog.git",
+                    "ref": "v1.4.2",
+                    "auto-lib": "spdlog/spdlog"
+                },
+                "depends": {}
+            }
+        }
+    }
+}

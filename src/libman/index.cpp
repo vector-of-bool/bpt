@@ -1,7 +1,8 @@
 #include "./index.hpp"
 
-#include <libman/fmt.hpp>
 #include <libman/parse.hpp>
+
+#include <spdlog/fmt/fmt.h>
 
 using namespace lm;
 
@@ -26,7 +27,9 @@ lm::index index::from_file(path_ref fpath) {
 
     for (const auto& pkg_line : package_lines) {
         auto items = dds::split(pkg_line, ";");
-        std::transform(items.begin(), items.end(), items.begin(), [](auto s) { return trim(s); });
+        std::transform(items.begin(), items.end(), items.begin(), [](auto s) {
+            return std::string(trim_view(s));
+        });
         if (items.size() != 2) {
             throw std::runtime_error(
                 fmt::format("Invalid 'Package' field in index file ({}): 'Package: {}'",

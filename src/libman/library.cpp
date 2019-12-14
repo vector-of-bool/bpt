@@ -11,9 +11,6 @@ library library::from_file(path_ref fpath) {
 
     library ret;
 
-    std::vector<std::string> uses_strs;
-    std::vector<std::string> links_strs;
-
     std::string _type_;
     read(fmt::format("Reading library manifest file '{}'", fpath.string()),
          pairs,
@@ -23,17 +20,9 @@ library library::from_file(path_ref fpath) {
          read_opt("Path", ret.linkable_path),
          read_accumulate("Include-Path", ret.include_paths),
          read_accumulate("Preprocessor-Define", ret.preproc_defs),
-         read_accumulate("Uses", uses_strs),
-         read_accumulate("Links", links_strs),
+         read_accumulate("Uses", ret.uses, &split_usage_string),
+         read_accumulate("Links", ret.links, &split_usage_string),
          read_accumulate("Special-Uses", ret.special_uses));
-
-    for (auto&& uses_str : uses_strs) {
-        ret.uses.push_back(split_usage_string(uses_str));
-    }
-
-    for (auto&& links_str : links_strs) {
-        ret.links.push_back(split_usage_string(links_str));
-    }
 
     auto make_absolute = [&](path_ref p) { return fpath.parent_path() / p; };
     std::transform(ret.include_paths.begin(),

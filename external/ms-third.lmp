@@ -1,6 +1,0 @@
-Type: Package
-
-Name: ms-third
-Namespace: Microsoft
-
-Library: wil.lml

@@ -11,10 +11,13 @@ inline namespace string_utils {
 
 inline std::string_view sview(std::string_view::const_iterator beg,
                               std::string_view::const_iterator end) {
+    if (beg == end) {
+        return "";
+    }
     return std::string_view(&*beg, static_cast<std::size_t>(std::distance(beg, end)));
 }
 
-inline std::string_view trim(std::string_view s) {
+inline std::string_view trim_view(std::string_view s) {
     auto iter = s.begin();
     auto end  = s.end();
     while (iter != end && std::isspace(*iter)) {
@@ -29,10 +32,6 @@ inline std::string_view trim(std::string_view s) {
     return sview(iter, new_end);
 }
 
-inline std::string_view trim(const char* str) { return trim(std::string_view(str)); }
-
-inline std::string trim(std::string&& s) { return std::string(trim(s)); }
-
 inline bool ends_with(std::string_view s, std::string_view key) {
     auto found = s.rfind(key);
     return found != s.npos && found == s.size() - key.size();
@@ -41,6 +40,18 @@ inline bool ends_with(std::string_view s, std::string_view key) {
 inline bool starts_with(std::string_view s, std::string_view key) { return s.find(key) == 0; }
 
 inline bool contains(std::string_view s, std::string_view key) { return s.find(key) != s.npos; }
+
+inline std::vector<std::string_view> split_view(std::string_view str, std::string_view sep) {
+    std::vector<std::string_view> ret;
+    std::string_view::size_type   prev_pos = 0;
+    auto                          pos      = prev_pos;
+    while ((pos = str.find(sep, prev_pos)) != str.npos) {
+        ret.emplace_back(str.substr(prev_pos, pos - prev_pos));
+        prev_pos = pos + sep.length();
+    }
+    ret.emplace_back(str.substr(prev_pos));
+    return ret;
+}
 
 inline std::vector<std::string> split(std::string_view str, std::string_view sep) {
     std::vector<std::string>    ret;

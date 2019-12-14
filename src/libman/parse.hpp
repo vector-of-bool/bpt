@@ -13,25 +13,13 @@
 namespace lm {
 
 class pair {
-    std::string _key;
-    std::string _value;
-
 public:
+    std::string key;
+    std::string value;
+
     pair(std::string_view k, std::string_view v)
-        : _key(k)
-        , _value(v) {}
-
-    auto& key() const noexcept { return _key; }
-    auto& value() const noexcept { return _value; }
-
-    template <std::size_t I>
-    std::string_view get() const {
-        if constexpr (I == 0) {
-            return key();
-        } else if constexpr (I == 1) {
-            return value();
-        }
-    }
+        : key(k)
+        , value(v) {}
 };
 
 class pair_iterator {
@@ -53,7 +41,7 @@ public:
     pair_iterator& operator++() & noexcept {
         assert(_iter != _end);
         ++_iter;
-        while (_iter != _end && _iter->key() != _key) {
+        while (_iter != _end && _iter->key != _key) {
             ++_iter;
         }
         return *this;
@@ -70,6 +58,7 @@ public:
     }
 
     inline bool operator!=(const pair_iterator& o) const noexcept { return _iter != o._iter; }
+    inline bool operator==(const pair_iterator& o) const noexcept { return _iter == o._iter; }
 
     auto begin() const noexcept { return *this; }
     auto end() const noexcept { return pair_iterator(_end, _end, _key); }
@@ -88,7 +77,7 @@ public:
 
     const pair* find(const std::string_view& key) const noexcept {
         for (auto&& item : items()) {
-            if (item.key() == key) {
+            if (item.key == key) {
                 return &item;
             }
         }
@@ -98,7 +87,7 @@ public:
     pair_iterator iter(std::string_view key) const noexcept {
         auto       iter = items().begin();
         const auto end  = items().end();
-        while (iter != end && iter->key() != key) {
+        while (iter != end && iter->key != key) {
             ++iter;
         }
         return pair_iterator{iter, end, key};
@@ -124,6 +113,20 @@ void      write_pairs(std::filesystem::path, const std::vector<pair>&);
 inline void write_pairs(const std::filesystem::path& fpath, const pair_list& pairs) {
     write_pairs(fpath, pairs.items());
 }
+
+struct nested_kvlist {
+    std::string primary;
+    pair_list   pairs;
+
+    static nested_kvlist parse(std::string_view s);
+};
+
+struct unchanged {
+    template <typename Item>
+    auto operator()(Item&& item) const {
+        return item;
+    }
+};
 
 template <typename What>
 class read_required {
@@ -157,16 +160,18 @@ public:
     }
 };
 
-template <typename T>
+template <typename T, typename Transform = unchanged>
 class read_opt {
     std::string_view _key;
     T&               _ref;
     bool             _did_read = false;
+    Transform        _tr;
 
 public:
-    read_opt(std::string_view key, T& ref)
+    read_opt(std::string_view key, T& ref, Transform tr = unchanged())
         : _key(key)
-        , _ref(ref) {}
+        , _ref(ref)
+        , _tr(std::move(tr)) {}
 
     int operator()(std::string_view context, std::string_view key, std::string_view value) {
         if (key != _key) {
@@ -176,7 +181,7 @@ public:
             throw std::runtime_error(std::string(context) + ": Duplicated key '" + std::string(key)
                                      + "' is not allowed.");
         }
-        _ref = T(value);
+        _ref = T(_tr(value));
         return 1;
     }
 };
@@ -214,6 +219,30 @@ public:
     }
 };
 
+struct read_empty_set_true {
+    std::string_view _key;
+    bool&            _bool;
+    bool             _seen = false;
+
+    bool operator()(std::string_view context, std::string_view key, std::string_view value) {
+        if (key != _key) {
+            return false;
+        }
+        if (value != "") {
+            throw std::runtime_error(std::string(context) + ": Key '" + std::string(key)
+                                     + "' does not expected a value (Got '" + std::string(value)
+                                     + "').");
+        }
+        if (_seen) {
+            throw std::runtime_error(std::string(context) + ": Duplicated key '" + std::string(key)
+                                     + "'");
+        }
+        _bool = true;
+        _seen = true;
+        return true;
+    }
+};
+
 class read_check_eq {
     std::string_view _key;
     std::string_view _expect;
@@ -236,22 +265,36 @@ public:
     }
 };
 
-template <typename Container>
+template <typename Container, typename Transform = unchanged>
 class read_accumulate {
     std::string_view _key;
     Container&       _items;
+    Transform        _tr;
 
 public:
+    read_accumulate(std::string_view key, Container& c, Transform tr)
+        : _key(key)
+        , _items(c)
+        , _tr(std::move(tr)) {}
+
     read_accumulate(std::string_view key, Container& c)
         : _key(key)
-        , _items(c) {}
+        , _items(c)
+        , _tr(unchanged()) {}
 
     int operator()(std::string_view, std::string_view key, std::string_view value) const {
         if (key == _key) {
-            _items.emplace_back(value);
+            _items.emplace_back(_tr(value));
             return 1;
         }
         return 0;
+    }
+};
+
+class ignore_x_keys {
+public:
+    bool operator()(std::string_view, std::string_view key, std::string_view) const {
+        return key.find("X-") == 0;
     }
 };
 
@@ -284,15 +327,3 @@ auto read(std::string_view context [[maybe_unused]], const pair_list& pairs, Ite
 }
 
 }  // namespace lm
-
-namespace std {
-
-template <>
-struct tuple_size<lm::pair> : std::integral_constant<int, 2> {};
-
-template <std::size_t N>
-struct tuple_element<N, lm::pair> {
-    using type = std::string_view;
-};
-
-}  // namespace std

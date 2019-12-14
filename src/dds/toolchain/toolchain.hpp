@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/build/file_deps.hpp>
 #include <dds/util/fs.hpp>
 
 #include <optional>
@@ -8,8 +9,6 @@
 #include <vector>
 
 namespace dds {
-
-std::vector<std::string> split_shell_string(std::string_view s);
 
 enum class language {
     automatic,
@@ -22,8 +21,14 @@ struct compile_file_spec {
     fs::path                 out_path;
     std::vector<std::string> definitions     = {};
     std::vector<fs::path>    include_dirs    = {};
-    language                 lang            = language::automatic;
+    std::vector<fs::path>    external_include_dirs = {};
+    language                 lang                  = language::automatic;
     bool                     enable_warnings = false;
+};
+
+struct compile_command_info {
+    std::vector<std::string> command;
+    std::optional<fs::path>  gnu_depfile_path;
 };
 
 struct archive_spec {
@@ -44,6 +49,7 @@ class toolchain {
     string_seq _c_compile;
     string_seq _cxx_compile;
     string_seq _inc_template;
+    string_seq _extern_inc_template;
     string_seq _def_template;
     string_seq _link_archive;
     string_seq _link_exe;
@@ -56,6 +62,8 @@ class toolchain {
     std::string _exe_prefix;
     std::string _exe_suffix;
 
+    enum file_deps_mode _deps_mode;
+
 public:
     toolchain() = default;
 
@@ -64,10 +72,12 @@ public:
     auto& archive_suffix() const noexcept { return _archive_suffix; }
     auto& object_suffix() const noexcept { return _object_suffix; }
     auto& executable_suffix() const noexcept { return _exe_suffix; }
+    auto  deps_mode() const noexcept { return _deps_mode; }
 
     std::vector<std::string> definition_args(std::string_view s) const noexcept;
     std::vector<std::string> include_args(const fs::path& p) const noexcept;
-    std::vector<std::string> create_compile_command(const compile_file_spec&) const noexcept;
+    std::vector<std::string> external_include_args(const fs::path& p) const noexcept;
+    compile_command_info     create_compile_command(const compile_file_spec&) const noexcept;
     std::vector<std::string> create_archive_command(const archive_spec&) const noexcept;
     std::vector<std::string> create_link_executable_command(const link_exe_spec&) const noexcept;
 

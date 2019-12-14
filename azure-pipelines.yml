@@ -8,9 +8,11 @@ jobs:
     steps:
       - script: |
           echo Loading VS environment
-          call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 || exit 1
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
           echo Executing Build and Tests
-          python -u tools/ci.py --cxx cl.exe -T tools\\msvc.dds || exit 1
+          reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
+          python -m pip install pytest pytest-xdist || exit 1
+          python -u tools/ci.py -B download -T tools\msvc.dds || exit 1
         displayName: Full CI
       - publish: _build/dds.exe
         artifact: DDS Executable - Windows VS2019
@@ -19,9 +21,13 @@ jobs:
     pool:
       vmImage: ubuntu-18.04
     steps:
-      - script: sudo apt update -y && sudo apt install -y python3-minimal g++-8
+      - script: |
+          set -eu
+          sudo apt update -y
+          sudo apt install -y python3-minimal g++-9 ccache
+          python3 -m pip install pytest pytest-xdist
         displayName: Prepare System
-      - script: python3 -u tools/ci.py --cxx g++-8 -T tools/gcc-8.dds
+      - script: python3 -u tools/ci.py -B download -T tools/gcc-9.dds
         displayName: Full CI
       - publish: _build/dds
         artifact: DDS Executable - Linux
@@ -30,9 +36,12 @@ jobs:
     pool:
       vmImage: macOS-10.14
     steps:
-      - script: brew install gcc@8
+      - script: brew install gcc@9 ccache
         displayName: Prepare System
-      - script: python3 -u tools/ci.py --cxx g++-8 -T tools/gcc-8.dds
+      - script: |
+          set -eu
+          python3 -m pip install pytest pytest-xdist
+          python3 -u tools/ci.py -B download -T tools/gcc-9.dds
         displayName: Build and Run Unit Tests
       - publish: _build/dds
         artifact: DDS Executable - macOS

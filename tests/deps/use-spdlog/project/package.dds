@@ -1,0 +1,4 @@
+Name: test
+Version: 0.0.0
+
+Depends: spdlog 1.4.2

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <initializer_list>
+#include <vector>
 
 namespace dds {
 
@@ -32,5 +34,8 @@ template <typename Container, typename Item>
 void extend(Container& c, std::initializer_list<Item> il) {
     c.insert(c.end(), il.begin(), il.end());
 }
+
+template <typename T>
+using ref_vector = std::vector<std::reference_wrapper<T>>;
 
 }  // namespace dds

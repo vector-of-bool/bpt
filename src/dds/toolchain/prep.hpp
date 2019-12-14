@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dds/build/file_deps.hpp>
+
 #include <string>
 #include <vector>
 
@@ -12,6 +14,7 @@ struct toolchain_prep {
     string_seq c_compile;
     string_seq cxx_compile;
     string_seq include_template;
+    string_seq external_include_template;
     string_seq define_template;
     string_seq link_archive;
     string_seq link_exe;
@@ -23,6 +26,8 @@ struct toolchain_prep {
     std::string object_suffix;
     std::string exe_prefix;
     std::string exe_suffix;
+
+    enum file_deps_mode deps_mode;
 
     toolchain realize() const;
 };

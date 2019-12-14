@@ -1,5 +1,0 @@
-Compiler-ID: GNU
-C++-Version: C++17
-C++-Compiler: g++-8
-Flags: -fconcepts -DFMT_HEADER_ONLY=1
-Optimize: True

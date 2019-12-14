@@ -1,6 +1,7 @@
 #include "./full.hpp"
 
 #include <dds/build/iter_compilations.hpp>
+#include <dds/build/plan/compile_exec.hpp>
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -16,6 +17,7 @@ using namespace dds;
 
 namespace {
 
+/// XXX: Duplicated in compile_exec.cpp !!
 template <typename Range, typename Fn>
 bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
     // We don't bother with a nice thread pool, as the overhead of most build
@@ -36,7 +38,8 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
             if (iter == stop) {
                 break;
             }
-            auto&& item = *iter++;
+            auto&& item = *iter;
+            ++iter;
             lk.unlock();
             try {
                 fn(item);
@@ -71,9 +74,7 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 }  // namespace
 
 void build_plan::compile_all(const build_env& env, int njobs) const {
-    auto okay = parallel_run(iter_compilations(*this), njobs, [&](const compile_file_plan& cf) {
-        cf.compile(env);
-    });
+    auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
     if (!okay) {
         throw std::runtime_error("Compilation failed.");
     }
@@ -91,10 +92,10 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
 }
 
 void build_plan::link_all(const build_env& env, int njobs) const {
+    // Generate a pairing between executables and the libraries that own them
     std::vector<std::pair<std::reference_wrapper<const library_plan>,
                           std::reference_wrapper<const link_executable_plan>>>
         executables;
-
     for (auto&& lib : iter_libraries(*this)) {
         for (auto&& exe : lib.executables()) {
             executables.emplace_back(lib, exe);
@@ -112,6 +113,7 @@ void build_plan::link_all(const build_env& env, int njobs) const {
 
 std::vector<test_failure> build_plan::run_all_tests(build_env_ref env, int njobs) const {
     using namespace ranges::views;
+    // Collect executables that are tests
     auto test_executables =                       //
         iter_libraries(*this)                     //
         | transform(&library_plan::executables)   //
