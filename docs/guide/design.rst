@@ -4,25 +4,25 @@
 ``dds`` has been designed from the very beginning as an extremely opinionated
 hybrid *build system* and *package manager*. Unlike most build systems however,
 ``dds`` has a hyper-specific focus on a particular aspect of software
-development: C++ libraries.
+development: C and C++ libraries.
 
 This may sound pointless, right? Libraries are useless unless we can use them
 to build applications!
 
-Indeed, applications *are* essential, but that is "not our job."
+Indeed, applications *are* essential, but that is "not our job" with ``dds``.
 
 Another design decision is that ``dds`` is built to be driven by automated
-tools as well as humans. ``dds`` will not build your AAA console game, nor will
-it compile an OS kernel. Instead, the build system of your AAA console game or
-OS kernel can *use* ``dds``.
+tools as well as humans. ``dds`` is not designed to entirely replace existing
+build systems and package management solutions. Rather, it is designed to be
+easy to integrate *with* existing systems and tools.
 
 
 Background
 **********
 
-I'm going to say something somewhat controversial: C++ doesn't need "package
-management." At least, not *generalize* "package management." C++ needs
-*library* "package management."
+I'm going to say something somewhat controversial: C and C++ don't need
+"package management." At least, not *generalized* "package management." C++
+needs *library* "package management."
 
 The C and C++ compilation model is inherently *more complex* than almost any
 other language in use today. This isn't to say "bad," but rather than it is
@@ -68,9 +68,9 @@ For example, LLVM and Blender both use the CMake "Build System," but their
 different, despite both using the same underlying "Build System."
 
 ``dds`` takes a massive divergence at this point. One project using ``dds`` as
-their build system has an identical build process to every other project using
-``dds``. Simply running :code:`dds -F` is enough to build *any* ``dds``
-project.
+their build system has a nearly identical build process to every other project
+using ``dds``. Simply running :code:`dds build -t <toolchain>` should be enough
+to build *any* ``dds`` project.
 
 In order to reach this uniformity and simplicity, ``dds`` drops almost all
 aspects of project-by-project customizability. Instead, ``dds`` affords the
@@ -106,8 +106,7 @@ violate any of the other existing rules.
     on.
 
 ``dds`` contains a minimal amount of functionality for building simple
-applications, but it is certainly not its primary purpose (See the ``--apps``
-flag).
+applications, but it is certainly not its primary purpose.
 
 
 .. _design.rules.change:
@@ -135,7 +134,7 @@ structure layout with minimal differing options. ``dds`` prescribes the
 
 .. note::
     These prescriptions are not as draconian as they may sound upon first
-    reading. Refer to the :doc:`layout` page for more information.
+    reading. Refer to the :doc:`packages` page for more information.
 
 .. _Pitchfork: https://api.csswg.org/bikeshed/?force=1&url=https://raw.githubusercontent.com/vector-of-bool/pitchfork/develop/data/spec.bs
 
@@ -178,7 +177,7 @@ No Arbitrary ``#include`` Directories
 
 Only ``src/`` and ``include/`` will ever be used as the basis for header
 resolution while building a library, so all ``#include`` directives should be
-relative to those directories. Refer to :ref:`guide.layout.include`.
+relative to those directories. Refer to :ref:`pkg.source-root`.
 
 
 .. _design.rules.uniform-compile:
@@ -190,3 +189,7 @@ When DDS compiles a library, every source file will be compiled with an
 identical set of options. Additionally, when DDS compiles a dependency tree,
 every library in that dependency tree will be compiled with an identical set of
 options. Refer to the :doc:`toolchains` page for more information.
+
+Currently, the only exception to this rules is for flags that control compiler
+warnings: Dependencies will be compiled without adding any warnings flags,
+while the main project will be compiled with warnings enabled by default.
