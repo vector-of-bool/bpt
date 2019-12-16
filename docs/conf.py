@@ -23,5 +23,9 @@ pygments_style = None
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'pyramid'
 html_theme_options = {}
-html_static_path = []
+html_static_path = ['_static']
 html_sidebars = {}
+
+
+def setup(app):
+    app.add_stylesheet('tweaks.css')
