@@ -25,7 +25,7 @@ be a new directory that reproduces the package's filesystem structure, but
 only maintaining the files that are necessary for ``dds`` to reproduce the
 build of that package.
 
-The ``--project=<dir>``` flag can be provided to override the directory that
+The ``--project=<dir>`` flag can be provided to override the directory that
 ``dds`` will use as the package root. The default is the working directory of
 the project.
 

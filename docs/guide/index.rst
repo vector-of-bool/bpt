@@ -10,4 +10,6 @@ User Guide
     packages
     toolchains
     source-dists
+    repo
     catalog
+    interdeps

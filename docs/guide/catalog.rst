@@ -82,7 +82,7 @@ file from which catalog entries will be generated.
 
 The JSON file has the following structure:
 
-.. code-block:: jsonc
+.. code-block:: javascript
 
   {
     // Import version spec.

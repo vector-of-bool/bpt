@@ -24,6 +24,8 @@ the versions of each.
 Obtaining Packages
 ******************
 
+.. seealso:: See also: :doc:`catalog`
+
 When ``dds`` builds a package, it will also build the dependency libraries of
 that package. In order for the dependency build to succeed, it must have a
 local copy of the source distribution of that dependency.
@@ -32,9 +34,36 @@ When ``dds`` performs dependency resolution, it will consider both existing
 packages in the local repository, as well as packages that are available from
 the :doc:`package catalog <catalog>`. If the dependency solution requires any
 packages that are not in the local repository, it will use the information in
-the catalog to obtain a source distribution for each missing package. The
+the catalog to obtain a source distribution for each missing package. These
 source distributions will automatically be added to the local repository, and
 later dependency resolutions will not need to download that package again.
+
+
+Manually Downloading a Dependency
+=================================
+
+It may be useful to obtain a copy of the source distribution of a package
+contained in the catalog. The ``catalog get`` command can be used to do this::
+
+> dds catalog get <name>@<version>
+
+This will obtain the source distribution of the package matching the named
+identifier and place that distribution in current working directory, using the
+package ID as the name of the source distribution directory::
+
+    $ dds catalog get spdlog@1.4.2
+    [ ... ]
+
+    $ ls .
+    .
+    ..
+    spdlog@1.4.2
+
+    $ ls ./spdlog@1.4.2/
+    include/
+    src/
+    library.dds
+    package.dds
 
 
 .. _repo.export-local:
@@ -43,15 +72,15 @@ Exporting a Project into the Repository
 ***************************************
 
 ``dds`` can only use packages that are available in the local repository. For
-packages that have a listing in the catalog, this is not a problem. If one is
-developing a local package and wants to allow it to be used in another local
+packages that have a listing in the catalog, this is not a problem. But if one
+is developing a local package and wants to allow it to be used in another local
 package, that can be done by exporting a source distribution from the package
 root::
 
 > dds sdist export
 
-This command will create a source distribution and put it into the local
-repository. The package available to other projects on the local system.
+This command will create a source distribution and place it in the local
+repository. The package is now available to other projects on the local system.
 
 .. note::
     This doesn't export in "editable" mode: A snapshot of the package root
