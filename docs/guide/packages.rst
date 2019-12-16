@@ -164,6 +164,8 @@ Consumers only need to update the path of the *include search path* in a single
 location rather than modifying their source code.
 
 
+.. _pkgs.source-root:
+
 Source Roots in ``dds``
 =======================
 
@@ -237,6 +239,8 @@ In order for ``dds`` to be able to distribute and interlink libraries, a
 ``library.dds`` file must be present at the corresponding library root.
 
 
+.. _pkgs.pkg-root:
+
 Package Roots
 *************
 
@@ -258,3 +262,11 @@ Packages
 A package is defined by some *package root*, and contains some number of
 *libraries*. In order for a package to be exported by ``dds`` it must have a
 ``package.dds`` file at its package root.
+
+The primary distribution format of packages that is used by ``dds`` is the
+*source distribution*. Refer to the page :doc:`source-dists`.
+
+Packages are identified by a name/version pair, joined together by an ``@``
+symbol. The version of a package must be a semantic version string. Together,
+the ``name@version`` string forms the *package ID*, and it must be unique
+within a repository or package catalog.

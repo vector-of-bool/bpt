@@ -9,3 +9,5 @@ User Guide
     design
     packages
     toolchains
+    source-dists
+    catalog
