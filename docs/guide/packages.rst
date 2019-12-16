@@ -236,7 +236,15 @@ included in downstream binaries, but it will still generate link rules for the
 dependencies of a header-only library.
 
 In order for ``dds`` to be able to distribute and interlink libraries, a
-``library.dds`` file must be present at the corresponding library root.
+``library.dds`` file must be present at the corresponding library root. The
+only required key in a ``library.dds`` file is ``Name``:
+
+.. code-block:: yaml
+
+    Name: my-library
+
+
+.. seealso:: More information is discussed on the :ref:`deps.lib-deps` page
 
 
 .. _pkgs.pkg-root:
@@ -260,8 +268,7 @@ Packages
 ********
 
 A package is defined by some *package root*, and contains some number of
-*libraries*. In order for a package to be exported by ``dds`` it must have a
-``package.dds`` file at its package root.
+*libraries*.
 
 The primary distribution format of packages that is used by ``dds`` is the
 *source distribution*. Refer to the page :doc:`source-dists`.
@@ -270,3 +277,23 @@ Packages are identified by a name/version pair, joined together by an ``@``
 symbol. The version of a package must be a semantic version string. Together,
 the ``name@version`` string forms the *package ID*, and it must be unique
 within a repository or package catalog.
+
+In order for a package to be exported by ``dds`` it must have a
+``package.dds`` file at its package root. Three keys are required to be
+present in the ``package.dds`` file: ``Name``, ``Version``, and ``Namespace``:
+
+.. code-block:: yaml
+
+    Name: acme-widgets
+    Version: 6.7.3
+    Namespace: acme
+
+``Version`` must be a valid semantic version string.
+
+.. note::
+    The ``Namespace`` key is arbitrary, and not necessarily associated with
+    and C++ ``namespace``.
+
+.. seealso::
+  The purpose of ``Namespace``, as well as additional options in this file,
+  are described in the :ref:`deps.pkg-deps` page

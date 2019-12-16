@@ -9,12 +9,13 @@ learn, but I'm glad you're here! I hope you find ``dds`` useful to you and your
 projects.
 
 If you're completely new and have no idea what the project is about, check out
-the :doc:`guide/design` page to get started.
+the :doc:`guide/getting-started` page.
 
 .. toctree::
     :maxdepth: 2
 
     guide/index
+    design
 
 
 Indices and tables

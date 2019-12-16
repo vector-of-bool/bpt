@@ -134,7 +134,7 @@ structure layout with minimal differing options. ``dds`` prescribes the
 
 .. note::
     These prescriptions are not as draconian as they may sound upon first
-    reading. Refer to the :doc:`packages` page for more information.
+    reading. Refer to the :doc:`guide/packages` page for more information.
 
 .. _Pitchfork: https://api.csswg.org/bikeshed/?force=1&url=https://raw.githubusercontent.com/vector-of-bool/pitchfork/develop/data/spec.bs
 
@@ -188,7 +188,7 @@ All Files Compile with the Same Options
 When DDS compiles a library, every source file will be compiled with an
 identical set of options. Additionally, when DDS compiles a dependency tree,
 every library in that dependency tree will be compiled with an identical set of
-options. Refer to the :doc:`toolchains` page for more information.
+options. Refer to the :doc:`guide/toolchains` page for more information.
 
 Currently, the only exception to this rules is for flags that control compiler
 warnings: Dependencies will be compiled without adding any warnings flags,

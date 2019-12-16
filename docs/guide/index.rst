@@ -6,7 +6,7 @@ User Guide
 .. toctree::
     :maxdepth: 2
 
-    design
+    getting-started
     packages
     toolchains
     source-dists

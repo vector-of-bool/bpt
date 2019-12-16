@@ -9,6 +9,8 @@ interoperate with other build and packaging tools, we consider the issues of
 package dependencies and library dependencies separately.
 
 
+.. _deps.pkg-deps:
+
 Package Dependencies
 ********************
 
