@@ -219,3 +219,33 @@ It turns out, we *did* tell ``dds`` all of this information by simply placing
 the files on the filesystem with the appropriate file paths. The name of the
 executable, ``hello-world``, was inferred by stripping the trailing ``.main``
 from the stem of the filename which defined the entry point.
+
+
+Cleaning Up
+***********
+
+There's one final formality that should be taken care of before proceeding:
+Creating a package manifest file.
+
+``dds`` will work happily with packages that do not declare themselves, as long
+as the filesystem structure is sufficient. However: To use features covered in
+later tutorials, we'll need a simple ``package.dds`` file to declare
+information about are package. This file should be placed directly in the
+package root:
+
+.. code-block:: yaml
+    :caption: ``<root>/package.dds``
+
+    Name: hello-dds
+    Version: 0.1.0
+    Namespace: tutorial
+
+
+.. note::
+    The ``Namespace`` option will be discussed later.
+
+Rebuilding the project will show no difference at the moment.
+
+.. seealso::
+    Creating a single application executable is fine and all, but what if we
+    want to create libraries? See the next page: :doc:`hello-lib`

@@ -15,4 +15,5 @@ place to begin!
     :maxdepth: 2
 
     hello-world
-
+    hello-lib
+    hello-test

@@ -182,6 +182,8 @@ and it will only ever add source roots to the *include-search-path*.
 ``dds`` supports either one or two source roots in a library.
 
 
+.. _pkgs.lib-roots:
+
 Library Roots
 *************
 
