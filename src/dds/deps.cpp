@@ -11,10 +11,10 @@
 #include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
-#include <sstream>
 #include <cctype>
 #include <map>
 #include <set>
+#include <sstream>
 
 using namespace dds;
 

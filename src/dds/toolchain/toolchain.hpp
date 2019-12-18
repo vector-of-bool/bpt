@@ -19,11 +19,11 @@ enum class language {
 struct compile_file_spec {
     fs::path                 source_path;
     fs::path                 out_path;
-    std::vector<std::string> definitions     = {};
-    std::vector<fs::path>    include_dirs    = {};
+    std::vector<std::string> definitions           = {};
+    std::vector<fs::path>    include_dirs          = {};
     std::vector<fs::path>    external_include_dirs = {};
     language                 lang                  = language::automatic;
-    bool                     enable_warnings = false;
+    bool                     enable_warnings       = false;
 };
 
 struct compile_command_info {
