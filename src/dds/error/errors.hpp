@@ -22,10 +22,12 @@ enum class errc {
     none = 0,
     invalid_builtin_toolchain,
     no_such_catalog_package,
+    git_url_ref_mutual_req,
 };
 
 std::string      error_reference_of(errc) noexcept;
 std::string_view explanation_of(errc) noexcept;
+std::string_view default_error_string(errc) noexcept;
 
 template <errc ErrorCode>
 struct user_error : user_error_base {
@@ -40,6 +42,11 @@ using error_invalid_default_toolchain = user_error<errc::invalid_builtin_toolcha
 template <errc ErrorCode, typename... Args>
 [[noreturn]] void throw_user_error(std::string_view fmt_str, Args&&... args) {
     throw user_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
+}
+
+template <errc ErrorCode>
+[[noreturn]] void throw_user_error() {
+    throw user_error<ErrorCode>(std::string(default_error_string(ErrorCode)));
 }
 
 }  // namespace dds

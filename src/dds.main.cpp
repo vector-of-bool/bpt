@@ -248,14 +248,15 @@ struct cli_catalog {
 
             if (git_url) {
                 if (!git_ref) {
-                    throw std::runtime_error(
-                        "`--git-ref` must be specified when using `--git-url`");
+                    dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
                 }
                 auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt};
                 if (auto_lib) {
                     git.auto_lib = lm::split_usage_string(auto_lib.Get());
                 }
                 info.remote = std::move(git);
+            } else if (git_ref) {
+                dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
             }
 
             cat_path.open().store(info);
