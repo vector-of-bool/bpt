@@ -106,7 +106,7 @@ struct explainer {
     void put(pubgrub::explain::no_solution) { strm << "Dependencies cannot be satisfied"; }
 
     void put(pubgrub::explain::dependency<req_type> dep) {
-        strm << dep.dependent << " requires " << dep.dependency << '.';
+        strm << dep.dependent << " requires " << dep.dependency;
     }
 
     void put(pubgrub::explain::unavailable<req_type> un) {
@@ -136,7 +136,7 @@ struct explainer {
         at_head = true;
         strm.str("");
         put(cncl.value);
-        spdlog::error("╘═  Then: {}.", strm.str());
+        spdlog::error("╘═      Then: {}.", strm.str());
     }
 
     void operator()(pubgrub::explain::separator) { spdlog::error(""); }
