@@ -73,6 +73,13 @@
                     "ref": "0.1.2"
                 },
                 "depends": {}
+            },
+            "0.2.0": {
+                "git": {
+                    "url": "https://github.com/vector-of-bool/pubgrub.git",
+                    "ref": "0.2.0"
+                },
+                "depends": {}
             }
         }
     }

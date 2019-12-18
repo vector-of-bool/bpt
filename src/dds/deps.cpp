@@ -57,3 +57,48 @@ dependency_manifest dependency_manifest::from_file(path_ref fpath) {
         lm::reject_unknown());
     return ret;
 }
+
+namespace {
+
+std::string iv_string(const pubgrub::interval_set<semver::version>::interval_type& iv) {
+    if (iv.high == semver::version::max_version()) {
+        return ">=" + iv.low.to_string();
+    }
+    if (iv.low == semver::version()) {
+        return "<" + iv.high.to_string();
+    }
+    return iv.low.to_string() + " < " + iv.high.to_string();
+}
+
+} // namespace
+
+std::string dependency::to_string() const noexcept {
+    std::stringstream strm;
+    strm << name << "@";
+    if (versions.num_intervals() == 1) {
+        auto iv = *versions.iter_intervals().begin();
+        if (iv.high == iv.low.next_after()) {
+            strm << iv.low.to_string();
+            return strm.str();
+        }
+        if (iv.low == semver::version() && iv.high == semver::version::max_version()) {
+            return name;
+        }
+        strm << "[" << iv_string(iv) << "]";
+        return strm.str();
+    }
+
+    strm << "[";
+    auto iv_it = versions.iter_intervals();
+    auto it    = iv_it.begin();
+    const auto stop  = iv_it.end();
+    while (it != stop) {
+        strm << "(" << iv_string(*it) << ")";
+        ++it;
+        if (it != stop) {
+            strm << " || ";
+        }
+    }
+    strm << "]";
+    return strm.str();
+}
