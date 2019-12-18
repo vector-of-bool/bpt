@@ -136,7 +136,7 @@ struct explainer {
         at_head = true;
         strm.str("");
         put(cncl.value);
-        spdlog::error("╘═      Then: {}.", strm.str());
+        spdlog::error("╘═       then {}.", strm.str());
     }
 
     void operator()(pubgrub::explain::separator) { spdlog::error(""); }
