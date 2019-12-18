@@ -11,6 +11,7 @@
 #include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
+#include <sstream>
 #include <cctype>
 #include <map>
 #include <set>
@@ -70,7 +71,7 @@ std::string iv_string(const pubgrub::interval_set<semver::version>::interval_typ
     return iv.low.to_string() + " < " + iv.high.to_string();
 }
 
-} // namespace
+}  // namespace
 
 std::string dependency::to_string() const noexcept {
     std::stringstream strm;
@@ -89,8 +90,8 @@ std::string dependency::to_string() const noexcept {
     }
 
     strm << "[";
-    auto iv_it = versions.iter_intervals();
-    auto it    = iv_it.begin();
+    auto       iv_it = versions.iter_intervals();
+    auto       it    = iv_it.begin();
     const auto stop  = iv_it.end();
     while (it != stop) {
         strm << "(" << iv_string(*it) << ")";
