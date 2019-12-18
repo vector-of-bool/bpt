@@ -14,6 +14,8 @@ package IDs available can be listed with ``dds catalog list``. This will only
 list the IDs of the packages, but none of the additional metadata about them.
 
 
+.. _catalog.adding:
+
 Adding Packages to the Catalog
 ******************************
 
