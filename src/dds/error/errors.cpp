@@ -7,7 +7,7 @@ using namespace dds;
 
 namespace {
 
-std::string error_url_prefix = "http://localhost:3000/err/";
+std::string error_url_prefix = "https://vector-of-bool.github.io/docs/dds/err/";
 
 std::string error_url_suffix(dds::errc ec) noexcept {
     switch (ec) {
