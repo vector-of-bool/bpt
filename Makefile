@@ -9,7 +9,8 @@ docs:
 	sphinx-build -b html \
 		docs \
 		_build/docs \
-		-Wqaj8
+		-d _build/doctrees \
+		-Wqanj8
 	echo "Docs generated to _build/docs"
 
 docs-server: docs
