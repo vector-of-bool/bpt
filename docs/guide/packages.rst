@@ -58,6 +58,8 @@ If a file's extension is not listed in the table above, ``dds`` will ignore it.
     together as part of *source distribution*.
 
 
+.. _pkgs.apps-tests:
+
 Applications and Tests
 **********************
 

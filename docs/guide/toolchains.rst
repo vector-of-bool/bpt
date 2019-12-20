@@ -42,6 +42,8 @@ toolchain file for the ``--toolchain`` (or ``-t``) option on the command line::
 Alternatively, you can pass the name of a built-in toolchain. See below.
 
 
+.. _toolchains.builtin:
+
 Built-in Toolchains
 *******************
 
@@ -134,6 +136,8 @@ Flags for linking executables can be specified with ``Link-Flags``:
 
     Link-Flags: -fsanitize=address -fPIE
 
+
+.. _toolchains.opt-ref:
 
 Toolchain Option Reference
 **************************

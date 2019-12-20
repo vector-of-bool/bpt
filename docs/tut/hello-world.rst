@@ -9,7 +9,7 @@ Creating a *Package Root*
 
 To start, create a new directory for your project. This will be known as the
 *package root*, and the entirety of our project will be placed in this
-directory the name and location of this directory is not important, but the
+directory. The name and location of this directory is not important, but the
 contents therein will be significant.
 
 .. note::
@@ -103,18 +103,10 @@ By default, build results will be placed in a subdirectory of the package root
 named ``_build``. Within this directory, you will find the generated executable
 named ``hello-world`` (with a ``.exe`` suffix if on Windows).
 
-We should not be able to run this executable and see our ``Hello, world!``::
+We should now be able to run this executable and see our ``Hello, world!``::
 
     > ./_build/hello-world
     Hello, world!
-
-Obviously this isn't *all* there is to do with ``dds``. Read on to the next
-pages to learn more.
-
-.. note::
-    You're reading a very early version of these docs. There will be a lot more
-    here in the future. Watch this space for changes!
-
 
 More Sources
 ************

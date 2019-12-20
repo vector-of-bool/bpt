@@ -1,6 +1,7 @@
 #include <dds/build/builder.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/toolchain/from_dds.hpp>
@@ -38,8 +39,9 @@ struct toolchain_flag : string_flag {
             auto default_tc = tc_path.substr(1);
             auto tc         = dds::toolchain::get_builtin(default_tc);
             if (!tc.has_value()) {
-                throw std::runtime_error(
-                    fmt::format("Invalid default toolchain name '{}'", default_tc));
+                dds::throw_user_error<
+                    dds::errc::invalid_builtin_toolchain>("Invalid built-in toolchain name '{}'",
+                                                          default_tc);
             }
             return std::move(*tc);
         } else {
@@ -190,8 +192,8 @@ struct cli_catalog {
                 auto id   = dds::package_id::parse(req);
                 auto info = cat.get(id);
                 if (!info) {
-                    throw std::runtime_error(
-                        fmt::format("No package in the catalog matched the ID '{}'", req));
+                    dds::throw_user_error<dds::errc::no_such_catalog_package>(
+                        "No package in the catalog matched the ID '{}'", req);
                 }
                 auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();
@@ -246,14 +248,15 @@ struct cli_catalog {
 
             if (git_url) {
                 if (!git_ref) {
-                    throw std::runtime_error(
-                        "`--git-ref` must be specified when using `--git-url`");
+                    dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
                 }
                 auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt};
                 if (auto_lib) {
                     git.auto_lib = lm::split_usage_string(auto_lib.Get());
                 }
                 info.remote = std::move(git);
+            } else if (git_ref) {
+                dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
             }
 
             cat_path.open().store(info);
@@ -719,6 +722,11 @@ int main(int argc, char** argv) {
     } catch (const dds::user_cancelled&) {
         spdlog::critical("Operation cancelled by user");
         return 2;
+    } catch (const dds::error_base& e) {
+        spdlog::error("{}", e.what());
+        spdlog::error("{}", e.explanation());
+        spdlog::error("Refer: {}", e.error_reference());
+        return 1;
     } catch (const std::exception& e) {
         spdlog::critical(e.what());
         return 2;

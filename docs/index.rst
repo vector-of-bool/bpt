@@ -17,6 +17,14 @@ the :doc:`tut/index` page.
     tut/index
     guide/index
     design
+    err/index
+
+.. Hide the link to the error reference since we don't want it cluttering our
+    main toc, but we want Sphinx to not consider it "unreferenced." We'll generate
+    our own link
+
+.. seealso::
+    For in-depth error and troubleshooting information see: :doc:`err/index`.
 
 
 Indices and tables

@@ -4,6 +4,7 @@
 #include <dds/build/plan/full.hpp>
 #include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/time.hpp>
 
@@ -234,7 +235,7 @@ void builder::build(const build_params& params) const {
                       failures.output);
     }
     if (!test_failures.empty()) {
-        throw compile_failure("Test failures during the build!");
+        throw_user_error<errc::test_failure>();
     }
 
     if (params.emit_lmi) {
