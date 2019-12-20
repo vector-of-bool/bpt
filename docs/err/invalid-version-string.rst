@@ -19,4 +19,4 @@ Version Ranges
 In addition to requirements on individual versions, providing a version range
 requires a slightly different syntax.
 
-.. TODO: Write docs on version range strings.
+.. seealso:: :ref:`deps.ranges`
