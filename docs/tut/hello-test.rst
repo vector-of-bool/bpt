@@ -52,7 +52,7 @@ A ``Test-Driver``: Using *Catch2*
 *********************************
 
 ``dds`` ships with built-in support for the `Catch2`_ C and C++ testing
-framework, a popular
+framework.
 
 .. _catch2: https://github.com/catchorg/Catch2
 

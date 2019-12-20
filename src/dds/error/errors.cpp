@@ -17,6 +17,12 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "no-such-catalog-package.html";
     case errc::git_url_ref_mutual_req:
         return "git-url-ref-mutual-req.html";
+    case errc::test_failure:
+        return "test-failure.html";
+    case errc::archive_failure:
+        return "archive-failure.html";
+    case errc::link_failure:
+        return "link-failure.html";
     case errc::none:
         break;
     }
@@ -51,6 +57,25 @@ able to be found in the package catalog. Check the spelling and version number.
 Creating a Git-based catalog entry requires both a URL to clone from and a Git
 reference (tag, branch, commit) to clone.
 )";
+    case errc::test_failure:
+        return R"(
+One or more of the project's tests failed. The failing tests are listed above,
+along with their exit code and output.
+)";
+    case errc::archive_failure:
+        return R"(
+Creating a static library archive failed, which prevents the associated library
+from being used as this archive is the input to the linker for downstream
+build targets.
+
+It is unlikely that regular user action can cause static library archiving to
+fail. Refer to the output of the archiving tool.
+)";
+    case errc::link_failure:
+        return R"(
+Linking a runtime binary file failed. There are a variety of possible causes
+for this error. Refer to the documentation for more information.
+)";
     case errc::none:
         break;
     }
@@ -66,6 +91,12 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "The catalog has no entry for the given package ID";
     case errc::git_url_ref_mutual_req:
         return "Git requires both a URL and a ref to clone";
+    case errc::test_failure:
+        return "One or more tests failed";
+    case errc::archive_failure:
+        return "Creating a static library archive failed";
+    case errc::link_failure:
+        return "Linking a runtime binary (executable/shared library/DLL) failed";
     case errc::none:
         break;
     }

@@ -6,8 +6,8 @@ uses the ``Git`` acquisition method.
 
 When ``dds`` obtains a package from the catalog using the ``Git`` method, it
 needs a URL to clone from, and a Git ref to clone. ``dds`` uses a technique
-known as "shallow cloning," which requires a known Git reference to clone from
-the reference may be a tag, branch, or an individual commit (Using a Git commit
+known as "shallow cloning," which requires a known Git reference to clone from.
+The reference may be a tag, branch, or an individual commit (Using a Git commit
 as the ``ref`` requires support from the remote Git server, and it is often
 unavailable in most setups). Using a Git tag is strongly recommended.
 

@@ -1,6 +1,7 @@
 #include "./exe.hpp"
 
 #include <dds/build/plan/library.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/time.hpp>
@@ -54,12 +55,12 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
 
     // Check and throw if errant
     if (!proc_res.okay()) {
-        throw compile_failure(
-            fmt::format("Failed to link test executable '{}'. Link command [{}] returned {}:\n{}",
-                        spec.output.string(),
-                        quote_command(link_command),
-                        proc_res.retc,
-                        proc_res.output));
+        throw_external_error<
+            errc::link_failure>("Failed to link executable [{}]. Link command was [{}]",
+                                spec.output.string(),
+                                quote_command(link_command),
+                                proc_res.retc,
+                                proc_res.output);
     }
 }
 

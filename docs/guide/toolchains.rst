@@ -137,6 +137,8 @@ Flags for linking executables can be specified with ``Link-Flags``:
     Link-Flags: -fsanitize=address -fPIE
 
 
+.. _toolchains.opt-ref:
+
 Toolchain Option Reference
 **************************
 

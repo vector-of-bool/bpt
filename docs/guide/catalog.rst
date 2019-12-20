@@ -32,8 +32,7 @@ command:
 
     dds catalog add <package-id>
         [--depends <requirement> [--depends <requirement> [...]]]
-        [--git-url <url>]
-        [--git-ref <ref>]
+        [--git-url <url> --git-ref <ref>]
         [--auto-lib <Namespace>/<Name>]
 
 The ``<package-id>`` positional arguments is the ``name@version`` package ID

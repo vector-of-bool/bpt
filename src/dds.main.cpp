@@ -722,7 +722,7 @@ int main(int argc, char** argv) {
     } catch (const dds::user_cancelled&) {
         spdlog::critical("Operation cancelled by user");
         return 2;
-    } catch (const dds::user_error_base& e) {
+    } catch (const dds::error_base& e) {
         spdlog::error("{}", e.what());
         spdlog::error("{}", e.explanation());
         spdlog::error("Refer: {}", e.error_reference());
