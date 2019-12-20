@@ -13,8 +13,22 @@ enum class errc {
     no_such_catalog_package,
     git_url_ref_mutual_req,
     test_failure,
+    compile_failure,
     archive_failure,
     link_failure,
+
+    catalog_too_new,
+    corrupted_catalog_db,
+    invalid_catalog_json,
+    no_catalog_remote_info,
+
+    git_clone_failure,
+    sdist_ident_mismatch,
+
+    corrupted_build_db,
+
+    invalid_version_range_string,
+    invalid_version_string,
 };
 
 std::string      error_reference_of(errc) noexcept;

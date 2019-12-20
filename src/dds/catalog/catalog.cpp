@@ -1,5 +1,6 @@
 #include "./catalog.hpp"
 
+#include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 
 #include <neo/sqlite3/exec.hpp>
@@ -75,14 +76,22 @@ void ensure_migrated(sqlite3::database& db) {
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
-        throw std::runtime_error("Corrupted repository database file.");
+        throw_external_error<errc::corrupted_catalog_db>();
     }
 
     auto version_ = meta["version"];
     if (!version_.is_number_integer()) {
-        throw std::runtime_error("Corrupted repository database file [bad dds_meta.version]");
+        throw_external_error<errc::corrupted_catalog_db>(
+            "The catalog database metadata is invalid [bad dds_meta.version]");
     }
+
+    constexpr int current_database_version = 1;
+
     int version = version_;
+    if (version > current_database_version) {
+        throw_external_error<errc::catalog_too_new>();
+    }
+
     if (version < 1) {
         migrate_repodb_1(db);
     }
@@ -101,10 +110,10 @@ catalog catalog::open(const std::string& db_path) {
         ensure_migrated(db);
     } catch (const sqlite3::sqlite3_error& e) {
         spdlog::critical(
-            "Failed to load the repository databsae. It appears to be invalid/corrupted. The "
+            "Failed to load the repository database. It appears to be invalid/corrupted. The "
             "exception message is: {}",
             e.what());
-        throw;
+        throw_external_error<errc::corrupted_catalog_db>();
     }
     return catalog(std::move(db));
 }
@@ -163,10 +172,7 @@ void catalog::store(const package_info& pkg) {
     )"_sql);
     for (const auto& dep : pkg.deps) {
         new_dep_st.reset();
-        if (dep.versions.num_intervals() != 1) {
-            throw std::runtime_error(
-                "Package dependency may only contain a single version interval");
-        }
+        assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
         sqlite3::exec(new_dep_st,
                       std::forward_as_tuple(db_pkg_id,
@@ -274,7 +280,7 @@ namespace {
 
 void check_json(bool b, std::string_view what) {
     if (!b) {
-        throw std::runtime_error("Unable to read repository JSON: " + std::string(what));
+        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
     }
 }
 
@@ -337,8 +343,9 @@ void catalog::import_json_str(std::string_view content) {
                 }
                 info.remote = git_remote_listing{url, ref, autolib};
             } else {
-                throw std::runtime_error(
-                    fmt::format("No remote info for /packages/{}/{}", pkg_name, version_));
+                throw_user_error<errc::no_catalog_remote_info>("No remote info for /packages/{}/{}",
+                                                               pkg_name,
+                                                               version_);
             }
 
             store(info);

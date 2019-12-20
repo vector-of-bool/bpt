@@ -2,6 +2,7 @@
 
 #include <dds/build/iter_compilations.hpp>
 #include <dds/build/plan/compile_exec.hpp>
+#include <dds/error/errors.hpp>
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -76,7 +77,7 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 void build_plan::compile_all(const build_env& env, int njobs) const {
     auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
     if (!okay) {
-        throw std::runtime_error("Compilation failed.");
+        throw_user_error<errc::compile_failure>();
     }
 }
 
@@ -87,7 +88,7 @@ void build_plan::archive_all(const build_env& env, int njobs) const {
         }
     });
     if (!okay) {
-        throw std::runtime_error("Error creating static library archives");
+        throw_external_error<errc::archive_failure>();
     }
 }
 
@@ -107,7 +108,7 @@ void build_plan::link_all(const build_env& env, int njobs) const {
         exe.get().link(env, lib);
     });
     if (!okay) {
-        throw std::runtime_error("Failure to link executables");
+        throw_user_error<errc::link_failure>();
     }
 }
 

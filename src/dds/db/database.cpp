@@ -1,5 +1,7 @@
 #include "./database.hpp"
 
+#include <dds/error/errors.hpp>
+
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
@@ -62,12 +64,13 @@ void ensure_migrated(sqlite3::database& db) {
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
-        throw std::runtime_error("Correupted database file.");
+        throw_external_error<errc::corrupted_build_db>();
     }
 
     auto version_ = meta["version"];
     if (!version_.is_number_integer()) {
-        throw std::runtime_error("Corrupted database file [bad dds_meta.version]");
+        throw_external_error<errc::corrupted_build_db>(
+            "The build database file is corrupted [bad dds_meta.version]");
     }
     int version = version_;
     if (version < 1) {

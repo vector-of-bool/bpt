@@ -46,7 +46,7 @@ void create_archive_plan::archive(const build_env& env) const {
 
     // Check, log, and throw
     if (!ar_res.okay()) {
-        spdlog::error("Creating static library archive failed: {}", out_relpath);
+        spdlog::error("Creating static library archive [{}] failed for '{}'", out_relpath, _name);
         spdlog::error("Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
         throw_external_error<
             errc::archive_failure>("Creating static library archive [{}] failed for '{}'",
