@@ -55,12 +55,13 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
 
     // Check and throw if errant
     if (!proc_res.okay()) {
-        throw_external_error<
-            errc::link_failure>("Failed to link executable [{}]. Link command was [{}]",
-                                spec.output.string(),
-                                quote_command(link_command),
-                                proc_res.retc,
-                                proc_res.output);
+        throw_external_error<errc::link_failure>(
+            "Failed to link executable [{}]. Link command was [{}] [Exited {}], produced "
+            "output:\n{}",
+            spec.output.string(),
+            quote_command(link_command),
+            proc_res.retc,
+            proc_res.output);
     }
 }
 
