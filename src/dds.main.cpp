@@ -19,6 +19,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 
 namespace {
 
@@ -154,6 +155,8 @@ struct cli_catalog {
         common_flags  _common{cmd};
 
         catalog_path_flag cat_path{cmd};
+
+        args::Flag import_stdin{cmd, "stdin", "Import JSON from stdin", {"stdin"}};
         args::ValueFlagList<std::string>
             json_paths{cmd,
                        "json",
@@ -164,6 +167,11 @@ struct cli_catalog {
             auto cat = cat_path.open();
             for (const auto& json_fpath : json_paths.Get()) {
                 cat.import_json_file(json_fpath);
+            }
+            if (import_stdin.Get()) {
+                std::ostringstream strm;
+                strm << std::cin.rdbuf();
+                cat.import_json_str(strm.str());
             }
             return 0;
         }
