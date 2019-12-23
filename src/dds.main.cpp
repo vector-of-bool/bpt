@@ -283,6 +283,49 @@ struct cli_catalog {
         }
     } list{*this};
 
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group,
+                          "show",
+                          "Show information about a single package in the catalog"};
+
+        catalog_path_flag             cat_path{cmd};
+        args::Positional<std::string> ident{cmd,
+                                            "package-id",
+                                            "A package identifier to show",
+                                            args::Options::Required};
+
+        void print_remote_info(const dds::git_remote_listing& git) {
+            std::cout << "Git URL:  " << git.url << '\n';
+            std::cout << "Git Ref:  " << git.ref << '\n';
+            if (git.auto_lib) {
+                std::cout << "Auto-lib: " << git.auto_lib->name << "/" << git.auto_lib->namespace_
+                          << '\n';
+            }
+        }
+
+        int run() {
+            auto pk_id = dds::package_id::parse(ident.Get());
+            auto cat   = cat_path.open();
+            auto pkg   = cat.get(pk_id);
+            if (!pkg) {
+                spdlog::error("No package '{}' in the catalog", pk_id.to_string());
+                return 1;
+            }
+            std::cout << "Name:     " << pkg->ident.name << '\n'
+                      << "Version:  " << pkg->ident.version << '\n';
+
+            for (const auto& dep : pkg->deps) {
+                std::cout << "Depends: " << dep.to_string() << '\n';
+            }
+
+            std::visit([&](const auto& remote) { print_remote_info(remote); }, pkg->remote);
+            std::cout << "Description:\n    " << pkg->description << '\n';
+
+            return 0;
+        }
+    } show{*this};
+
     int run() {
         if (create.cmd) {
             return create.run();
@@ -294,6 +337,8 @@ struct cli_catalog {
             return add.run();
         } else if (list.cmd) {
             return list.run();
+        } else if (show.cmd) {
+            return show.run();
         } else {
             assert(false);
             std::terminate();
