@@ -3,7 +3,8 @@ C++-Version: C++17
 C-Compiler: gcc-9
 C++-Compiler: g++-9
 # Range-v3 0.10.0 contains an accidental conversion warning
-Flags: -D SPDLOG_COMPILED_LIB -fconcepts -Werror=return-type -Wno-conversion
+Flags: -D SPDLOG_COMPILED_LIB -Werror=return-type -Wno-conversion
+C++-Flags: -fconcepts
 Link-Flags: -static-libgcc -static-libstdc++
 # Debug: True
 Optimize: True
