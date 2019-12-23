@@ -18,6 +18,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
     db.store(dds::package_info{
         dds::package_id("foo", semver::version::parse("1.2.3")),
         {},
+        "example",
         dds::git_remote_listing{"http://example.com", "master", std::nullopt},
     });
 
@@ -36,6 +37,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
     CHECK_NOTHROW(db.store(dds::package_info{
         dds::package_id("foo", semver::version::parse("1.2.3")),
         {},
+        "example",
         dds::git_remote_listing{"http://example.com", "develop", std::nullopt},
     }));
     // The previous pkg_id is still a valid lookup key
@@ -51,6 +53,7 @@ TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
             {"bar", {semver::version::parse("1.2.3"), semver::version::parse("1.4.0")}},
             {"baz", {semver::version::parse("5.3.0"), semver::version::parse("6.0.0")}},
         },
+        "example",
         dds::git_remote_listing{"http://example.com", "master", std::nullopt},
     });
     auto pkgs = db.by_name("foo");

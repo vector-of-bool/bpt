@@ -81,6 +81,9 @@ def main(argv: Sequence[str]) -> int:
         assert False, 'impossible'
 
     cat_path = paths.BUILD_DIR / 'catalog.db'
+    if cat_path.is_file():
+        cat_path.unlink()
+
     ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
     if ci_repo_dir.exists():
         shutil.rmtree(ci_repo_dir)
@@ -100,6 +103,10 @@ def main(argv: Sequence[str]) -> int:
             ('--repo-dir', ci_repo_dir),
         ])
     print('Main build PASSED!')
+
+    # Delete the catalog database, since there may be schema changes since the
+    # bootstrap executable was built
+    cat_path.unlink()
 
     proc.check_run([
         paths.CUR_BUILT_DDS,

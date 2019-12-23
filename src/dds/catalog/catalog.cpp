@@ -30,6 +30,7 @@ void migrate_repodb_1(sqlite3::database& db) {
             git_ref TEXT,
             lm_name TEXT,
             lm_namespace TEXT,
+            description TEXT NOT NULL,
             UNIQUE(name, version),
             CONSTRAINT has_source_info CHECK(
                 (
@@ -132,14 +133,16 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
                 git_url,
                 git_ref,
                 lm_name,
-                lm_namespace
+                lm_namespace,
+                description
             ) VALUES (
                 ?1,
                 ?2,
                 ?3,
                 ?4,
                 CASE WHEN ?5 = '' THEN NULL ELSE ?5 END,
-                CASE WHEN ?6 = '' THEN NULL ELSE ?6 END
+                CASE WHEN ?6 = '' THEN NULL ELSE ?6 END,
+                ?7
             )
         )"_sql,
         std::forward_as_tuple(  //
@@ -148,7 +151,8 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
             git.url,
             git.ref,
             lm_usage.name,
-            lm_usage.namespace_));
+            lm_usage.namespace_,
+            pkg.description));
 }
 
 void catalog::store(const package_info& pkg) {
@@ -191,7 +195,8 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             git_url,
             git_ref,
             lm_name,
-            lm_namespace
+            lm_namespace,
+            description
         FROM dds_cat_pkgs
         WHERE name = ? AND version = ?
     )"_sql);
@@ -203,11 +208,13 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
                                               std::optional<std::string>,
                                               std::optional<std::string>,
                                               std::optional<std::string>,
-                                              std::optional<std::string>>(st);
+                                              std::optional<std::string>,
+                                              std::string>(st);
     if (!opt_tup) {
         return std::nullopt;
     }
-    const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace] = *opt_tup;
+    const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace, description]
+        = *opt_tup;
     assert(pk_id.name == name);
     assert(pk_id.version == semver::version::parse(version));
     assert(git_url);
@@ -218,6 +225,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
     return package_info{
         pk_id,
         std::move(deps),
+        std::move(description),
         git_remote_listing{
             *git_url,
             *git_ref,
@@ -317,7 +325,7 @@ void catalog::import_json_str(std::string_view content) {
                                    pkg_name,
                                    version_));
 
-            package_info info{{pkg_name, version}, {}, {}};
+            package_info info{{pkg_name, version}, {}, {}, {}};
             for (const auto& [dep_name, dep_version] : deps.items()) {
                 check_json(dep_version.is_string(),
                            fmt::format("/packages/{}/{}/depends/{} must be a string",
@@ -346,6 +354,12 @@ void catalog::import_json_str(std::string_view content) {
                 throw_user_error<errc::no_catalog_remote_info>("No remote info for /packages/{}/{}",
                                                                pkg_name,
                                                                version_);
+            }
+
+            auto desc_ = pkg_info["description"];
+            if (!desc_.is_null()) {
+                check_json(desc_.is_string(), "`description` must be a string");
+                info.description = desc_;
             }
 
             store(info);

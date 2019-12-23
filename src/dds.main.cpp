@@ -234,6 +234,8 @@ struct cli_catalog {
                             "The Git ref to from which the source distribution should be created",
                             {"git-ref"}};
 
+        string_flag description{cmd, "description", "A description of the package", {"desc"}};
+
         int run() {
             auto ident = dds::package_id::parse(pkg_id.Get());
 
@@ -244,7 +246,7 @@ struct cli_catalog {
                 // deps.push_back({dep_id.name, dep_id.version});
             }
 
-            dds::package_info info{ident, std::move(deps), {}};
+            dds::package_info info{ident, std::move(deps), description.Get(), {}};
 
             if (git_url) {
                 if (!git_ref) {

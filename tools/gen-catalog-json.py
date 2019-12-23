@@ -1,6 +1,7 @@
 import json
 from typing import NamedTuple, Tuple, List, Sequence, Union, Optional, Mapping
 import sys
+import textwrap
 
 
 class Git(NamedTuple):
@@ -23,9 +24,12 @@ class Version(NamedTuple):
     version: str
     remote: RemoteInfo
     depends: Mapping[str, str] = {}
+    description: str = '(No description provided)'
 
     def to_dict(self) -> dict:
-        ret = {}
+        ret: dict = {
+            'description': self.description,
+        }
         ret['depends'] = {}
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
@@ -42,10 +46,12 @@ def many_versions(name: str,
                   *,
                   tag_fmt: str = '{}',
                   git_url: str,
-                  auto_lib: str = None) -> Package:
+                  auto_lib: str = None,
+                  description='(No description was provided)') -> Package:
     return Package(name, [
         Version(
             ver,
+            description='\n'.join(textwrap.wrap(description)),
             remote=Git(
                 url=git_url, ref=tag_fmt.format(ver), auto_lib=auto_lib))
         for ver in versions
@@ -63,6 +69,8 @@ packages = [
         ),
         git_url='https://github.com/ericniebler/range-v3.git',
         auto_lib='Niebler/range-v3',
+        description=
+        'Range library for C++14/17/20, basis for C++20\'s std::ranges',
     ),
     many_versions(
         'nlohmann-json',
@@ -85,10 +93,12 @@ packages = [
         ),
         git_url='https://github.com/vector-of-bool/json.git',
         tag_fmt='dds/{}',
+        description='JSON for Modern C++',
     ),
     Package('ms-wil', [
         Version(
             '2019.11.10',
+            description='The Windows Implementation Library',
             remote=Git('https://github.com/vector-of-bool/wil.git',
                        'dds/2019.11.10'))
     ]),
@@ -99,17 +109,22 @@ packages = [
             '0.2.0',
             '0.2.1',
         ),
+        description='A modern and low-level C++ SQLite API',
         git_url='https://github.com/vector-of-bool/neo-sqlite3.git',
     ),
     Package('neo-fun', [
         Version(
             '0.1.0',
+            description='Some library fundamentals that you might find useful',
             remote=Git('https://github.com/vector-of-bool/neo-fun.git',
                        '0.1.0'))
     ]),
     Package('semver', [
         Version(
             '0.2.1',
+            description=
+            'A C++ library that implements Semantic Versioning parsing, emitting, '
+            'types, ordering, and operations. See https://semver.org/',
             remote=Git('https://github.com/vector-of-bool/semver.git',
                        '0.2.1'))
     ]),
@@ -119,6 +134,8 @@ packages = [
             '0.1.2',
             '0.2.0',
         ),
+        description=
+        'A C++ implementation of the Pubgrub version solving algorithm',
         git_url='https://github.com/vector-of-bool/pubgrub.git',
     ),
     many_versions(
@@ -147,6 +164,7 @@ packages = [
         git_url='https://github.com/gabime/spdlog.git',
         tag_fmt='v{}',
         auto_lib='spdlog/spdlog',
+        description='Fast C++ logging library',
     ),
     many_versions(
         'fmt',
@@ -178,6 +196,7 @@ packages = [
         ),
         git_url='https://github.com/fmtlib/fmt.git',
         auto_lib='fmt/fmt',
+        description='A modern formatting library : https://fmt.dev/',
     ),
 ]
 
