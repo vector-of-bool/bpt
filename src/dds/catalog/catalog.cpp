@@ -319,24 +319,27 @@ void catalog::import_json_str(std::string_view content) {
             check_json(pkg_info.is_object(),
                        fmt::format("/packages/{}/{} must be an object", pkg_name, version_));
 
-            auto deps = pkg_info["depends"];
-            check_json(deps.is_object(),
-                       fmt::format("/packages/{}/{}/depends must be an object",
-                                   pkg_name,
-                                   version_));
-
             package_info info{{pkg_name, version}, {}, {}, {}};
-            for (const auto& [dep_name, dep_version] : deps.items()) {
-                check_json(dep_version.is_string(),
-                           fmt::format("/packages/{}/{}/depends/{} must be a string",
+            auto         deps = pkg_info["depends"];
+
+            if (!deps.is_null()) {
+                check_json(deps.is_object(),
+                           fmt::format("/packages/{}/{}/depends must be an object",
                                        pkg_name,
-                                       version_,
-                                       dep_name));
-                auto range = semver::range::parse(std::string(dep_version));
-                info.deps.push_back({
-                    std::string(dep_name),
-                    {range.low(), range.high()},
-                });
+                                       version_));
+
+                for (const auto& [dep_name, dep_version] : deps.items()) {
+                    check_json(dep_version.is_string(),
+                               fmt::format("/packages/{}/{}/depends/{} must be a string",
+                                           pkg_name,
+                                           version_,
+                                           dep_name));
+                    auto range = semver::range::parse(std::string(dep_version));
+                    info.deps.push_back({
+                        std::string(dep_name),
+                        {range.low(), range.high()},
+                    });
+                }
             }
 
             auto git_remote = pkg_info["git"];

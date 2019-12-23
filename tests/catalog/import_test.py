@@ -20,6 +20,12 @@ def test_import_json(dds: DDS):
                     },
                     'depends': {},
                 },
+                '1.2.5': {
+                    'git': {
+                        'url': 'http://example.com',
+                        'ref': 'master',
+                    },
+                },
             },
         },
     }
