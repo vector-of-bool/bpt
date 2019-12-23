@@ -96,11 +96,14 @@ The JSON file has the following structure:
         // available for each package.
         "0.4.2": {
           // `depends` is an object of dependencies for this
-          // particular version of the package.
+          // particular version of the package. (Optional)
           "depends": {
             // A mapping of package names to version ranges
             "acme-widgets": "^1.4.1"
           },
+          // `description` is an attribute to give a string to describe
+          // the package. (Optional)
+          "description": "A collection of useful gadgets.",
           // Specify the Git remote information
           "git": {
             // `url` and `ref` are required.
