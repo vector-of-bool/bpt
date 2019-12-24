@@ -88,6 +88,7 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
         f.executable_path = exe_path;
         f.output          = res.output;
         f.retc            = res.retc;
+        f.signal          = res.signal;
         return f;
     }
 }
