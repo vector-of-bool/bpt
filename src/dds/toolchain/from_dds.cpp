@@ -1,5 +1,6 @@
 #include "./from_dds.hpp"
 
+#include <dds/dym.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/algo.hpp>
@@ -146,7 +147,35 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
              lm::read_opt("Executable-Prefix", exe_prefix),
              lm::read_opt("Executable-Suffix", exe_suffix),
              // Die:
-             lm::reject_unknown());
+             lm_reject_dym{{
+                 "Compiler-ID",
+                 "C-Compiler",
+                 "C++-Compiler",
+                 "C-Version",
+                 "C++-Version",
+                 "Include-Template",
+                 "External-Include-Template",
+                 "Define-Template",
+                 "Warning-Flags",
+                 "Flags",
+                 "C-Flags",
+                 "C++-Flags",
+                 "Link-Flags",
+                 "Optimize",
+                 "Debug",
+                 "Compiler-Launcher",
+                 "Deps-Mode",
+                 "C-Compile-File",
+                 "C++-Compile-File",
+                 "Create-Archive",
+                 "Link-Executable",
+                 "Archive-Prefix",
+                 "Archive-Suffix",
+                 "Object-Prefix",
+                 "Object-Suffix",
+                 "Executable-Prefix",
+                 "Executable-Suffix",
+             }});
 
     toolchain_prep tc;
 

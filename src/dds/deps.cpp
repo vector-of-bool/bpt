@@ -1,5 +1,6 @@
 #include "./deps.hpp"
 
+#include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
@@ -53,7 +54,7 @@ dependency_manifest dependency_manifest::from_file(path_ref fpath) {
             }
             return false;
         },
-        lm::reject_unknown());
+        lm_reject_dym{{"Depends"}});
     return ret;
 }
 

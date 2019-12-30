@@ -1,5 +1,7 @@
 #include <dds/dym.hpp>
 
+#include <dds/error/errors.hpp>
+
 #include <range/v3/algorithm/min_element.hpp>
 #include <range/v3/view/cartesian_product.hpp>
 #include <range/v3/view/iota.hpp>
@@ -42,4 +44,14 @@ std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexc
     }
 
     return matrix.back().back();
+}
+
+bool lm_reject_dym::operator()(std::string_view context,
+                               std::string_view key,
+                               std::string_view) const {
+    assert(candidates.size() > 0);
+    throw_user_error<errc::invalid_config_key>("{}: Unknown key '{}' (Did you meann '{}'?)",
+                                               context,
+                                               key,
+                                               *did_you_mean(key, candidates));
 }

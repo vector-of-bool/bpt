@@ -29,6 +29,7 @@ enum class errc {
 
     invalid_version_range_string,
     invalid_version_string,
+    invalid_config_key,
 };
 
 std::string      error_reference_of(errc) noexcept;

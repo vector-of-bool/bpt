@@ -1,5 +1,6 @@
 #include "./manifest.hpp"
 
+#include <dds/dym.hpp>
 #include <dds/util/string.hpp>
 #include <libman/parse.hpp>
 
@@ -23,7 +24,7 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
              lm::read_required("Version", version_str),
              lm::read_accumulate("Depends", depends_strs),
              lm::read_opt("Test-Driver", opt_test_driver),
-             lm::reject_unknown());
+             lm_reject_dym{{"Name", "Namespace", "Version", "Depends", "Test-Driver"}});
 
     if (ret.pkg_id.name.empty()) {
         throw std::runtime_error(
