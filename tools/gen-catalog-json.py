@@ -68,7 +68,7 @@ packages = [
             '0.10.0',
         ),
         git_url='https://github.com/ericniebler/range-v3.git',
-        auto_lib='Niebler/range-v3',
+        auto_lib='range-v3/range-v3',
         description=
         'Range library for C++14/17/20, basis for C++20\'s std::ranges',
     ),
@@ -108,6 +108,7 @@ packages = [
             '0.1.0',
             '0.2.0',
             '0.2.1',
+            '0.2.2',
         ),
         description='A modern and low-level C++ SQLite API',
         git_url='https://github.com/vector-of-bool/neo-sqlite3.git',
@@ -119,6 +120,17 @@ packages = [
             remote=Git('https://github.com/vector-of-bool/neo-fun.git',
                        '0.1.0'))
     ]),
+    many_versions(
+        'neo-concepts',
+        (
+            '0.1.0',
+            '0.2.0',
+            '0.2.1',
+        ),
+        description=
+        'Minimal C++ concepts library. Contains many definitions from C++20.',
+        git_url='https://github.com/vector-of-bool/neo-concepts.git',
+    ),
     Package('semver', [
         Version(
             '0.2.1',
@@ -159,7 +171,7 @@ packages = [
             '1.3.1',
             '1.4.0',
             '1.4.1',
-            '1.4.1',
+            '1.4.2',
         ),
         git_url='https://github.com/gabime/spdlog.git',
         tag_fmt='v{}',
