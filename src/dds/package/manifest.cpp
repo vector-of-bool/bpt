@@ -1,6 +1,7 @@
 #include "./manifest.hpp"
 
 #include <dds/dym.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/util/string.hpp>
 #include <libman/parse.hpp>
 
@@ -41,7 +42,11 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
         } else if (test_driver_str == "Catch") {
             ret.test_driver = test_lib::catch_;
         } else {
-            throw std::runtime_error(fmt::format("Unknown 'Test-Driver': '{}'", test_driver_str));
+            auto dym = *did_you_mean(test_driver_str, {"Catch-Main", "Catch"});
+            throw_user_error<
+                errc::unknown_test_driver>("Unknown 'Test-Driver' '{}' (Did you mean '{}'?)",
+                                           test_driver_str,
+                                           dym);
         }
     }
 

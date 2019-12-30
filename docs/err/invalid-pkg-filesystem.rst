@@ -5,6 +5,10 @@ Error: Invalid package filesystem
 build and process packages and libraries. This structure isn't overly strict,
 and is thoroughly explained on the :doc:`/guide/packages` page.
 
+For exporting/generating a source distribution from a package, the *package
+root* requires a ``package.dds`` file and each *library root* requires a
+``library.dds`` file.
+
 ..  .
   TODO: Create are more detailed reference page for package and library layout,
   and include those links in a `seealso`.

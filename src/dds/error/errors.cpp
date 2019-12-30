@@ -46,7 +46,10 @@ std::string error_url_suffix(dds::errc ec) noexcept {
     case errc::invalid_config_key:
         return "invalid-config-key.html";
     case errc::invalid_lib_filesystem:
+    case errc::invalid_pkg_filesystem:
         return "invalid-pkg-filesystem.html";
+    case errc::unknown_test_driver:
+        return "unknown-test-driver.html";
     case errc::none:
         break;
     }
@@ -160,10 +163,16 @@ information.
     case errc::invalid_config_key:
         return R"(The `key' in a `key: value' pair was not recognized.)";
     case errc::invalid_lib_filesystem:
+    case errc::invalid_pkg_filesystem:
         return R"(
 `dds` prescribes a specific filesystem structure that must be obeyed by
 libraries and packages. Refer to the documentation for an explanation and
 reference on these prescriptions.
+)";
+    case errc::unknown_test_driver:
+        return R"(
+`dds` has a pre-defined set of built-in test drivers, and the one specified is
+not recognized. Check the documentation for more information.
 )";
     case errc::none:
         break;
@@ -214,8 +223,11 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. Please "
                "report it.)";
     case errc::invalid_lib_filesystem:
+    case errc::invalid_pkg_filesystem:
         return "The filesystem structure of the package/library is invalid. <- (Seeing this text "
                "is a `dds` bug. Please report it.)";
+    case errc::unknown_test_driver:
+        return "The specified Test-Driver is not known to `dds`";
     case errc::none:
         break;
     }

@@ -30,8 +30,10 @@ enum class errc {
     invalid_version_range_string,
     invalid_version_string,
     invalid_config_key,
+    unknown_test_driver,
 
     invalid_lib_filesystem,
+    invalid_pkg_filesystem,
 };
 
 std::string      error_reference_of(errc) noexcept;
