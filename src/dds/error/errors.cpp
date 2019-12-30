@@ -45,6 +45,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "invalid-version-string.html";
     case errc::invalid_config_key:
         return "invalid-config-key.html";
+    case errc::invalid_lib_filesystem:
+        return "invalid-pkg-filesystem.html";
     case errc::none:
         break;
     }
@@ -157,6 +159,12 @@ information.
 )";
     case errc::invalid_config_key:
         return R"(The `key' in a `key: value' pair was not recognized.)";
+    case errc::invalid_lib_filesystem:
+        return R"(
+`dds` prescribes a specific filesystem structure that must be obeyed by
+libraries and packages. Refer to the documentation for an explanation and
+reference on these prescriptions.
+)";
     case errc::none:
         break;
     }
@@ -205,6 +213,9 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::invalid_config_key:
         return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. Please "
                "report it.)";
+    case errc::invalid_lib_filesystem:
+        return "The filesystem structure of the package/library is invalid. <- (Seeing this text "
+               "is a `dds` bug. Please report it.)";
     case errc::none:
         break;
     }
