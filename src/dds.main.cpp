@@ -1,6 +1,7 @@
 #include <dds/build/builder.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
+#include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
@@ -197,11 +198,14 @@ struct cli_catalog {
         int run() {
             auto cat = cat_path.open();
             for (const auto& req : requirements.Get()) {
-                auto id   = dds::package_id::parse(req);
-                auto info = cat.get(id);
+                auto            id = dds::package_id::parse(req);
+                dds::dym_target dym;
+                auto            info = cat.get(id);
                 if (!info) {
                     dds::throw_user_error<dds::errc::no_such_catalog_package>(
-                        "No package in the catalog matched the ID '{}'", req);
+                        "No package in the catalog matched the ID '{}'.{}",
+                        req,
+                        dym.sentence_suffix());
                 }
                 auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();

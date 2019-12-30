@@ -1,5 +1,6 @@
 #include "./catalog.hpp"
 
+#include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 
@@ -211,6 +212,12 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
                                               std::optional<std::string>,
                                               std::string>(st);
     if (!opt_tup) {
+        dym_target::fill([&] {
+            auto all_ids = this->all();
+            auto id_strings
+                = ranges::views::transform(all_ids, [&](auto id) { return id.to_string(); });
+            return did_you_mean(pk_id.to_string(), id_strings);
+        });
         return std::nullopt;
     }
     const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace, description]
