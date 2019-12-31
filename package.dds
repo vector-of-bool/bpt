@@ -1,5 +1,6 @@
 Name: dds
 Version: 0.1.0
+# SPDX-License-Identifier: MPL-2.0
 
 Depends: spdlog 1.4.2
 Depends: ms-wil 2019.11.10
