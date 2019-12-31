@@ -8,7 +8,7 @@ Remote-Package: nlohmann-json 3.7.1; git url=https://github.com/vector-of-bool/j
 Remote-Package: ms-wil 2019.11.10; git url=https://github.com/vector-of-bool/wil.git ref=dds/2019.11.10
 
 # XXX: Don't depend on a moving revision!
-Remote-Package: neo-buffer 0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=develop
+Remote-Package: neo-buffer 0.1.0; git url=https://github.com/vector-of-bool/neo-buffer.git ref=0.0.1
 
 Remote-Package: neo-sqlite3 0.2.2; git url=https://github.com/vector-of-bool/neo-sqlite3.git ref=0.2.2
 Remote-Package: semver 0.2.1; git url=https://github.com/vector-of-bool/semver.git ref=0.2.1
