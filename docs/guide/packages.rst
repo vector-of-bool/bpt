@@ -225,6 +225,8 @@ directory. ``dds`` will not compile compilable source files that appear in the
 ``include/`` directory and will issue a warning on each file found.
 
 
+.. _pkgs.libs:
+
 Libraries
 *********
 
