@@ -1,5 +1,7 @@
 #include "./solve.hpp"
 
+#include <dds/error/errors.hpp>
+
 #include <pubgrub/solve.hpp>
 
 #include <range/v3/range/conversion.hpp>
@@ -156,6 +158,6 @@ std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
     } catch (const solve_fail_exc& failure) {
         spdlog::error("Dependency resolution has failed! Explanation:");
         pubgrub::generate_explaination(failure, explainer());
-        throw;
+        throw_user_error<errc::dependency_resolve_failure>();
     }
 }

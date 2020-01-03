@@ -1,6 +1,7 @@
 #include "./repo.hpp"
 
 #include <dds/catalog/catalog.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/util/paths.hpp>
@@ -79,7 +80,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
         auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
                                sd.path.string());
         if (ife_action == if_exists::throw_exc) {
-            throw std::runtime_error(msg);
+            throw_user_error<errc::sdist_exists>(msg);
         } else if (ife_action == if_exists::ignore) {
             spdlog::warn(msg);
             return;

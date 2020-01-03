@@ -24,13 +24,19 @@ enum class errc {
 
     git_clone_failure,
     sdist_ident_mismatch,
+    sdist_exists,
 
     corrupted_build_db,
 
     invalid_version_range_string,
     invalid_version_string,
+    invalid_pkg_id,
+    invalid_pkg_name,
     invalid_config_key,
     unknown_test_driver,
+    dependency_resolve_failure,
+    dup_lib_name,
+    unknown_usage_name,
 
     invalid_lib_filesystem,
     invalid_pkg_filesystem,

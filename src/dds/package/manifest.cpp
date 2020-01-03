@@ -28,12 +28,13 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
              lm_reject_dym{{"Name", "Namespace", "Version", "Depends", "Test-Driver"}});
 
     if (ret.pkg_id.name.empty()) {
-        throw std::runtime_error(
-            fmt::format("'Name' field in [{}] may not be an empty string", fpath.string()));
+        throw_user_error<errc::invalid_pkg_name>("'Name' field in [{}] may not be an empty string",
+                                                 fpath.string());
     }
     if (version_str.empty()) {
-        throw std::runtime_error(
-            fmt::format("'Version' field in [{}] may not be an empty string", fpath.string()));
+        throw_user_error<
+            errc::invalid_version_string>("'Version' field in [{}] may not be an empty string",
+                                          fpath.string());
     }
     if (opt_test_driver) {
         auto& test_driver_str = *opt_test_driver;

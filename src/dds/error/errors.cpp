@@ -50,6 +50,17 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "invalid-pkg-filesystem.html";
     case errc::unknown_test_driver:
         return "unknown-test-driver.html";
+    case errc::invalid_pkg_name:
+    case errc::invalid_pkg_id:
+        return "invalid-pkg-ident.html";
+    case errc::sdist_exists:
+        return "sdist-exists.html";
+    case errc::dependency_resolve_failure:
+        return "dep-res-failure.html";
+    case errc::dup_lib_name:
+        return "dup-lib-name.html";
+    case errc::unknown_usage_name:
+        return "unknown-usage.html";
     case errc::none:
         break;
     }
@@ -174,6 +185,37 @@ reference on these prescriptions.
 `dds` has a pre-defined set of built-in test drivers, and the one specified is
 not recognized. Check the documentation for more information.
 )";
+    case errc::invalid_pkg_id:
+        return R"(Package IDs must follow a strict format of <name>@<version>.)";
+    case errc::invalid_pkg_name:
+        return R"(Package names allow a limited set of characters and must not be empty.)";
+    case errc::sdist_exists:
+        return R"(
+By default, `dds` will not overwrite source distributions that already exist
+(either in the repository or a filesystem path). Such an action could
+potentially destroy important data.
+)";
+    case errc::dependency_resolve_failure:
+        return R"(
+The dependency resolution algorithm failed to resolve the requirements of the
+project. The algorithm's explanation should give enough information to infer
+why there is no possible solution. You may need to reconsider your dependency
+versions to avoid conflicts.
+)";
+    case errc::dup_lib_name:
+        return R"(
+`dds` cannot build code correctly when there is more than one library that has
+claimed the same name. It is possible that the duplicate name appears in a
+dependency and is not an issue in your own project. Consult the output to see
+which packages are claiming the library name.
+)";
+    case errc::unknown_usage_name:
+        return R"(
+A `Uses` or `Links` field for a library specifies a library of an unknown name.
+Check your spelling, and check that the package containing the library is
+available, either from the `package.dds` or from the `INDEX.lmi` that was used
+for the build.
+)";
     case errc::none:
         break;
     }
@@ -226,8 +268,22 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::invalid_pkg_filesystem:
         return "The filesystem structure of the package/library is invalid. <- (Seeing this text "
                "is a `dds` bug. Please report it.)";
+    case errc::invalid_pkg_id:
+        return "A package identifier is invalid  <- (Seeing this text is a `dds` bug. Please "
+               "report it.)";
+    case errc::invalid_pkg_name:
+        return "A package name is invalid  <- (Seeing this text is a `dds` bug. Please report it.)";
+    case errc::sdist_exists:
+        return "The source ditsribution already exists at the destination  <- (Seeing this text is "
+               "a `dds` bug. Please report it.)";
     case errc::unknown_test_driver:
         return "The specified Test-Driver is not known to `dds`";
+    case errc::dependency_resolve_failure:
+        return "`dds` was unable to find a solution for the package dependencies given.";
+    case errc::dup_lib_name:
+        return "More than one library has claimed the same name.";
+    case errc::unknown_usage_name:
+        return "A `Uses` or `Links` field names a library that isn't recognized.";
     case errc::none:
         break;
     }
