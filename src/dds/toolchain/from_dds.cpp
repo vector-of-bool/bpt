@@ -504,7 +504,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (!compiler_id) {
             fail(context, "Cannot deduce library file extension without Compiler-ID");
         }
-        if (is_gnu) {
+        if (is_gnu_like) {
             return ".a";
         } else if (is_msvc) {
             return ".lib";
@@ -518,7 +518,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (!compiler_id) {
             fail(context, "Cannot deduce object file extension without Compiler-ID");
         }
-        if (is_gnu) {
+        if (is_gnu_like) {
             return ".o";
         } else if (is_msvc) {
             return ".obj";
