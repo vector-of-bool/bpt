@@ -4,6 +4,8 @@
 #include <libman/index.hpp>
 #include <libman/library.hpp>
 
+#include <neo/out.hpp>
+
 #include <map>
 #include <string>
 
@@ -37,10 +39,9 @@ public:
     const lm::library* get(std::string ns, std::string name) const noexcept {
         return get({ns, name});
     }
-    lm::library&       add(std::string ns, std::string name);
-    void add(std::string ns, std::string name, lm::library lib) { add(ns, name) = lib; }
+    lm::library& add(std::string ns, std::string name);
+    void         add(std::string ns, std::string name, lm::library lib) { add(ns, name) = lib; }
 
-    void                  apply(shared_compile_file_rules, std::string ns, std::string name) const;
     std::vector<fs::path> link_paths(const lm::usage&) const;
     std::vector<fs::path> include_paths(const lm::usage& req) const;
 

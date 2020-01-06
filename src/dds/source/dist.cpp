@@ -1,5 +1,6 @@
 #include "./dist.hpp"
 
+#include <dds/error/errors.hpp>
 #include <dds/library/library.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
@@ -44,9 +45,10 @@ void sdist_copy_library(path_ref out_root, const library& lib, const sdist_param
 
     auto lib_dds_path = lib.path() / "library.dds";
     if (!fs::is_regular_file(lib_dds_path)) {
-        throw std::runtime_error(fmt::format(
-            "Each library in a source distribution requires a library manifest (Expected [{}])",
-            lib_dds_path.string()));
+        throw_user_error<errc::invalid_lib_filesystem>(
+            "Each library root in a source distribution requires a library manifest (Expected "
+            "[{}])",
+            lib_dds_path.string());
     }
     sdist_export_file(out_root, params.project_dir, lib_dds_path);
 
@@ -63,8 +65,8 @@ sdist dds::create_sdist(const sdist_params& params) {
     auto dest = fs::absolute(params.dest_path);
     if (fs::exists(dest)) {
         if (!params.force) {
-            throw std::runtime_error(
-                fmt::format("Destination path '{}' already exists", dest.string()));
+            throw_user_error<errc::sdist_exists>("Destination path '{}' already exists",
+                                                 dest.string());
         }
     }
 
@@ -88,8 +90,10 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 
     auto man_path = params.project_dir / "package.dds";
     if (!fs::is_regular_file(man_path)) {
-        throw std::runtime_error(fmt::format(
-            "Creating a source distribution requires a package.dds file for the project"));
+        throw_user_error<errc::invalid_pkg_filesystem>(
+            "Creating a source distribution requires a package.dds file for the project (Expected "
+            "[{}])",
+            man_path.string());
     }
     sdist_export_file(out, params.project_dir, man_path);
     auto pkg_man = package_manifest::load_from_file(man_path);

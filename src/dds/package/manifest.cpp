@@ -1,5 +1,7 @@
 #include "./manifest.hpp"
 
+#include <dds/dym.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/util/string.hpp>
 #include <libman/parse.hpp>
 
@@ -23,15 +25,16 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
              lm::read_required("Version", version_str),
              lm::read_accumulate("Depends", depends_strs),
              lm::read_opt("Test-Driver", opt_test_driver),
-             lm::reject_unknown());
+             lm_reject_dym{{"Name", "Namespace", "Version", "Depends", "Test-Driver"}});
 
     if (ret.pkg_id.name.empty()) {
-        throw std::runtime_error(
-            fmt::format("'Name' field in [{}] may not be an empty string", fpath.string()));
+        throw_user_error<errc::invalid_pkg_name>("'Name' field in [{}] may not be an empty string",
+                                                 fpath.string());
     }
     if (version_str.empty()) {
-        throw std::runtime_error(
-            fmt::format("'Version' field in [{}] may not be an empty string", fpath.string()));
+        throw_user_error<
+            errc::invalid_version_string>("'Version' field in [{}] may not be an empty string",
+                                          fpath.string());
     }
     if (opt_test_driver) {
         auto& test_driver_str = *opt_test_driver;
@@ -40,7 +43,11 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
         } else if (test_driver_str == "Catch") {
             ret.test_driver = test_lib::catch_;
         } else {
-            throw std::runtime_error(fmt::format("Unknown 'Test-Driver': '{}'", test_driver_str));
+            auto dym = *did_you_mean(test_driver_str, {"Catch-Main", "Catch"});
+            throw_user_error<
+                errc::unknown_test_driver>("Unknown 'Test-Driver' '{}' (Did you mean '{}'?)",
+                                           test_driver_str,
+                                           dym);
         }
     }
 

@@ -1,5 +1,6 @@
 #include "./from_dds.hpp"
 
+#include <dds/dym.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/algo.hpp>
@@ -95,6 +96,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
     optional<bool> do_debug;
     optional<bool> do_optimize;
     opt_str_seq    include_template;
+    opt_str_seq    external_include_template;
     opt_str_seq    define_template;
     opt_str_seq    warning_flags;
     opt_str_seq    flags;
@@ -118,6 +120,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
              lm::read_opt("C++-Version", cxx_version),
              // Flag templates
              read_argv{"Include-Template", include_template},
+             read_argv{"External-Include-Template", include_template},
              read_argv{"Define-Template", define_template},
              // Flags
              read_argv_acc{"Warning-Flags", warning_flags},
@@ -144,7 +147,35 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
              lm::read_opt("Executable-Prefix", exe_prefix),
              lm::read_opt("Executable-Suffix", exe_suffix),
              // Die:
-             lm::reject_unknown());
+             lm_reject_dym{{
+                 "Compiler-ID",
+                 "C-Compiler",
+                 "C++-Compiler",
+                 "C-Version",
+                 "C++-Version",
+                 "Include-Template",
+                 "External-Include-Template",
+                 "Define-Template",
+                 "Warning-Flags",
+                 "Flags",
+                 "C-Flags",
+                 "C++-Flags",
+                 "Link-Flags",
+                 "Optimize",
+                 "Debug",
+                 "Compiler-Launcher",
+                 "Deps-Mode",
+                 "C-Compile-File",
+                 "C++-Compile-File",
+                 "Create-Archive",
+                 "Link-Executable",
+                 "Archive-Prefix",
+                 "Archive-Suffix",
+                 "Object-Prefix",
+                 "Object-Suffix",
+                 "Executable-Prefix",
+                 "Executable-Suffix",
+             }});
 
     toolchain_prep tc;
 
@@ -437,6 +468,21 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
             return {"/I", "<PATH>"};
         }
         assert(false && "Include-Template deduction failed");
+        std::terminate();
+    });
+
+    tc.external_include_template = read_opt(external_include_template, [&]() -> string_seq {
+        if (!compiler_id) {
+            // Just reuse the include template for regular files
+            return tc.include_template;
+        }
+        if (is_gnu_like) {
+            return {"-isystem", "<PATH>"};
+        } else if (is_msvc) {
+            // MSVC has external-header support inbound, but it is not fully ready yet
+            return {"/I", "<PATH>"};
+        }
+        assert(false && "External-Include-Template deduction failed");
         std::terminate();
     });
 

@@ -19,6 +19,7 @@ struct test_failure {
     fs::path    executable_path;
     std::string output;
     int         retc;
+    int         signal;
 };
 
 /**

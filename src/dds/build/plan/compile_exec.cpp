@@ -1,6 +1,7 @@
 #include "./compile_exec.hpp"
 
 #include <dds/build/file_deps.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
@@ -180,7 +181,7 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
         if (compile_signal) {
             spdlog::error("Process exited via signal {}", compile_signal);
         }
-        throw compile_failure(fmt::format("Compilation failed for {}", source_path.string()));
+        throw_user_error<errc::compile_failure>("Compilation failed [{}]", source_path.string());
     }
 
     // Print any compiler output, sans whitespace
@@ -264,7 +265,7 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     // Update compile dependency information
     auto tr = env.db.transaction();
     for (auto& info : all_new_deps) {
-        update_deps_info(env.db, info);
+        update_deps_info(neo::into(env.db), info);
     }
 
     // Return whether or not there were any failures.

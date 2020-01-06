@@ -1,6 +1,8 @@
 #include <dds/build/builder.hpp>
 #include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
+#include <dds/dym.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/toolchain/from_dds.hpp>
@@ -18,6 +20,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 
 namespace {
 
@@ -38,8 +41,9 @@ struct toolchain_flag : string_flag {
             auto default_tc = tc_path.substr(1);
             auto tc         = dds::toolchain::get_builtin(default_tc);
             if (!tc.has_value()) {
-                throw std::runtime_error(
-                    fmt::format("Invalid default toolchain name '{}'", default_tc));
+                dds::throw_user_error<
+                    dds::errc::invalid_builtin_toolchain>("Invalid built-in toolchain name '{}'",
+                                                          default_tc);
             }
             return std::move(*tc);
         } else {
@@ -152,6 +156,8 @@ struct cli_catalog {
         common_flags  _common{cmd};
 
         catalog_path_flag cat_path{cmd};
+
+        args::Flag import_stdin{cmd, "stdin", "Import JSON from stdin", {"stdin"}};
         args::ValueFlagList<std::string>
             json_paths{cmd,
                        "json",
@@ -162,6 +168,11 @@ struct cli_catalog {
             auto cat = cat_path.open();
             for (const auto& json_fpath : json_paths.Get()) {
                 cat.import_json_file(json_fpath);
+            }
+            if (import_stdin.Get()) {
+                std::ostringstream strm;
+                strm << std::cin.rdbuf();
+                cat.import_json_str(strm.str());
             }
             return 0;
         }
@@ -187,11 +198,14 @@ struct cli_catalog {
         int run() {
             auto cat = cat_path.open();
             for (const auto& req : requirements.Get()) {
-                auto id   = dds::package_id::parse(req);
-                auto info = cat.get(id);
+                auto            id = dds::package_id::parse(req);
+                dds::dym_target dym;
+                auto            info = cat.get(id);
                 if (!info) {
-                    throw std::runtime_error(
-                        fmt::format("No package in the catalog matched the ID '{}'", req));
+                    dds::throw_user_error<dds::errc::no_such_catalog_package>(
+                        "No package in the catalog matched the ID '{}'.{}",
+                        req,
+                        dym.sentence_suffix());
                 }
                 auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();
@@ -232,6 +246,8 @@ struct cli_catalog {
                             "The Git ref to from which the source distribution should be created",
                             {"git-ref"}};
 
+        string_flag description{cmd, "description", "A description of the package", {"desc"}};
+
         int run() {
             auto ident = dds::package_id::parse(pkg_id.Get());
 
@@ -242,18 +258,19 @@ struct cli_catalog {
                 // deps.push_back({dep_id.name, dep_id.version});
             }
 
-            dds::package_info info{ident, std::move(deps), {}};
+            dds::package_info info{ident, std::move(deps), description.Get(), {}};
 
             if (git_url) {
                 if (!git_ref) {
-                    throw std::runtime_error(
-                        "`--git-ref` must be specified when using `--git-url`");
+                    dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
                 }
                 auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt};
                 if (auto_lib) {
                     git.auto_lib = lm::split_usage_string(auto_lib.Get());
                 }
                 info.remote = std::move(git);
+            } else if (git_ref) {
+                dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
             }
 
             cat_path.open().store(info);
@@ -278,6 +295,49 @@ struct cli_catalog {
         }
     } list{*this};
 
+    struct {
+        cli_catalog&  parent;
+        args::Command cmd{parent.cat_group,
+                          "show",
+                          "Show information about a single package in the catalog"};
+
+        catalog_path_flag             cat_path{cmd};
+        args::Positional<std::string> ident{cmd,
+                                            "package-id",
+                                            "A package identifier to show",
+                                            args::Options::Required};
+
+        void print_remote_info(const dds::git_remote_listing& git) {
+            std::cout << "Git URL:  " << git.url << '\n';
+            std::cout << "Git Ref:  " << git.ref << '\n';
+            if (git.auto_lib) {
+                std::cout << "Auto-lib: " << git.auto_lib->name << "/" << git.auto_lib->namespace_
+                          << '\n';
+            }
+        }
+
+        int run() {
+            auto pk_id = dds::package_id::parse(ident.Get());
+            auto cat   = cat_path.open();
+            auto pkg   = cat.get(pk_id);
+            if (!pkg) {
+                spdlog::error("No package '{}' in the catalog", pk_id.to_string());
+                return 1;
+            }
+            std::cout << "Name:     " << pkg->ident.name << '\n'
+                      << "Version:  " << pkg->ident.version << '\n';
+
+            for (const auto& dep : pkg->deps) {
+                std::cout << "Depends: " << dep.to_string() << '\n';
+            }
+
+            std::visit([&](const auto& remote) { print_remote_info(remote); }, pkg->remote);
+            std::cout << "Description:\n    " << pkg->description << '\n';
+
+            return 0;
+        }
+    } show{*this};
+
     int run() {
         if (create.cmd) {
             return create.run();
@@ -289,6 +349,8 @@ struct cli_catalog {
             return add.run();
         } else if (list.cmd) {
             return list.run();
+        } else if (show.cmd) {
+            return show.run();
         } else {
             assert(false);
             std::terminate();
@@ -719,6 +781,11 @@ int main(int argc, char** argv) {
     } catch (const dds::user_cancelled&) {
         spdlog::critical("Operation cancelled by user");
         return 2;
+    } catch (const dds::error_base& e) {
+        spdlog::error("{}", e.what());
+        spdlog::error("{}", e.explanation());
+        spdlog::error("Refer: {}", e.error_reference());
+        return 1;
     } catch (const std::exception& e) {
         spdlog::critical(e.what());
         return 2;

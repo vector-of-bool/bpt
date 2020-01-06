@@ -29,6 +29,8 @@
 
 #include <dds/util/fs.hpp>
 
+#include <neo/out.hpp>
+
 #include <string>
 #include <string_view>
 #include <vector>
@@ -120,7 +122,7 @@ msvc_deps_info parse_msvc_output_for_deps(std::string_view output, std::string_v
  * @param db The database to update
  * @param info The dependency information to store
  */
-void update_deps_info(database& db, const file_deps_info& info);
+void update_deps_info(neo::output<database> db, const file_deps_info& info);
 
 /**
  * The information that is pertinent to the rebuild of a file. This will contain a list of inputs

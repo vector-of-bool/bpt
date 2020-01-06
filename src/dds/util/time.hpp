@@ -1,5 +1,7 @@
 #pragma once
 
+#include <neo/fwd.hpp>
+
 #include <chrono>
 #include <utility>
 
@@ -28,15 +30,15 @@ public:
 };
 
 template <typename Duration = stopwatch::duration, typename Func>
-auto timed(Func&& fn) noexcept(noexcept(((Func &&)(fn))())) {
+auto timed(Func&& fn) noexcept(noexcept(NEO_FWD(fn)())) {
     stopwatch sw;
-    using result_type = decltype(((Func &&)(fn))());
+    using result_type = decltype(NEO_FWD(fn)());
     if constexpr (std::is_void_v<result_type>) {
-        ((Func &&)(fn))();
+        NEO_FWD(fn)();
         auto elapsed = sw.elapsed_as<Duration>();
         return std::pair(elapsed, nullptr);
     } else {
-        decltype(auto) value   = ((Func &&)(fn))();
+        decltype(auto) value   = NEO_FWD(fn)();
         auto           elapsed = sw.elapsed_as<Duration>();
         return std::pair<Duration, decltype(value)>(elapsed, ((decltype(value)&&)value));
     }

@@ -1,6 +1,7 @@
 #include "./get.hpp"
 
 #include <dds/catalog/catalog.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
 
 #include <spdlog/spdlog.h>
@@ -22,11 +23,11 @@ temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_list
                     tmpdir.path().generic_string()};
     auto git_res = run_proc(command);
     if (!git_res.okay()) {
-        throw std::runtime_error(
-            fmt::format("Git clone operation failed [Git command: {}] [Exitted {}]:\n{}",
-                        quote_command(command),
-                        git_res.retc,
-                        git_res.output));
+        throw_external_error<errc::git_clone_failure>(
+            "Git clone operation failed [Git command: {}] [Exitted {}]:\n{}",
+            quote_command(command),
+            git_res.retc,
+            git_res.output);
     }
     spdlog::info("Create sdist from clone ...");
     if (git.auto_lib.has_value()) {
@@ -53,11 +54,11 @@ temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_list
 temporary_sdist dds::get_package_sdist(const package_info& pkg) {
     auto tsd = std::visit([&](auto&& remote) { return do_pull_sdist(pkg, remote); }, pkg.remote);
     if (!(tsd.sdist.manifest.pkg_id == pkg.ident)) {
-        throw std::runtime_error(fmt::format(
-            "The package name@version in the generated sdist does not match the name listed in "
-            "the remote listing file (expected '{}', but got '{}')",
+        throw_external_error<errc::sdist_ident_mismatch>(
+            "The package name@version in the generated source distribution does not match the name "
+            "listed in the remote listing file (expected '{}', but got '{}')",
             pkg.ident.to_string(),
-            tsd.sdist.manifest.pkg_id.to_string()));
+            tsd.sdist.manifest.pkg_id.to_string());
     }
     return tsd;
 }

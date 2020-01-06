@@ -29,13 +29,14 @@ struct sdist_build_params {
  */
 struct sdist_target {
     /// The source distribution
-    sdist              sd;
+    sdist sd;
     /// The build parameters thereof
     sdist_build_params params;
 };
 
 /**
- * A builder object. Source distributions are added to the builder, and then they are all built in parallel via `build()`
+ * A builder object. Source distributions are added to the builder, and then they are all built in
+ * parallel via `build()`
  */
 class builder {
     /// Source distributions that have been added

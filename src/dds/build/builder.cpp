@@ -4,6 +4,7 @@
 #include <dds/build/plan/full.hpp>
 #include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/time.hpp>
 
@@ -20,6 +21,18 @@ struct state {
     bool generate_catch2_header = false;
     bool generate_catch2_main   = false;
 };
+
+void log_failure(const test_failure& fail) {
+    spdlog::error("Test '{}' failed! [exitted {}]", fail.executable_path.string(), fail.retc);
+    if (fail.signal) {
+        spdlog::error("Test execution received signal {}", fail.signal);
+    }
+    if (trim_view(fail.output).empty()) {
+        spdlog::error("(Test executable produced no output");
+    } else {
+        spdlog::error("Test output:\n{}[dds - test output end]", fail.output);
+    }
+}
 
 lm::library
 prepare_catch2_driver(test_lib test_driver, const build_params& params, build_env_ref env_) {
@@ -228,13 +241,11 @@ void builder::build(const build_params& params) const {
     auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
     spdlog::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
 
-    for (auto& failures : test_failures) {
-        spdlog::error("Test {} failed! Output:\n{}[dds - test output end]",
-                      failures.executable_path.string(),
-                      failures.output);
+    for (auto& fail : test_failures) {
+        log_failure(fail);
     }
     if (!test_failures.empty()) {
-        throw compile_failure("Test failures during the build!");
+        throw_user_error<errc::test_failure>();
     }
 
     if (params.emit_lmi) {

@@ -1,6 +1,7 @@
 #include <dds/library/library.hpp>
 
 #include <dds/build/plan/compile_file.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/source/dir.hpp>
 #include <dds/util/algo.hpp>
 
@@ -20,7 +21,8 @@ auto collect_pf_sources(path_ref path) {
 
     if (include_dir.exists()) {
         if (!fs::is_directory(include_dir.path)) {
-            throw std::runtime_error("The `include` at the root of the project is not a directory");
+            throw_user_error<errc::invalid_lib_filesystem>(
+                "The `include` at the library root [in {}] is a non-directory file", path.string());
         }
         auto inc_sources = include_dir.collect_sources();
         // Drop any source files we found within `include/`
@@ -37,7 +39,8 @@ auto collect_pf_sources(path_ref path) {
 
     if (src_dir.exists()) {
         if (!fs::is_directory(src_dir.path)) {
-            throw std::runtime_error("The `src` at the root of the project is not a directory");
+            throw_user_error<errc::invalid_lib_filesystem>(
+                "The `src` at the library root [in {}] is a non-directory file", path.string());
         }
         auto src_sources = src_dir.collect_sources();
         extend(sources, src_sources);

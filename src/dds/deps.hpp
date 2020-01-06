@@ -17,6 +17,8 @@ struct dependency {
     version_range_set versions;
 
     static dependency parse_depends_string(std::string_view str);
+
+    std::string to_string() const noexcept;
 };
 
 /**

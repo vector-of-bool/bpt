@@ -9,8 +9,6 @@ import urllib.request
 import shutil
 
 from self_build import self_build
-from self_deps_get import self_deps_get
-from self_deps_build import self_deps_build
 from dds_ci import paths, proc
 
 
@@ -36,7 +34,7 @@ def _do_bootstrap_download() -> None:
     if filename is None:
         raise RuntimeError(f'We do not have a prebuilt DDS binary for '
                            f'the "{sys.platform}" platform')
-    url = f'https://github.com/vector-of-bool/dds/releases/download/bootstrap-p4/{filename}'
+    url = f'https://github.com/vector-of-bool/dds/releases/download/0.0.1/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
@@ -83,6 +81,9 @@ def main(argv: Sequence[str]) -> int:
         assert False, 'impossible'
 
     cat_path = paths.BUILD_DIR / 'catalog.db'
+    if cat_path.is_file():
+        cat_path.unlink()
+
     ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
     if ci_repo_dir.exists():
         shutil.rmtree(ci_repo_dir)
@@ -102,6 +103,10 @@ def main(argv: Sequence[str]) -> int:
             ('--repo-dir', ci_repo_dir),
         ])
     print('Main build PASSED!')
+
+    # Delete the catalog database, since there may be schema changes since the
+    # bootstrap executable was built
+    cat_path.unlink()
 
     proc.check_run([
         paths.CUR_BUILT_DDS,

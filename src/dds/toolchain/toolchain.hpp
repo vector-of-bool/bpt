@@ -19,10 +19,11 @@ enum class language {
 struct compile_file_spec {
     fs::path                 source_path;
     fs::path                 out_path;
-    std::vector<std::string> definitions     = {};
-    std::vector<fs::path>    include_dirs    = {};
-    language                 lang            = language::automatic;
-    bool                     enable_warnings = false;
+    std::vector<std::string> definitions           = {};
+    std::vector<fs::path>    include_dirs          = {};
+    std::vector<fs::path>    external_include_dirs = {};
+    language                 lang                  = language::automatic;
+    bool                     enable_warnings       = false;
 };
 
 struct compile_command_info {
@@ -48,6 +49,7 @@ class toolchain {
     string_seq _c_compile;
     string_seq _cxx_compile;
     string_seq _inc_template;
+    string_seq _extern_inc_template;
     string_seq _def_template;
     string_seq _link_archive;
     string_seq _link_exe;
@@ -74,6 +76,7 @@ public:
 
     std::vector<std::string> definition_args(std::string_view s) const noexcept;
     std::vector<std::string> include_args(const fs::path& p) const noexcept;
+    std::vector<std::string> external_include_args(const fs::path& p) const noexcept;
     compile_command_info     create_compile_command(const compile_file_spec&) const noexcept;
     std::vector<std::string> create_archive_command(const archive_spec&) const noexcept;
     std::vector<std::string> create_link_executable_command(const link_exe_spec&) const noexcept;

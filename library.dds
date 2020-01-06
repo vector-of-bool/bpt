@@ -2,9 +2,9 @@ Name: dds
 
 Uses: spdlog/spdlog
 Uses: Microsoft/wil
-Uses: Niebler/range-v3
+Uses: range-v3/range-v3
 Uses: nlohmann/json
-Uses: neo/buffer
 Uses: neo/sqlite3
+Uses: neo/fun
 Uses: semver/semver
 Uses: pubgrub/pubgrub

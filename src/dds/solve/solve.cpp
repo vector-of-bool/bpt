@@ -1,9 +1,14 @@
 #include "./solve.hpp"
 
+#include <dds/error/errors.hpp>
+
 #include <pubgrub/solve.hpp>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
+#include <spdlog/spdlog.h>
+
+#include <sstream>
 
 using namespace dds;
 
@@ -51,6 +56,11 @@ struct req_type {
     friend bool operator==(req_ref lhs, req_ref rhs) noexcept {
         return lhs.dep.name == rhs.dep.name && lhs.dep.versions == rhs.dep.versions;
     }
+
+    friend std::ostream& operator<<(std::ostream& out, req_ref self) noexcept {
+        out << self.dep.to_string();
+        return out;
+    }
 };
 
 auto as_pkg_id(const req_type& req) {
@@ -89,6 +99,51 @@ struct solver_provider {
     }
 };
 
+using solve_fail_exc = pubgrub::solve_failure_type_t<req_type>;
+
+struct explainer {
+    std::stringstream strm;
+    bool              at_head = true;
+
+    void put(pubgrub::explain::no_solution) { strm << "Dependencies cannot be satisfied"; }
+
+    void put(pubgrub::explain::dependency<req_type> dep) {
+        strm << dep.dependent << " requires " << dep.dependency;
+    }
+
+    void put(pubgrub::explain::unavailable<req_type> un) {
+        strm << un.requirement << " is not available";
+    }
+
+    void put(pubgrub::explain::conflict<req_type> cf) {
+        strm << cf.a << " conflicts with " << cf.b;
+    }
+
+    void put(pubgrub::explain::needed<req_type> req) { strm << req.requirement << " is required"; }
+
+    void put(pubgrub::explain::disallowed<req_type> dis) {
+        strm << dis.requirement << " cannot be used";
+    }
+
+    template <typename T>
+    void operator()(pubgrub::explain::premise<T> pr) {
+        strm.str("");
+        put(pr.value);
+        spdlog::error("{} {},", at_head ? "┌─ Given that" : "│         and", strm.str());
+        at_head = false;
+    }
+
+    template <typename T>
+    void operator()(pubgrub::explain::conclusion<T> cncl) {
+        at_head = true;
+        strm.str("");
+        put(cncl.value);
+        spdlog::error("╘═       then {}.", strm.str());
+    }
+
+    void operator()(pubgrub::explain::separator) { spdlog::error(""); }
+};
+
 }  // namespace
 
 std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
@@ -97,6 +152,12 @@ std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
     auto wrap_req
         = deps | ranges::v3::views::transform([](const dependency& dep) { return req_type{dep}; });
 
-    auto solution = pubgrub::solve(wrap_req, solver_provider{pkgs_prov, deps_prov});
-    return solution | ranges::views::transform(as_pkg_id) | ranges::to_vector;
+    try {
+        auto solution = pubgrub::solve(wrap_req, solver_provider{pkgs_prov, deps_prov});
+        return solution | ranges::views::transform(as_pkg_id) | ranges::to_vector;
+    } catch (const solve_fail_exc& failure) {
+        spdlog::error("Dependency resolution has failed! Explanation:");
+        pubgrub::generate_explaination(failure, explainer());
+        throw_user_error<errc::dependency_resolve_failure>();
+    }
 }

@@ -28,7 +28,6 @@ struct input_file_info {
 class database {
     neo::sqlite3::database                _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
-    mutable std::shared_mutex             _mutex;
 
     explicit database(neo::sqlite3::database db);
     database(const database&) = delete;
@@ -38,8 +37,6 @@ class database {
 public:
     static database open(const std::string& db_path);
     static database open(path_ref db_path) { return open(db_path.string()); }
-
-    auto& mutex() const noexcept { return _mutex; }
 
     neo::sqlite3::transaction_guard transaction() noexcept {
         return neo::sqlite3::transaction_guard(_db);

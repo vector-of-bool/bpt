@@ -1,5 +1,7 @@
 #include "./catalog.hpp"
 
+#include <dds/dym.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 
 #include <neo/sqlite3/exec.hpp>
@@ -29,6 +31,7 @@ void migrate_repodb_1(sqlite3::database& db) {
             git_ref TEXT,
             lm_name TEXT,
             lm_namespace TEXT,
+            description TEXT NOT NULL,
             UNIQUE(name, version),
             CONSTRAINT has_source_info CHECK(
                 (
@@ -75,14 +78,22 @@ void ensure_migrated(sqlite3::database& db) {
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
-        throw std::runtime_error("Corrupted repository database file.");
+        throw_external_error<errc::corrupted_catalog_db>();
     }
 
     auto version_ = meta["version"];
     if (!version_.is_number_integer()) {
-        throw std::runtime_error("Corrupted repository database file [bad dds_meta.version]");
+        throw_external_error<errc::corrupted_catalog_db>(
+            "The catalog database metadata is invalid [bad dds_meta.version]");
     }
+
+    constexpr int current_database_version = 1;
+
     int version = version_;
+    if (version > current_database_version) {
+        throw_external_error<errc::catalog_too_new>();
+    }
+
     if (version < 1) {
         migrate_repodb_1(db);
     }
@@ -101,10 +112,10 @@ catalog catalog::open(const std::string& db_path) {
         ensure_migrated(db);
     } catch (const sqlite3::sqlite3_error& e) {
         spdlog::critical(
-            "Failed to load the repository databsae. It appears to be invalid/corrupted. The "
+            "Failed to load the repository database. It appears to be invalid/corrupted. The "
             "exception message is: {}",
             e.what());
-        throw;
+        throw_external_error<errc::corrupted_catalog_db>();
     }
     return catalog(std::move(db));
 }
@@ -123,14 +134,16 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
                 git_url,
                 git_ref,
                 lm_name,
-                lm_namespace
+                lm_namespace,
+                description
             ) VALUES (
                 ?1,
                 ?2,
                 ?3,
                 ?4,
                 CASE WHEN ?5 = '' THEN NULL ELSE ?5 END,
-                CASE WHEN ?6 = '' THEN NULL ELSE ?6 END
+                CASE WHEN ?6 = '' THEN NULL ELSE ?6 END,
+                ?7
             )
         )"_sql,
         std::forward_as_tuple(  //
@@ -139,7 +152,8 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
             git.url,
             git.ref,
             lm_usage.name,
-            lm_usage.namespace_));
+            lm_usage.namespace_,
+            pkg.description));
 }
 
 void catalog::store(const package_info& pkg) {
@@ -163,10 +177,7 @@ void catalog::store(const package_info& pkg) {
     )"_sql);
     for (const auto& dep : pkg.deps) {
         new_dep_st.reset();
-        if (dep.versions.num_intervals() != 1) {
-            throw std::runtime_error(
-                "Package dependency may only contain a single version interval");
-        }
+        assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
         sqlite3::exec(new_dep_st,
                       std::forward_as_tuple(db_pkg_id,
@@ -185,7 +196,8 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             git_url,
             git_ref,
             lm_name,
-            lm_namespace
+            lm_namespace,
+            description
         FROM dds_cat_pkgs
         WHERE name = ? AND version = ?
     )"_sql);
@@ -197,11 +209,19 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
                                               std::optional<std::string>,
                                               std::optional<std::string>,
                                               std::optional<std::string>,
-                                              std::optional<std::string>>(st);
+                                              std::optional<std::string>,
+                                              std::string>(st);
     if (!opt_tup) {
+        dym_target::fill([&] {
+            auto all_ids = this->all();
+            auto id_strings
+                = ranges::views::transform(all_ids, [&](auto id) { return id.to_string(); });
+            return did_you_mean(pk_id.to_string(), id_strings);
+        });
         return std::nullopt;
     }
-    const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace] = *opt_tup;
+    const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace, description]
+        = *opt_tup;
     assert(pk_id.name == name);
     assert(pk_id.version == semver::version::parse(version));
     assert(git_url);
@@ -212,6 +232,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
     return package_info{
         pk_id,
         std::move(deps),
+        std::move(description),
         git_remote_listing{
             *git_url,
             *git_ref,
@@ -274,7 +295,7 @@ namespace {
 
 void check_json(bool b, std::string_view what) {
     if (!b) {
-        throw std::runtime_error("Unable to read repository JSON: " + std::string(what));
+        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
     }
 }
 
@@ -305,24 +326,27 @@ void catalog::import_json_str(std::string_view content) {
             check_json(pkg_info.is_object(),
                        fmt::format("/packages/{}/{} must be an object", pkg_name, version_));
 
-            auto deps = pkg_info["depends"];
-            check_json(deps.is_object(),
-                       fmt::format("/packages/{}/{}/depends must be an object",
-                                   pkg_name,
-                                   version_));
+            package_info info{{pkg_name, version}, {}, {}, {}};
+            auto         deps = pkg_info["depends"];
 
-            package_info info{{pkg_name, version}, {}, {}};
-            for (const auto& [dep_name, dep_version] : deps.items()) {
-                check_json(dep_version.is_string(),
-                           fmt::format("/packages/{}/{}/depends/{} must be a string",
+            if (!deps.is_null()) {
+                check_json(deps.is_object(),
+                           fmt::format("/packages/{}/{}/depends must be an object",
                                        pkg_name,
-                                       version_,
-                                       dep_name));
-                auto range = semver::range::parse(std::string(dep_version));
-                info.deps.push_back({
-                    std::string(dep_name),
-                    {range.low(), range.high()},
-                });
+                                       version_));
+
+                for (const auto& [dep_name, dep_version] : deps.items()) {
+                    check_json(dep_version.is_string(),
+                               fmt::format("/packages/{}/{}/depends/{} must be a string",
+                                           pkg_name,
+                                           version_,
+                                           dep_name));
+                    auto range = semver::range::parse(std::string(dep_version));
+                    info.deps.push_back({
+                        std::string(dep_name),
+                        {range.low(), range.high()},
+                    });
+                }
             }
 
             auto git_remote = pkg_info["git"];
@@ -337,8 +361,15 @@ void catalog::import_json_str(std::string_view content) {
                 }
                 info.remote = git_remote_listing{url, ref, autolib};
             } else {
-                throw std::runtime_error(
-                    fmt::format("No remote info for /packages/{}/{}", pkg_name, version_));
+                throw_user_error<errc::no_catalog_remote_info>("No remote info for /packages/{}/{}",
+                                                               pkg_name,
+                                                               version_);
+            }
+
+            auto desc_ = pkg_info["description"];
+            if (!desc_.is_null()) {
+                check_json(desc_.is_string(), "`description` must be a string");
+                info.description = desc_;
             }
 
             store(info);

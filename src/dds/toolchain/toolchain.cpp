@@ -20,25 +20,30 @@ using opt_string = optional<string>;
 
 toolchain toolchain::realize(const toolchain_prep& prep) {
     toolchain ret;
-    ret._c_compile      = prep.c_compile;
-    ret._cxx_compile    = prep.cxx_compile;
-    ret._inc_template   = prep.include_template;
-    ret._def_template   = prep.define_template;
-    ret._link_archive   = prep.link_archive;
-    ret._link_exe       = prep.link_exe;
-    ret._warning_flags  = prep.warning_flags;
-    ret._archive_prefix = prep.archive_prefix;
-    ret._archive_suffix = prep.archive_suffix;
-    ret._object_prefix  = prep.object_prefix;
-    ret._object_suffix  = prep.object_suffix;
-    ret._exe_prefix     = prep.exe_prefix;
-    ret._exe_suffix     = prep.exe_suffix;
-    ret._deps_mode      = prep.deps_mode;
+    ret._c_compile           = prep.c_compile;
+    ret._cxx_compile         = prep.cxx_compile;
+    ret._inc_template        = prep.include_template;
+    ret._extern_inc_template = prep.external_include_template;
+    ret._def_template        = prep.define_template;
+    ret._link_archive        = prep.link_archive;
+    ret._link_exe            = prep.link_exe;
+    ret._warning_flags       = prep.warning_flags;
+    ret._archive_prefix      = prep.archive_prefix;
+    ret._archive_suffix      = prep.archive_suffix;
+    ret._object_prefix       = prep.object_prefix;
+    ret._object_suffix       = prep.object_suffix;
+    ret._exe_prefix          = prep.exe_prefix;
+    ret._exe_suffix          = prep.exe_suffix;
+    ret._deps_mode           = prep.deps_mode;
     return ret;
 }
 
 vector<string> toolchain::include_args(const fs::path& p) const noexcept {
     return replace(_inc_template, "<PATH>", p.string());
+}
+
+vector<string> toolchain::external_include_args(const fs::path& p) const noexcept {
+    return replace(_extern_inc_template, "<PATH>", p.string());
 }
 
 vector<string> toolchain::definition_args(std::string_view s) const noexcept {
@@ -64,6 +69,11 @@ toolchain::create_compile_command(const compile_file_spec& spec) const noexcept 
 
     for (auto&& inc_dir : spec.include_dirs) {
         auto inc_args = include_args(inc_dir);
+        extend(flags, inc_args);
+    }
+
+    for (auto&& ext_inc_dir : spec.external_include_dirs) {
+        auto inc_args = external_include_args(ext_inc_dir);
         extend(flags, inc_args);
     }
 

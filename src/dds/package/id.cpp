@@ -1,5 +1,7 @@
 #include <dds/package/id.hpp>
 
+#include <dds/error/errors.hpp>
+
 #include <spdlog/fmt/fmt.h>
 
 #include <tuple>
@@ -9,7 +11,7 @@ using namespace dds;
 package_id package_id::parse(std::string_view s) {
     auto at_pos = s.find('@');
     if (at_pos == s.npos) {
-        throw std::runtime_error(fmt::format("Invalid package ID string '{}'", s));
+        throw_user_error<errc::invalid_pkg_id>("Invalid package ID '{}'", s);
     }
 
     auto name    = s.substr(0, at_pos);
@@ -22,8 +24,8 @@ package_id::package_id(std::string_view n, semver::version v)
     : name(n)
     , version(std::move(v)) {
     if (name.find('@') != name.npos) {
-        throw std::runtime_error(
-            fmt::format("Invalid package name '{}' (The '@' character is not allowed)"));
+        throw_user_error<errc::invalid_pkg_name>(
+            "Invalid package name '{}' (The '@' character is not allowed)");
     }
 }
 
