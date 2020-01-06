@@ -65,8 +65,8 @@ sdist dds::create_sdist(const sdist_params& params) {
     auto dest = fs::absolute(params.dest_path);
     if (fs::exists(dest)) {
         if (!params.force) {
-            throw std::runtime_error(
-                fmt::format("Destination path '{}' already exists", dest.string()));
+            throw_user_error<errc::sdist_exists>("Destination path '{}' already exists",
+                                                 dest.string());
         }
     }
 

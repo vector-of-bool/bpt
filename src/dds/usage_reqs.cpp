@@ -1,6 +1,7 @@
 #include "./usage_reqs.hpp"
 
 #include <dds/build/plan/compile_file.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
 
 #include <spdlog/fmt/fmt.h>
@@ -21,8 +22,9 @@ lm::library& usage_requirement_map::add(std::string ns, std::string name) {
     auto pair                   = std::pair(library_key{ns, name}, lm::library{});
     auto [inserted, did_insert] = _reqs.try_emplace(library_key{ns, name}, lm::library());
     if (!did_insert) {
-        throw std::runtime_error(
-            fmt::format("More than one library is registered as {}/{}", ns, name));
+        throw_user_error<errc::dup_lib_name>("More than one library is registered as `{}/{}'",
+                                             ns,
+                                             name);
     }
     return inserted->second;
 }
@@ -40,8 +42,9 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
 std::vector<fs::path> usage_requirement_map::link_paths(const lm::usage& key) const {
     auto req = get(key);
     if (!req) {
-        throw std::runtime_error(
-            fmt::format("Unable to find linking requirement '{}/{}'", key.namespace_, key.name));
+        throw_user_error<errc::unknown_usage_name>("Unable to find linking requirement '{}/{}'",
+                                                   key.namespace_,
+                                                   key.name);
     }
     std::vector<fs::path> ret;
     if (req->linkable_path) {
@@ -60,10 +63,10 @@ std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usag
     std::vector<fs::path> ret;
     auto                  lib = get(usage.namespace_, usage.name);
     if (!lib) {
-        throw std::runtime_error(
-            fmt::format("Cannot find non-existent usage requirements for '{}/{}'",
-                        usage.namespace_,
-                        usage.name));
+        throw_user_error<
+            errc::unknown_usage_name>("Cannot find non-existent usage requirements for '{}/{}'",
+                                      usage.namespace_,
+                                      usage.name);
     }
     extend(ret, lib->include_paths);
     for (const auto& transitive : lib->uses) {

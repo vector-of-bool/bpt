@@ -1,5 +1,5 @@
-Package Layout
-##############
+Packages and Layout
+###################
 
 The units of distribution in ``dds`` are *packages*. A single package consists
 of one or more *libraries*. In the simplest case, a package will contain a
@@ -225,6 +225,8 @@ directory. ``dds`` will not compile compilable source files that appear in the
 ``include/`` directory and will issue a warning on each file found.
 
 
+.. _pkgs.libs:
+
 Libraries
 *********
 
@@ -268,6 +270,8 @@ the ``libs/`` directory that is also a library root is added as a child of the
 owning package.
 
 
+.. _pkgs.pkgs:
+
 Packages
 ********
 
@@ -301,3 +305,26 @@ present in the ``package.dds`` file: ``Name``, ``Version``, and ``Namespace``:
 .. seealso::
   The purpose of ``Namespace``, as well as additional options in this file,
   are described in the :ref:`deps.pkg-deps` page
+
+
+.. _pkgs.naming-reqs:
+
+Naming Requirements
+===================
+
+Package names aren't a complete free-for-all. Package names must follow a set
+of specific rules:
+
+- Package names may consist of ASCII, lowercase characters, digits,
+  underscores (``_``), hyphens (``-``), and periods (``.``).
+
+  .. note::
+    Different filesystems differ in their handling of filenames. Some platforms
+    perform unicode and case normalization, which can significantly confuse tools
+    that don't use the same normalization rules. Different platforms have
+    different filename limitations and allowable characters. This set of
+    characters is valid on most currently popular filesystems.
+
+- Package names must begin with an alphabetic character
+- Package names must end with an alphanumeric character (letter or digit).
+- Package names may not contain adjacent punctuation characters.
