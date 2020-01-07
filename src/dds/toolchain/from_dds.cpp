@@ -570,13 +570,20 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         string_seq ret;
         if (is_msvc) {
             ret = {get_compiler(language::cxx), "/nologo", "/EHsc", "<IN>", "/Fe<OUT>"};
-        } else if (is_gnu_like) {
+        } else if (is_gnu) {
             ret = {get_compiler(language::cxx),
                    "-fPIC",
                    "-fdiagnostics-color",
                    "<IN>",
                    "-pthread",
                    "-lstdc++fs",
+                   "-o<OUT>"};
+        } else if (is_clang) {
+            ret = {get_compiler(language::cxx),
+                   "-fPIC",
+                   "-fdiagnostics-color",
+                   "<IN>",
+                   "-pthread",
                    "-o<OUT>"};
         } else {
             assert(false && "No link-exe command");
