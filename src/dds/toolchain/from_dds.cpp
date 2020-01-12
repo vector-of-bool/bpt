@@ -504,7 +504,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (!compiler_id) {
             fail(context, "Cannot deduce library file extension without Compiler-ID");
         }
-        if (is_gnu) {
+        if (is_gnu_like) {
             return ".a";
         } else if (is_msvc) {
             return ".lib";
@@ -518,7 +518,7 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         if (!compiler_id) {
             fail(context, "Cannot deduce object file extension without Compiler-ID");
         }
-        if (is_gnu) {
+        if (is_gnu_like) {
             return ".o";
         } else if (is_msvc) {
             return ".obj";
@@ -570,13 +570,20 @@ toolchain dds::parse_toolchain_dds(const lm::pair_list& pairs, strv context) {
         string_seq ret;
         if (is_msvc) {
             ret = {get_compiler(language::cxx), "/nologo", "/EHsc", "<IN>", "/Fe<OUT>"};
-        } else if (is_gnu_like) {
+        } else if (is_gnu) {
             ret = {get_compiler(language::cxx),
                    "-fPIC",
                    "-fdiagnostics-color",
                    "<IN>",
                    "-pthread",
                    "-lstdc++fs",
+                   "-o<OUT>"};
+        } else if (is_clang) {
+            ret = {get_compiler(language::cxx),
+                   "-fPIC",
+                   "-fdiagnostics-color",
+                   "<IN>",
+                   "-pthread",
                    "-o<OUT>"};
         } else {
             assert(false && "No link-exe command");
