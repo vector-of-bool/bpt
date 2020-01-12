@@ -1,8 +1,8 @@
-#include <dds/library/library.hpp>
+#include <dds/library/root.hpp>
 
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/source/dir.hpp>
+#include <dds/source/root.hpp>
 #include <dds/util/algo.hpp>
 
 #include <range/v3/view/filter.hpp>
@@ -14,8 +14,8 @@ using namespace dds;
 namespace {
 
 auto collect_pf_sources(path_ref path) {
-    auto include_dir = source_directory{path / "include"};
-    auto src_dir     = source_directory{path / "src"};
+    auto include_dir = source_root{path / "include"};
+    auto src_dir     = source_root{path / "src"};
 
     source_list sources;
 
@@ -51,7 +51,7 @@ auto collect_pf_sources(path_ref path) {
 
 }  // namespace
 
-library library::from_directory(path_ref lib_dir) {
+library_root library_root::from_directory(path_ref lib_dir) {
     auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
@@ -61,24 +61,24 @@ library library::from_directory(path_ref lib_dir) {
         man = library_manifest::load_from_file(man_path);
     }
 
-    auto lib = library(lib_dir, std::move(sources), std::move(man));
+    auto lib = library_root(lib_dir, std::move(sources), std::move(man));
 
     return lib;
 }
 
-fs::path library::public_include_dir() const noexcept {
-    auto inc_dir = include_dir();
+fs::path library_root::public_include_dir() const noexcept {
+    auto inc_dir = include_source_root();
     if (inc_dir.exists()) {
         return inc_dir.path;
     }
-    return src_dir().path;
+    return src_source_root().path;
 }
 
-fs::path library::private_include_dir() const noexcept { return src_dir().path; }
+fs::path library_root::private_include_dir() const noexcept { return src_source_root().path; }
 
-shared_compile_file_rules library::base_compile_rules() const noexcept {
-    auto                      inc_dir = include_dir();
-    auto                      src_dir = this->src_dir();
+shared_compile_file_rules library_root::base_compile_rules() const noexcept {
+    auto                      inc_dir = include_source_root();
+    auto                      src_dir = this->src_source_root();
     shared_compile_file_rules ret;
     if (inc_dir.exists()) {
         ret.include_dirs().push_back(inc_dir.path);
@@ -92,10 +92,10 @@ shared_compile_file_rules library::base_compile_rules() const noexcept {
 auto has_library_dirs
     = [](path_ref dir) { return fs::exists(dir / "src") || fs::exists(dir / "include"); };
 
-std::vector<library> dds::collect_libraries(path_ref root) {
-    std::vector<library> ret;
+std::vector<library_root> dds::collect_libraries(path_ref root) {
+    std::vector<library_root> ret;
     if (has_library_dirs(root)) {
-        ret.emplace_back(library::from_directory(root));
+        ret.emplace_back(library_root::from_directory(root));
     }
 
     auto pf_libs_dir = root / "libs";
@@ -104,7 +104,8 @@ std::vector<library> dds::collect_libraries(path_ref root) {
         extend(ret,
                fs::directory_iterator(pf_libs_dir)            //
                    | ranges::views::filter(has_library_dirs)  //
-                   | ranges::views::transform([&](auto p) { return library::from_directory(p); }));
+                   | ranges::views::transform(
+                       [&](auto p) { return library_root::from_directory(p); }));
     }
     return ret;
 }

@@ -35,11 +35,11 @@ public:
      *      form the static library.
      */
     create_archive_plan(std::string_view               name,
-                        std::string_view               full_name,
+                        std::string_view               qual_name,
                         path_ref                       subdir,
                         std::vector<compile_file_plan> cfs)
         : _name(name)
-        , _qual_name(full_name)
+        , _qual_name(qual_name)
         , _subdir(subdir)
         , _compile_files(std::move(cfs)) {}
 

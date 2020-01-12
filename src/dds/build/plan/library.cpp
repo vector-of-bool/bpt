@@ -10,19 +10,19 @@
 
 using namespace dds;
 
-library_plan library_plan::create(const library&                  lib,
+library_plan library_plan::create(const library_root&             lib,
                                   const library_build_params&     params,
-                                  std::optional<std::string_view> full_name) {
+                                  std::optional<std::string_view> qual_name_) {
     // Source files are kept in three groups:
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
 
-    auto qual_name = std::string(full_name.value_or(lib.manifest().name));
+    auto qual_name = std::string(qual_name_.value_or(lib.manifest().name));
 
     // Collect the source for this library. This will look for any compilable sources in the
     // `src/` subdirectory of the library.
-    auto src_dir = lib.src_dir();
+    auto src_dir = lib.src_source_root();
     if (src_dir.exists()) {
         // Sort each source file between the three source arrays, depending on
         // the kind of source that we are looking at.
@@ -87,7 +87,7 @@ library_plan library_plan::create(const library&                  lib,
         const auto subdir_base = is_test ? params.out_subdir / "test" : params.out_subdir;
         // Put test/app executables in a further subdirectory based on the source file path
         const auto subdir
-            = subdir_base / fs::relative(source.path.parent_path(), lib.src_dir().path);
+            = subdir_base / fs::relative(source.path.parent_path(), lib.src_source_root().path);
         // Pick compile rules based on app/test
         auto rules = is_test ? test_rules : compile_rules;
         // Pick input libs based on app/test

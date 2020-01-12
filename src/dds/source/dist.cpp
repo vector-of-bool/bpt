@@ -1,7 +1,7 @@
 #include "./dist.hpp"
 
 #include <dds/error/errors.hpp>
-#include <dds/library/library.hpp>
+#include <dds/library/root.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 
@@ -24,7 +24,7 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     fs::copy(filepath, dest);
 }
 
-void sdist_copy_library(path_ref out_root, const library& lib, const sdist_params& params) {
+void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_params& params) {
     auto sources_to_keep =  //
         lib.all_sources()   //
         | ranges::views::filter([&](const source_file& sf) {
@@ -84,7 +84,7 @@ sdist dds::create_sdist(const sdist_params& params) {
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto libs = collect_libraries(params.project_dir);
 
-    for (const library& lib : libs) {
+    for (const library_root& lib : libs) {
         sdist_copy_library(out, lib, params);
     }
 

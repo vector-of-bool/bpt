@@ -1,4 +1,4 @@
-#include "./dir.hpp"
+#include "./root.hpp"
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -6,7 +6,7 @@
 
 using namespace dds;
 
-std::vector<source_file> source_directory::collect_sources() const {
+std::vector<source_file> source_root::collect_sources() const {
     using namespace ranges::views;
     // Collect all source files from the directory
     return                                                                              //

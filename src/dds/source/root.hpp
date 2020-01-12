@@ -8,10 +8,10 @@
 namespace dds {
 
 /**
- * A `source_directory` is a simple wrapper type that provides type safety and utilities to
- * represent a source directory.
+ * A `source_root` is a simple wrapper type that provides type safety and utilities to
+ * represent a source root.
  */
-struct source_directory {
+struct source_root {
     /// The actual path to the directory
     fs::path path;
 

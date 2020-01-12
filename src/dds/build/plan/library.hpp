@@ -2,7 +2,7 @@
 
 #include <dds/build/plan/archive.hpp>
 #include <dds/build/plan/exe.hpp>
-#include <dds/library/library.hpp>
+#include <dds/library/root.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs.hpp>
 
@@ -52,8 +52,8 @@ struct library_build_params {
  * initialize all of the constructor parameters correctly.
  */
 class library_plan {
-    /// The underlying library object
-    library _lib;
+    /// The underlying library root
+    library_root _lib;
     /// The qualified name of the library
     std::string _qual_name;
     /// The `create_archive_plan` for this library, if applicable
@@ -64,16 +64,16 @@ class library_plan {
 public:
     /**
      * Construct a new `library_plan`
-     * @param lib The `library` object underlying this plan.
+     * @param lib The `library_root` object underlying this plan.
      * @param ar The `create_archive_plan`, or `nullopt` for this library.
      * @param exes The `link_executable_plan` objects for this library.
      */
-    library_plan(library                            lib,
-                 std::string_view                   full_name,
+    library_plan(library_root                       lib,
+                 std::string_view                   qual_name,
                  std::optional<create_archive_plan> ar,
                  std::vector<link_executable_plan>  exes)
         : _lib(std::move(lib))
-        , _qual_name(full_name)
+        , _qual_name(qual_name)
         , _create_archive(std::move(ar))
         , _link_exes(std::move(exes)) {}
 
@@ -114,18 +114,19 @@ public:
     /**
      * Named constructor: Create a new `library_plan` automatically from some build-time parameters.
      *
-     * @param lib The `library` object from which we will inherit several properties.
+     * @param lib The `library_root` from which we will inherit several properties and the build
+     * will be inferred
      * @param params Parameters controlling the build of the library. i.e. if we create tests,
      * enable warnings, etc.
-     * @param full_name Optionally, provide the fully-qualified name of the library that is being
+     * @param qual_name Optionally, provide the fully-qualified name of the library that is being
      * built
      *
      * The `lib` parameter defines the usage requirements of this library, and they are looked up in
      * the `ureqs` map. If there are any missing requirements, an exception will be thrown.
      */
-    static library_plan create(const library&                  lib,
+    static library_plan create(const library_root&             lib,
                                const library_build_params&     params,
-                               std::optional<std::string_view> full_name);
+                               std::optional<std::string_view> qual_name);
 };
 
 }  // namespace dds

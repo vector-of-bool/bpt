@@ -103,7 +103,7 @@ prepare_test_driver(const build_params& params, test_lib test_driver, build_env_
 
 library_plan prepare_library(state&                  st,
                              const sdist_target&     sdt,
-                             const library&          lib,
+                             const library_root&     lib,
                              const package_manifest& pkg_man) {
     library_build_params lp;
     lp.out_subdir      = sdt.params.subdir;
