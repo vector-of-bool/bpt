@@ -121,7 +121,7 @@ library_plan prepare_library(state&                  st,
             }
         }
     }
-    return library_plan::create(lib, std::move(lp));
+    return library_plan::create(lib, std::move(lp), pkg_man.namespace_ + "/" + lib.manifest().name);
 }
 
 package_plan prepare_one(state& st, const sdist_target& sd) {

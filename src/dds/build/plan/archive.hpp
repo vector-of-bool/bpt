@@ -18,6 +18,8 @@ namespace dds {
 class create_archive_plan {
     /// The name of the archive. Not the filename, but the base name thereof
     std::string _name;
+    /// The qualified name of the library, as it would appear in a libman-usage
+    std::string _qual_name;
     /// The subdirectory in which the archive should be generated.
     fs::path _subdir;
     /// The plans for compiling the constituent source files of this library
@@ -32,8 +34,12 @@ public:
      * @param cfs The file compilation plans that will be collected together to
      *      form the static library.
      */
-    create_archive_plan(std::string_view name, path_ref subdir, std::vector<compile_file_plan> cfs)
+    create_archive_plan(std::string_view               name,
+                        std::string_view               full_name,
+                        path_ref                       subdir,
+                        std::vector<compile_file_plan> cfs)
         : _name(name)
+        , _qual_name(full_name)
         , _subdir(subdir)
         , _compile_files(std::move(cfs)) {}
 

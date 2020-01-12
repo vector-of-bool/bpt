@@ -10,14 +10,18 @@
 
 using namespace dds;
 
-library_plan library_plan::create(const library& lib, const library_build_params& params) {
+library_plan library_plan::create(const library&                  lib,
+                                  const library_build_params&     params,
+                                  std::optional<std::string_view> full_name) {
     // Source files are kept in three groups:
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
 
-    // Collect the source for this library. This will look for any compilable sources in the `src/`
-    // subdirectory of the library.
+    auto qual_name = std::string(full_name.value_or(lib.manifest().name));
+
+    // Collect the source for this library. This will look for any compilable sources in the
+    // `src/` subdirectory of the library.
     auto src_dir = lib.src_dir();
     if (src_dir.exists()) {
         // Sort each source file between the three source arrays, depending on
@@ -45,10 +49,7 @@ library_plan library_plan::create(const library& lib, const library_build_params
     auto lib_compile_files =  //
         lib_sources           //
         | ranges::views::transform([&](const source_file& sf) {
-              return compile_file_plan(compile_rules,
-                                       sf,
-                                       lib.manifest().name,
-                                       params.out_subdir / "obj");
+              return compile_file_plan(compile_rules, sf, qual_name, params.out_subdir / "obj");
           })
         | ranges::to_vector;
 
@@ -57,6 +58,7 @@ library_plan library_plan::create(const library& lib, const library_build_params
     std::optional<create_archive_plan> create_archive;
     if (!lib_compile_files.empty()) {
         create_archive.emplace(lib.manifest().name,
+                               qual_name,
                                params.out_subdir,
                                std::move(lib_compile_files));
     }
@@ -96,7 +98,7 @@ library_plan library_plan::create(const library& lib, const library_build_params
                                         exe_links,
                                         compile_file_plan(rules,
                                                           source,
-                                                          lib.manifest().name,
+                                                          qual_name,
                                                           params.out_subdir / "obj"),
                                         subdir,
                                         source.path.stem().stem().string()};
@@ -104,5 +106,5 @@ library_plan library_plan::create(const library& lib, const library_build_params
     }
 
     // Done!
-    return library_plan{lib, std::move(create_archive), std::move(link_executables)};
+    return library_plan{lib, qual_name, std::move(create_archive), std::move(link_executables)};
 }

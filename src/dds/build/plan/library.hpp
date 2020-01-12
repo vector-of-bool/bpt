@@ -54,6 +54,8 @@ struct library_build_params {
 class library_plan {
     /// The underlying library object
     library _lib;
+    /// The qualified name of the library
+    std::string _qual_name;
     /// The `create_archive_plan` for this library, if applicable
     std::optional<create_archive_plan> _create_archive;
     /// The executables that should be linked as part of this library's build
@@ -67,9 +69,11 @@ public:
      * @param exes The `link_executable_plan` objects for this library.
      */
     library_plan(library                            lib,
+                 std::string_view                   full_name,
                  std::optional<create_archive_plan> ar,
                  std::vector<link_executable_plan>  exes)
         : _lib(std::move(lib))
+        , _qual_name(full_name)
         , _create_archive(std::move(ar))
         , _link_exes(std::move(exes)) {}
 
@@ -81,6 +85,10 @@ public:
      * Get the name of the library
      */
     auto& name() const noexcept { return _lib.manifest().name; }
+    /**
+     * Get the qualified name of the library, as if for a libman usage requirement
+     */
+    auto& qualified_name() const noexcept { return _qual_name; }
     /**
      * The directory that defines the source root of the library.
      */
@@ -109,11 +117,15 @@ public:
      * @param lib The `library` object from which we will inherit several properties.
      * @param params Parameters controlling the build of the library. i.e. if we create tests,
      * enable warnings, etc.
+     * @param full_name Optionally, provide the fully-qualified name of the library that is being
+     * built
      *
      * The `lib` parameter defines the usage requirements of this library, and they are looked up in
      * the `ureqs` map. If there are any missing requirements, an exception will be thrown.
      */
-    static library_plan create(const library& lib, const library_build_params& params);
+    static library_plan create(const library&                  lib,
+                               const library_build_params&     params,
+                               std::optional<std::string_view> full_name);
 };
 
 }  // namespace dds

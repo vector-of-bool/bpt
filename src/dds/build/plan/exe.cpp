@@ -46,7 +46,7 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     const auto link_command = env.toolchain.create_link_executable_command(spec);
     fs::create_directories(spec.output.parent_path());
     auto msg = fmt::format("[{}] Link: {:30}",
-                           lib.name(),
+                           lib.qualified_name(),
                            fs::relative(spec.output, env.output_root).string());
     spdlog::info(msg);
     auto [dur_ms, proc_res]
