@@ -82,6 +82,7 @@ public:
     std::vector<std::string> create_link_executable_command(const link_exe_spec&) const noexcept;
 
     static std::optional<toolchain> get_builtin(std::string_view key) noexcept;
+    static std::optional<toolchain> get_default();
 };
 
 }  // namespace dds

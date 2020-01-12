@@ -31,11 +31,22 @@ struct toolchain_flag : string_flag {
     toolchain_flag(args::Group& grp)
         : string_flag{grp,
                       "toolchain_file",
-                      "Path/ident of the toolchain to use",
-                      {"toolchain", 't'},
-                      (dds::fs::current_path() / "toolchain.dds").string()} {}
+                      "Path/identifier of the toolchain to use",
+                      {"toolchain", 't'}} {}
 
     dds::toolchain get_toolchain() {
+        if (*this) {
+            return get_arg();
+        } else {
+            auto found = dds::toolchain::get_default();
+            if (!found) {
+                dds::throw_user_error<dds::errc::no_default_toolchain>();
+            }
+            return *found;
+        }
+    }
+
+    dds::toolchain get_arg() {
         const auto tc_path = this->Get();
         if (tc_path.find(":") == 0) {
             auto default_tc = tc_path.substr(1);

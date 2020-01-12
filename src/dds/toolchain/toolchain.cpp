@@ -3,6 +3,7 @@
 #include <dds/toolchain/from_dds.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
 #include <cassert>
@@ -234,4 +235,18 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
     tc_content += "C++-Compiler: "s + opt_triple->cxx + "\n";
     tc_content += "Compiler-ID: " + opt_triple->id + "\n";
     return parse_toolchain_dds(tc_content);
+}
+
+std::optional<dds::toolchain> dds::toolchain::get_default() {
+    auto candidates = {
+        fs::current_path() / "toolchain.dds",
+        dds_config_dir() / "toolchain.dds",
+        user_home_dir() / "toolchain.dds",
+    };
+    for (auto&& cand : candidates) {
+        if (fs::exists(cand)) {
+            return parse_toolchain_dds(slurp_file(cand));
+        }
+    }
+    return std::nullopt;
 }

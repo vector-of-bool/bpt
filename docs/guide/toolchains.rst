@@ -88,6 +88,32 @@ The following pseudo-toolchains are also available:
     Sets the C++ version to ``C++UV`` and uses the ``:XYZ`` toolchain.
 
 
+.. _toolchains.default:
+
+Providing a Default Toolchain File
+**********************************
+
+If you do not which to provide a new toolchain for every individual project,
+and the built-in toolchains do not suit your needs, you can write a toolchain
+file to one of a few predefined paths, and ``dds`` will find and use it for the
+build. The following paths are searched, in order:
+
+#. ``$pwd/toolchain.dds`` - If the working directory contains ``toolchain.dds``,
+   it will be used as the default.
+#. ``$dds_config_dir/toolchain.dds`` - Searches for a toolchain file in
+   ``dds``'s user-local configuration directory (see below).
+#. ``$user_home/toolchain.dds`` - Searches for a toolchain file at the root of
+   the current user's home directory. (``$HOME`` on Unix-like systems, and
+   ``$PROFILE`` on Windows.)
+
+The ``$dds_user_config`` directory is the ``dds`` subdirectory of the
+user-local configuration directory.
+
+The user-local config directory is ``$XDG_CONFIG_DIR`` or ``~/.config`` on
+Linux, ``~/Library/Preferences`` on macOS, and ``~/AppData/Roaming`` on
+Windows.
+
+
 Toolchain Definitions
 *********************
 

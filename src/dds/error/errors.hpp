@@ -10,6 +10,7 @@ namespace dds {
 enum class errc {
     none = 0,
     invalid_builtin_toolchain,
+    no_default_toolchain,
     no_such_catalog_package,
     git_url_ref_mutual_req,
     test_failure,

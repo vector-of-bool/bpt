@@ -13,6 +13,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return "invalid-builtin-toolchain.html";
+    case errc::no_default_toolchain:
+        return "no-default-toolchain.html";
     case errc::no_such_catalog_package:
         return "no-such-catalog-package.html";
     case errc::git_url_ref_mutual_req:
@@ -84,6 +86,13 @@ toolchain. (Toolchain file paths cannot begin with a leading colon).
 
 These toolchain names are encoded into the dds executable and cannot be
 modified.
+)";
+    case errc::no_default_toolchain:
+        return R"(
+`dds` requires a toolchain to be specified in order to execute the build. `dds`
+will not perform a "best-guess" at a default toolchain. You may either pass the
+name of a built-in toolchain, or write a "default toolchain" file to one of the
+supported filepaths. Refer to the documentation for more information.
 )";
     case errc::no_such_catalog_package:
         return R"(
@@ -227,6 +236,8 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return "The built-in toolchain name is invalid";
+    case errc::no_default_toolchain:
+        return "Unable to find a default toolchain to use for the build";
     case errc::no_such_catalog_package:
         return "The catalog has no entry for the given package ID";
     case errc::git_url_ref_mutual_req:
