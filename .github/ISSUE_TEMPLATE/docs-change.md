@@ -4,7 +4,7 @@ about:
     Report an omission, contradiction, or inaccuracy in the documentation, or
     request an addition to the documentation,
 title: "[DOCS]"
-labels: enhancement,documentation,bug
+labels: documentation
 assignees: ''
 
 ---
