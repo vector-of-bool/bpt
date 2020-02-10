@@ -151,6 +151,12 @@ packages = [
         git_url='https://github.com/vector-of-bool/pubgrub.git',
     ),
     many_versions(
+        'json5',
+        ('0.1.0', ),
+        description='A C++ implementation of a JSON5 parser',
+        git_url='https://github.com/vector-of-bool/json5.git',
+    ),
+    many_versions(
         'spdlog',
         (
             '0.9.0',
