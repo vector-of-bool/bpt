@@ -227,6 +227,15 @@
           "ref": "0.1.0",
           "url": "https://github.com/vector-of-bool/json5.git"
         }
+      },
+      "0.1.2": {
+        "depends": {},
+        "description": "A C++ implementation of a JSON5 parser",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.2",
+          "url": "https://github.com/vector-of-bool/json5.git"
+        }
       }
     },
     "ms-wil": {

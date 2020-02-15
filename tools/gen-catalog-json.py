@@ -152,7 +152,10 @@ packages = [
     ),
     many_versions(
         'json5',
-        ('0.1.0', ),
+        (
+            '0.1.0',
+            '0.1.2',
+        ),
         description='A C++ implementation of a JSON5 parser',
         git_url='https://github.com/vector-of-bool/json5.git',
     ),

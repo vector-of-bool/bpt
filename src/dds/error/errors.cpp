@@ -41,6 +41,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "sdist-ident-mismatch.html";
     case errc::corrupted_build_db:
         return "corrupted-build-db.html";
+    case errc::invalid_pkg_manifest:
+        return "invalid-pkg-manifest.html";
     case errc::invalid_version_range_string:
         return "invalid-version-string.html#range";
     case errc::invalid_version_string:
@@ -140,6 +142,11 @@ The catalog database schema doesn't match what dds expects. This indicates that
 the database file has been modified in a way that dds cannot automatically fix
 and handle.
 )";
+    case errc::invalid_pkg_manifest:
+        return R"(
+The package manifest is malformed. Refer to the documentation and above error
+message for more details.
+)";
     case errc::invalid_catalog_json:
         return R"(
 The catalog JSON that was provided does not match the format that was expected.
@@ -222,7 +229,7 @@ which packages are claiming the library name.
         return R"(
 A `Uses` or `Links` field for a library specifies a library of an unknown name.
 Check your spelling, and check that the package containing the library is
-available, either from the `package.dds` or from the `INDEX.lmi` that was used
+available, either from the `package.json5` or from the `INDEX.lmi` that was used
 for the build.
 )";
     case errc::none:
@@ -266,26 +273,33 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
                "that was expected of it";
     case errc::corrupted_build_db:
         return "The build database file is corrupted";
+    case errc::invalid_pkg_manifest:
+        return "The package manifest is invalid";
     case errc::invalid_version_range_string:
         return "Attempted to parse an invalid version range string. <- (Seeing this text is a "
                "`dds` bug. Please report it.)";
     case errc::invalid_version_string:
-        return "Attempted to parse an invalid version string. <- (Seeing this text is a `dds` bug. "
+        return "Attempted to parse an invalid version string. <- (Seeing this text is a `dds` "
+               "bug. "
                "Please report it.)";
     case errc::invalid_config_key:
-        return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. Please "
+        return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. "
+               "Please "
                "report it.)";
     case errc::invalid_lib_filesystem:
     case errc::invalid_pkg_filesystem:
-        return "The filesystem structure of the package/library is invalid. <- (Seeing this text "
+        return "The filesystem structure of the package/library is invalid. <- (Seeing this "
+               "text "
                "is a `dds` bug. Please report it.)";
     case errc::invalid_pkg_id:
         return "A package identifier is invalid  <- (Seeing this text is a `dds` bug. Please "
                "report it.)";
     case errc::invalid_pkg_name:
-        return "A package name is invalid  <- (Seeing this text is a `dds` bug. Please report it.)";
+        return "A package name is invalid  <- (Seeing this text is a `dds` bug. Please report "
+               "it.)";
     case errc::sdist_exists:
-        return "The source ditsribution already exists at the destination  <- (Seeing this text is "
+        return "The source ditsribution already exists at the destination  <- (Seeing this "
+               "text is "
                "a `dds` bug. Please report it.)";
     case errc::unknown_test_driver:
         return "The specified Test-Driver is not known to `dds`";

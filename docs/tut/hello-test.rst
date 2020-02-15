@@ -57,17 +57,17 @@ framework.
 .. _catch2: https://github.com/catchorg/Catch2
 
 To make use of Catch as our test driver, we simply declare this intent in the
-``package.dds`` file at the package root:
+``package.json5`` file at the package root:
 
-.. code-block:: yaml
-    :caption: ``<root>/package.dds``
+.. code-block:: js
+    :caption: ``<root>/package.json5``
     :emphasize-lines: 5
 
-    Name: hello-dds
-    Version: 0.1.0
-    Namespace: tutorial
-
-    Test-Driver: Catch-Main
+    {
+      name: 'hello-dds',
+      version: '0.1.0',
+      namespace: 'tutorial',
+    }
 
 If you now run ``dds build``, we will get a linker error for a multiply-defined
 ``main`` function. When setting the ``Test-Driver`` to ``Catch-Main``, ``dds``

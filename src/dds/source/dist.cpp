@@ -88,15 +88,23 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
         sdist_copy_library(out, lib, params);
     }
 
-    auto man_path = params.project_dir / "package.dds";
-    if (!fs::is_regular_file(man_path)) {
+    auto             j5_man_path  = params.project_dir / "package.json5";
+    auto             dds_man_path = params.project_dir / "package.dds";
+    package_manifest pkg_man;
+
+    if (fs::is_regular_file(j5_man_path)) {
+        pkg_man = package_manifest::load_from_file(j5_man_path);
+        sdist_export_file(out, params.project_dir, j5_man_path);
+    } else if (fs::is_regular_file(dds_man_path)) {
+        pkg_man = package_manifest::load_from_dds_file(dds_man_path);
+        sdist_export_file(out, params.project_dir, dds_man_path);
+    } else {
         throw_user_error<errc::invalid_pkg_filesystem>(
-            "Creating a source distribution requires a package.dds file for the project (Expected "
+            "Creating a source distribution requires a package.json5 file for the project "
+            "(Expected "
             "[{}])",
-            man_path.string());
+            j5_man_path.string());
     }
-    sdist_export_file(out, params.project_dir, man_path);
-    auto pkg_man = package_manifest::load_from_file(man_path);
 
     spdlog::info("Generated export as {}", pkg_man.pkg_id.to_string());
 
@@ -104,6 +112,12 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 }
 
 sdist sdist::from_directory(path_ref where) {
-    auto pkg_man = package_manifest::load_from_file(where / "package.dds");
+    /// XXX: Remove this logic once package.dds is all gone.
+    auto j5_path  = where / "package.json5";
+    auto dds_path = where / "package.dds";
+
+    // Load based on whichever is actually present
+    auto pkg_man = fs::is_regular_file(j5_path) ? package_manifest::load_from_file(j5_path)
+                                                : package_manifest::load_from_dds_file(dds_path);
     return sdist{std::move(pkg_man), where};
 }

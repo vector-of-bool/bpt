@@ -4,6 +4,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
 
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace dds;
@@ -32,10 +33,15 @@ temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_list
     spdlog::info("Create sdist from clone ...");
     if (git.auto_lib.has_value()) {
         spdlog::info("Generating library data automatically");
-        auto pkg_strm = dds::open(tmpdir.path() / "package.dds", std::ios::binary | std::ios::out);
-        pkg_strm << "Name: " << listing.ident.name << '\n'                    //
-                 << "Version: " << listing.ident.version.to_string() << '\n'  //
-                 << "Namespace: " << git.auto_lib->namespace_;
+
+        auto pkg_strm
+            = dds::open(tmpdir.path() / "package.json5", std::ios::binary | std::ios::out);
+        auto man_json         = nlohmann::json::object();
+        man_json["name"]      = listing.ident.name;
+        man_json["version"]   = listing.ident.version.to_string();
+        man_json["namespace"] = git.auto_lib->namespace_;
+        pkg_strm << nlohmann::to_string(man_json);
+
         auto lib_strm = dds::open(tmpdir.path() / "library.dds", std::ios::binary | std::ios::out);
         lib_strm << "Name: " << git.auto_lib->name;
     }

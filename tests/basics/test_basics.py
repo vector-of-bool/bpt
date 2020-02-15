@@ -17,9 +17,11 @@ def test_build_simple(dds: DDS):
 
 def basic_pkg_dds(dds: DDS):
     return set_contents(
-        dds.source_root / 'package.dds', b'''
-        Name: test-pkg
-        Version: 0.2.2
+        dds.source_root / 'package.json5', b'''
+        {
+            name: 'test-pkg',
+            version: '0.2.2',
+        }
     ''')
 
 

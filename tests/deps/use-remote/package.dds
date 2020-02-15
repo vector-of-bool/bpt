@@ -1,4 +1,0 @@
-Name: json-test
-Version: 0.0.0
-
-Depends: nlohmann-json 3.7.1

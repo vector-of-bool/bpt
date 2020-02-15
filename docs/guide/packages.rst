@@ -287,23 +287,25 @@ the ``name@version`` string forms the *package ID*, and it must be unique
 within a repository or package catalog.
 
 In order for a package to be exported by ``dds`` it must have a
-``package.dds`` file at its package root. Three keys are required to be
-present in the ``package.dds`` file: ``Name``, ``Version``, and ``Namespace``:
+``package.json5`` file at its package root. Three keys are required to be
+present in the ``package.json5`` file: ``name``, ``version``, and ``namespace``:
 
-.. code-block:: yaml
+.. code-block:: js
 
-    Name: acme-widgets
-    Version: 6.7.3
-    Namespace: acme
+    {
+      name: 'acme-widgets',
+      version: '6.7.3',
+      namespace: 'acme',
+    }
 
-``Version`` must be a valid semantic version string.
+``version`` must be a valid semantic version string.
 
 .. note::
-    The ``Namespace`` key is arbitrary, and not necessarily associated with
-    and C++ ``namespace``.
+  The ``namespace`` key is arbitrary, and not necessarily associated with
+  any C++ ``namespace``.
 
 .. seealso::
-  The purpose of ``Namespace``, as well as additional options in this file,
+  The purpose of ``namespace``, as well as additional options in this file,
   are described in the :ref:`deps.pkg-deps` page
 
 

@@ -8,3 +8,4 @@ Uses: neo/sqlite3
 Uses: neo/fun
 Uses: semver/semver
 Uses: pubgrub/pubgrub
+Uses: vob/json5

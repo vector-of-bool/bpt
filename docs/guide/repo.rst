@@ -63,7 +63,7 @@ package ID as the name of the source distribution directory::
     include/
     src/
     library.dds
-    package.dds
+    package.json5
 
 
 .. _repo.export-local:

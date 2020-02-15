@@ -11,7 +11,7 @@
 namespace dds {
 
 /**
- * Possible values for Test-Driver in a package.dds
+ * Possible values for test_driver in a package.json5
  */
 enum class test_lib {
     catch_,
@@ -35,6 +35,7 @@ struct package_manifest {
      * Load a package manifest from a file on disk.
      */
     static package_manifest load_from_file(path_ref);
+    static package_manifest load_from_dds_file(path_ref);
 };
 
 }  // namespace dds
