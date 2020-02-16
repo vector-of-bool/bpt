@@ -243,7 +243,7 @@ dependencies of a header-only library.
 
 In order for ``dds`` to be able to distribute and interlink libraries, a
 ``library.json5`` file must be present at the corresponding library root. The
-only required key in a ``library.json5`` file is ``Name``:
+only required key in a ``library.json5`` file is ``name``:
 
 .. code-block:: js
 

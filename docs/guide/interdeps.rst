@@ -199,7 +199,7 @@ Library Dependencies
 In ``dds``, library interdependencies are tracked separately from the packages
 that contain them. A library must declare its intent to use another library
 in the ``library.json5`` at its library root. The minimal content of a
-``library.json5`` is the ``Name`` key:
+``library.json5`` is the ``name`` key:
 
 .. code-block:: js
 
@@ -228,7 +228,7 @@ package with the ``name`` of the library within that package with a ``/``
 between them.
 
 It is the responsibility of package authors to document the ``namespace`` and
-``Name`` of the packages and libraries that they distribute.
+``name`` of the packages and libraries that they distribute.
 
 .. note::
     The ``namespace`` of a package is completely arbitrary, and need not relate
