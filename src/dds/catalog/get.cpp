@@ -42,8 +42,11 @@ temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_list
         man_json["namespace"] = git.auto_lib->namespace_;
         pkg_strm << nlohmann::to_string(man_json);
 
-        auto lib_strm = dds::open(tmpdir.path() / "library.dds", std::ios::binary | std::ios::out);
-        lib_strm << "Name: " << git.auto_lib->name;
+        auto lib_strm
+            = dds::open(tmpdir.path() / "library.json5", std::ios::binary | std::ios::out);
+        auto lib_json    = nlohmann::json::object();
+        lib_json["name"] = git.auto_lib->name;
+        lib_strm << nlohmann::to_string(lib_json);
     }
 
     sdist_params params;

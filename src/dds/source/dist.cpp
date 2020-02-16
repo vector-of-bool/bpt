@@ -43,14 +43,14 @@ void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_
 
     ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
 
-    auto lib_dds_path = lib.path() / "library.dds";
-    if (!fs::is_regular_file(lib_dds_path)) {
+    auto lib_man_path = library_manifest::find_in_directory(lib.path());
+    if (!lib_man_path) {
         throw_user_error<errc::invalid_lib_filesystem>(
-            "Each library root in a source distribution requires a library manifest (Expected "
-            "[{}])",
-            lib_dds_path.string());
+            "Each library root in a source distribution requires a library manifest (Expected a "
+            "library manifest in [{}])",
+            lib.path().string());
     }
-    sdist_export_file(out_root, params.project_dir, lib_dds_path);
+    sdist_export_file(out_root, params.project_dir, *lib_man_path);
 
     spdlog::info("sdist: Export library from {}", lib.path().string());
     fs::create_directories(out_root);
