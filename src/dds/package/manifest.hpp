@@ -26,7 +26,7 @@ struct package_manifest {
     package_id pkg_id;
     /// The declared `Namespace` of the package. This directly corresponds with the libman Namespace
     std::string namespace_;
-    /// The `Test-Driver` that this package declares, or `nullopt` if absent.
+    /// The `test_driver` that this package declares, or `nullopt` if absent.
     std::optional<test_lib> test_driver;
     /// The dependencies declared with the `Depends` fields, if any.
     std::vector<dependency> dependencies;

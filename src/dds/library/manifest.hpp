@@ -9,9 +9,9 @@
 namespace dds {
 
 /**
- * Represents the contents of a `library.dds`. This is somewhat a stripped-down
+ * Represents the contents of a `library.json5`. This is somewhat a stripped-down
  * version of lm::library, to only represent exactly the parts that we want to
- * offer via `library.dds`.
+ * offer via `library.json5`.
  */
 struct library_manifest {
     /// The name of the library

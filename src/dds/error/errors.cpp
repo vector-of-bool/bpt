@@ -307,7 +307,7 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "The source ditsribution already exists at the destination  <- (Seeing this "
                "text is a `dds` bug. Please report it.)";
     case errc::unknown_test_driver:
-        return "The specified Test-Driver is not known to `dds`";
+        return "The specified test_driver is not known to `dds`";
     case errc::dependency_resolve_failure:
         return "`dds` was unable to find a solution for the package dependencies given.";
     case errc::dup_lib_name:

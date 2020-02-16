@@ -48,7 +48,7 @@ will already know the problem, but wouldn't it be better if we had better test
 diagnostics?
 
 
-A ``Test-Driver``: Using *Catch2*
+A ``test_driver``: Using *Catch2*
 *********************************
 
 ``dds`` ships with built-in support for the `Catch2`_ C and C++ testing
@@ -70,7 +70,7 @@ To make use of Catch as our test driver, we simply declare this intent in the
     }
 
 If you now run ``dds build``, we will get a linker error for a multiply-defined
-``main`` function. When setting the ``Test-Driver`` to ``Catch-Main``, ``dds``
+``main`` function. When setting the ``test_driver`` to ``Catch-Main``, ``dds``
 will compile an entrypoint separately from any particular test, and the tests
 will link against that entrypoint. This means we cannot provide our own
 ``main`` function, and should instead use Catch's ``TEST_CASE`` macro to

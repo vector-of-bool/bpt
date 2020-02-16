@@ -88,7 +88,7 @@ executable.
 A *test* source file is a source file whose file stem ends with ``.test``. Like
 application sources, a *test* source file is omitted from the main library, and
 it will be used to generate tests. The exact behavior of tests is determined by
-the ``Test-Driver`` setting for the package, but the default is that each test
+the ``test_driver`` setting for the package, but the default is that each test
 source file will generate a single test executable that is executed by ``dds``
 when running unit tests.
 

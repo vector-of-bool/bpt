@@ -51,7 +51,7 @@ package_manifest package_manifest::load_from_dds_file(const fs::path& fpath) {
         } else {
             auto dym = *did_you_mean(test_driver_str, {"Catch-Main", "Catch"});
             throw_user_error<
-                errc::unknown_test_driver>("Unknown 'Test-Driver' '{}' (Did you mean '{}'?)",
+                errc::unknown_test_driver>("Unknown 'test_driver' '{}' (Did you mean '{}'?)",
                                            test_driver_str,
                                            dym);
         }
@@ -126,7 +126,7 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
                         } else {
                             auto dym = *did_you_mean(test_driver, {"Catch-Main", "Catch"});
                             throw_user_error<errc::unknown_test_driver>(
-                                "Unknown 'Test-Driver' '{}' (Did you mean '{}'?)",
+                                "Unknown 'test_driver' '{}' (Did you mean '{}'?)",
                                 test_driver,
                                 dym);
                         }
