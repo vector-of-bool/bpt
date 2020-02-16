@@ -2,6 +2,7 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/util/json5_read.hpp>
 #include <dds/util/string.hpp>
 #include <libman/parse.hpp>
 
@@ -80,80 +81,66 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     const auto&      obj = data.as_object();
     package_manifest ret;
 
-    /// Get the name
-    auto it = obj.find("name");
-    if (it == obj.end() || !it->second.is_string() || it->second.as_string().empty()) {
-        throw_user_error<errc::invalid_pkg_name>("'name' field in [{}] must be a non-empty string",
-                                                 fpath.string());
+    using namespace j5_read::ops;
+    j5_read::destructure(
+        obj,
+        object(
+            key("name", require_string(put_into{ret.pkg_id.name}, "`name` must be a string")),
+            key("namespace",
+                require_string(put_into{ret.namespace_}, "`namespace` must be a string")),
+            ignore_key{"$schema"},
+            key("version",
+                require_string(
+                    [&](auto&& version_str_) {
+                        auto& version      = version_str_.as_string();
+                        ret.pkg_id.version = semver::version::parse(version);
+                        return j5_read::accept_t{};
+                    },
+                    "`version` must be a string")),
+            key("depends", object([&](auto key, auto&& range_str_) {
+                    auto pkg_name = std::string(key);
+                    if (!range_str_.is_string()) {
+                        throw_user_error<errc::invalid_pkg_manifest>(
+                            "Dependency for '{}' must be a range string", pkg_name);
+                    }
+                    try {
+                        auto       rng = semver::range::parse_restricted(range_str_.as_string());
+                        dependency dep{std::string(pkg_name), {rng.low(), rng.high()}};
+                        ret.dependencies.push_back(std::move(dep));
+                    } catch (const semver::invalid_range&) {
+                        throw_user_error<errc::invalid_version_range_string>(
+                            "Invalid version range string '{}' in dependency declaration for '{}'",
+                            range_str_.as_string(),
+                            pkg_name);
+                    }
+                    return j5_read::accept_t{};
+                })),
+            key("test_driver",
+                require_string(
+                    [&](auto&& test_driver_str_) {
+                        auto& test_driver = test_driver_str_.as_string();
+                        if (test_driver == "Catch-Main") {
+                            ret.test_driver = test_lib::catch_main;
+                        } else if (test_driver == "Catch") {
+                            ret.test_driver = test_lib::catch_;
+                        } else {
+                            auto dym = *did_you_mean(test_driver, {"Catch-Main", "Catch"});
+                            throw_user_error<errc::unknown_test_driver>(
+                                "Unknown 'Test-Driver' '{}' (Did you mean '{}'?)",
+                                test_driver,
+                                dym);
+                        }
+                        return j5_read::accept_t{};
+                    },
+                    "`test_driver` must be a valid test driver name string")),
+            reject_key));
+
+    if (ret.pkg_id.name.empty()) {
+        throw_user_error<errc::invalid_pkg_manifest>("The 'name' field is required.");
     }
-    ret.namespace_ = ret.pkg_id.name = it->second.as_string();
 
-    /// Get the version
-    it = obj.find("version");
-    if (it == obj.end() || !it->second.is_string()) {
-        throw_user_error<
-            errc::invalid_version_string>("'version' field in [{}] must be a version string",
-                                          fpath.string());
-    }
-    auto version_str   = it->second.as_string();
-    ret.pkg_id.version = semver::version::parse(version_str);
-
-    /// Get the namespace
-    it = obj.find("namespace");
-    if (it != obj.end()) {
-        if (!it->second.is_string() || it->second.as_string().empty()) {
-            throw_user_error<errc::invalid_pkg_manifest>(
-                "'namespace' attribute in [{}] must be a non-empty string", fpath.string());
-        }
-        ret.namespace_ = it->second.as_string();
-    }
-
-    /// Get the test driver
-    it = obj.find("test_driver");
-    if (it != obj.end()) {
-        if (!it->second.is_string()) {
-            throw_user_error<errc::invalid_pkg_manifest>(
-                "'test_driver' attribute in [{}] must be a non-empty string", fpath.string());
-        }
-        auto& test_driver_str = it->second.as_string();
-        if (test_driver_str == "Catch-Main") {
-            ret.test_driver = test_lib::catch_main;
-        } else if (test_driver_str == "Catch") {
-            ret.test_driver = test_lib::catch_;
-        } else {
-            auto dym = *did_you_mean(test_driver_str, {"Catch-Main", "Catch"});
-            throw_user_error<
-                errc::unknown_test_driver>("Unknown 'Test-Driver' '{}' (Did you mean '{}'?)",
-                                           test_driver_str,
-                                           dym);
-        }
-    }
-
-    /// Get the dependencies
-    it = obj.find("depends");
-    if (it != obj.end()) {
-        if (!it->second.is_object()) {
-            throw_user_error<errc::invalid_pkg_manifest>(
-                "'depends' field must be an object mapping package name to version ranges");
-        }
-
-        for (const auto& [pkg_name, range_str_] : it->second.as_object()) {
-            if (!range_str_.is_string()) {
-                throw_user_error<
-                    errc::invalid_pkg_manifest>("Dependency for '{}' must be a range string",
-                                                pkg_name);
-            }
-            try {
-                auto       rng = semver::range::parse_restricted(range_str_.as_string());
-                dependency dep{pkg_name, {rng.low(), rng.high()}};
-                ret.dependencies.push_back(std::move(dep));
-            } catch (const semver::invalid_range&) {
-                throw_user_error<errc::invalid_version_range_string>(
-                    "Invalid version range string '{}' in dependency declaration for '{}'",
-                    range_str_.as_string(),
-                    pkg_name);
-            }
-        }
+    if (ret.namespace_.empty()) {
+        throw_user_error<errc::invalid_pkg_manifest>("The 'namespace'` field is required.");
     }
 
     return ret;
