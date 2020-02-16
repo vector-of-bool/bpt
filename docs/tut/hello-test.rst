@@ -67,6 +67,7 @@ To make use of Catch as our test driver, we simply declare this intent in the
       name: 'hello-dds',
       version: '0.1.0',
       namespace: 'tutorial',
+      test_driver: 'Catch-Main',
     }
 
 If you now run ``dds build``, we will get a linker error for a multiply-defined
