@@ -21,6 +21,7 @@ def basic_pkg_dds(dds: DDS):
         {
             name: 'test-pkg',
             version: '0.2.2',
+            namespace: 'test',
         }
     ''')
 

@@ -1,6 +1,7 @@
 {
     "$schema": "what",
     name: 'dds',
+    namespace: 'dds',
     version: '0.1.0',
     depends: {
         spdlog: '1.4.2',
