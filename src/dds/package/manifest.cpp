@@ -145,3 +145,35 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
 
     return ret;
 }
+
+std::optional<fs::path> package_manifest::find_in_directory(path_ref dirpath) {
+    auto cands = {
+        "package.json5",
+        "package.jsonc",
+        "package.json",
+    };
+    for (auto c : cands) {
+        auto cand = dirpath / c;
+        if (fs::is_regular_file(cand)) {
+            return cand;
+        }
+    }
+
+    auto dds_fname = dirpath / "package.dds";
+    if (fs::is_regular_file(dds_fname)) {
+        return dds_fname;
+    }
+    return std::nullopt;
+}
+
+std::optional<package_manifest> package_manifest::load_from_directory(path_ref dirpath) {
+    auto found = find_in_directory(dirpath);
+    if (!found.has_value()) {
+        return std::nullopt;
+    }
+    if (found->extension() == ".dds") {
+        return load_from_dds_file(*found);
+    } else {
+        return load_from_file(*found);
+    }
+}

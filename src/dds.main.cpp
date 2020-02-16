@@ -591,11 +591,9 @@ struct cli_build {
         params.out_root      = out.Get();
         params.toolchain     = tc_filepath.get_toolchain();
         params.parallel_jobs = n_jobs.Get();
-        dds::package_manifest man;
-        const auto            man_filepath = project.root.Get() / "package.json5";
-        if (exists(man_filepath)) {
-            man = dds::package_manifest::load_from_file(man_filepath);
-        }
+
+        auto man = dds::package_manifest::load_from_directory(project.root.Get())
+                       .value_or(dds::package_manifest{});
 
         dds::builder            bd;
         dds::sdist_build_params main_params;

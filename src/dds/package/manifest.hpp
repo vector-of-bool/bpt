@@ -36,6 +36,14 @@ struct package_manifest {
      */
     static package_manifest load_from_file(path_ref);
     static package_manifest load_from_dds_file(path_ref);
+
+    /**
+     * Find a package manifest contained within a directory. This will search
+     * for a few file candidates and return the result from the first matching.
+     * If none match, it will return nullopt.
+     */
+    static std::optional<fs::path>         find_in_directory(path_ref);
+    static std::optional<package_manifest> load_from_directory(path_ref);
 };
 
 }  // namespace dds

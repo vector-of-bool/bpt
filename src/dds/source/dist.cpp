@@ -88,36 +88,24 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
         sdist_copy_library(out, lib, params);
     }
 
-    auto             j5_man_path  = params.project_dir / "package.json5";
-    auto             dds_man_path = params.project_dir / "package.dds";
-    package_manifest pkg_man;
-
-    if (fs::is_regular_file(j5_man_path)) {
-        pkg_man = package_manifest::load_from_file(j5_man_path);
-        sdist_export_file(out, params.project_dir, j5_man_path);
-    } else if (fs::is_regular_file(dds_man_path)) {
-        pkg_man = package_manifest::load_from_dds_file(dds_man_path);
-        sdist_export_file(out, params.project_dir, dds_man_path);
-    } else {
+    auto man_path = package_manifest::find_in_directory(params.project_dir);
+    if (!man_path) {
         throw_user_error<errc::invalid_pkg_filesystem>(
             "Creating a source distribution requires a package.json5 file for the project "
-            "(Expected "
-            "[{}])",
-            j5_man_path.string());
+            "(Expected manifest in [{}])",
+            params.project_dir.string());
     }
 
+    auto pkg_man = man_path->extension() == ".dds" ? package_manifest::load_from_dds_file(*man_path)
+                                                   : package_manifest::load_from_file(*man_path);
+    sdist_export_file(out, params.project_dir, *man_path);
     spdlog::info("Generated export as {}", pkg_man.pkg_id.to_string());
-
     return sdist::from_directory(out);
 }
 
 sdist sdist::from_directory(path_ref where) {
-    /// XXX: Remove this logic once package.dds is all gone.
-    auto j5_path  = where / "package.json5";
-    auto dds_path = where / "package.dds";
-
-    // Load based on whichever is actually present
-    auto pkg_man = fs::is_regular_file(j5_path) ? package_manifest::load_from_file(j5_path)
-                                                : package_manifest::load_from_dds_file(dds_path);
-    return sdist{std::move(pkg_man), where};
+    auto pkg_man = package_manifest::load_from_directory(where);
+    // Code paths should only call here if they *know* that the sdist is valid
+    assert(pkg_man.has_value());
+    return sdist{pkg_man.value(), where};
 }
