@@ -55,10 +55,14 @@ library_root library_root::from_directory(path_ref lib_dir) {
     auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
-    man.name      = lib_dir.filename().string();
-    auto man_path = lib_dir / "library.dds";
-    if (fs::is_regular_file(man_path)) {
-        man = library_manifest::load_from_file(man_path);
+    man.name   = lib_dir.filename().string();
+    auto found = library_manifest::find_in_directory(lib_dir);
+    if (found) {
+        if (found->extension() == ".dds") {
+            man = library_manifest::load_from_dds_file(*found);
+        } else {
+            man = library_manifest::load_from_file(*found);
+        }
     }
 
     auto lib = library_root(lib_dir, std::move(sources), std::move(man));

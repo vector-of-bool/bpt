@@ -24,7 +24,16 @@ struct library_manifest {
     /**
      * Load the library manifest from an existing file
      */
-    static library_manifest load_from_file(const fs::path&);
+    static library_manifest load_from_file(path_ref);
+    static library_manifest load_from_dds_file(path_ref);
+
+    /**
+     * Find a library manifest within a directory. This will search for a few
+     * file candidates and return the result from the first matching. If none
+     * match, it will return nullopt.
+     */
+    static std::optional<fs::path>         find_in_directory(path_ref);
+    static std::optional<library_manifest> load_from_directory(path_ref);
 };
 
 }  // namespace dds

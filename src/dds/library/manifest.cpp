@@ -1,16 +1,21 @@
 #include "./manifest.hpp"
 
 #include <dds/dym.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
-#include <range/v3/view/transform.hpp>
-
+#include <dds/util/json5_read.hpp>
 #include <libman/parse.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <json5/parse_data.hpp>
+#include <range/v3/view/transform.hpp>
+#include <spdlog/spdlog.h>
 
 using namespace dds;
 
-library_manifest library_manifest::load_from_file(const fs::path& fpath) {
+library_manifest library_manifest::load_from_dds_file(path_ref fpath) {
+    spdlog::warn(
+        "Using deprecated library.dds parsing (on file {}). This will be removed soon. Migrate!",
+        fpath.string());
     auto             kvs = lm::parse_file(fpath);
     library_manifest ret;
     ret.name = fpath.parent_path().filename().string();
@@ -26,4 +31,74 @@ library_manifest library_manifest::load_from_file(const fs::path& fpath) {
     extend(ret.uses, ranges::views::transform(uses_strings, lm::split_usage_string));
     extend(ret.links, ranges::views::transform(links_strings, lm::split_usage_string));
     return ret;
+}
+
+library_manifest library_manifest::load_from_file(path_ref fpath) {
+    auto content = slurp_file(fpath);
+    auto data    = json5::parse_data(content);
+
+    if (!data.is_object()) {
+        throw_user_error<errc::invalid_lib_manifest>("Root value must be an object");
+    }
+
+    library_manifest lib;
+    using namespace json_read::ops;
+    json_read::decompose(  //
+        data.as_object(),
+        object(key("name", require_string(put_into{lib.name}, "`name` must be a string")),
+               key("uses",
+                   array_each{require_string(
+                       [&](auto&& uses) {
+                           lib.uses.push_back(lm::split_usage_string(uses.as_string()));
+                           return json_read::accept_t{};
+                       },
+                       "All `uses` items must be strings")}),
+               key("links",
+                   array_each{require_string(
+                       [&](auto&& links) {
+                           lib.links.push_back(lm::split_usage_string(links.as_string()));
+                           return json_read::accept_t{};
+                       },
+                       "All `links` items must be strings")})));
+
+    if (lib.name.empty()) {
+        throw_user_error<errc::invalid_lib_manifest>(
+            "The 'name' field is required (Reading library manifest [{}])", fpath.string());
+    }
+
+    return lib;
+}
+
+std::optional<fs::path> library_manifest::find_in_directory(path_ref dirpath) {
+    auto fnames = {
+        "library.json5",
+        "library.jsonc",
+        "library.json",
+    };
+    for (auto c : fnames) {
+        auto cand = dirpath / c;
+        if (fs::is_regular_file(cand)) {
+            return cand;
+        }
+    }
+
+    auto dds_file = dirpath / "library.dds";
+    if (fs::is_regular_file(dds_file)) {
+        return dds_file;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<library_manifest> library_manifest::load_from_directory(path_ref dirpath) {
+    auto found = find_in_directory(dirpath);
+    if (!found.has_value()) {
+        return std::nullopt;
+    }
+
+    if (found->extension() == ".dds") {
+        return load_from_dds_file(*found);
+    } else {
+        return load_from_file(*found);
+    }
 }

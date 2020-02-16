@@ -81,8 +81,8 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     const auto&      obj = data.as_object();
     package_manifest ret;
 
-    using namespace j5_read::ops;
-    j5_read::destructure(
+    using namespace json_read::ops;
+    json_read::decompose(
         obj,
         object(
             key("name", require_string(put_into{ret.pkg_id.name}, "`name` must be a string")),
@@ -94,7 +94,7 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
                     [&](auto&& version_str_) {
                         auto& version      = version_str_.as_string();
                         ret.pkg_id.version = semver::version::parse(version);
-                        return j5_read::accept_t{};
+                        return json_read::accept_t{};
                     },
                     "`version` must be a string")),
             key("depends", object([&](auto key, auto&& range_str_) {
@@ -113,7 +113,7 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
                             range_str_.as_string(),
                             pkg_name);
                     }
-                    return j5_read::accept_t{};
+                    return json_read::accept_t{};
                 })),
             key("test_driver",
                 require_string(
@@ -130,7 +130,7 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
                                 test_driver,
                                 dym);
                         }
-                        return j5_read::accept_t{};
+                        return json_read::accept_t{};
                     },
                     "`test_driver` must be a valid test driver name string")),
             reject_key));

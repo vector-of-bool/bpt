@@ -7,7 +7,7 @@
 
 namespace dds {
 
-namespace j5_read {
+namespace json_read {
 
 struct reject_t {
     std::string message;
@@ -51,9 +51,6 @@ struct then {
     }
 };
 
-template <typename... Hs>
-then(Hs...) -> then<Hs...>;
-
 template <typename... KeyHandlers>
 struct object {
     std::tuple<KeyHandlers...> _keys;
@@ -92,8 +89,26 @@ struct object {
     }
 };
 
-template <typename... Ks>
-object(Ks...) -> object<Ks...>;
+template <typename Handler>
+struct array_each {
+    Handler _hs;
+
+    result_var operator()(const json5::data& arr) {
+        if (!arr.is_array()) {
+            return pass_t{};
+        }
+        for (const auto& elem : arr.as_array()) {
+            result_var res = _hs(elem);
+            if (std::holds_alternative<reject_t>(res)) {
+                return res;
+            }
+        }
+        return accept_t{};
+    }
+};
+
+template <typename Handler>
+array_each(Handler) -> array_each<Handler>;
 
 template <typename Handler>
 struct key {
@@ -172,13 +187,13 @@ put_into(T) -> put_into<T>;
 }  // namespace ops
 
 template <typename Handler>
-auto destructure(const json5::data& dat, Handler&& h) {
+auto decompose(const json5::data& dat, Handler&& h) {
     result_var res = h(dat);
     if (std::holds_alternative<reject_t>(res)) {
         throw std::runtime_error(std::get<reject_t>(res).message);
     }
 }
 
-}  // namespace j5_read
+}  // namespace json_read
 
 }  // namespace dds
