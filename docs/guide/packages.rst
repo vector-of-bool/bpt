@@ -317,8 +317,9 @@ Naming Requirements
 Package names aren't a complete free-for-all. Package names must follow a set
 of specific rules:
 
-- Package names may consist of ASCII, lowercase characters, digits,
-  underscores (``_``), hyphens (``-``), and periods (``.``).
+- Package names may consist of a subset of ASCII including lowercase
+  characters, digits, underscores (``_``), hyphens (``-``), and periods
+  (``.``).
 
   .. note::
     Different filesystems differ in their handling of filenames. Some platforms

@@ -1,0 +1,53 @@
+{
+    "type": "object",
+    "description": "DDS Package Manifest",
+    "additionalProperties": false,
+    "patternProperties": {
+        "^\\$": {}
+    },
+    "required": [
+        "name",
+        "version",
+        "namespace"
+    ],
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the package. Must be a valid Semantic Version string.",
+            "pattern": "^[a-z][a-z0-9_]*((\\.|-)[a-z0-9_]+)*$"
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "description": "The version of the package. Required",
+            "default": "0.1.0"
+        },
+        "namespace": {
+            "type": "string",
+            "description": "The package's namespace. Must be a valid string.",
+            "pattern": "^[a-z][a-z0-9_]*((\\.|-)[a-z0-9_]+)*$"
+        },
+        "$schema": {
+            "type": "string",
+            "description": "JSON schema tag. Ignored by dds."
+        },
+        "depends": {
+            "type": "object",
+            "patternProperties": {
+                "^[a-z][a-z0-9_]*((\\.|-)[a-z0-9_]+)*$": {
+                    "type": "string",
+                    "description": "The version of the dependency. Must be a valid Semantic Version string",
+                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                }
+            }
+        },
+        "test_driver": {
+            "type": "string",
+            "default": "Catch-Main",
+            "enum": [
+                "Catch-Main",
+                "Catch"
+            ]
+        }
+    }
+}
