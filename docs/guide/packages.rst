@@ -242,13 +242,14 @@ included in downstream binaries, but it will still generate link rules for the
 dependencies of a header-only library.
 
 In order for ``dds`` to be able to distribute and interlink libraries, a
-``library.dds`` file must be present at the corresponding library root. The
-only required key in a ``library.dds`` file is ``Name``:
+``library.json5`` file must be present at the corresponding library root. The
+only required key in a ``library.json5`` file is ``Name``:
 
-.. code-block:: yaml
+.. code-block:: js
 
-    Name: my-library
-
+  {
+    name: 'my-library'
+  }
 
 .. seealso:: More information is discussed on the :ref:`deps.lib-deps` page
 

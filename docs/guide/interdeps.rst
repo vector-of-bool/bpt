@@ -198,24 +198,29 @@ Library Dependencies
 
 In ``dds``, library interdependencies are tracked separately from the packages
 that contain them. A library must declare its intent to use another library
-in the ``library.dds`` at its library root. The minimal content of a
-``library.dds`` is the ``Name`` key:
-
-.. code-block::
-
-    Name: gadgets
-
-To announce that a library wishes to *use* another library, use the aptly-named
-``Uses`` key:
+in the ``library.json5`` at its library root. The minimal content of a
+``library.json5`` is the ``Name`` key:
 
 .. code-block:: js
-    :emphasize-lines: 3-5
 
-    Name: gadgets
+    {
+        name: 'gadgets'
+    }
 
-    Uses: acme/widgets
-    Uses: acme/gizmos
-    Uses: acme/utils
+To announce that a library wishes to *use* another library, use the aptly-named
+``uses`` key:
+
+.. code-block:: js
+    :emphasize-lines: 3-7
+
+    {
+        name: 'gadgets',
+        uses: [
+            'acme/widgets',
+            'acme/gizmos',
+            'acme/utils',
+        ],
+    }
 
 Here is where the package's ``namespace`` key comes into play: A library's
 qualified name is specified by joining the ``namespace`` of the containing
@@ -237,6 +242,6 @@ It is the responsibility of package authors to document the ``namespace`` and
     However, it is essential that the ``<namespace>/<name>`` pair be
     universally unique, so choose wisely!
 
-Once the ``Uses`` key appears in the ``library.dds`` file of a library, ``dds``
+Once the ``uses`` key appears in the ``library.dds`` file of a library, ``dds``
 will make available the headers for the library being used, and will
 transitively propagate that usage requirement to users of the library.

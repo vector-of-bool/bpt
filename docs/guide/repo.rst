@@ -62,7 +62,7 @@ package ID as the name of the source distribution directory::
     $ ls ./spdlog@1.4.2/
     include/
     src/
-    library.dds
+    library.json5
     package.json5
 
 

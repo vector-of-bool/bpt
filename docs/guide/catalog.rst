@@ -48,7 +48,7 @@ that will be added to the catalog. The following options are supported:
 ``--git-url <url>``
     Specify a Git URL to clone from to obtain the package. The root of the
     cloned repository must be a package root, but does not necessarily need to
-    have the ``package.json5`` and ``library.dds`` files if relying on the
+    have the ``package.json5`` and ``library.json5`` files if relying on the
     ``--auto-lib`` parameter.
 
     ``--git-ref`` **must** be passed with ``--git-url``.

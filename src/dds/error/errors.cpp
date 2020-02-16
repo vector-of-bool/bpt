@@ -234,7 +234,7 @@ which packages are claiming the library name.
 )";
     case errc::unknown_usage_name:
         return R"(
-A `Uses` or `Links` field for a library specifies a library of an unknown name.
+A `uses` or `links` field for a library specifies a library of an unknown name.
 Check your spelling, and check that the package containing the library is
 available, either from the `package.json5` or from the `INDEX.lmi` that was used
 for the build.
@@ -313,7 +313,7 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::dup_lib_name:
         return "More than one library has claimed the same name.";
     case errc::unknown_usage_name:
-        return "A `Uses` or `Links` field names a library that isn't recognized.";
+        return "A `uses` or `links` field names a library that isn't recognized.";
     case errc::none:
         break;
     }
