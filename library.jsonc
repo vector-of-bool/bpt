@@ -10,6 +10,7 @@
         "neo/fun",
         "semver/semver",
         "pubgrub/pubgrub",
-        "vob/json5"
+        "vob/json5",
+        "vob/semester",
     ]
 }
