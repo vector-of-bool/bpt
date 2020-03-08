@@ -12,8 +12,8 @@
         "neo-fun": "0.1.0",
         "semver": "0.2.1",
         "pubgrub": "0.2.0",
-        "vob-json5": "0.1.5-dev",
-        "semester": "*"
+        "vob-json5": "0.1.5",
+        "vob-semester": "0.1.0"
     },
     "test_driver": "Catch-Main"
 }

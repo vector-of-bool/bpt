@@ -30,7 +30,7 @@ class Version(NamedTuple):
         ret: dict = {
             'description': self.description,
         }
-        ret['depends'] = {}
+        ret['depends'] = self.depends
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
         return ret
@@ -151,14 +151,22 @@ packages = [
         git_url='https://github.com/vector-of-bool/pubgrub.git',
     ),
     many_versions(
-        'json5',
-        (
-            '0.1.0',
-            '0.1.2',
-        ),
+        'vob-json5',
+        ('0.1.5', ),
         description='A C++ implementation of a JSON5 parser',
         git_url='https://github.com/vector-of-bool/json5.git',
     ),
+    Package('vob-semester', [
+        Version(
+            '0.1.0',
+            description='A C++ library to process recursive dynamic data',
+            remote=Git('https://github.com/vector-of-bool/semester.git',
+                       '0.1.0'),
+            depends={
+                'neo-fun': '^0.1.0',
+                'neo-concepts': '^0.2.1',
+            }),
+    ]),
     many_versions(
         'spdlog',
         (

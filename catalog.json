@@ -218,26 +218,6 @@
         }
       }
     },
-    "json5": {
-      "0.1.0": {
-        "depends": {},
-        "description": "A C++ implementation of a JSON5 parser",
-        "git": {
-          "auto-lib": null,
-          "ref": "0.1.0",
-          "url": "https://github.com/vector-of-bool/json5.git"
-        }
-      },
-      "0.1.2": {
-        "depends": {},
-        "description": "A C++ implementation of a JSON5 parser",
-        "git": {
-          "auto-lib": null,
-          "ref": "0.1.2",
-          "url": "https://github.com/vector-of-bool/json5.git"
-        }
-      }
-    },
     "ms-wil": {
       "2019.11.10": {
         "depends": {},
@@ -703,6 +683,31 @@
           "auto-lib": "spdlog/spdlog",
           "ref": "v1.4.2",
           "url": "https://github.com/gabime/spdlog.git"
+        }
+      }
+    },
+    "vob-json5": {
+      "0.1.5": {
+        "depends": {},
+        "description": "A C++ implementation of a JSON5 parser",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.5",
+          "url": "https://github.com/vector-of-bool/json5.git"
+        }
+      }
+    },
+    "vob-semester": {
+      "0.1.0": {
+        "depends": {
+          "neo-concepts": "^0.2.1",
+          "neo-fun": "^0.1.0"
+        },
+        "description": "A C++ library to process recursive dynamic data",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.0",
+          "url": "https://github.com/vector-of-bool/semester.git"
         }
       }
     }
