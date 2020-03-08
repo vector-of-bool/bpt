@@ -12,7 +12,7 @@ jobs:
           echo Executing Build and Tests
           reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
           python -m pip install pytest pytest-xdist || exit 1
-          python -u tools/ci.py -B download -T tools\msvc.dds || exit 1
+          python -u tools/ci.py -B download -T tools\msvc.dds -T2 tools\msvc.jsonc || exit 1
         displayName: Full CI
       - publish: _build/dds.exe
         artifact: DDS Executable - Windows VS2019
@@ -27,7 +27,7 @@ jobs:
           sudo apt install -y python3-minimal g++-9 ccache
           python3 -m pip install pytest pytest-xdist
         displayName: Prepare System
-      - script: python3 -u tools/ci.py -B download -T tools/gcc-9.dds
+      - script: python3 -u tools/ci.py -B download -T tools/gcc-9.dds -T2 tools/gcc-9.jsonc
         displayName: Full CI
       - publish: _build/dds
         artifact: DDS Executable - Linux
@@ -41,7 +41,7 @@ jobs:
       - script: |
           set -eu
           python3 -m pip install pytest pytest-xdist
-          python3 -u tools/ci.py -B download -T tools/gcc-9.dds
+          python3 -u tools/ci.py -B download -T tools/gcc-9.dds -T2 tools/gcc-9.jsonc
         displayName: Build and Run Unit Tests
       - publish: _build/dds
         artifact: DDS Executable - macOS

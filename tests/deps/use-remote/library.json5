@@ -1,0 +1,6 @@
+{
+    name: "dummy",
+    uses: [
+        'nlohmann/json',
+    ]
+}

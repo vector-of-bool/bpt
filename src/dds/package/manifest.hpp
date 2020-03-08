@@ -11,7 +11,7 @@
 namespace dds {
 
 /**
- * Possible values for Test-Driver in a package.dds
+ * Possible values for test_driver in a package.json5
  */
 enum class test_lib {
     catch_,
@@ -26,7 +26,7 @@ struct package_manifest {
     package_id pkg_id;
     /// The declared `Namespace` of the package. This directly corresponds with the libman Namespace
     std::string namespace_;
-    /// The `Test-Driver` that this package declares, or `nullopt` if absent.
+    /// The `test_driver` that this package declares, or `nullopt` if absent.
     std::optional<test_lib> test_driver;
     /// The dependencies declared with the `Depends` fields, if any.
     std::vector<dependency> dependencies;
@@ -35,6 +35,15 @@ struct package_manifest {
      * Load a package manifest from a file on disk.
      */
     static package_manifest load_from_file(path_ref);
+    static package_manifest load_from_dds_file(path_ref);
+
+    /**
+     * Find a package manifest contained within a directory. This will search
+     * for a few file candidates and return the result from the first matching.
+     * If none match, it will return nullopt.
+     */
+    static std::optional<fs::path>         find_in_directory(path_ref);
+    static std::optional<package_manifest> load_from_directory(path_ref);
 };
 
 }  // namespace dds

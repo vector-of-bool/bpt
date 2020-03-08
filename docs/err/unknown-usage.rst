@@ -2,11 +2,11 @@ Error: Unknown Usage/Linking Requirements
 #########################################
 
 A library can declare that it *uses* or *links* to another library by using the
-``Uses`` and ``Links`` keys in ``library.dds``, respectively.
+``uses`` and ``links`` keys in ``library.json5``, respectively.
 
-These requirements are specified by using the ``Namespace/Name`` pair that
+These requirements are specified by using the ``namespace/name`` pair that
 identifies a library. These are defined by both the project's dependencies and
-the project itself. If a ``Uses`` or ``Links`` key does not correspond to a
+the project itself. If a ``uses`` or ``links`` key does not correspond to a
 known library, ``dds`` will not be able to resolve the usage requirements, and
 will generate an error.
 

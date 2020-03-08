@@ -14,6 +14,7 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
+    toolchain_json5: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -67,9 +68,16 @@ def main(argv: Sequence[str]) -> int:
         '-T',
         help='The toolchain to use for the CI process',
         required=True)
+    parser.add_argument(
+        '--toolchain-json5',
+        '-T2',
+        help='The toolchain JSON to use with the bootstrapped executable',
+        required=True,
+    )
     args = parser.parse_args(argv)
 
-    opts = CIOptions(toolchain=args.toolchain)
+    opts = CIOptions(
+        toolchain=args.toolchain, toolchain_json5=args.toolchain_json5)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -117,7 +125,7 @@ def main(argv: Sequence[str]) -> int:
     ])
     self_build(
         paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain,
+        toolchain=opts.toolchain_json5,
         dds_flags=[f'--repo-dir={ci_repo_dir}', f'--catalog={cat_path}'])
     print('Bootstrap test PASSED!')
 

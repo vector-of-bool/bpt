@@ -1,0 +1,19 @@
+{
+    "$schema": "./res/package-schema.json",
+    "name": "dds",
+    "version": "0.1.0",
+    "namespace": "dds",
+    "depends": {
+        "spdlog": "1.4.2",
+        "ms-wil": "2019.11.10",
+        "range-v3": "0.10.0",
+        "nlohmann-json": "3.7.1",
+        "neo-sqlite3": "0.2.2",
+        "neo-fun": "0.1.0",
+        "semver": "0.2.1",
+        "pubgrub": "0.2.0",
+        "vob-json5": "0.1.5",
+        "vob-semester": "0.1.0"
+    },
+    "test_driver": "Catch-Main"
+}

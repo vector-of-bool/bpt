@@ -29,6 +29,8 @@ enum class errc {
 
     corrupted_build_db,
 
+    invalid_lib_manifest,
+    invalid_pkg_manifest,
     invalid_version_range_string,
     invalid_version_string,
     invalid_pkg_id,

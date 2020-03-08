@@ -15,16 +15,18 @@ Package Dependencies
 ********************
 
 Consider that we are creating a package ``acme-gadgets@4.3.6``. We declare the
-name and version in the ``package.dds`` in the package root:
+name and version in the ``package.json5`` in the package root:
 
-.. code-block::
+.. code-block:: js
 
-    Name: acme-gadgets
-    Version: 4.3.6
-    Namespace: acme
+    {
+        name: 'acme-widgets',
+        version: '4.3.6',
+        namespace: 'acme',
+    }
 
 .. note::
-    The ``Namespace`` field is required, but will be addressed in the
+    The ``namespace`` field is required, but will be addressed in the
     :ref:`deps.lib-deps` section.
 
 Suppose that our package's libraries build upon the libraries in the
@@ -32,14 +34,17 @@ Suppose that our package's libraries build upon the libraries in the
 not as new as ``2.0.0``. Such a dependency can be declared with the ``Depends``
 key:
 
-.. code-block::
-    :emphasize-lines: 5
+.. code-block:: js
+    :emphasize-lines: 5-7
 
-    Name: acme-gadgets
-    Version: 4.3.6
-    Namespace: acme
-
-    Depends: acme-widgets ^1.4.3
+    {
+        name: 'acme-gadgets',
+        version: '4.3.6',
+        namespace: 'acme',
+        depends: {
+            'acme-widgets': '^1.4.3',
+        },
+    }
 
 .. seealso:: :ref:`deps.ranges`.
 
@@ -47,15 +52,18 @@ If we wish to declare additional dependencies, we simply declare them with
 additional ``Depends`` keys
 
 .. code-block::
-    :emphasize-lines: 5-7
+    :emphasize-lines: 7-8
 
-    Name: acme-gadgets
-    Version: 4.3.6
-    Namespace: acme
-
-    Depends: acme-widgets ^1.4.3
-    Depends: acme-gizmos ~5.6.5
-    Depends: acme-utils ^3.3.0
+    {
+        name: 'acme-gadgets',
+        version: '4.3.6',
+        namespace: 'acme',
+        depends: {
+            'acme-widgets': '^1.4.3',
+            'acme-gizmos': '~5.6.5',
+            'acme-utils': '^3.3.0',
+        },
+    }
 
 When ``dds`` attempts to build a project, it will first build the dependency
 solution by iteratively scanning the dependencies of the containing project and
@@ -190,45 +198,50 @@ Library Dependencies
 
 In ``dds``, library interdependencies are tracked separately from the packages
 that contain them. A library must declare its intent to use another library
-in the ``library.dds`` at its library root. The minimal content of a
-``library.dds`` is the ``Name`` key:
+in the ``library.json5`` at its library root. The minimal content of a
+``library.json5`` is the ``name`` key:
 
-.. code-block::
+.. code-block:: js
 
-    Name: gadgets
+    {
+        name: 'gadgets'
+    }
 
 To announce that a library wishes to *use* another library, use the aptly-named
-``Uses`` key:
+``uses`` key:
 
-.. code-block::
-    :emphasize-lines: 3-5
+.. code-block:: js
+    :emphasize-lines: 3-7
 
-    Name: gadgets
+    {
+        name: 'gadgets',
+        uses: [
+            'acme/widgets',
+            'acme/gizmos',
+            'acme/utils',
+        ],
+    }
 
-    Uses: acme/widgets
-    Uses: acme/gizmos
-    Uses: acme/utils
-
-Here is where the package's ``Namespace`` key comes into play: A library's
-qualified name is specified by joining the ``Namespace`` of the containing
-package with the ``Name`` of the library within that package with a ``/``
+Here is where the package's ``namespace`` key comes into play: A library's
+qualified name is specified by joining the ``namespace`` of the containing
+package with the ``name`` of the library within that package with a ``/``
 between them.
 
-It is the responsibility of package authors to document the ``Namespace`` and
-``Name`` of the packages and libraries that they distribute.
+It is the responsibility of package authors to document the ``namespace`` and
+``name`` of the packages and libraries that they distribute.
 
 .. note::
-    The ``Namespace`` of a package is completely arbitrary, and need not relate
+    The ``namespace`` of a package is completely arbitrary, and need not relate
     to a C++ ``namespace``.
 
 .. note::
-    The ``Namespace`` need not be unique to a single package. For example, a
-    single organization (Like Acme Inc.) can share a single ``Namespace`` for
+    The ``namespace`` need not be unique to a single package. For example, a
+    single organization (Like Acme Inc.) can share a single ``namespace`` for
     many of their packages and libraries.
 
-    However, it is essential that the ``<Namespace>/<Name>`` pair be
+    However, it is essential that the ``<namespace>/<name>`` pair be
     universally unique, so choose wisely!
 
-Once the ``Uses`` key appears in the ``library.dds`` file of a library, ``dds``
+Once the ``uses`` key appears in the ``library.dds`` file of a library, ``dds``
 will make available the headers for the library being used, and will
 transitively propagate that usage requirement to users of the library.

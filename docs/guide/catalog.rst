@@ -33,7 +33,7 @@ command:
     dds catalog add <package-id>
         [--depends <requirement> [--depends <requirement> [...]]]
         [--git-url <url> --git-ref <ref>]
-        [--auto-lib <Namespace>/<Name>]
+        [--auto-lib <namespace>/<name>]
 
 The ``<package-id>`` positional arguments is the ``name@version`` package ID
 that will be added to the catalog. The following options are supported:
@@ -41,14 +41,14 @@ that will be added to the catalog. The following options are supported:
 ``--depends <requirement>``
     This argument, which can be specified multiple times to represent multiple
     dependencies, sets the dependencies of the package within the catalog. If
-    the obtained package root contains a ``package.dds``, then the dependencies
-    listed here must be identical to those listed in ``package.dds``, or
-    dependency resolution may yield unexpected results.
+    the obtained package root contains a ``package.json5``, then the
+    dependencies listed here must be identical to those listed in
+    ``package.json5``, or dependency resolution may yield unexpected results.
 
 ``--git-url <url>``
     Specify a Git URL to clone from to obtain the package. The root of the
     cloned repository must be a package root, but does not necessarily need to
-    have the ``package.dds`` and ``library.dds`` files if relying on the
+    have the ``package.json5`` and ``library.json5`` files if relying on the
     ``--auto-lib`` parameter.
 
     ``--git-ref`` **must** be passed with ``--git-url``.
@@ -66,8 +66,8 @@ that will be added to the catalog. The following options are supported:
     can only be specified for packages that contain a single library root at
     the package root.
 
-    The form of the argument is that of ``<Namespapce>/<Name>``, where
-    ``Namespace`` and ``Name`` are the usage requirement keys that should be
+    The form of the argument is that of ``<namespace>/<name>``, where
+    ``namespace`` and ``name`` are the usage requirement keys that should be
     generated for the library.
 
 

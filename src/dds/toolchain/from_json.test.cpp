@@ -1,18 +1,16 @@
-#include <dds/toolchain/from_dds.hpp>
+#include <dds/toolchain/from_json.hpp>
 
 #include <dds/proc.hpp>
 
-// #include <dds/util.test.hpp>
 #include <catch2/catch.hpp>
 
 namespace {
-
 void check_tc_compile(std::string_view tc_content,
                       std::string_view expected_compile,
                       std::string_view expected_compile_warnings,
                       std::string_view expected_ar,
                       std::string_view expected_exe) {
-    auto tc = dds::parse_toolchain_dds(tc_content);
+    auto tc = dds::parse_toolchain_json5(tc_content);
 
     dds::compile_file_spec cf;
     cf.source_path  = "foo.cpp";
@@ -43,9 +41,11 @@ void check_tc_compile(std::string_view tc_content,
     CHECK(exe_cmd_str == expected_exe);
 }
 
+}  // namespace
+
 TEST_CASE("Generating toolchain commands") {
     check_tc_compile(
-        "Compiler-ID: GNU",
+        "{compiler_id: 'gnu'}",
         "g++ -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
         "g++ -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
         "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
@@ -53,7 +53,7 @@ TEST_CASE("Generating toolchain commands") {
         "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -omeow.exe");
 
     check_tc_compile(
-        "Compiler-ID: GNU\nDebug: True",
+        "{compiler_id: 'gnu', debug: true}",
         "g++ -g -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
         "g++ -g -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
         "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
@@ -61,7 +61,7 @@ TEST_CASE("Generating toolchain commands") {
         "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -omeow.exe -g");
 
     check_tc_compile(
-        "Compiler-ID: GNU\nDebug: True\nOptimize: True",
+        "{compiler_id: 'gnu', debug: true, optimize: true}",
         "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp "
         "-ofoo.o",
         "g++ -O2 -g -fPIC -fdiagnostics-color -pthread -Wall -Wextra -Wpedantic -Wconversion "
@@ -69,22 +69,30 @@ TEST_CASE("Generating toolchain commands") {
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC -fdiagnostics-color foo.o bar.a -pthread -omeow.exe -O2 -g");
 
-    check_tc_compile("Compiler-ID: MSVC",
+    check_tc_compile("{compiler_id: 'msvc'}",
                      "cl.exe /MT /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
                      "cl.exe /MT /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 
     check_tc_compile(
-        "Compiler-ID: MSVC\nDebug: True",
+        "{compiler_id: 'msvc', debug: true}",
         "cl.exe /Z7 /DEBUG /MTd /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
         "cl.exe /Z7 /DEBUG /MTd /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /Z7 /DEBUG /MTd");
 
-    auto tc = dds::parse_toolchain_dds(R"(
-    Compiler-ID: GNU
-)");
+    check_tc_compile(
+        "{compiler_id: 'msvc', flags: '-DFOO'}",
+        "cl.exe /MT /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o -DFOO",
+        "cl.exe /MT /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o -DFOO",
+        "lib /nologo /OUT:stuff.a foo.o bar.o",
+        "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
+}
+
+TEST_CASE("Manipulate a toolchain and file compilation") {
+
+    auto tc = dds::parse_toolchain_json5("{compiler_id: 'gnu'}");
 
     dds::compile_file_spec cfs;
     cfs.source_path = "foo.cpp";
@@ -142,5 +150,3 @@ TEST_CASE("Generating toolchain commands") {
                                       "foo.cpp",
                                       "-ofoo.o"});
 }
-
-}  // namespace

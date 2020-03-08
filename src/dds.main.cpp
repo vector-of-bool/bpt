@@ -5,7 +5,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
-#include <dds/toolchain/from_dds.hpp>
+#include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
@@ -58,7 +58,8 @@ struct toolchain_flag : string_flag {
             }
             return std::move(*tc);
         } else {
-            return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
+            return dds::parse_toolchain_json5(dds::slurp_file(tc_path));
+            // return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
         }
     }
 };
@@ -591,11 +592,9 @@ struct cli_build {
         params.out_root      = out.Get();
         params.toolchain     = tc_filepath.get_toolchain();
         params.parallel_jobs = n_jobs.Get();
-        dds::package_manifest man;
-        const auto            man_filepath = project.root.Get() / "package.dds";
-        if (exists(man_filepath)) {
-            man = dds::package_manifest::load_from_file(man_filepath);
-        }
+
+        auto man = dds::package_manifest::load_from_directory(project.root.Get())
+                       .value_or(dds::package_manifest{});
 
         dds::builder            bd;
         dds::sdist_build_params main_params;

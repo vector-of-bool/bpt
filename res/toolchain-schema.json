@@ -1,0 +1,183 @@
+{
+    "type": "object",
+    "description": "DDS Toolchain Description File",
+    "additionalProperties": false,
+    "patternProperties": {
+        "^\\$": {}
+    },
+    "definitions": {
+        "command_line_flags": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "description": "Shell-style string of command-line arguments"
+                },
+                {
+                    "type": "array",
+                    "description": "An array of command-line arguments. Will be passed verbatim.",
+                    "items": {
+                        "type": "string",
+                        "description": "A single command-line argument. Will be passed verbatim."
+                    }
+                }
+            ]
+        }
+    },
+    "properties": {
+        "compiler_id": {
+            "type": "string",
+            "description": "The general compiler identification. This is one of a fixed set of values that DDS will use to infer most toolchain attributes.",
+            "enum": [
+                "msvc",
+                "gnu",
+                "clang"
+            ]
+        },
+        "c_compiler": {
+            "type": "string",
+            "description": "Executable name or filepath for a C compiler",
+            "examples": [
+                "gcc",
+                "clang-9",
+                "cl.exe"
+            ]
+        },
+        "cxx_compiler": {
+            "type": "string",
+            "description": "Executable name or filepath for a C++ compiler",
+            "examples": [
+                "g++",
+                "clang++-9",
+                "cl.exe"
+            ]
+        },
+        "flags": {
+            "description": "Pass additional compile flags, regardless of the source language",
+            "$ref": "#/definitions/command_line_flags"
+        },
+        "c_flags": {
+            "description": "Pass additional flags to the C compiler.",
+            "$ref": "#/definitions/command_line_flags"
+        },
+        "cxx_flags": {
+            "description": "Pass additional flags to the C++ compiler.",
+            "$ref": "#/definitions/command_line_flags"
+        },
+        "c_version": {
+            "description": "The C language version",
+            "type": "string",
+            "enum": [
+                "c89",
+                "c99",
+                "c11",
+                "c18"
+            ]
+        },
+        "cxx_version": {
+            "description": "The C++ language version",
+            "type": "string",
+            "enum": [
+                "c++98",
+                "c++03",
+                "c++11",
+                "c++14",
+                "c++17",
+                "c++20"
+            ]
+        },
+        "warning_flags": {
+            "description": "Set the flags that will be passed to the compiler to enable/disable warnings",
+            "$ref": "#/definitions/command_line_flags"
+        },
+        "link_flags": {
+            "description": "Pass additional flags to the compiler when it is linking runtime binaries (executables)",
+            "$ref": "#/definitions/command_line_flags"
+        },
+        "compiler_launcher": {
+            "description": "Set a command-line prefix that will be prepended to all compiler invocations",
+            "$ref": "#/definitions/command_line_flags"
+        },
+        "debug": {
+            "description": "Enable the generation of debug information",
+            "type": "boolean",
+            "default": true
+        },
+        "optimize": {
+            "description": "Optimize generated code",
+            "type": "boolean",
+            "default": true
+        },
+        "advanced": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Advanced toolchain options. All of these options will be inferred from `compiler_id` by default. Handle with care.",
+            "properties": {
+                "deps_mode": {
+                    "type": "string",
+                    "description": "Dependency tracking mode.",
+                    "enum": [
+                        "msvc",
+                        "gnu",
+                        "none"
+                    ]
+                },
+                "include_template": {
+                    "description": "Set the include-directory flags template",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "external_include_template": {
+                    "description": "Set the external include-directory flags template",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "define_template": {
+                    "description": "Set the preprocessor-definition flags template",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "base_warning_flags": {
+                    "description": "Set the base warning flags for the toolchain. These are always prepended to `warning_flags`.",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "c_compile_file": {
+                    "description": "Set the command template for compiling C source files",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "cxx_compile_file": {
+                    "description": "Set the command template for compiling C++ source files",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "create_archive": {
+                    "description": "Set the command template for generating static library archives",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "link_executable": {
+                    "description": "Set the command template for linking executable binaries",
+                    "$ref": "#/definitions/command_line_flags"
+                },
+                "obj_prefix": {
+                    "description": "Set the filename prefix for object files",
+                    "type": "string"
+                },
+                "obj_suffix": {
+                    "description": "Set the filename suffix for object files",
+                    "type": "string"
+                },
+                "archive_prefix": {
+                    "description": "Set the filename prefix for library archive files",
+                    "type": "string"
+                },
+                "archive_suffix": {
+                    "description": "Set the filename suffix for library archive files",
+                    "type": "string"
+                },
+                "exe_prefix": {
+                    "description": "Set the filename prefix for executable files",
+                    "type": "string"
+                },
+                "exe_suffix": {
+                    "description": "Set the filename suffix for executable files",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
