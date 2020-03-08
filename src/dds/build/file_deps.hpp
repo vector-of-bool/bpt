@@ -11,7 +11,7 @@
  * output may make use of a single input, and each output will need to keep track of the
  * outdated-ness of its inputs separately.
  *
- * A toolchain has an associated `file_deps_mode`, which can be deduced from the Compiler-ID. The
+ * A toolchain has an associated `file_deps_mode`, which can be deduced from the compiler_id. The
  * three dependency modes are:
  *
  * 1. None - No dependency tracking takes place.

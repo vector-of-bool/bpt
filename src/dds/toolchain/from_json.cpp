@@ -543,7 +543,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     tc.archive_prefix = archive_prefix.value_or("lib");
     tc.archive_suffix = read_opt(archive_suffix, [&] {
         if (!compiler_id) {
-            fail(context, "Cannot deduce library file extension without Compiler-ID");
+            fail(context, "Cannot deduce library file extension without 'compiler_id'");
         }
         if (is_gnu_like) {
             return ".a";
@@ -557,7 +557,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     tc.object_prefix = obj_prefix.value_or("");
     tc.object_suffix = read_opt(obj_suffix, [&] {
         if (!compiler_id) {
-            fail(context, "Cannot deduce object file extension without Compiler-ID");
+            fail(context, "Cannot deduce object file extension without 'compiler_id'");
         }
         if (is_gnu_like) {
             return ".o";

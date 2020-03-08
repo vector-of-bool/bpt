@@ -1,4 +1,4 @@
-.. highlight:: yaml
+.. highlight:: js
 
 Toolchains
 ##########
@@ -30,14 +30,15 @@ effectively in your project.
 Passing a Toolchain
 *******************
 
-In ``dds``, the default format of a toolchain is that of a single file that
-describes the entire toolchain, and uses the extension ``.tc.dds`` by
-convention. When running a build for a project, the ``dds`` executable will
-look for a file named ``toolchain.tc.dds`` by default, and will error out if
-this file does not exist. A different toolchain can be provided by passing the
-toolchain file for the ``--toolchain`` (or ``-t``) option on the command line::
+In ``dds``, the default format of a toolchain is that of a single JSON5 file
+that describes the entire toolchain. When running a build for a project, the
+``dds`` executable will look in a few locations for a default toolchain, and
+generate an error if no default toolchain file is found (Refer to
+:ref:`toolchains.default`). A different toolchain can be provided by passing
+the toolchain file for the ``--toolchain`` (or ``-t``) option on the command
+line::
 
-    $ dds build -t my-toolchain.tc.dds
+    $ dds build -t my-toolchain.json5
 
 Alternatively, you can pass the name of a built-in toolchain. See below.
 
@@ -96,15 +97,18 @@ Providing a Default Toolchain File
 If you do not which to provide a new toolchain for every individual project,
 and the built-in toolchains do not suit your needs, you can write a toolchain
 file to one of a few predefined paths, and ``dds`` will find and use it for the
-build. The following paths are searched, in order:
+build. The following directories are searched, in order:
 
-#. ``$pwd/toolchain.dds`` - If the working directory contains ``toolchain.dds``,
-   it will be used as the default.
-#. ``$dds_config_dir/toolchain.dds`` - Searches for a toolchain file in
-   ``dds``'s user-local configuration directory (see below).
-#. ``$user_home/toolchain.dds`` - Searches for a toolchain file at the root of
-   the current user's home directory. (``$HOME`` on Unix-like systems, and
-   ``$PROFILE`` on Windows.)
+#. ``$pwd/`` - If the working directory contains a toolchain file, it will be
+   used as the default.
+#. ``$dds_config_dir/`` - Searches for a toolchain file in ``dds``'s user-local
+   configuration directory (see below).
+#. ``$user_home/`` - Searches for a toolchain file at the root of the current
+   user's home directory. (``$HOME`` on Unix-like systems, and ``$PROFILE`` on
+   Windows.)
+
+In each directory, it will search for ``toolchain.json5``, ``toolchain.jsonc``,
+or ``toolchain.json``.
 
 The ``$dds_user_config`` directory is the ``dds`` subdirectory of the
 user-local configuration directory.
@@ -124,13 +128,15 @@ simply one line:
 
 .. code-block::
 
-    Compiler-ID: <compiler-id>
+    {
+        compiler_id: "<compiler-id>"
+    }
 
-where ``<compiler-id>`` is one of the known ``Compiler-ID`` options (See the
+where ``<compiler-id>`` is one of the known ``compiler_id`` options (See the
 toolchain option reference). ``dds`` will infer common suitable defaults for
-the remaining options based on the value of ``Compiler-ID``.
+the remaining options based on the value of ``compiler_id``.
 
-For example, if you specify ``GNU``, then ``dds`` will assume ``gcc`` to be the
+For example, if you specify ``gnu``, then ``dds`` will assume ``gcc`` to be the
 C compiler, ``g++`` to be the C++ compiler, and ``ar`` to be the library
 archiving tool.
 
@@ -139,11 +145,13 @@ specify them with additional options:
 
 .. code-block::
 
-    Compiler-ID: GNU
-    C-Compiler: gcc-9
-    C++-Compiler: g++-9
+    {
+        compiler_id: 'gnu',
+        c_compiler: 'gcc-9',
+        cxx_compiler: 'g++-9',
+    }
 
-``dds`` will continue to infer other options based on the ``Compiler-ID``, but
+``dds`` will continue to infer other options based on the ``compiler_id``, but
 will use the provided executable names when compiling files for the respective
 languages.
 
@@ -151,16 +159,22 @@ To specify compilation flags, the ``Flags`` option can be used:
 
 .. code-block::
 
-    Flags: -fsanitize=address -fno-inline
+    {
+        // [...]
+        flags: '-fsanitize=address -fno-inline',
+    }
 
 .. note::
     Use ``Warning-Flags`` to specify options regarding compiler warnings.
 
-Flags for linking executables can be specified with ``Link-Flags``:
+Flags for linking executables can be specified with ``link_flags``:
 
 .. code-block::
 
-    Link-Flags: -fsanitize=address -fPIE
+    {
+        // [...]
+        link_flags: '-fsanitize=address -fPIE'
+    }
 
 
 .. _toolchains.opt-ref:
@@ -171,7 +185,7 @@ Toolchain Option Reference
 The following options are available to be specified within a toolchain file:
 
 
-``Compiler-ID``
+``compiler_id``
 ---------------
 
 Specify the identity of the compiler. This option is used to infer many other
@@ -180,153 +194,168 @@ templates, this option is not required.
 
 Valid values are:
 
-``GNU``
+``gnu``
     For GCC
 
-``Clang``
+``clang``
     For LLVM/Clang
 
-``MSVC``
+``msvc``
     For Microsoft Visual C++
 
 
-``C-Compiler`` and ``C++-Compiler``
+``c_compiler`` and ``cxx_compiler``
 -----------------------------------
 
 Names/paths of the C and C++ compilers, respectively. Defaults will be inferred
-from ``Compiler-ID``.
+from ``compiler_id``.
 
 
-``C-Version`` and ``C++-Version``
+``c_version`` and ``cxx_version``
 ---------------------------------
 
 Specify the language versions for C and C++, respectively. By default, ``dds``
 will not set any language version. Using this option requires that the
-``Compiler-ID`` be specified
+``compiler_id`` be specified.
 
-Valid ``C-Version`` values are:
+Valid ``c_version`` values are:
 
-- ``C89``
-- ``C99``
-- ``C11``
-- ``C18``
+- ``c89``
+- ``c99``
+- ``c11``
+- ``c18``
 
-Valid ``C++-Version`` values are:
+Valid ``cxx_version`` values are:
 
-- ``C++98``
-- ``C++03``
-- ``C++11``
-- ``C++14``
-- ``C++17``
-- ``C++20``
+- ``c++98``
+- ``c++03``
+- ``c++11``
+- ``c++14``
+- ``c++17``
+- ``c++20``
 
 .. warning::
     ``dds`` will not do any "smarts" to infer the exact option to pass to have
-    the required effect. If you ask for ``C++20`` from ``gcc 5.3``, ``dds``
+    the required effect. If you ask for ``c++20`` from ``gcc 4.8``, ``dds``
     will simply pass ``-std=c++20`` with no questions asked. If you need
-    finer-grained control, use the ``Flags`` option.
+    finer-grained control, use the ``c_flags`` and ``cxx_flags`` options.
 
 
-``Warning-Flags``
+``warning_flags``
 -----------------
 
 Override the compiler flags that should be used to enable warnings. This option
-is stored separately from ``Flags``, as these options may be enabled/disabled
+is stored separately from ``flags``, as these options may be enabled/disabled
 separately depending on how ``dds`` is invoked.
 
 .. note::
-    If ``Compiler-ID`` is provided, a default value will be used that enables
+    If ``compiler_id`` is provided, a default value will be used that enables
     common warning levels.
 
     If you need to tweak warnings further, use this option.
 
 
-``Flags``, ``C-Flags``, and ``C++-Flags``
+``flags``, ``c_flags``, and ``cxx_flags``
 -----------------------------------------
 
 Specify *additional* compiler options, possibly per-language.
 
 
-``Link-Flags``
+``link_flags``
 --------------
 
 Specify *additional* link options to use when linking executables.
 
 
-``Optimize``
+``optimize``
 ------------
 
-Boolean option (``True`` or ``False``) to enable/disable optimizations. Default
-is ``False``.
+Boolean option (``true`` or ``false``) to enable/disable optimizations. Default
+is ``false``.
 
 
-``Debug``
+``debug``
 ---------
 
-Boolean option (``True`` or ``False``) to enable/disable the generation of
-debugging information. Default is ``False``.
+Boolean option (``true`` or ``false``) to enable/disable the generation of
+debugging information. Default is ``false``.
 
 
-``Compiler-Launcher``
+``compiler_launcher``
 ---------------------
 
 Provide a command prefix that should be used on all compiler executions.
 e.g. ``ccache``.
 
 
+``advanced``
+------------
+
+A nested object that contains advanced toolchain options. Refer to section on
+advanced toolchain options.
+
+
 Advanced Options Reference
 **************************
 
 The options below are probably not good to tweak unless you *really* know what
-you are doing. Their values will be inferred from ``Compiler-ID``.
+you are doing. Their values will be inferred from ``compiler_id``.
 
 
-``Deps-Mode``
+``deps_mode``
 -------------
 
 Specify the way in which ``dds`` should track compilation dependencies. One
-of ``GNU``, ``MSVC``, or ``None``.
+of ``gnu``, ``msvc``, or ``none``.
 
 
-``C-Compile-File``
+``c_compile_file``
 ------------------
 
 Override the *command template* that is used to compile C source files.
 
 
-``C++-Compile-File``
+``cxx_compile_file``
 --------------------
 
 Override the *command template* that is used to compile C++ source files.
 
 
-``Create-Archive``
+``create_archive``
 ------------------
 
 Override the *command template* that is used to generate static library archive
 files.
 
 
-``Link-Executable``
+``link_executable``
 -------------------
 
 Override the *command template* that is used to link executables.
 
 
-``Include-Template``
+``include_template``
 --------------------
 
 Override the *command template* for the flags to specify a header search path.
 
 
-``External-Include-Template``
+``external_include_template``
 -----------------------------
 
 Override the *command template* for the flags to specify a header search path
 of an external library.
 
 
-``Define-Template``
+``define_template``
 -------------------
 
 Override the *command template* for the flags to set a preprocessor definition.
+
+
+``obj_prefix``, ``obj_suffix``, ``archive_prefix``, ``archive_suffix``,
+``exe_prefix``, and ``exe_suffix``
+----------------------------------
+
+Set the filename prefixes and suffixes for object files, library archive files,
+and executable files, respectively.
