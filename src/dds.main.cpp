@@ -5,7 +5,6 @@
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
-#include <dds/toolchain/from_dds.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/paths.hpp>

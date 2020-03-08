@@ -1,6 +1,6 @@
 #include "./toolchain.hpp"
 
-#include <dds/toolchain/from_dds.hpp>
+#include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/paths.hpp>
@@ -148,31 +148,32 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
 std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept {
     using namespace std::literals;
 
-    std::string tc_content;
+    json5::data tc_data  = json5::data::mapping_type();
+    auto&       root_map = tc_data.as_object();
 
     if (starts_with(tc_id, "debug:")) {
         tc_id = tc_id.substr("debug:"sv.length());
-        tc_content += "Debug: True\n";
+        root_map.emplace("debug", true);
     }
 
     if (starts_with(tc_id, "ccache:")) {
         tc_id = tc_id.substr("ccache:"sv.length());
-        tc_content += "Compiler-Launcher: ccache\n";
+        root_map.emplace("compiler_launcher", "ccache");
     }
 
 #define CXX_VER_TAG(str, version)                                                                  \
     if (starts_with(tc_id, str)) {                                                                 \
         tc_id = tc_id.substr(std::string_view(str).length());                                      \
-        tc_content += "C++-Version: "s + version + "\n";                                           \
+        root_map.emplace("cxx_version", version);                                                  \
     }                                                                                              \
     static_assert(true)
 
-    CXX_VER_TAG("c++98:", "C++98");
-    CXX_VER_TAG("c++03:", "C++03");
-    CXX_VER_TAG("c++11:", "C++11");
-    CXX_VER_TAG("c++14:", "C++14");
-    CXX_VER_TAG("c++17:", "C++17");
-    CXX_VER_TAG("c++20:", "C++20");
+    CXX_VER_TAG("c++98:", "c++98");
+    CXX_VER_TAG("c++03:", "c++03");
+    CXX_VER_TAG("c++11:", "c++11");
+    CXX_VER_TAG("c++14:", "c++14");
+    CXX_VER_TAG("c++17:", "c++17");
+    CXX_VER_TAG("c++20:", "c++20");
 
     struct compiler_info {
         string c;
@@ -187,9 +188,9 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
 
             const auto [c_compiler_base, cxx_compiler_base, compiler_id] = [&]() -> compiler_info {
                 if (is_gcc) {
-                    return {"gcc", "g++", "GNU"};
+                    return {"gcc", "g++", "gnu"};
                 } else if (is_clang) {
-                    return {"clang", "clang++", "Clang"};
+                    return {"clang", "clang++", "clang"};
                 }
                 assert(false && "Unreachable");
                 std::terminate();
@@ -221,7 +222,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
             auto cxx_compiler_name = cxx_compiler_base + compiler_suffix;
             return compiler_info{c_compiler_name, cxx_compiler_name, compiler_id};
         } else if (tc_id == "msvc") {
-            return compiler_info{"cl.exe", "cl.exe", "MSVC"};
+            return compiler_info{"cl.exe", "cl.exe", "msvc"};
         } else {
             return std::nullopt;
         }
@@ -231,21 +232,27 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
         return std::nullopt;
     }
 
-    tc_content += "C-Compiler: "s + opt_triple->c + "\n";
-    tc_content += "C++-Compiler: "s + opt_triple->cxx + "\n";
-    tc_content += "Compiler-ID: " + opt_triple->id + "\n";
-    return parse_toolchain_dds(tc_content);
+    root_map.emplace("c_compiler", opt_triple->c);
+    root_map.emplace("cxx_compiler", opt_triple->cxx);
+    root_map.emplace("compiler_id", opt_triple->id);
+    return parse_toolchain_json_data(tc_data);
 }
 
 std::optional<dds::toolchain> dds::toolchain::get_default() {
     auto candidates = {
-        fs::current_path() / "toolchain.dds",
-        dds_config_dir() / "toolchain.dds",
-        user_home_dir() / "toolchain.dds",
+        fs::current_path() / "toolchain.json5",
+        fs::current_path() / "toolchain.jsonc",
+        fs::current_path() / "toolchain.json",
+        dds_config_dir() / "toolchain.json5",
+        dds_config_dir() / "toolchain.jsonc",
+        dds_config_dir() / "toolchain.json",
+        user_home_dir() / "toolchain.json5",
+        user_home_dir() / "toolchain.jsonc",
+        user_home_dir() / "toolchain.json",
     };
     for (auto&& cand : candidates) {
         if (fs::exists(cand)) {
-            return parse_toolchain_dds(slurp_file(cand));
+            return parse_toolchain_json5(slurp_file(cand));
         }
     }
     return std::nullopt;
