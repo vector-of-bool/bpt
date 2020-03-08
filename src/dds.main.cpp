@@ -6,6 +6,7 @@
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/toolchain/from_dds.hpp>
+#include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
@@ -58,7 +59,8 @@ struct toolchain_flag : string_flag {
             }
             return std::move(*tc);
         } else {
-            return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
+            return dds::parse_toolchain_json5(dds::slurp_file(tc_path));
+            // return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
         }
     }
 };
