@@ -25,11 +25,11 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     for (const lm::usage& links : _links) {
         extend(spec.inputs, env.ureqs.link_paths(links));
     }
-    if (lib.create_archive()) {
+    if (lib.archive_plan()) {
         // The associated library has compiled components. Add the static library a as a linker
         // input
         spec.inputs.push_back(env.output_root
-                              / lib.create_archive()->calc_archive_file_path(env.toolchain));
+                              / lib.archive_plan()->calc_archive_file_path(env.toolchain));
     }
 
     // The main object should be a linker input, of course.

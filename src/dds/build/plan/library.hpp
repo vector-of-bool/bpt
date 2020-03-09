@@ -97,7 +97,7 @@ public:
      * A `create_archive_plan` object, or `nullopt`, depending on if this library has compiled
      * components
      */
-    auto& create_archive() const noexcept { return _create_archive; }
+    auto& archive_plan() const noexcept { return _create_archive; }
     /**
      * The executables that should be created by this library
      */

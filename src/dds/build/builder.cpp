@@ -150,7 +150,7 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             lib_reqs.include_paths.push_back(lib.library_().public_include_dir());
             lib_reqs.uses  = lib.library_().manifest().uses;
             lib_reqs.links = lib.library_().manifest().links;
-            if (const auto& arc = lib.create_archive()) {
+            if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
             }
         }
@@ -170,7 +170,7 @@ void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
     for (auto&& link : lib.links()) {
         out << "Links: " << link.namespace_ << "/" << link.name << '\n';
     }
-    if (auto&& arc = lib.create_archive()) {
+    if (auto&& arc = lib.archive_plan()) {
         out << "Path: "
             << (env.output_root / arc->calc_archive_file_path(env.toolchain)).generic_string()
             << '\n';
