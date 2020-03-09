@@ -24,12 +24,14 @@ inline auto iter_libraries(const build_plan& plan) {
  * Return a range iterating over ever file compilation defined in the given build plan
  */
 inline auto iter_compilations(const build_plan& plan) {
-    auto lib_compiles =                                                                        //
-        iter_libraries(plan)                                                                   //
-        | ranges::views::transform(&library_plan::archive_plan)                              //
-        | ranges::views::filter([&](auto&& opt) { return bool(opt); })                         //
-        | ranges::views::transform([&](auto&& opt) -> auto& { return opt->compile_files(); })  //
-        | ranges::views::join                                                                  //
+    auto lib_compiles =                                                 //
+        iter_libraries(plan)                                            //
+        | ranges::views::transform(&library_plan::archive_plan)         //
+        | ranges::views::filter([&](auto&& opt) { return bool(opt); })  //
+        | ranges::views::transform([&](auto&& opt) -> auto& {
+              return opt->file_compilations();
+          })                   //
+        | ranges::views::join  //
         ;
 
     auto exe_compiles =                                                       //
