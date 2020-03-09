@@ -9,6 +9,7 @@ namespace dds {
 
 enum class source_kind {
     header,
+    header_template,
     source,
     test,
     app,
