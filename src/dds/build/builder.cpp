@@ -153,9 +153,9 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
             }
-            if (lib.has_generated_headers()) {
-                lib_reqs.include_paths.push_back(out_root / "__dds/gen"
-                                                 / lib.output_subdirectory());
+            auto gen_incdir_opt = lib.generated_include_dir();
+            if (gen_incdir_opt) {
+                lib_reqs.include_paths.push_back(out_root / *gen_incdir_opt);
             }
         }
     }

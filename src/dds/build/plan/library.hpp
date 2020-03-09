@@ -128,9 +128,11 @@ public:
      */
     auto& links() const noexcept { return _lib.manifest().links; }
     /**
-     * Return `true` if this object has generated header files
+     * The path to the directory that should be added for the #include search
+     * path for this library, relative to the build root. Returns `nullopt` if
+     * this library has no generated headers.
      */
-    bool has_generated_headers() const noexcept { return !templates().empty(); }
+    std::optional<fs::path> generated_include_dir() const noexcept;
 
     /**
      * Named constructor: Create a new `library_plan` automatically from some build-time parameters.

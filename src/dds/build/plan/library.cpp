@@ -7,8 +7,23 @@
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
+#include <string>
 
 using namespace dds;
+
+namespace {
+
+const std::string gen_dir_qual = "__dds/gen";
+
+fs::path rebase_gen_incdir(path_ref subdir) { return gen_dir_qual / subdir; }
+}  // namespace
+
+std::optional<fs::path> library_plan::generated_include_dir() const noexcept {
+    if (_templates.empty()) {
+        return std::nullopt;
+    }
+    return rebase_gen_incdir(output_subdirectory());
+}
 
 library_plan library_plan::create(const library_root&             lib,
                                   const library_build_params&     params,
@@ -48,8 +63,10 @@ library_plan library_plan::create(const library_root&             lib,
     compile_rules.enable_warnings() = params.enable_warnings;
     compile_rules.uses()            = lib.manifest().uses;
 
+    const auto codegen_subdir = rebase_gen_incdir(params.out_subdir);
+
     if (!template_sources.empty()) {
-        compile_rules.include_dirs().push_back("__dds/gen" / params.out_subdir);
+        compile_rules.include_dirs().push_back(codegen_subdir);
     }
 
     // Convert the library sources into their respective file compilation plans.
@@ -113,7 +130,7 @@ library_plan library_plan::create(const library_root&             lib,
 
     std::vector<render_template_plan> render_templates;
     for (const auto& sf : template_sources) {
-        render_templates.emplace_back(sf, "__dds/gen" / params.out_subdir);
+        render_templates.emplace_back(sf, codegen_subdir);
     }
 
     // Done!
