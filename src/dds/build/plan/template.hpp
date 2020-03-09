@@ -7,6 +7,8 @@
 
 namespace dds {
 
+class library_root;
+
 class render_template_plan {
     /**
      * The source file that defines the config template
@@ -30,7 +32,7 @@ public:
     /**
      * Render the template into its output directory
      */
-    void render(build_env_ref) const;
+    void render(build_env_ref, const library_root& owning_library) const;
 };
 
 }  // namespace dds

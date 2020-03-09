@@ -43,6 +43,8 @@ enum class errc {
 
     invalid_lib_filesystem,
     invalid_pkg_filesystem,
+
+    template_error,
 };
 
 std::string      error_reference_of(errc) noexcept;

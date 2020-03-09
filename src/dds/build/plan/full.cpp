@@ -7,7 +7,9 @@
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>
+#include <range/v3/view/repeat.hpp>
 #include <range/v3/view/transform.hpp>
+#include <range/v3/view/zip.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -72,16 +74,22 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
     return exceptions.empty();
 }
 
+template <typename T, typename Range>
+decltype(auto) pair_up(T& left, Range& right) {
+    auto rep = ranges::view::repeat(left);
+    return ranges::view::zip(rep, right);
+}
+
 }  // namespace
 
 void build_plan::render_all(build_env_ref env) const {
-    auto templates = _packages                               //
-        | ranges::view::transform(&package_plan::libraries)  //
-        | ranges::view::join                                 //
-        | ranges::view::transform(&library_plan::templates)  //
+    auto templates = _packages                                                                    //
+        | ranges::view::transform(&package_plan::libraries)                                       //
+        | ranges::view::join                                                                      //
+        | ranges::view::transform([](const auto& lib) { return pair_up(lib, lib.templates()); })  //
         | ranges::view::join;
-    for (const render_template_plan& tmpl : templates) {
-        tmpl.render(env);
+    for (const auto& [lib, tmpl] : templates) {
+        tmpl.render(env, lib.library_());
     }
 }
 

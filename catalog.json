@@ -1,5 +1,16 @@
 {
   "packages": {
+    "ctre": {
+      "2.7.0": {
+        "depends": {},
+        "description": "A compile-time PCRE (almost) compatible regular expression matcher",
+        "git": {
+          "auto-lib": "hanickadot/ctre",
+          "ref": "v2.7",
+          "url": "https://github.com/hanickadot/compile-time-regular-expressions.git"
+        }
+      }
+    },
     "fmt": {
       "0.10.0": {
         "depends": {},

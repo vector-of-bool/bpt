@@ -10,3 +10,4 @@ Uses: semver/semver
 Uses: vob/semester
 Uses: pubgrub/pubgrub
 Uses: vob/json5
+Uses: hanickadot/ctre
