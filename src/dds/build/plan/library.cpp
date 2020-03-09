@@ -86,8 +86,7 @@ library_plan library_plan::create(const library_root&             lib,
         // Pick a subdir based on app/test
         const auto subdir_base = is_test ? params.out_subdir / "test" : params.out_subdir;
         // Put test/app executables in a further subdirectory based on the source file path
-        const auto subdir
-            = subdir_base / fs::relative(source.path.parent_path(), lib.src_source_root().path);
+        const auto subdir = subdir_base / source.relative_path().parent_path();
         // Pick compile rules based on app/test
         auto rules = is_test ? test_rules : compile_rules;
         // Pick input libs based on app/test
