@@ -74,6 +74,17 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
 
 }  // namespace
 
+void build_plan::render_all(build_env_ref env) const {
+    auto templates = _packages                               //
+        | ranges::view::transform(&package_plan::libraries)  //
+        | ranges::view::join                                 //
+        | ranges::view::transform(&library_plan::templates)  //
+        | ranges::view::join;
+    for (const render_template_plan& tmpl : templates) {
+        tmpl.render(env);
+    }
+}
+
 void build_plan::compile_all(const build_env& env, int njobs) const {
     auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
     if (!okay) {

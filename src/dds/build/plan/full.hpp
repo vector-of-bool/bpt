@@ -29,6 +29,10 @@ public:
      */
     auto& packages() const noexcept { return _packages; }
     /**
+     * Render all config templates in the plan.
+     */
+    void render_all(const build_env& env) const;
+    /**
      * Compile all files in the plan.
      */
     void compile_all(const build_env& env, int njobs) const;

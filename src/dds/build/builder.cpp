@@ -153,6 +153,10 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
             }
+            if (lib.has_generated_headers()) {
+                lib_reqs.include_paths.push_back(out_root / "__dds/gen"
+                                                 / lib.output_subdirectory());
+            }
         }
     }
     return ureqs;
@@ -224,6 +228,8 @@ void builder::build(const build_params& params) const {
     if (params.generate_compdb) {
         generate_compdb(plan, env);
     }
+
+    plan.render_all(env);
 
     dds::stopwatch sw;
     plan.compile_all(env, params.parallel_jobs);
