@@ -7,7 +7,9 @@
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>
+#include <range/v3/view/repeat.hpp>
 #include <range/v3/view/transform.hpp>
+#include <range/v3/view/zip.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -72,7 +74,24 @@ bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
     return exceptions.empty();
 }
 
+template <typename T, typename Range>
+decltype(auto) pair_up(T& left, Range& right) {
+    auto rep = ranges::view::repeat(left);
+    return ranges::view::zip(rep, right);
+}
+
 }  // namespace
+
+void build_plan::render_all(build_env_ref env) const {
+    auto templates = _packages                                                                    //
+        | ranges::view::transform(&package_plan::libraries)                                       //
+        | ranges::view::join                                                                      //
+        | ranges::view::transform([](const auto& lib) { return pair_up(lib, lib.templates()); })  //
+        | ranges::view::join;
+    for (const auto& [lib, tmpl] : templates) {
+        tmpl.render(env, lib.library_());
+    }
+}
 
 void build_plan::compile_all(const build_env& env, int njobs) const {
     auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
@@ -83,8 +102,8 @@ void build_plan::compile_all(const build_env& env, int njobs) const {
 
 void build_plan::archive_all(const build_env& env, int njobs) const {
     auto okay = parallel_run(iter_libraries(*this), njobs, [&](const library_plan& lib) {
-        if (lib.create_archive()) {
-            lib.create_archive()->archive(env);
+        if (lib.archive_plan()) {
+            lib.archive_plan()->archive(env);
         }
     });
     if (!okay) {

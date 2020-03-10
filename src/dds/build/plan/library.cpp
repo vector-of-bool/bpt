@@ -7,8 +7,23 @@
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
+#include <string>
 
 using namespace dds;
+
+namespace {
+
+const std::string gen_dir_qual = "__dds/gen";
+
+fs::path rebase_gen_incdir(path_ref subdir) { return gen_dir_qual / subdir; }
+}  // namespace
+
+std::optional<fs::path> library_plan::generated_include_dir() const noexcept {
+    if (_templates.empty()) {
+        return std::nullopt;
+    }
+    return rebase_gen_incdir(output_subdirectory());
+}
 
 library_plan library_plan::create(const library_root&             lib,
                                   const library_build_params&     params,
@@ -17,6 +32,7 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
+    std::vector<source_file> template_sources;
 
     auto qual_name = std::string(qual_name_.value_or(lib.manifest().name));
 
@@ -34,6 +50,8 @@ library_plan library_plan::create(const library_root&             lib,
                 app_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::source) {
                 lib_sources.push_back(sfile);
+            } else if (sfile.kind == source_kind::header_template) {
+                template_sources.push_back(sfile);
             } else {
                 assert(sfile.kind == source_kind::header);
             }
@@ -45,6 +63,12 @@ library_plan library_plan::create(const library_root&             lib,
     compile_rules.enable_warnings() = params.enable_warnings;
     compile_rules.uses()            = lib.manifest().uses;
 
+    const auto codegen_subdir = rebase_gen_incdir(params.out_subdir);
+
+    if (!template_sources.empty()) {
+        compile_rules.include_dirs().push_back(codegen_subdir);
+    }
+
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
         lib_sources           //
@@ -55,12 +79,12 @@ library_plan library_plan::create(const library_root&             lib,
 
     // If we have any compiled library files, generate a static library archive
     // for this library
-    std::optional<create_archive_plan> create_archive;
+    std::optional<create_archive_plan> archive_plan;
     if (!lib_compile_files.empty()) {
-        create_archive.emplace(lib.manifest().name,
-                               qual_name,
-                               params.out_subdir,
-                               std::move(lib_compile_files));
+        archive_plan.emplace(lib.manifest().name,
+                             qual_name,
+                             params.out_subdir,
+                             std::move(lib_compile_files));
     }
 
     // Collect the paths to linker inputs that should be used when generating executables for this
@@ -86,8 +110,7 @@ library_plan library_plan::create(const library_root&             lib,
         // Pick a subdir based on app/test
         const auto subdir_base = is_test ? params.out_subdir / "test" : params.out_subdir;
         // Put test/app executables in a further subdirectory based on the source file path
-        const auto subdir
-            = subdir_base / fs::relative(source.path.parent_path(), lib.src_source_root().path);
+        const auto subdir = subdir_base / source.relative_path().parent_path();
         // Pick compile rules based on app/test
         auto rules = is_test ? test_rules : compile_rules;
         // Pick input libs based on app/test
@@ -105,6 +128,16 @@ library_plan library_plan::create(const library_root&             lib,
         link_executables.emplace_back(std::move(exe));
     }
 
+    std::vector<render_template_plan> render_templates;
+    for (const auto& sf : template_sources) {
+        render_templates.emplace_back(sf, codegen_subdir);
+    }
+
     // Done!
-    return library_plan{lib, qual_name, std::move(create_archive), std::move(link_executables)};
+    return library_plan{lib,
+                        qual_name,
+                        params.out_subdir,
+                        std::move(archive_plan),
+                        std::move(link_executables),
+                        std::move(render_templates)};
 }

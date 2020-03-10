@@ -167,6 +167,17 @@ packages = [
                 'neo-concepts': '^0.2.1',
             }),
     ]),
+    Package('ctre', [
+        Version(
+            '2.7.0',
+            description=
+            'A compile-time PCRE (almost) compatible regular expression matcher',
+            remote=Git(
+                'https://github.com/hanickadot/compile-time-regular-expressions.git',
+                'v2.7',
+                auto_lib='hanickadot/ctre',
+            ))
+    ]),
     many_versions(
         'spdlog',
         (

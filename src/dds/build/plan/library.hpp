@@ -2,6 +2,7 @@
 
 #include <dds/build/plan/archive.hpp>
 #include <dds/build/plan/exe.hpp>
+#include <dds/build/plan/template.hpp>
 #include <dds/library/root.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs.hpp>
@@ -56,10 +57,14 @@ class library_plan {
     library_root _lib;
     /// The qualified name of the library
     std::string _qual_name;
+    /// The library's subdirectory within the output directory
+    fs::path _subdir;
     /// The `create_archive_plan` for this library, if applicable
     std::optional<create_archive_plan> _create_archive;
     /// The executables that should be linked as part of this library's build
     std::vector<link_executable_plan> _link_exes;
+    /// The templates that must be rendered for this library
+    std::vector<render_template_plan> _templates;
 
 public:
     /**
@@ -70,12 +75,16 @@ public:
      */
     library_plan(library_root                       lib,
                  std::string_view                   qual_name,
+                 fs::path                           subdir,
                  std::optional<create_archive_plan> ar,
-                 std::vector<link_executable_plan>  exes)
+                 std::vector<link_executable_plan>  exes,
+                 std::vector<render_template_plan>  tmpls)
         : _lib(std::move(lib))
         , _qual_name(qual_name)
+        , _subdir(std::move(subdir))
         , _create_archive(std::move(ar))
-        , _link_exes(std::move(exes)) {}
+        , _link_exes(std::move(exes))
+        , _templates(std::move(tmpls)) {}
 
     /**
      * Get the underlying library object
@@ -90,6 +99,10 @@ public:
      */
     auto& qualified_name() const noexcept { return _qual_name; }
     /**
+     * The output subdirectory of this library plan
+     */
+    path_ref output_subdirectory() const noexcept { return _subdir; }
+    /**
      * The directory that defines the source root of the library.
      */
     path_ref source_root() const noexcept { return _lib.path(); }
@@ -97,7 +110,11 @@ public:
      * A `create_archive_plan` object, or `nullopt`, depending on if this library has compiled
      * components
      */
-    auto& create_archive() const noexcept { return _create_archive; }
+    auto& archive_plan() const noexcept { return _create_archive; }
+    /**
+     * The template rendering plans for this library.
+     */
+    auto& templates() const noexcept { return _templates; }
     /**
      * The executables that should be created by this library
      */
@@ -110,6 +127,12 @@ public:
      * The library identifiers that are linked by this library
      */
     auto& links() const noexcept { return _lib.manifest().links; }
+    /**
+     * The path to the directory that should be added for the #include search
+     * path for this library, relative to the build root. Returns `nullopt` if
+     * this library has no generated headers.
+     */
+    std::optional<fs::path> generated_include_dir() const noexcept;
 
     /**
      * Named constructor: Create a new `library_plan` automatically from some build-time parameters.

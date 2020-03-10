@@ -12,5 +12,6 @@
         "pubgrub/pubgrub",
         "vob/json5",
         "vob/semester",
+        "hanickadot/ctre",
     ]
 }

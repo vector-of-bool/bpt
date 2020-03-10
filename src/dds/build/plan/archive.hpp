@@ -58,7 +58,7 @@ public:
     /**
      * Get the compilation plans for this library.
      */
-    auto& compile_files() const noexcept { return _compile_files; }
+    auto& file_compilations() const noexcept { return _compile_files; }
 
     /**
      * Perform the actual archive generation. Expects all compilations to have
