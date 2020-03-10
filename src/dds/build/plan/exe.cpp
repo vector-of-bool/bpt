@@ -43,7 +43,7 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     std::reverse(spec.inputs.begin(), spec.inputs.end());
 
     // Do it!
-    const auto link_command = env.toolchain.create_link_executable_command(spec);
+    const auto link_command = env.toolchain.create_link_executable_command(spec, env.knobs);
     fs::create_directories(spec.output.parent_path());
     auto msg = fmt::format("[{}] Link: {:30}",
                            lib.qualified_name(),

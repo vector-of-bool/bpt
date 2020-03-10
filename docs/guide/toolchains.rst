@@ -353,6 +353,14 @@ of an external library.
 Override the *command template* for the flags to set a preprocessor definition.
 
 
+``tty_flags``
+-------------
+
+Supply additional flags when compiling/linking that will only be applied if
+standard output is an ANSI-capable terminal. (e.g. On GNU and Clang this will
+be ``-fdiagnostics-color`` by default.)
+
+
 ``obj_prefix``, ``obj_suffix``, ``archive_prefix``, ``archive_suffix``,
 ``exe_prefix``, and ``exe_suffix``
 ----------------------------------

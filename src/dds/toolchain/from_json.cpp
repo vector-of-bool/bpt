@@ -80,6 +80,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string_seq cxx_compile_file;
     opt_string_seq create_archive;
     opt_string_seq link_executable;
+    opt_string_seq tty_flags;
 
     // For copy-pasting convenience: ‘{}’
 
@@ -150,6 +151,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                         KEY_EXTEND_FLAGS(cxx_compile_file),
                         KEY_EXTEND_FLAGS(create_archive),
                         KEY_EXTEND_FLAGS(link_executable),
+                        KEY_EXTEND_FLAGS(tty_flags),
                         KEY_STRING(obj_prefix),
                         KEY_STRING(obj_suffix),
                         KEY_STRING(archive_prefix),
@@ -174,6 +176,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                         "archive_suffix",
                                                         "exe_prefix",
                                                         "exe_suffix",
+                                                        "tty_flags",
                                                     });
                             fail(context,
                                  "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
@@ -450,14 +453,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             if (do_debug.has_value() && *do_debug) {
                 extend(ret, {"-g"});
             }
-            extend(ret,
-                   {"-fPIC",
-                    "-fdiagnostics-color",
-                    "-pthread",
-                    "<FLAGS>",
-                    "-c",
-                    "<IN>",
-                    "-o<OUT>"});
+            extend(ret, {"-fPIC", "-pthread", "<FLAGS>", "-c", "<IN>", "-o<OUT>"});
         }
         if (common_flags) {
             extend(ret, *common_flags);
@@ -619,7 +615,6 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         } else if (is_gnu_like) {
             ret = {get_compiler_executable_path(language::cxx),
                    "-fPIC",
-                   "-fdiagnostics-color",
                    "<IN>",
                    "-pthread",
                    "-o<OUT>"};
@@ -629,6 +624,23 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         }
         extend(ret, get_link_flags());
         return ret;
+    });
+
+    tc.tty_flags = read_opt(tty_flags, [&]() -> string_seq {
+        if (!compiler_id) {
+            // Don't deduce any flags. This is a non-error, as these flags should be purely
+            // aesthetic
+            return {};
+        }
+        if (is_msvc) {
+            // MSVC doesn't have any special TTY flags (yet...)
+            return {};
+        } else if (is_gnu_like) {
+            return {"-fdiagnostics-color"};
+        } else {
+            assert(false && "Impossible compiler_id while deducing `tty_flags`");
+            std::terminate();
+        }
     });
 
     return tc.realize();

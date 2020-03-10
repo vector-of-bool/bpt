@@ -36,6 +36,7 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
     ret._exe_prefix          = prep.exe_prefix;
     ret._exe_suffix          = prep.exe_suffix;
     ret._deps_mode           = prep.deps_mode;
+    ret._tty_flags           = prep.tty_flags;
     return ret;
 }
 
@@ -51,10 +52,8 @@ vector<string> toolchain::definition_args(std::string_view s) const noexcept {
     return replace(_def_template, "<DEF>", s);
 }
 
-compile_command_info
-toolchain::create_compile_command(const compile_file_spec& spec) const noexcept {
-    vector<string> flags;
-
+compile_command_info toolchain::create_compile_command(const compile_file_spec& spec,
+                                                       toolchain_knobs knobs) const noexcept {
     using namespace std::literals;
 
     language lang = spec.lang;
@@ -66,7 +65,10 @@ toolchain::create_compile_command(const compile_file_spec& spec) const noexcept 
         }
     }
 
-    auto& cmd_template = lang == language::c ? _c_compile : _cxx_compile;
+    vector<string> flags;
+    if (knobs.is_tty) {
+        extend(flags, _tty_flags);
+    }
 
     for (auto&& inc_dir : spec.include_dirs) {
         auto inc_args = include_args(inc_dir);
@@ -103,6 +105,7 @@ toolchain::create_compile_command(const compile_file_spec& spec) const noexcept 
     }
 
     vector<string> command;
+    auto&          cmd_template = lang == language::c ? _c_compile : _cxx_compile;
     for (auto arg : cmd_template) {
         if (arg == "<FLAGS>") {
             extend(command, flags);
@@ -115,7 +118,8 @@ toolchain::create_compile_command(const compile_file_spec& spec) const noexcept 
     return {command, gnu_depfile_path};
 }
 
-vector<string> toolchain::create_archive_command(const archive_spec& spec) const noexcept {
+vector<string> toolchain::create_archive_command(const archive_spec& spec,
+                                                 toolchain_knobs) const noexcept {
     vector<string> cmd;
     for (auto& arg : _link_archive) {
         if (arg == "<IN>") {
@@ -130,7 +134,8 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec) const
     return cmd;
 }
 
-vector<string> toolchain::create_link_executable_command(const link_exe_spec& spec) const noexcept {
+vector<string> toolchain::create_link_executable_command(const link_exe_spec& spec,
+                                                         toolchain_knobs) const noexcept {
     vector<string> cmd;
     for (auto& arg : _link_exe) {
         if (arg == "<IN>") {

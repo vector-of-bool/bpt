@@ -26,7 +26,7 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
         extend(spec.external_include_dirs, env.ureqs.include_paths(use));
     }
     extend(spec.definitions, _rules.defs());
-    return env.toolchain.create_compile_command(spec);
+    return env.toolchain.create_compile_command(spec, env.knobs);
 }
 
 fs::path compile_file_plan::calc_object_file_path(const build_env& env) const noexcept {

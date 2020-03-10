@@ -1,10 +1,9 @@
 Compiler-ID: GNU
-C++-Version: C++17
 C-Compiler: gcc-9
 C++-Compiler: g++-9
 # Range-v3 0.10.0 contains an accidental conversion warning
-Flags: -D SPDLOG_COMPILED_LIB -Werror=return-type -Wno-conversion
-C++-Flags: -fconcepts
+Flags: -D SPDLOG_COMPILED_LIB -Werror=return-type -Wno-sign-compare -Wno-conversion
+C++-Flags: -fconcepts -std=c++2a
 # Link-Flags: -static-libgcc -static-libstdc++
 Debug: True
 #Optimize: True
