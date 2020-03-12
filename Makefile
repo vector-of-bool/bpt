@@ -21,7 +21,8 @@ docs-server: docs
 docs-watch: docs
 	+sh tools/docs-watch.sh
 
-docs-sync-server: docs
+docs-sync-server:
+	mkdir -p _build/docs
 	cd _build/docs && \
 	browser-sync start --server \
 		--reload-delay 300 \

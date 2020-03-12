@@ -445,7 +445,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             if (lang == language::cxx) {
                 extend(ret, {"/EHsc"});
             }
-            extend(ret, {"/nologo", "/permissive-", "<FLAGS>", "/c", "<IN>", "/Fo<OUT>"});
+            extend(ret, {"/nologo", "/permissive-", "[flags]", "/c", "[in]", "/Fo[out]"});
         } else if (is_gnu_like) {
             if (do_optimize.has_value() && *do_optimize) {
                 extend(ret, {"-O2"});
@@ -453,7 +453,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             if (do_debug.has_value() && *do_debug) {
                 extend(ret, {"-g"});
             }
-            extend(ret, {"-fPIC", "-pthread", "<FLAGS>", "-c", "<IN>", "-o<OUT>"});
+            extend(ret, {"-fPIC", "-pthread", "[flags]", "-c", "[in]", "-o[out]"});
         }
         if (common_flags) {
             extend(ret, *common_flags);
@@ -500,9 +500,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             fail(context, "Cannot deduce 'include_template' without 'compiler_id'");
         }
         if (is_gnu_like) {
-            return {"-I", "<PATH>"};
+            return {"-I", "[path]"};
         } else if (is_msvc) {
-            return {"/I", "<PATH>"};
+            return {"/I", "[path]"};
         }
         assert(false && "'include_template' deduction failed");
         std::terminate();
@@ -514,10 +514,10 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             return tc.include_template;
         }
         if (is_gnu_like) {
-            return {"-isystem", "<PATH>"};
+            return {"-isystem", "[path]"};
         } else if (is_msvc) {
             // MSVC has external-header support inbound, but it is not fully ready yet
-            return {"/I", "<PATH>"};
+            return {"/I", "[path]"};
         }
         assert(false && "external_include_template deduction failed");
         std::terminate();
@@ -528,9 +528,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             fail(context, "Cannot deduce 'define_template' without 'compiler_id'");
         }
         if (is_gnu_like) {
-            return {"-D", "<DEF>"};
+            return {"-D", "[def]"};
         } else if (is_msvc) {
-            return {"/D", "<DEF>"};
+            return {"/D", "[def]"};
         }
         assert(false && "define_template deduction failed");
         std::terminate();
@@ -593,9 +593,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             fail(context, "Unable to deduce archive creation rules without a 'compiler_id'");
         }
         if (is_msvc) {
-            return {"lib", "/nologo", "/OUT:<OUT>", "<IN>"};
+            return {"lib", "/nologo", "/OUT:[out]", "[in]"};
         } else if (is_gnu_like) {
-            return {"ar", "rcs", "<OUT>", "<IN>"};
+            return {"ar", "rcs", "[out]", "[in]"};
         }
         assert(false && "No archive command");
         std::terminate();
@@ -610,14 +610,14 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             ret = {get_compiler_executable_path(language::cxx),
                    "/nologo",
                    "/EHsc",
-                   "<IN>",
-                   "/Fe<OUT>"};
+                   "[in]",
+                   "/Fe[out]"};
         } else if (is_gnu_like) {
             ret = {get_compiler_executable_path(language::cxx),
                    "-fPIC",
-                   "<IN>",
+                   "[in]",
                    "-pthread",
-                   "-o<OUT>"};
+                   "-o[out]"};
         } else {
             assert(false && "No link-exe command");
             std::terminate();

@@ -155,7 +155,7 @@ specify them with additional options:
 will use the provided executable names when compiling files for the respective
 languages.
 
-To specify compilation flags, the ``Flags`` option can be used:
+To specify compilation flags, the ``flags`` option can be used:
 
 .. code-block::
 
@@ -165,7 +165,7 @@ To specify compilation flags, the ``Flags`` option can be used:
     }
 
 .. note::
-    Use ``Warning-Flags`` to specify options regarding compiler warnings.
+    Use ``warning_flags`` to specify options regarding compiler warnings.
 
 Flags for linking executables can be specified with ``link_flags``:
 
@@ -182,7 +182,33 @@ Flags for linking executables can be specified with ``link_flags``:
 Toolchain Option Reference
 **************************
 
-The following options are available to be specified within a toolchain file:
+
+Understanding Flags and Shell Parsing
+-------------------------------------
+
+Many of the ``dds`` toolchain parameters accept argument lists or shell-string
+lists. If such an option is given a single string, then that string is split
+using the syntax of a POSIX shell command parser. It accepts both single ``'``
+and double ``"`` quote characters as argument delimiters.
+
+If an option is given a list of strings instead, then each string in that
+array is treated as a full command line argument and is passed as such.
+
+For example, this sample with ``flags``::
+
+    {
+        flags: "-fsanitize=address -fPIC"
+    }
+
+is equivalent to this one::
+
+    {
+        flags: ["-fsanitize=address", "-fPIC"]
+    }
+
+Despite splitting strings as-if they were shell commands, ``dds`` does nothing
+else shell-like. It does not expand environment variables, nor does it expand
+globs.
 
 
 ``compiler_id``
@@ -216,7 +242,8 @@ from ``compiler_id``.
 
 Specify the language versions for C and C++, respectively. By default, ``dds``
 will not set any language version. Using this option requires that the
-``compiler_id`` be specified.
+``compiler_id`` be specified. Setting this value will cause the corresponding
+language-version flag to be passed to the compiler.
 
 Valid ``c_version`` values are:
 
@@ -253,6 +280,9 @@ separately depending on how ``dds`` is invoked.
     common warning levels.
 
     If you need to tweak warnings further, use this option.
+
+On GNU-like compilers, the default flags are ``-Wall -Wextra -Wpedantic
+-Wconversion``. On MSVC the default flag is ``/W4``.
 
 
 ``flags``, ``c_flags``, and ``cxx_flags``
@@ -302,23 +332,58 @@ The options below are probably not good to tweak unless you *really* know what
 you are doing. Their values will be inferred from ``compiler_id``.
 
 
+Command Templates
+-----------------
+
+Many of the below options take the form of command-line templates. These are
+templates from which ``dds`` will create a command-line for a subprocess,
+possibly by combining them together.
+
+Each command template allows some set of placeholders. Each instance of the
+placeholder string will be replaced in the final command line. Refer to each
+respective option for more information.
+
+
 ``deps_mode``
 -------------
 
 Specify the way in which ``dds`` should track compilation dependencies. One
 of ``gnu``, ``msvc``, or ``none``.
 
+.. note::
+    If ``none``, then dependency tracking will be disabled entirely. This will
+    prevent ``dds`` from tracking interdependencies of source files, and
+    inhibits incremental compilation.
 
-``c_compile_file``
-------------------
 
-Override the *command template* that is used to compile C source files.
+``c_compile_file`` and ``cxx_compile_file``
+-------------------------------------------
 
+Override the *command template* that is used to compile source files.
 
-``cxx_compile_file``
---------------------
+This template expects three placeholders:
 
-Override the *command template* that is used to compile C++ source files.
+- ``[in]`` is the path to the file that will be compiled.
+- ``[out]`` is the path to the object file that will be generated.
+- ``[flags]`` is the placeholder of the compilation flags. This placeholder
+  must not be attached to any other arguments. The compilation flag argument
+  list will be inserted in place of ``[flags]``.
+
+Defaults::
+
+    {
+        // On GNU-like compilers (GCC, Clang):
+        c_compile_file:   "<compiler> -fPIC -pthread [flags] -c [in] -o[out]",
+        cxx_compile_file: "<compiler> -fPIC -pthread [flags] -c [in] -o[out]",
+        // When `optimize` is enabled, `-O2` is added as a flag
+        // When `debug` is enabled, `-g` is added as a flag
+
+        // On MSVC:
+        c_compile_file:   "cl.exe /MT /nologo /permissive- [flags] /c [in] /Fo[out]",
+        cxx_compile_file: "cl.exe /MT /EHsc /nologo /permissive- [flags] /c [in] /Fo[out]",
+        // When `optimize` is enabled, `/O2` is added as a flag
+        // When `debug` is enabled, `/Z7` and `/DEBUG` are added, and `/MT` becomes `/MTd`
+    }
 
 
 ``create_archive``
@@ -327,24 +392,59 @@ Override the *command template* that is used to compile C++ source files.
 Override the *command template* that is used to generate static library archive
 files.
 
+This template expects three placeholders:
+
+- ``[in]`` is the a placeholder for the list of inputs. It must not be attached
+  to any other arguments. The list of input paths will be inserted in place of
+  ``[in]``.
+- ``[out]`` is the placeholder for the output path for the static library
+  archive.
+
+Defaults::
+
+    {
+        // On GNU-like:
+        create_archive: "ar rcs [out] [in]",
+        // On MSVC:
+        create_archive: "lib /nologo /OUT:[out] [in]",
+    }
+
 
 ``link_executable``
 -------------------
 
 Override the *command template* that is used to link executables.
 
+This template expects the same placeholders as ``create_archive``, but
+``[out]`` is a placeholder for the executable file rather than a static
+library.
 
-``include_template``
---------------------
+Defaults::
+
+    {
+        // For GNU-like:
+        link_executable: "<compiler> -fPIC [in] -pthread -o[out] [flags]",
+        // For MSVC:
+        link_executable: "cl.exe /nologo /EHsc [in] /Fe[out]",
+    }
+
+
+``include_template`` and ``external_include_template``
+------------------------------------------------------
 
 Override the *command template* for the flags to specify a header search path.
+``external_include_template`` will be used to specify the include search path
+for a directory that is "external" (i.e. does not live within the main project).
 
+For each directory added to the ``#include`` search path, this argument
+template is instantiated in the ``[flags]`` for the compilation.
 
-``external_include_template``
------------------------------
+This template expects only a single placeholder: ``[path]``, which will be
+replaced with the path to the directory to be added to the search path.
 
-Override the *command template* for the flags to specify a header search path
-of an external library.
+On MSVC, this defaults to ``/I [path]``. On GNU-like, ``-isystem [path]`` is
+used for ``external_include_template`` and ``-I [path]`` for
+``include_template``.
 
 
 ``define_template``
@@ -352,13 +452,20 @@ of an external library.
 
 Override the *command template* for the flags to set a preprocessor definition.
 
+This template expects only a single placeholder: ``[def]``, which is the
+preprocessor macro definition argument.
+
+On MSVC, this defaults to ``/D [def]``. On GNU-like compilers, this is
+``-D [def]``.
+
 
 ``tty_flags``
 -------------
 
 Supply additional flags when compiling/linking that will only be applied if
-standard output is an ANSI-capable terminal. (e.g. On GNU and Clang this will
-be ``-fdiagnostics-color`` by default.)
+standard output is an ANSI-capable terminal.
+
+On GNU and Clang this will be ``-fdiagnostics-color`` by default.
 
 
 ``obj_prefix``, ``obj_suffix``, ``archive_prefix``, ``archive_suffix``,
