@@ -3,13 +3,14 @@
     "compiler_id": "gnu",
     "c_compiler": "gcc-9",
     "cxx_compiler": "g++-9",
-    "cxx_version": "c++17",
+    // "cxx_version": "c++17",
     "flags": [
         "-DSPDLOG_COMPILED_LIB", // Required to use a compiled spdlog
-        "-Werror=return-type"
+        "-Werror=return-type",
     ],
     "cxx_flags": [
-        "-fconcepts"
+        "-fconcepts",
+        "-std=c++2a",
     ],
     // "debug": true,
     "optimize": true,

@@ -6,6 +6,7 @@
 #include <dds/compdb.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
+#include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
 
 #include <spdlog/spdlog.h>
@@ -214,7 +215,15 @@ void builder::build(const build_params& params) const {
     state     st;
     auto      plan  = prepare_build_plan(st, _sdists);
     auto      ureqs = prepare_ureqs(plan, params.toolchain, params.out_root);
-    build_env env{params.toolchain, params.out_root, db, ureqs};
+    build_env env{
+        params.toolchain,
+        params.out_root,
+        db,
+        toolchain_knobs{
+            .is_tty = stdout_is_a_tty(),
+        },
+        ureqs,
+    };
 
     if (st.generate_catch2_main) {
         auto catch_lib                  = prepare_test_driver(params, test_lib::catch_main, env);

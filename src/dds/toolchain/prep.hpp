@@ -19,6 +19,7 @@ struct toolchain_prep {
     string_seq link_archive;
     string_seq link_exe;
     string_seq warning_flags;
+    string_seq tty_flags;
 
     std::string archive_prefix;
     std::string archive_suffix;

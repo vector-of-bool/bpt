@@ -153,6 +153,10 @@
                     "description": "Set the command template for linking executable binaries",
                     "$ref": "#/definitions/command_line_flags"
                 },
+                "tty_flags": {
+                    "description": "Set command line flags that will be applied only if stdout is an ANSI-capable terminal",
+                    "$ref": "#/definitions/command_line_flags"
+                },
                 "obj_prefix": {
                     "description": "Set the filename prefix for object files",
                     "type": "string"
