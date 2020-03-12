@@ -41,15 +41,15 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
 }
 
 vector<string> toolchain::include_args(const fs::path& p) const noexcept {
-    return replace(_inc_template, "<PATH>", p.string());
+    return replace(_inc_template, "[path]", p.string());
 }
 
 vector<string> toolchain::external_include_args(const fs::path& p) const noexcept {
-    return replace(_extern_inc_template, "<PATH>", p.string());
+    return replace(_extern_inc_template, "[path]", p.string());
 }
 
 vector<string> toolchain::definition_args(std::string_view s) const noexcept {
-    return replace(_def_template, "<DEF>", s);
+    return replace(_def_template, "[def]", s);
 }
 
 compile_command_info toolchain::create_compile_command(const compile_file_spec& spec,
@@ -107,11 +107,11 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
     vector<string> command;
     auto&          cmd_template = lang == language::c ? _c_compile : _cxx_compile;
     for (auto arg : cmd_template) {
-        if (arg == "<FLAGS>") {
+        if (arg == "[flags]") {
             extend(command, flags);
         } else {
-            arg = replace(arg, "<IN>", spec.source_path.string());
-            arg = replace(arg, "<OUT>", spec.out_path.string());
+            arg = replace(arg, "[in]", spec.source_path.string());
+            arg = replace(arg, "[out]", spec.out_path.string());
             command.push_back(arg);
         }
     }
@@ -122,13 +122,13 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec,
                                                  toolchain_knobs) const noexcept {
     vector<string> cmd;
     for (auto& arg : _link_archive) {
-        if (arg == "<IN>") {
+        if (arg == "[in]") {
             std::transform(spec.input_files.begin(),
                            spec.input_files.end(),
                            std::back_inserter(cmd),
                            [](auto&& p) { return p.string(); });
         } else {
-            cmd.push_back(replace(arg, "<OUT>", spec.out_path.string()));
+            cmd.push_back(replace(arg, "[out]", spec.out_path.string()));
         }
     }
     return cmd;
@@ -138,13 +138,13 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
                                                          toolchain_knobs) const noexcept {
     vector<string> cmd;
     for (auto& arg : _link_exe) {
-        if (arg == "<IN>") {
+        if (arg == "[in]") {
             std::transform(spec.inputs.begin(),
                            spec.inputs.end(),
                            std::back_inserter(cmd),
                            [](auto&& p) { return p.string(); });
         } else {
-            cmd.push_back(replace(arg, "<OUT>", spec.output.string()));
+            cmd.push_back(replace(arg, "[out]", spec.output.string()));
         }
     }
     return cmd;
