@@ -1,22 +1,14 @@
 #include "./deps.hpp"
 
-#include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/repo/repo.hpp>
-#include <dds/source/dist.hpp>
-#include <dds/usage_reqs.hpp>
 #include <dds/util/string.hpp>
-#include <libman/index.hpp>
-#include <libman/parse.hpp>
 
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
+#include <json5/parse_data.hpp>
+#include <semester/decomp.hpp>
+
+#include <spdlog/fmt/fmt.h>
 
 #include <cctype>
-#include <map>
-#include <set>
-#include <sstream>
 
 using namespace dds;
 
@@ -42,20 +34,52 @@ dependency dependency::parse_depends_string(std::string_view str) {
 }
 
 dependency_manifest dependency_manifest::from_file(path_ref fpath) {
-    auto                kvs = lm::parse_file(fpath);
-    dependency_manifest ret;
-    lm::read(
-        fmt::format("Reading dependencies from '{}'", fpath.string()),
-        kvs,
-        [&](auto, auto key, auto val) {
-            if (key == "Depends") {
-                ret.dependencies.push_back(dependency::parse_depends_string(val));
-                return true;
-            }
-            return false;
-        },
-        lm_reject_dym{{"Depends"}});
-    return ret;
+    auto content = slurp_file(fpath);
+    auto data    = json5::parse_data(content);
+
+    dependency_manifest depman;
+    using namespace semester::decompose_ops;
+    auto res = semester::decompose(
+        data,
+        try_seq{
+            require_type<json5::data::mapping_type>{
+                "The root of a dependency manifest must be an object (mapping)"},
+            mapping{
+                if_key{"$schema", just_accept},
+                if_key{"depends",
+                       require_type<json5::data::mapping_type>{
+                           "`depends` must be a mapping between package names and version ranges"},
+                       mapping{[&](auto pkg_name, const json5::data& range_str_) {
+                           if (!range_str_.is_string()) {
+                               throw_user_error<errc::invalid_pkg_manifest>(
+                                   "Issue in dependency manifest: Dependency for '{}' must be a "
+                                   "range string",
+                                   pkg_name);
+                           }
+                           try {
+                               auto rng = semver::range::parse_restricted(range_str_.as_string());
+                               dependency dep{std::string(pkg_name), {rng.low(), rng.high()}};
+                               depman.dependencies.push_back(std::move(dep));
+                           } catch (const semver::invalid_range&) {
+                               throw_user_error<errc::invalid_version_range_string>(
+                                   "Invalid version range string '{}' in dependency declaration "
+                                   "for '{}'",
+                                   range_str_.as_string(),
+                                   pkg_name);
+                           }
+                           return semester::dc_accept;
+                       }}},
+                [&](auto key, auto&&) {
+                    return semester::dc_reject_t{
+                        fmt::format("Unknown key `{}` in dependency manifest", key)};
+                }},
+        });
+    auto rej = std::get_if<semester::dc_reject_t>(&res);
+    if (rej) {
+        throw_user_error<errc::invalid_pkg_manifest>(rej->message);
+    }
+
+    return depman;
 }
 
 namespace {
