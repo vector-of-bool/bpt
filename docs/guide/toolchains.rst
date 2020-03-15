@@ -52,7 +52,7 @@ For convenience, ``dds`` includes several built-in toolchains that can be
 accessed in the ``--toolchain`` command-line option using a colon ``:``
 prefix::
 
-    $ dds build -T :gcc
+    $ dds build -t :gcc
 
 ``dds`` will treat the leading colon (``:``) as a name for a built-in
 toolchain (this means that a toolchain's filepath may not begin with a colon).
