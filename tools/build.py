@@ -31,7 +31,8 @@ def _generate_toolchain(cxx: str):
             C++-Version: C++17
             Debug: True
             Flags: {flags}
-            Link-Flags: {link_flags}'''
+            Link-Flags: {link_flags}
+            Compiler-Launcher: ccache'''
         print('Using generated toolchain file: ' + content)
         f.write(content.encode('utf-8'))
         f.close()
