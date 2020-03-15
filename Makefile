@@ -2,7 +2,7 @@
 
 .PHONY: \
 	docs docs-server docs-watch docs-sync-server nix-ci linux-ci macos-ci \
-	freebsd-ci
+	vagrant-freebsd-ci
 
 _invalid:
 	echo "Specify a target name to execute"
