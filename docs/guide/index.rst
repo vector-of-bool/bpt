@@ -12,3 +12,4 @@ User Guide
     repo
     catalog
     interdeps
+    cmake
