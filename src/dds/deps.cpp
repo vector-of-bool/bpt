@@ -9,6 +9,7 @@
 #include <spdlog/fmt/fmt.h>
 
 #include <cctype>
+#include <sstream>
 
 using namespace dds;
 
