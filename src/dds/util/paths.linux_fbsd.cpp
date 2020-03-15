@@ -1,4 +1,4 @@
-#ifdef __linux__
+#if __linux__ || __FreeBSD__
 
 #include "./paths.hpp"
 
