@@ -52,6 +52,7 @@ auto collect_pf_sources(path_ref path) {
 }  // namespace
 
 library_root library_root::from_directory(path_ref lib_dir) {
+    assert(lib_dir.is_absolute());
     auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
@@ -99,7 +100,7 @@ auto has_library_dirs
 std::vector<library_root> dds::collect_libraries(path_ref root) {
     std::vector<library_root> ret;
     if (has_library_dirs(root)) {
-        ret.emplace_back(library_root::from_directory(root));
+        ret.emplace_back(library_root::from_directory(fs::canonical(root)));
     }
 
     auto pf_libs_dir = root / "libs";
@@ -109,7 +110,7 @@ std::vector<library_root> dds::collect_libraries(path_ref root) {
                fs::directory_iterator(pf_libs_dir)            //
                    | ranges::views::filter(has_library_dirs)  //
                    | ranges::views::transform(
-                       [&](auto p) { return library_root::from_directory(p); }));
+                       [&](auto p) { return library_root::from_directory(fs::canonical(p)); }));
     }
     return ret;
 }
