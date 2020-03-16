@@ -50,3 +50,4 @@ vagrant-freebsd-ci:
 			-T2 tools/freebsd-gcc-9.jsonc \
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
+	vagrant halt
