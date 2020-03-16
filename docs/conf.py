@@ -9,7 +9,7 @@ author = 'vector-of-bool'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.1.0-alpha.2'
 
 # -- General configuration ---------------------------------------------------
 extensions = []
@@ -23,9 +23,5 @@ pygments_style = None
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'pyramid'
 html_theme_options = {}
-html_static_path = ['_static']
+html_static_path = []
 html_sidebars = {}
-
-
-def setup(app):
-    app.add_stylesheet('tweaks.css')
