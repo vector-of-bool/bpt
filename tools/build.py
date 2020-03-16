@@ -33,6 +33,8 @@ def main(argv: Sequence[str]) -> int:
     print(f'Using previously built DDS executable: {dds_exe}')
     if os.name == 'nt':
         tc_fpath = ROOT / 'tools/msvc.dds'
+    elif sys.platform.startswith('freebsd'):
+        tc_fpath = ROOT / 'tools/freebsd-gcc-9.dds'
     else:
         tc_fpath = ROOT / 'tools/gcc-9.dds'
 

@@ -3,4 +3,5 @@ __pycache__/
 .vscode/
 .mypy_cache/
 _prebuilt/
-.pytest_cache
+.pytest_cache/
+.vagrant/

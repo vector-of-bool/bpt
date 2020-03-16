@@ -17,7 +17,7 @@ jobs:
       - publish: _build/dds.exe
         artifact: DDS Executable - Windows VS2019
 
-  - job: Linux_GCC8
+  - job: Linux_GCC9
     pool:
       vmImage: ubuntu-18.04
     steps:
@@ -27,12 +27,12 @@ jobs:
           sudo apt install -y python3-minimal g++-9 ccache
           python3 -m pip install pytest pytest-xdist
         displayName: Prepare System
-      - script: python3 -u tools/ci.py -B download -T tools/gcc-9.dds -T2 tools/gcc-9.jsonc
+      - script: make linux-ci
         displayName: Full CI
       - publish: _build/dds
         artifact: DDS Executable - Linux
 
-  - job: macOS_GCC8
+  - job: macOS_GCC9
     pool:
       vmImage: macOS-10.14
     steps:
@@ -41,7 +41,7 @@ jobs:
       - script: |
           set -eu
           python3 -m pip install pytest pytest-xdist
-          python3 -u tools/ci.py -B download -T tools/gcc-9.dds -T2 tools/gcc-9.jsonc
+          make macos-ci
         displayName: Build and Run Unit Tests
       - publish: _build/dds
         artifact: DDS Executable - macOS
