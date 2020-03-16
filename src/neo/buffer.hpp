@@ -3,6 +3,7 @@
 #include <neo/const_buffer.hpp>
 #include <neo/mutable_buffer.hpp>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <type_traits>
