@@ -21,7 +21,7 @@ class BootstrapPhase(NamedTuple):
 
 
 BOOTSTRAP_PHASES = [
-    BootstrapPhase('bootstrap-p1.1', 'g++-8', 'cl.exe'),
+    BootstrapPhase('bootstrap-p1.2', 'g++-8', 'cl.exe'),
     BootstrapPhase('bootstrap-p4.2', 'g++-8', 'cl.exe'),
     BootstrapPhase('bootstrap-p5.2', 'g++-9', 'cl.exe'),
 ]
