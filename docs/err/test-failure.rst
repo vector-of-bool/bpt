@@ -3,7 +3,7 @@ Error: One or more tests failed
 
 This error message is printed when a project's tests encounter a failure
 condition. The exact behavior of tests is determined by a project's
-``Test-Driver``.
+``test_driver``.
 
 If you see this error, it is most likely that you have an issue in the tests of
 your project.

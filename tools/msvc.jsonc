@@ -1,0 +1,14 @@
+{
+    "$schema": "../res/toolchain-schema.json",
+    "compiler_id": "msvc",
+    "flags": [
+        "/experimental:preprocessor", // Required for range-v3
+        "/DSPDLOG_COMPILED_LIB", // Required to use spdlog as a compiled lib
+        "/std:c++latest",
+    ],
+    "link_flags": [
+        "rpcrt4.lib",
+    ],
+    // "debug": true,
+    "optimize": true
+}

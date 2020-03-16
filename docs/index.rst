@@ -17,6 +17,7 @@ the :doc:`tut/index` page.
     tut/index
     guide/index
     design
+    dev/index
     err/index
 
 .. Hide the link to the error reference since we don't want it cluttering our

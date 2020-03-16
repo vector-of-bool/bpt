@@ -6,6 +6,7 @@
 #include <dds/compdb.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
+#include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
 
 #include <spdlog/spdlog.h>
@@ -103,7 +104,7 @@ prepare_test_driver(const build_params& params, test_lib test_driver, build_env_
 
 library_plan prepare_library(state&                  st,
                              const sdist_target&     sdt,
-                             const library&          lib,
+                             const library_root&     lib,
                              const package_manifest& pkg_man) {
     library_build_params lp;
     lp.out_subdir      = sdt.params.subdir;
@@ -121,7 +122,7 @@ library_plan prepare_library(state&                  st,
             }
         }
     }
-    return library_plan::create(lib, std::move(lp));
+    return library_plan::create(lib, std::move(lp), pkg_man.namespace_ + "/" + lib.manifest().name);
 }
 
 package_plan prepare_one(state& st, const sdist_target& sd) {
@@ -150,8 +151,12 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             lib_reqs.include_paths.push_back(lib.library_().public_include_dir());
             lib_reqs.uses  = lib.library_().manifest().uses;
             lib_reqs.links = lib.library_().manifest().links;
-            if (const auto& arc = lib.create_archive()) {
+            if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
+            }
+            auto gen_incdir_opt = lib.generated_include_dir();
+            if (gen_incdir_opt) {
+                lib_reqs.include_paths.push_back(out_root / *gen_incdir_opt);
             }
         }
     }
@@ -170,7 +175,7 @@ void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
     for (auto&& link : lib.links()) {
         out << "Links: " << link.namespace_ << "/" << link.name << '\n';
     }
-    if (auto&& arc = lib.create_archive()) {
+    if (auto&& arc = lib.archive_plan()) {
         out << "Path: "
             << (env.output_root / arc->calc_archive_file_path(env.toolchain)).generic_string()
             << '\n';
@@ -210,7 +215,15 @@ void builder::build(const build_params& params) const {
     state     st;
     auto      plan  = prepare_build_plan(st, _sdists);
     auto      ureqs = prepare_ureqs(plan, params.toolchain, params.out_root);
-    build_env env{params.toolchain, params.out_root, db, ureqs};
+    build_env env{
+        params.toolchain,
+        params.out_root,
+        db,
+        toolchain_knobs{
+            .is_tty = stdout_is_a_tty(),
+        },
+        ureqs,
+    };
 
     if (st.generate_catch2_main) {
         auto catch_lib                  = prepare_test_driver(params, test_lib::catch_main, env);
@@ -224,6 +237,8 @@ void builder::build(const build_params& params) const {
     if (params.generate_compdb) {
         generate_compdb(plan, env);
     }
+
+    plan.render_all(env);
 
     dds::stopwatch sw;
     plan.compile_all(env, params.parallel_jobs);

@@ -1,5 +1,16 @@
 {
   "packages": {
+    "ctre": {
+      "2.7.0": {
+        "depends": {},
+        "description": "A compile-time PCRE (almost) compatible regular expression matcher",
+        "git": {
+          "auto-lib": "hanickadot/ctre",
+          "ref": "v2.7",
+          "url": "https://github.com/hanickadot/compile-time-regular-expressions.git"
+        }
+      }
+    },
     "fmt": {
       "0.10.0": {
         "depends": {},
@@ -683,6 +694,31 @@
           "auto-lib": "spdlog/spdlog",
           "ref": "v1.4.2",
           "url": "https://github.com/gabime/spdlog.git"
+        }
+      }
+    },
+    "vob-json5": {
+      "0.1.5": {
+        "depends": {},
+        "description": "A C++ implementation of a JSON5 parser",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.5",
+          "url": "https://github.com/vector-of-bool/json5.git"
+        }
+      }
+    },
+    "vob-semester": {
+      "0.1.0": {
+        "depends": {
+          "neo-concepts": "^0.2.1",
+          "neo-fun": "^0.1.0"
+        },
+        "description": "A C++ library to process recursive dynamic data",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.0",
+          "url": "https://github.com/vector-of-bool/semester.git"
         }
       }
     }

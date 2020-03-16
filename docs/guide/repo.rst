@@ -62,8 +62,8 @@ package ID as the name of the source distribution directory::
     $ ls ./spdlog@1.4.2/
     include/
     src/
-    library.dds
-    package.dds
+    library.json5
+    package.json5
 
 
 .. _repo.export-local:

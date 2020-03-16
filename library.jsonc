@@ -1,0 +1,17 @@
+{
+    "$schema": "./res/library-schema.json",
+    "name": "dds",
+    "uses": [
+        "spdlog/spdlog",
+        "Microsoft/wil",
+        "range-v3/range-v3",
+        "nlohmann/json",
+        "neo/sqlite3",
+        "neo/fun",
+        "semver/semver",
+        "pubgrub/pubgrub",
+        "vob/json5",
+        "vob/semester",
+        "hanickadot/ctre",
+    ]
+}

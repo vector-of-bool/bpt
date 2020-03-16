@@ -14,6 +14,7 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
+    toolchain_json5: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -67,9 +68,24 @@ def main(argv: Sequence[str]) -> int:
         '-T',
         help='The toolchain to use for the CI process',
         required=True)
+    parser.add_argument(
+        '--toolchain-json5',
+        '-T2',
+        help='The toolchain JSON to use with the bootstrapped executable',
+    )
+    parser.add_argument(
+        '--build-only',
+        action='store_true',
+        help='Only build the `dds` executable. Skip second-phase and tests.')
     args = parser.parse_args(argv)
 
-    opts = CIOptions(toolchain=args.toolchain)
+    if not args.build_only and not args.toolchain_json5:
+        raise RuntimeError(
+            'The --toolchain-json5/-T2 argument is required (unless using --build-only)'
+        )
+
+    opts = CIOptions(
+        toolchain=args.toolchain, toolchain_json5=args.toolchain_json5)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -103,6 +119,13 @@ def main(argv: Sequence[str]) -> int:
             ('--repo-dir', ci_repo_dir),
         ])
     print('Main build PASSED!')
+    print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
+
+    if args.build_only:
+        print(
+            f'`--build-only` was given, so second phase and tests will not execute'
+        )
+        return 0
 
     # Delete the catalog database, since there may be schema changes since the
     # bootstrap executable was built
@@ -117,7 +140,7 @@ def main(argv: Sequence[str]) -> int:
     ])
     self_build(
         paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain,
+        toolchain=opts.toolchain_json5,
         dds_flags=[f'--repo-dir={ci_repo_dir}', f'--catalog={cat_path}'])
     print('Bootstrap test PASSED!')
 

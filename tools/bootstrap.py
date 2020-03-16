@@ -21,9 +21,9 @@ class BootstrapPhase(NamedTuple):
 
 
 BOOTSTRAP_PHASES = [
-    BootstrapPhase('bootstrap-p1', 'g++-8', 'cl.exe'),
-    BootstrapPhase('bootstrap-p4', 'g++-8', 'cl.exe'),
-    BootstrapPhase('bootstrap-p5.1', 'g++-9', 'cl.exe'),
+    BootstrapPhase('bootstrap-p1.2', 'g++-8', 'cl.exe'),
+    BootstrapPhase('bootstrap-p4.2', 'g++-8', 'cl.exe'),
+    BootstrapPhase('bootstrap-p5.2', 'g++-9', 'cl.exe'),
 ]
 
 HERE = Path(__file__).parent.absolute()
@@ -100,7 +100,7 @@ def _run_boot_phase(phase: BootstrapPhase) -> Path:
     return _pull_executable(bts_dir)
 
 
-def main(argv: Sequence[str]) -> int:
+def main() -> int:
     for idx, phase in enumerate(BOOTSTRAP_PHASES):
         print(f'Bootstrap phase [{idx+1}/{len(BOOTSTRAP_PHASES)}]')
         exe = _run_boot_phase(phase)
@@ -110,4 +110,4 @@ def main(argv: Sequence[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

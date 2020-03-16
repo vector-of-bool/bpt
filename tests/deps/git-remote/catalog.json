@@ -5,7 +5,7 @@
             "0.1.0": {
                 "git": {
                     "url": "https://github.com/vector-of-bool/neo-buffer.git",
-                    "ref": "develop"
+                    "ref": "0.1.0"
                 },
                 "depends": {}
             }

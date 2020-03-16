@@ -1,5 +1,5 @@
 Name: dds
-Version: 0.1.0
+Version: 0.1.0-alpha.3
 # SPDX-License-Identifier: MPL-2.0
 
 Depends: spdlog 1.4.2
@@ -10,5 +10,8 @@ Depends: neo-sqlite3 0.2.2
 Depends: neo-fun 0.1.0
 Depends: semver 0.2.1
 Depends: pubgrub 0.2.0
+Depends: vob-json5 0.1.5
+Depends: vob-semester 0.1.0
+Depends: ctre 2.7.0
 
 Test-Driver: Catch-Main

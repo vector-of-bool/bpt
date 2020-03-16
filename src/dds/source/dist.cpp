@@ -1,7 +1,7 @@
 #include "./dist.hpp"
 
 #include <dds/error/errors.hpp>
-#include <dds/library/library.hpp>
+#include <dds/library/root.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 
@@ -24,7 +24,7 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     fs::copy(filepath, dest);
 }
 
-void sdist_copy_library(path_ref out_root, const library& lib, const sdist_params& params) {
+void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_params& params) {
     auto sources_to_keep =  //
         lib.all_sources()   //
         | ranges::views::filter([&](const source_file& sf) {
@@ -43,14 +43,14 @@ void sdist_copy_library(path_ref out_root, const library& lib, const sdist_param
 
     ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
 
-    auto lib_dds_path = lib.path() / "library.dds";
-    if (!fs::is_regular_file(lib_dds_path)) {
+    auto lib_man_path = library_manifest::find_in_directory(lib.path());
+    if (!lib_man_path) {
         throw_user_error<errc::invalid_lib_filesystem>(
-            "Each library root in a source distribution requires a library manifest (Expected "
-            "[{}])",
-            lib_dds_path.string());
+            "Each library root in a source distribution requires a library manifest (Expected a "
+            "library manifest in [{}])",
+            lib.path().string());
     }
-    sdist_export_file(out_root, params.project_dir, lib_dds_path);
+    sdist_export_file(out_root, params.project_dir, *lib_man_path);
 
     spdlog::info("sdist: Export library from {}", lib.path().string());
     fs::create_directories(out_root);
@@ -84,26 +84,28 @@ sdist dds::create_sdist(const sdist_params& params) {
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto libs = collect_libraries(params.project_dir);
 
-    for (const library& lib : libs) {
+    for (const library_root& lib : libs) {
         sdist_copy_library(out, lib, params);
     }
 
-    auto man_path = params.project_dir / "package.dds";
-    if (!fs::is_regular_file(man_path)) {
+    auto man_path = package_manifest::find_in_directory(params.project_dir);
+    if (!man_path) {
         throw_user_error<errc::invalid_pkg_filesystem>(
-            "Creating a source distribution requires a package.dds file for the project (Expected "
-            "[{}])",
-            man_path.string());
+            "Creating a source distribution requires a package.json5 file for the project "
+            "(Expected manifest in [{}])",
+            params.project_dir.string());
     }
-    sdist_export_file(out, params.project_dir, man_path);
-    auto pkg_man = package_manifest::load_from_file(man_path);
 
+    auto pkg_man = man_path->extension() == ".dds" ? package_manifest::load_from_dds_file(*man_path)
+                                                   : package_manifest::load_from_file(*man_path);
+    sdist_export_file(out, params.project_dir, *man_path);
     spdlog::info("Generated export as {}", pkg_man.pkg_id.to_string());
-
     return sdist::from_directory(out);
 }
 
 sdist sdist::from_directory(path_ref where) {
-    auto pkg_man = package_manifest::load_from_file(where / "package.dds");
-    return sdist{std::move(pkg_man), where};
+    auto pkg_man = package_manifest::load_from_directory(where);
+    // Code paths should only call here if they *know* that the sdist is valid
+    assert(pkg_man.has_value());
+    return sdist{pkg_man.value(), where};
 }

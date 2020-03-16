@@ -35,6 +35,10 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
     auto ext_found
         = std::lower_bound(header_exts.begin(), header_exts.end(), p.extension(), std::less<>());
     if (ext_found != header_exts.end() && *ext_found == p.extension()) {
+        auto stem = p.stem();
+        if (stem.extension() == ".config") {
+            return source_kind::header_template;
+        }
         return source_kind::header;
     }
 
@@ -44,11 +48,11 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
         return std::nullopt;
     }
 
-    if (ends_with(p.stem().string(), ".test")) {
+    if (p.stem().extension() == ".test") {
         return source_kind::test;
     }
 
-    if (ends_with(p.stem().string(), ".main")) {
+    if (p.stem().extension() == ".main") {
         return source_kind::app;
     }
 

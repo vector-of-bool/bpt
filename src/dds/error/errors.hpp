@@ -10,6 +10,7 @@ namespace dds {
 enum class errc {
     none = 0,
     invalid_builtin_toolchain,
+    no_default_toolchain,
     no_such_catalog_package,
     git_url_ref_mutual_req,
     test_failure,
@@ -28,6 +29,8 @@ enum class errc {
 
     corrupted_build_db,
 
+    invalid_lib_manifest,
+    invalid_pkg_manifest,
     invalid_version_range_string,
     invalid_version_string,
     invalid_pkg_id,
@@ -40,6 +43,8 @@ enum class errc {
 
     invalid_lib_filesystem,
     invalid_pkg_filesystem,
+
+    template_error,
 };
 
 std::string      error_reference_of(errc) noexcept;

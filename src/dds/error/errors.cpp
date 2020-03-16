@@ -13,6 +13,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return "invalid-builtin-toolchain.html";
+    case errc::no_default_toolchain:
+        return "no-default-toolchain.html";
     case errc::no_such_catalog_package:
         return "no-such-catalog-package.html";
     case errc::git_url_ref_mutual_req:
@@ -39,6 +41,10 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "sdist-ident-mismatch.html";
     case errc::corrupted_build_db:
         return "corrupted-build-db.html";
+    case errc::invalid_lib_manifest:
+        return "invalid-lib-manifest.html";
+    case errc::invalid_pkg_manifest:
+        return "invalid-pkg-manifest.html";
     case errc::invalid_version_range_string:
         return "invalid-version-string.html#range";
     case errc::invalid_version_string:
@@ -85,6 +91,13 @@ toolchain. (Toolchain file paths cannot begin with a leading colon).
 These toolchain names are encoded into the dds executable and cannot be
 modified.
 )";
+    case errc::no_default_toolchain:
+        return R"(
+`dds` requires a toolchain to be specified in order to execute the build. `dds`
+will not perform a "best-guess" at a default toolchain. You may either pass the
+name of a built-in toolchain, or write a "default toolchain" file to one of the
+supported filepaths. Refer to the documentation for more information.
+)";
     case errc::no_such_catalog_package:
         return R"(
 The installation of a package was requested, but the given package ID was not
@@ -130,6 +143,16 @@ modified by a newer version of dds?
 The catalog database schema doesn't match what dds expects. This indicates that
 the database file has been modified in a way that dds cannot automatically fix
 and handle.
+)";
+    case errc::invalid_lib_manifest:
+        return R"(
+A library manifest is malformed Refer to the documentation and above error
+message for more details.
+)";
+    case errc::invalid_pkg_manifest:
+        return R"(
+The package manifest is malformed. Refer to the documentation and above error
+message for more details.
 )";
     case errc::invalid_catalog_json:
         return R"(
@@ -211,9 +234,9 @@ which packages are claiming the library name.
 )";
     case errc::unknown_usage_name:
         return R"(
-A `Uses` or `Links` field for a library specifies a library of an unknown name.
+A `uses` or `links` field for a library specifies a library of an unknown name.
 Check your spelling, and check that the package containing the library is
-available, either from the `package.dds` or from the `INDEX.lmi` that was used
+available, either from the `package.json5` or from the `INDEX.lmi` that was used
 for the build.
 )";
     case errc::none:
@@ -227,6 +250,8 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return "The built-in toolchain name is invalid";
+    case errc::no_default_toolchain:
+        return "Unable to find a default toolchain to use for the build";
     case errc::no_such_catalog_package:
         return "The catalog has no entry for the given package ID";
     case errc::git_url_ref_mutual_req:
@@ -255,35 +280,40 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
                "that was expected of it";
     case errc::corrupted_build_db:
         return "The build database file is corrupted";
+    case errc::invalid_lib_manifest:
+        return "The library manifest is invalid";
+    case errc::invalid_pkg_manifest:
+        return "The package manifest is invalid";
     case errc::invalid_version_range_string:
         return "Attempted to parse an invalid version range string. <- (Seeing this text is a "
                "`dds` bug. Please report it.)";
     case errc::invalid_version_string:
-        return "Attempted to parse an invalid version string. <- (Seeing this text is a `dds` bug. "
-               "Please report it.)";
+        return "Attempted to parse an invalid version string. <- (Seeing this text is a `dds` "
+               "bug. Please report it.)";
     case errc::invalid_config_key:
-        return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. Please "
-               "report it.)";
+        return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. "
+               "Please report it.)";
     case errc::invalid_lib_filesystem:
     case errc::invalid_pkg_filesystem:
-        return "The filesystem structure of the package/library is invalid. <- (Seeing this text "
-               "is a `dds` bug. Please report it.)";
+        return "The filesystem structure of the package/library is invalid. <- (Seeing this "
+               "text is a `dds` bug. Please report it.)";
     case errc::invalid_pkg_id:
         return "A package identifier is invalid  <- (Seeing this text is a `dds` bug. Please "
                "report it.)";
     case errc::invalid_pkg_name:
-        return "A package name is invalid  <- (Seeing this text is a `dds` bug. Please report it.)";
+        return "A package name is invalid  <- (Seeing this text is a `dds` bug. Please report "
+               "it.)";
     case errc::sdist_exists:
-        return "The source ditsribution already exists at the destination  <- (Seeing this text is "
-               "a `dds` bug. Please report it.)";
+        return "The source ditsribution already exists at the destination  <- (Seeing this "
+               "text is a `dds` bug. Please report it.)";
     case errc::unknown_test_driver:
-        return "The specified Test-Driver is not known to `dds`";
+        return "The specified test_driver is not known to `dds`";
     case errc::dependency_resolve_failure:
         return "`dds` was unable to find a solution for the package dependencies given.";
     case errc::dup_lib_name:
         return "More than one library has claimed the same name.";
     case errc::unknown_usage_name:
-        return "A `Uses` or `Links` field names a library that isn't recognized.";
+        return "A `uses` or `links` field names a library that isn't recognized.";
     case errc::none:
         break;
     }

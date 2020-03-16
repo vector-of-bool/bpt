@@ -12,6 +12,8 @@ struct build_env {
     fs::path       output_root;
     database&      db;
 
+    toolchain_knobs knobs;
+
     const usage_requirement_map& ureqs;
 };
 

@@ -24,7 +24,7 @@ void create_archive_plan::archive(const build_env& env) const {
     archive_spec ar;
     ar.input_files = std::move(objects);
     ar.out_path    = env.output_root / calc_archive_file_path(env.toolchain);
-    auto ar_cmd    = env.toolchain.create_archive_command(ar);
+    auto ar_cmd    = env.toolchain.create_archive_command(ar, env.knobs);
 
     // `out_relpath` is purely for the benefit of the user to have a short name
     // in the logs
@@ -40,17 +40,19 @@ void create_archive_plan::archive(const build_env& env) const {
     fs::create_directories(ar.out_path.parent_path());
 
     // Do it!
-    spdlog::info("[{}] Archive: {}", _name, out_relpath);
+    spdlog::info("[{}] Archive: {}", _qual_name, out_relpath);
     auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
-    spdlog::info("[{}] Archive: {} - {:n}ms", _name, out_relpath, dur_ms.count());
+    spdlog::info("[{}] Archive: {} - {:n}ms", _qual_name, out_relpath, dur_ms.count());
 
     // Check, log, and throw
     if (!ar_res.okay()) {
-        spdlog::error("Creating static library archive [{}] failed for '{}'", out_relpath, _name);
+        spdlog::error("Creating static library archive [{}] failed for '{}'",
+                      out_relpath,
+                      _qual_name);
         spdlog::error("Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
         throw_external_error<
             errc::archive_failure>("Creating static library archive [{}] failed for '{}'",
                                    out_relpath,
-                                   _name);
+                                   _qual_name);
     }
 }

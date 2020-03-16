@@ -88,7 +88,7 @@ executable.
 A *test* source file is a source file whose file stem ends with ``.test``. Like
 application sources, a *test* source file is omitted from the main library, and
 it will be used to generate tests. The exact behavior of tests is determined by
-the ``Test-Driver`` setting for the package, but the default is that each test
+the ``test_driver`` setting for the package, but the default is that each test
 source file will generate a single test executable that is executed by ``dds``
 when running unit tests.
 
@@ -242,13 +242,14 @@ included in downstream binaries, but it will still generate link rules for the
 dependencies of a header-only library.
 
 In order for ``dds`` to be able to distribute and interlink libraries, a
-``library.dds`` file must be present at the corresponding library root. The
-only required key in a ``library.dds`` file is ``Name``:
+``library.json5`` file must be present at the corresponding library root. The
+only required key in a ``library.json5`` file is ``name``:
 
-.. code-block:: yaml
+.. code-block:: js
 
-    Name: my-library
-
+  {
+    name: 'my-library'
+  }
 
 .. seealso:: More information is discussed on the :ref:`deps.lib-deps` page
 
@@ -287,23 +288,25 @@ the ``name@version`` string forms the *package ID*, and it must be unique
 within a repository or package catalog.
 
 In order for a package to be exported by ``dds`` it must have a
-``package.dds`` file at its package root. Three keys are required to be
-present in the ``package.dds`` file: ``Name``, ``Version``, and ``Namespace``:
+``package.json5`` file at its package root. Three keys are required to be
+present in the ``package.json5`` file: ``name``, ``version``, and ``namespace``:
 
-.. code-block:: yaml
+.. code-block:: js
 
-    Name: acme-widgets
-    Version: 6.7.3
-    Namespace: acme
+    {
+      name: 'acme-widgets',
+      version: '6.7.3',
+      namespace: 'acme',
+    }
 
-``Version`` must be a valid semantic version string.
+``version`` must be a valid semantic version string.
 
 .. note::
-    The ``Namespace`` key is arbitrary, and not necessarily associated with
-    and C++ ``namespace``.
+  The ``namespace`` key is arbitrary, and not necessarily associated with
+  any C++ ``namespace``.
 
 .. seealso::
-  The purpose of ``Namespace``, as well as additional options in this file,
+  The purpose of ``namespace``, as well as additional options in this file,
   are described in the :ref:`deps.pkg-deps` page
 
 
@@ -315,8 +318,9 @@ Naming Requirements
 Package names aren't a complete free-for-all. Package names must follow a set
 of specific rules:
 
-- Package names may consist of ASCII, lowercase characters, digits,
-  underscores (``_``), hyphens (``-``), and periods (``.``).
+- Package names may consist of a subset of ASCII including lowercase
+  characters, digits, underscores (``_``), hyphens (``-``), and periods
+  (``.``).
 
   .. note::
     Different filesystems differ in their handling of filenames. Some platforms

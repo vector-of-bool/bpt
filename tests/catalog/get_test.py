@@ -3,6 +3,8 @@ import json
 from tests import dds, DDS
 from tests.fileutil import ensure_dir
 
+import pytest
+
 
 def test_get(dds: DDS):
     dds.scope.enter_context(ensure_dir(dds.build_dir))
@@ -16,8 +18,10 @@ def test_get(dds: DDS):
                 '0.2.2': {
                     'depends': {},
                     'git': {
-                        'url': 'https://github.com/vector-of-bool/neo-sqlite3.git',
-                        'ref': '0.2.2',
+                        'url':
+                        'https://github.com/vector-of-bool/neo-sqlite3.git',
+                        'ref':
+                        '0.2.2',
                     },
                 },
             },

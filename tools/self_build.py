@@ -15,7 +15,7 @@ def self_build(exe: Path,
                *,
                toolchain: str,
                lmi_path: Path = None,
-               dds_flags: Iterable[str] = ()):
+               dds_flags: proc.CommandLine = ()):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
     new_exe = ROOT / '_dds.bootstrap-test.exe'

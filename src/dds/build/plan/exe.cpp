@@ -25,11 +25,11 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     for (const lm::usage& links : _links) {
         extend(spec.inputs, env.ureqs.link_paths(links));
     }
-    if (lib.create_archive()) {
+    if (lib.archive_plan()) {
         // The associated library has compiled components. Add the static library a as a linker
         // input
         spec.inputs.push_back(env.output_root
-                              / lib.create_archive()->calc_archive_file_path(env.toolchain));
+                              / lib.archive_plan()->calc_archive_file_path(env.toolchain));
     }
 
     // The main object should be a linker input, of course.
@@ -43,10 +43,10 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     std::reverse(spec.inputs.begin(), spec.inputs.end());
 
     // Do it!
-    const auto link_command = env.toolchain.create_link_executable_command(spec);
+    const auto link_command = env.toolchain.create_link_executable_command(spec, env.knobs);
     fs::create_directories(spec.output.parent_path());
     auto msg = fmt::format("[{}] Link: {:30}",
-                           lib.name(),
+                           lib.qualified_name(),
                            fs::relative(spec.output, env.output_root).string());
     spdlog::info(msg);
     auto [dur_ms, proc_res]

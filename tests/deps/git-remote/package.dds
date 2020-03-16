@@ -1,5 +1,0 @@
-Name: deps-test
-Version: 0.0.0
-
-Depends: neo-buffer 0.1.0
-Depends: range-v3 0.9.1

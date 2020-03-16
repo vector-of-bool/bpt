@@ -221,20 +221,21 @@ Creating a package manifest file.
 
 ``dds`` will work happily with packages that do not declare themselves, as long
 as the filesystem structure is sufficient. However: To use features covered in
-later tutorials, we'll need a simple ``package.dds`` file to declare
+later tutorials, we'll need a simple ``package.json5`` file to declare
 information about are package. This file should be placed directly in the
 package root:
 
-.. code-block:: yaml
-    :caption: ``<root>/package.dds``
+.. code-block:: js
+    :caption: ``<root>/package.json5``
 
-    Name: hello-dds
-    Version: 0.1.0
-    Namespace: tutorial
-
+    {
+        name: 'hello-dds',
+        version: '0.1.0',
+        namespace: 'tutorial',
+    }
 
 .. note::
-    The ``Namespace`` option will be discussed later.
+    The ``namespace`` option will be discussed later.
 
 Rebuilding the project will show no difference at the moment.
 

@@ -16,6 +16,10 @@ enum class language {
     cxx,
 };
 
+struct toolchain_knobs {
+    bool is_tty = false;
+};
+
 struct compile_file_spec {
     fs::path                 source_path;
     fs::path                 out_path;
@@ -54,6 +58,7 @@ class toolchain {
     string_seq _link_archive;
     string_seq _link_exe;
     string_seq _warning_flags;
+    string_seq _tty_flags;
 
     std::string _archive_prefix;
     std::string _archive_suffix;
@@ -77,11 +82,15 @@ public:
     std::vector<std::string> definition_args(std::string_view s) const noexcept;
     std::vector<std::string> include_args(const fs::path& p) const noexcept;
     std::vector<std::string> external_include_args(const fs::path& p) const noexcept;
-    compile_command_info     create_compile_command(const compile_file_spec&) const noexcept;
-    std::vector<std::string> create_archive_command(const archive_spec&) const noexcept;
-    std::vector<std::string> create_link_executable_command(const link_exe_spec&) const noexcept;
+    compile_command_info     create_compile_command(const compile_file_spec&,
+                                                    toolchain_knobs) const noexcept;
+    std::vector<std::string> create_archive_command(const archive_spec&,
+                                                    toolchain_knobs) const noexcept;
+    std::vector<std::string> create_link_executable_command(const link_exe_spec&,
+                                                            toolchain_knobs) const noexcept;
 
     static std::optional<toolchain> get_builtin(std::string_view key) noexcept;
+    static std::optional<toolchain> get_default();
 };
 
 }  // namespace dds

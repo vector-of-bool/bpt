@@ -52,11 +52,11 @@ class DDS:
         full_cmd = itertools.chain([self.dds_exe], cmd)
         return proc.run(full_cmd, cwd=cwd or self.source_root)
 
-    def run(self, cmd: proc.CommandLine, *,
-            cwd: Path = None) -> subprocess.CompletedProcess:
+    def run(self, cmd: proc.CommandLine, *, cwd: Path = None,
+            check=True) -> subprocess.CompletedProcess:
         cmdline = list(proc.flatten_cmd(cmd))
         res = self.run_unchecked(cmd, cwd=cwd)
-        if res.returncode != 0:
+        if res.returncode != 0 and check:
             raise subprocess.CalledProcessError(
                 res.returncode, [self.dds_exe] + cmdline, res.stdout)
         return res
@@ -86,18 +86,22 @@ class DDS:
               toolchain: str = None,
               apps: bool = True,
               warnings: bool = True,
-              tests: bool = True) -> subprocess.CompletedProcess:
-        return self.run([
-            'build',
-            f'--out={self.build_dir}',
-            f'--toolchain={toolchain or self.default_builtin_toolchain}',
-            f'--catalog={self.catalog_path}',
-            f'--repo-dir={self.repo_dir}',
-            ['--no-tests'] if not tests else [],
-            ['--no-apps'] if not apps else [],
-            ['--no-warnings'] if not warnings else [],
-            self.project_dir_arg,
-        ])
+              tests: bool = True,
+              check: bool = True) -> subprocess.CompletedProcess:
+        return self.run(
+            [
+                'build',
+                f'--out={self.build_dir}',
+                f'--toolchain={toolchain or self.default_builtin_toolchain}',
+                f'--catalog={self.catalog_path}',
+                f'--repo-dir={self.repo_dir}',
+                ['--no-tests'] if not tests else [],
+                ['--no-apps'] if not apps else [],
+                ['--no-warnings'] if not warnings else [],
+                self.project_dir_arg,
+            ],
+            check=check,
+        )
 
     def sdist_create(self) -> subprocess.CompletedProcess:
         return self.run([

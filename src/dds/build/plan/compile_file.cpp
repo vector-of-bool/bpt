@@ -15,17 +15,22 @@ using namespace dds;
 compile_command_info compile_file_plan::generate_compile_command(build_env_ref env) const {
     compile_file_spec spec{_source.path, calc_object_file_path(env)};
     spec.enable_warnings = _rules.enable_warnings();
-    extend(spec.include_dirs, _rules.include_dirs());
+    for (auto dirpath : _rules.include_dirs()) {
+        if (!dirpath.is_absolute()) {
+            dirpath = env.output_root / dirpath;
+        }
+        dirpath = fs::weakly_canonical(dirpath);
+        spec.include_dirs.push_back(std::move(dirpath));
+    }
     for (const auto& use : _rules.uses()) {
         extend(spec.external_include_dirs, env.ureqs.include_paths(use));
     }
     extend(spec.definitions, _rules.defs());
-    return env.toolchain.create_compile_command(spec);
+    return env.toolchain.create_compile_command(spec, env.knobs);
 }
 
 fs::path compile_file_plan::calc_object_file_path(const build_env& env) const noexcept {
-    // `relpath` is just the path from the root of the source directory to the source file.
-    auto relpath = fs::relative(_source.path, _source.basis_path);
+    auto relpath = _source.relative_path();
     // The full output directory is prefixed by `_subdir`
     auto ret = env.output_root / _subdir / relpath;
     ret.replace_filename(relpath.filename().string() + env.toolchain.object_suffix());

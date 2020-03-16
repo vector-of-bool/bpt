@@ -5,7 +5,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/source/dist.hpp>
-#include <dds/toolchain/from_dds.hpp>
+#include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
@@ -31,11 +31,22 @@ struct toolchain_flag : string_flag {
     toolchain_flag(args::Group& grp)
         : string_flag{grp,
                       "toolchain_file",
-                      "Path/ident of the toolchain to use",
-                      {"toolchain", 't'},
-                      (dds::fs::current_path() / "toolchain.dds").string()} {}
+                      "Path/identifier of the toolchain to use",
+                      {"toolchain", 't'}} {}
 
     dds::toolchain get_toolchain() {
+        if (*this) {
+            return get_arg();
+        } else {
+            auto found = dds::toolchain::get_default();
+            if (!found) {
+                dds::throw_user_error<dds::errc::no_default_toolchain>();
+            }
+            return *found;
+        }
+    }
+
+    dds::toolchain get_arg() {
         const auto tc_path = this->Get();
         if (tc_path.find(":") == 0) {
             auto default_tc = tc_path.substr(1);
@@ -47,7 +58,8 @@ struct toolchain_flag : string_flag {
             }
             return std::move(*tc);
         } else {
-            return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
+            return dds::parse_toolchain_json5(dds::slurp_file(tc_path));
+            // return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
         }
     }
 };
@@ -580,11 +592,9 @@ struct cli_build {
         params.out_root      = out.Get();
         params.toolchain     = tc_filepath.get_toolchain();
         params.parallel_jobs = n_jobs.Get();
-        dds::package_manifest man;
-        const auto            man_filepath = project.root.Get() / "package.dds";
-        if (exists(man_filepath)) {
-            man = dds::package_manifest::load_from_file(man_filepath);
-        }
+
+        auto man = dds::package_manifest::load_from_directory(project.root.Get())
+                       .value_or(dds::package_manifest{});
 
         dds::builder            bd;
         dds::sdist_build_params main_params;
