@@ -5,5 +5,5 @@ C++-Compiler: g++9
 Flags: -D SPDLOG_COMPILED_LIB -Werror=return-type -Wno-conversion
 C++-Flags: -std=c++2a -fconcepts
 Link-Flags: -static-libgcc -static-libstdc++
-Debug:  True
+Optimize: True
 Compiler-Launcher: ccache
