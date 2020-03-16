@@ -36,7 +36,7 @@ linux-ci: nix-ci
 
 nix-ci:
 	python3 -u tools/ci.py \
-		-B download \
+		-B build \
 		-T tools/gcc-9.dds \
 		-T2 tools/gcc-9.jsonc
 
