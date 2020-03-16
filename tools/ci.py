@@ -14,7 +14,6 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
-    toolchain_json5: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -31,11 +30,13 @@ def _do_bootstrap_download() -> None:
         'win32': 'dds-win-x64.exe',
         'linux': 'dds-linux-x64',
         'darwin': 'dds-macos-x64',
+        'freebsd11': 'dds-freebsd-x64',
+        'freebsd12': 'dds-freebsd-x64',
     }.get(sys.platform)
     if filename is None:
         raise RuntimeError(f'We do not have a prebuilt DDS binary for '
                            f'the "{sys.platform}" platform')
-    url = f'https://github.com/vector-of-bool/dds/releases/download/0.0.1/{filename}'
+    url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.3/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
@@ -67,11 +68,7 @@ def main(argv: Sequence[str]) -> int:
         '--toolchain',
         '-T',
         help='The toolchain to use for the CI process',
-        required=True)
-    parser.add_argument(
-        '--toolchain-json5',
-        '-T2',
-        help='The toolchain JSON to use with the bootstrapped executable',
+        required=True,
     )
     parser.add_argument(
         '--build-only',
@@ -79,13 +76,7 @@ def main(argv: Sequence[str]) -> int:
         help='Only build the `dds` executable. Skip second-phase and tests.')
     args = parser.parse_args(argv)
 
-    if not args.build_only and not args.toolchain_json5:
-        raise RuntimeError(
-            'The --toolchain-json5/-T2 argument is required (unless using --build-only)'
-        )
-
-    opts = CIOptions(
-        toolchain=args.toolchain, toolchain_json5=args.toolchain_json5)
+    opts = CIOptions(toolchain=args.toolchain)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -140,7 +131,7 @@ def main(argv: Sequence[str]) -> int:
     ])
     self_build(
         paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain_json5,
+        toolchain=opts.toolchain,
         dds_flags=[f'--repo-dir={ci_repo_dir}', f'--catalog={cat_path}'])
     print('Bootstrap test PASSED!')
 

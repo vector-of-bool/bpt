@@ -32,11 +32,11 @@ def main(argv: Sequence[str]) -> int:
 
     print(f'Using previously built DDS executable: {dds_exe}')
     if os.name == 'nt':
-        tc_fpath = ROOT / 'tools/msvc.dds'
+        tc_fpath = ROOT / 'tools/msvc.jsonc'
     elif sys.platform.startswith('freebsd'):
-        tc_fpath = ROOT / 'tools/freebsd-gcc-9.dds'
+        tc_fpath = ROOT / 'tools/freebsd-gcc-9.jsonc'
     else:
-        tc_fpath = ROOT / 'tools/gcc-9.dds'
+        tc_fpath = ROOT / 'tools/gcc-9.jsonc'
 
     self_build(dds_exe, toolchain=str(tc_fpath))
 
