@@ -3,13 +3,13 @@
 
 # -- Project information -----------------------------------------------------
 project = 'dds'
-copyright = '2019, vector-of-bool'
+copyright = '2020, vector-of-bool'
 author = 'vector-of-bool'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.0-alpha.2'
+release = '0.1.0-alpha.3'
 
 # -- General configuration ---------------------------------------------------
 extensions = []
