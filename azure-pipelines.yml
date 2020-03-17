@@ -12,7 +12,7 @@ jobs:
           echo Executing Build and Tests
           reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
           python -m pip install pytest pytest-xdist || exit 1
-          python -u tools/ci.py -B build -T tools\msvc.jsonc || exit 1
+          python -u tools/ci.py -B download -T tools\msvc.jsonc || exit 1
         displayName: Full CI
       - publish: _build/dds.exe
         artifact: DDS Executable - Windows VS2019
