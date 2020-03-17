@@ -97,10 +97,10 @@ packages = [
     ),
     Package('ms-wil', [
         Version(
-            '2019.11.10',
+            '2020.03.16',
             description='The Windows Implementation Library',
             remote=Git('https://github.com/vector-of-bool/wil.git',
-                       'dds/2019.11.10'))
+                       'dds/2020.03.16'))
     ]),
     many_versions(
         'neo-sqlite3',
@@ -109,6 +109,7 @@ packages = [
             '0.2.0',
             '0.2.1',
             '0.2.2',
+            '0.2.3',
         ),
         description='A modern and low-level C++ SQLite API',
         git_url='https://github.com/vector-of-bool/neo-sqlite3.git',
@@ -118,7 +119,12 @@ packages = [
             '0.1.0',
             description='Some library fundamentals that you might find useful',
             remote=Git('https://github.com/vector-of-bool/neo-fun.git',
-                       '0.1.0'))
+                       '0.1.0')),
+        Version(
+            '0.1.1',
+            description='Some library fundamentals that you might find useful',
+            remote=Git('https://github.com/vector-of-bool/neo-fun.git',
+                       '0.1.1'))
     ]),
     many_versions(
         'neo-concepts',
@@ -126,6 +132,7 @@ packages = [
             '0.1.0',
             '0.2.0',
             '0.2.1',
+            '0.2.2',
         ),
         description=
         'Minimal C++ concepts library. Contains many definitions from C++20.',
@@ -138,13 +145,21 @@ packages = [
             'A C++ library that implements Semantic Versioning parsing, emitting, '
             'types, ordering, and operations. See https://semver.org/',
             remote=Git('https://github.com/vector-of-bool/semver.git',
-                       '0.2.1'))
+                       '0.2.1')),
+        Version(
+            '0.2.2',
+            description=
+            'A C++ library that implements Semantic Versioning parsing, emitting, '
+            'types, ordering, and operations. See https://semver.org/',
+            remote=Git('https://github.com/vector-of-bool/semver.git',
+                       '0.2.2')),
     ]),
     many_versions(
         'pubgrub',
         (
             '0.1.2',
             '0.2.0',
+            '0.2.1',
         ),
         description=
         'A C++ implementation of the Pubgrub version solving algorithm',
@@ -165,6 +180,15 @@ packages = [
             depends={
                 'neo-fun': '^0.1.0',
                 'neo-concepts': '^0.2.1',
+            }),
+        Version(
+            '0.1.1',
+            description='A C++ library to process recursive dynamic data',
+            remote=Git('https://github.com/vector-of-bool/semester.git',
+                       '0.1.1'),
+            depends={
+                'neo-fun': '^0.1.1',
+                'neo-concepts': '^0.2.2',
             }),
     ]),
     Package('ctre', [

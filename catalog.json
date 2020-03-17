@@ -230,12 +230,12 @@
       }
     },
     "ms-wil": {
-      "2019.11.10": {
+      "2020.03.16": {
         "depends": {},
         "description": "The Windows Implementation Library",
         "git": {
           "auto-lib": null,
-          "ref": "dds/2019.11.10",
+          "ref": "dds/2020.03.16",
           "url": "https://github.com/vector-of-bool/wil.git"
         }
       }
@@ -267,6 +267,15 @@
           "ref": "0.2.1",
           "url": "https://github.com/vector-of-bool/neo-concepts.git"
         }
+      },
+      "0.2.2": {
+        "depends": {},
+        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.2.2",
+          "url": "https://github.com/vector-of-bool/neo-concepts.git"
+        }
       }
     },
     "neo-fun": {
@@ -276,6 +285,15 @@
         "git": {
           "auto-lib": null,
           "ref": "0.1.0",
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.1.1": {
+        "depends": {},
+        "description": "Some library fundamentals that you might find useful",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.1",
           "url": "https://github.com/vector-of-bool/neo-fun.git"
         }
       }
@@ -314,6 +332,15 @@
         "git": {
           "auto-lib": null,
           "ref": "0.2.2",
+          "url": "https://github.com/vector-of-bool/neo-sqlite3.git"
+        }
+      },
+      "0.2.3": {
+        "depends": {},
+        "description": "A modern and low-level C++ SQLite API",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.2.3",
           "url": "https://github.com/vector-of-bool/neo-sqlite3.git"
         }
       }
@@ -473,6 +500,15 @@
           "ref": "0.2.0",
           "url": "https://github.com/vector-of-bool/pubgrub.git"
         }
+      },
+      "0.2.1": {
+        "depends": {},
+        "description": "A C++ implementation of the Pubgrub version solving algorithm",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.2.1",
+          "url": "https://github.com/vector-of-bool/pubgrub.git"
+        }
       }
     },
     "range-v3": {
@@ -520,6 +556,15 @@
         "git": {
           "auto-lib": null,
           "ref": "0.2.1",
+          "url": "https://github.com/vector-of-bool/semver.git"
+        }
+      },
+      "0.2.2": {
+        "depends": {},
+        "description": "A C++ library that implements Semantic Versioning parsing, emitting, types, ordering, and operations. See https://semver.org/",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.2.2",
           "url": "https://github.com/vector-of-bool/semver.git"
         }
       }
@@ -718,6 +763,18 @@
         "git": {
           "auto-lib": null,
           "ref": "0.1.0",
+          "url": "https://github.com/vector-of-bool/semester.git"
+        }
+      },
+      "0.1.1": {
+        "depends": {
+          "neo-concepts": "^0.2.2",
+          "neo-fun": "^0.1.1"
+        },
+        "description": "A C++ library to process recursive dynamic data",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.1.1",
           "url": "https://github.com/vector-of-bool/semester.git"
         }
       }
