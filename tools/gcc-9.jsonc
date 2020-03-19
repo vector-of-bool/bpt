@@ -12,6 +12,10 @@
         "-fconcepts",
         "-std=c++2a",
     ],
+    "link_flags": [
+        "-static-libgcc",
+        "-static-libstdc++"
+    ],
     // "debug": true,
     "optimize": true,
     "compiler_launcher": "ccache"
