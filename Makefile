@@ -36,7 +36,7 @@ linux-ci: nix-ci
 
 nix-ci:
 	python3 -u tools/ci.py \
-		-B build \
+		-B download \
 		-T tools/gcc-9.jsonc
 
 vagrant-freebsd-ci:
