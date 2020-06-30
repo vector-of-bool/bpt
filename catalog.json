@@ -296,6 +296,51 @@
           "ref": "0.1.1",
           "url": "https://github.com/vector-of-bool/neo-fun.git"
         }
+      },
+      "0.2.0": {
+        "depends": {},
+        "description": "Some library fundamentals that you might find useful",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.2.0",
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.2.1": {
+        "depends": {},
+        "description": "Some library fundamentals that you might find useful",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.2.1",
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.3.0": {
+        "depends": {},
+        "description": "Some library fundamentals that you might find useful",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.3.0",
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.3.1": {
+        "depends": {},
+        "description": "Some library fundamentals that you might find useful",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.3.1",
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.3.2": {
+        "depends": {},
+        "description": "Some library fundamentals that you might find useful",
+        "git": {
+          "auto-lib": null,
+          "ref": "0.3.2",
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
       }
     },
     "neo-sqlite3": {

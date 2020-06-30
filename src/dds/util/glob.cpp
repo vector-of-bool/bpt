@@ -23,6 +23,7 @@ struct rglob_item {
 };
 
 struct glob_impl {
+    std::string             spelling;
     std::vector<rglob_item> items;
 };
 
@@ -33,11 +34,11 @@ struct glob_iter_state {
 
     const bool is_leaf_pattern = std::next(pat_iter) == impl.items.end();
 
-    fs::directory_entry    entry;
+    fs::directory_entry    entry{};
     fs::directory_iterator dir_iter{root};
     const bool             is_rglob = !pat_iter->pattern.has_value();
 
-    std::unique_ptr<glob_iter_state> _next_state;
+    std::unique_ptr<glob_iter_state> _next_state{};
     int                              _state_label = 0;
 
     fs::directory_entry get_entry() const noexcept {
@@ -164,6 +165,7 @@ dds::detail::glob_impl compile_glob_expr(std::string_view pattern) {
         throw std::runtime_error("Invalid path glob expression (Must not be empty!)");
     }
 
+    acc.spelling = std::string(pattern);
     return acc;
 }
 
@@ -236,3 +238,5 @@ bool dds::glob::match(dds::path_ref filepath) const noexcept {
                          _impl->items.cbegin(),
                          _impl->items.cend());
 }
+
+std::string_view dds::glob::string() const noexcept { return _impl->spelling; }

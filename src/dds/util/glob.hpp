@@ -56,6 +56,8 @@ public:
     auto end() const noexcept { return glob_iterator::sentinel_type{}; }
 
     bool match(path_ref) const noexcept;
+
+    std::string_view string() const noexcept;
 };
 
 }  // namespace dds

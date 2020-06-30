@@ -114,18 +114,20 @@ packages = [
         description='A modern and low-level C++ SQLite API',
         git_url='https://github.com/vector-of-bool/neo-sqlite3.git',
     ),
-    Package('neo-fun', [
-        Version(
+    many_versions(
+        'neo-fun',
+        (
             '0.1.0',
-            description='Some library fundamentals that you might find useful',
-            remote=Git('https://github.com/vector-of-bool/neo-fun.git',
-                       '0.1.0')),
-        Version(
             '0.1.1',
-            description='Some library fundamentals that you might find useful',
-            remote=Git('https://github.com/vector-of-bool/neo-fun.git',
-                       '0.1.1'))
-    ]),
+            '0.2.0',
+            '0.2.1',
+            '0.3.0',
+            '0.3.1',
+            '0.3.2',
+        ),
+        description='Some library fundamentals that you might find useful',
+        git_url='https://github.com/vector-of-bool/neo-fun.git',
+    ),
     many_versions(
         'neo-concepts',
         (
