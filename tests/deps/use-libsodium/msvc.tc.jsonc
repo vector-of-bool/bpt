@@ -1,0 +1,4 @@
+{
+    "compiler_id": 'msvc',
+    "flags": '-DSODIUM_STATIC',
+}

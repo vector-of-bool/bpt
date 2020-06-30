@@ -65,6 +65,13 @@ void migrate_repodb_1(sqlite3::database& db) {
     )");
 }
 
+void migrate_repodb_2(sqlite3::database& db) {
+    db.exec(R"(
+        ALTER TABLE dds_cat_pkgs
+            ADD COLUMN repo_transform TEXT NOT NULL DEFAULT '[]'
+    )");
+}
+
 void ensure_migrated(sqlite3::database& db) {
     sqlite3::transaction_guard tr{db};
     db.exec(R"(
@@ -87,7 +94,7 @@ void ensure_migrated(sqlite3::database& db) {
             "The catalog database metadata is invalid [bad dds_meta.version]");
     }
 
-    constexpr int current_database_version = 1;
+    constexpr int current_database_version = 2;
 
     int version = version_;
     if (version > current_database_version) {
@@ -97,8 +104,121 @@ void ensure_migrated(sqlite3::database& db) {
     if (version < 1) {
         migrate_repodb_1(db);
     }
-    meta["version"] = 1;
+    if (version < 2) {
+        migrate_repodb_2(db);
+    }
+    meta["version"] = 2;
     exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
+}
+
+void check_json(bool b, std::string_view what) {
+    if (!b) {
+        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
+    }
+}
+
+std::vector<dds::glob> parse_glob_list(const nlohmann::json& data, std::string_view what) {
+    std::vector<dds::glob> ret;
+
+    if (!data.is_null()) {
+        check_json(data.is_array(), fmt::format("'{}' must be an array of strings", what));
+        for (nlohmann::json const& glob : data) {
+            check_json(glob.is_string(), fmt::format("'{}[.]' must be strings", what));
+            ret.emplace_back(dds::glob::compile(std::string(glob)));
+        }
+    }
+
+    return ret;
+}
+
+std::optional<dds::repo_transform::copy_move> parse_copy_move_transform(nlohmann::json copy) {
+    if (copy.is_null()) {
+        return std::nullopt;
+    }
+
+    check_json(copy.is_object(), "'transform[.]/{copy,move}' must be an object");
+
+    auto from = copy["from"];
+    auto to   = copy["to"];
+    check_json(from.is_string(),
+               "'transform[.]/{copy,move}/from' must be present and must be a string");
+    check_json(to.is_string(),
+               "'transform[.]/{copy,move}/to' must be present and must be a string");
+
+    dds::repo_transform::copy_move operation;
+    operation.from = fs::path(std::string(from));
+    operation.to   = fs::path(std::string(to));
+    if (operation.from.is_absolute()) {
+        throw_user_error<errc::invalid_catalog_json>(
+            "The 'from' filepath for a copy/move operation [{}] is an absolute path. These paths "
+            "*must* be relative paths only.",
+            operation.from.string());
+    }
+    if (operation.to.is_absolute()) {
+        throw_user_error<errc::invalid_catalog_json>(
+            "The 'to' filepath for a copy/move operation [{}] is an absolute path. These paths "
+            "*must* be relative paths only.",
+            operation.to.string());
+    }
+    operation.include = parse_glob_list(copy["include"], "transform[.]/{copy,move}/include");
+    operation.exclude = parse_glob_list(copy["exclude"], "transform[.]/{copy,move}/exclude");
+
+    auto strip_comps = copy["strip_components"];
+    if (!strip_comps.is_null()) {
+        check_json(strip_comps.is_number() || int(strip_comps) < 0,
+                   "transform[.]/{copy,move}/strip_components must be a positive integer");
+        operation.strip_components = int(strip_comps);
+    }
+
+    return operation;
+}
+
+dds::repo_transform parse_transform(nlohmann::json data) {
+    assert(data.is_object());
+
+    dds::repo_transform transform;
+    transform.copy = parse_copy_move_transform(data["copy"]);
+    transform.move = parse_copy_move_transform(data["move"]);
+    return transform;
+}
+
+nlohmann::json transform_to_json(const dds::repo_transform::copy_move& tr) {
+    auto obj       = nlohmann::json::object();
+    obj["from"]    = tr.from.string();
+    obj["to"]      = tr.to.string();
+    obj["include"] = ranges::views::all(tr.include) | ranges::views::transform(&dds::glob::string);
+    obj["exclude"] = ranges::views::all(tr.exclude) | ranges::views::transform(&dds::glob::string);
+    return obj;
+}
+
+nlohmann::json transform_to_json(const struct dds::repo_transform::remove& rm) {
+    auto obj    = nlohmann::json::object();
+    obj["path"] = rm.path.string();
+    obj["only_matching"]
+        = ranges::views::all(rm.only_matching) | ranges::views::transform(&dds::glob::string);
+    return obj;
+}
+
+nlohmann::json transform_to_json(const dds::repo_transform& tr) {
+    auto obj = nlohmann::json::object();
+    if (tr.copy) {
+        obj["copy"] = transform_to_json(*tr.copy);
+    }
+    if (tr.move) {
+        obj["move"] = transform_to_json(*tr.move);
+    }
+    if (tr.remove) {
+        obj["remove"] = transform_to_json(*tr.remove);
+    }
+    return obj;
+}
+
+std::string transform_to_json(const std::vector<dds::repo_transform>& trs) {
+    auto arr = nlohmann::json::array();
+    for (auto& tr : trs) {
+        arr.push_back(transform_to_json(tr));
+    }
+    return to_string(arr);
 }
 
 }  // namespace
@@ -135,7 +255,8 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
                 git_ref,
                 lm_name,
                 lm_namespace,
-                description
+                description,
+                repo_transform
             ) VALUES (
                 ?1,
                 ?2,
@@ -143,7 +264,8 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
                 ?4,
                 CASE WHEN ?5 = '' THEN NULL ELSE ?5 END,
                 CASE WHEN ?6 = '' THEN NULL ELSE ?6 END,
-                ?7
+                ?7,
+                ?8
             )
         )"_sql,
         std::forward_as_tuple(  //
@@ -153,7 +275,8 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
             git.ref,
             lm_usage.name,
             lm_usage.namespace_,
-            pkg.description));
+            pkg.description,
+            transform_to_json(pkg.transforms)));
 }
 
 void catalog::store(const package_info& pkg) {
@@ -197,7 +320,8 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             git_ref,
             lm_name,
             lm_namespace,
-            description
+            description,
+            repo_transform
         FROM dds_cat_pkgs
         WHERE name = ? AND version = ?
     )"_sql);
@@ -210,6 +334,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
                                               std::optional<std::string>,
                                               std::optional<std::string>,
                                               std::optional<std::string>,
+                                              std::string,
                                               std::string>(st);
     if (!opt_tup) {
         dym_target::fill([&] {
@@ -220,7 +345,15 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         });
         return std::nullopt;
     }
-    const auto& [pkg_id, name, version, git_url, git_ref, lm_name, lm_namespace, description]
+    const auto& [pkg_id,
+                 name,
+                 version,
+                 git_url,
+                 git_ref,
+                 lm_name,
+                 lm_namespace,
+                 description,
+                 repo_transform]
         = *opt_tup;
     assert(pk_id.name == name);
     assert(pk_id.version == semver::version::parse(version));
@@ -229,7 +362,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
 
     auto deps = dependencies_of(pk_id);
 
-    return package_info{
+    auto info = package_info{
         pk_id,
         std::move(deps),
         std::move(description),
@@ -238,7 +371,18 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             *git_ref,
             lm_name ? std::make_optional(lm::usage{*lm_namespace, *lm_name}) : std::nullopt,
         },
+        {},
     };
+    if (!repo_transform.empty()) {
+        auto tr_json = nlohmann::json::parse(repo_transform);
+        check_json(tr_json.is_array(),
+                   fmt::format("Database record for {} has an invalid 'repo_transform' field",
+                               pkg_id));
+        for (const auto& el : tr_json) {
+            info.transforms.push_back(parse_transform(el));
+        }
+    }
+    return info;
 }
 
 auto pair_to_pkg_id = [](auto&& pair) {
@@ -291,16 +435,6 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
         | ranges::to_vector;
 }
 
-namespace {
-
-void check_json(bool b, std::string_view what) {
-    if (!b) {
-        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
-    }
-}
-
-}  // namespace
-
 void catalog::import_json_str(std::string_view content) {
     using nlohmann::json;
 
@@ -326,7 +460,7 @@ void catalog::import_json_str(std::string_view content) {
             check_json(pkg_info.is_object(),
                        fmt::format("/packages/{}/{} must be an object", pkg_name, version_));
 
-            package_info info{{pkg_name, version}, {}, {}, {}};
+            package_info info{{pkg_name, version}, {}, {}, {}, {}};
             auto         deps = pkg_info["depends"];
 
             if (!deps.is_null()) {
@@ -364,6 +498,15 @@ void catalog::import_json_str(std::string_view content) {
                 throw_user_error<errc::no_catalog_remote_info>("No remote info for /packages/{}/{}",
                                                                pkg_name,
                                                                version_);
+            }
+
+            auto transforms = pkg_info["transform"];
+            if (!transforms.is_null()) {
+                check_json(transforms.is_array(), "`transform` must be an array of objects");
+                for (nlohmann::json const& el : transforms) {
+                    check_json(el.is_object(), "Each element of `transform` must be an object");
+                    info.transforms.emplace_back(parse_transform(el));
+                }
             }
 
             auto desc_ = pkg_info["description"];

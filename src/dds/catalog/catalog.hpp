@@ -4,6 +4,7 @@
 #include <dds/deps.hpp>
 #include <dds/package/id.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/glob.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
@@ -16,12 +17,34 @@
 
 namespace dds {
 
+struct repo_transform {
+    struct copy_move {
+        fs::path from;
+        fs::path to;
+        int strip_components = 0;
+        std::vector<dds::glob> include;
+        std::vector<dds::glob> exclude;
+    };
+
+    struct remove {
+        fs::path path;
+
+        std::vector<dds::glob> only_matching;
+    };
+
+    std::optional<copy_move> copy;
+    std::optional<copy_move> move;
+    std::optional<remove> remove;
+};
+
 struct package_info {
     package_id              ident;
     std::vector<dependency> deps;
     std::string             description;
 
     std::variant<git_remote_listing> remote;
+
+    std::vector<repo_transform> transforms;
 };
 
 class catalog {

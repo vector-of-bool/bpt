@@ -1,0 +1,4 @@
+{
+    name: 'use-libsodium',
+    uses: ['sodium/sodium']
+}
