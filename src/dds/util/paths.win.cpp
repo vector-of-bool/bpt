@@ -30,7 +30,7 @@ fs::path appdatalocal_dir() {
 }
 
 fs::path appdata_dir() {
-    auto env = std::getenv("LocalAppData");
+    auto env = std::getenv("AppData");
     assert(env);
 
     return fs::absolute(fs::path(env));
