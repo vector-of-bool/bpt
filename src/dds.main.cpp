@@ -270,7 +270,7 @@ struct cli_catalog {
                 // deps.push_back({dep_id.name, dep_id.version});
             }
 
-            dds::package_info info{ident, std::move(deps), description.Get(), {}};
+            dds::package_info info{ident, std::move(deps), description.Get(), {}, {}};
 
             if (git_url) {
                 if (!git_ref) {
