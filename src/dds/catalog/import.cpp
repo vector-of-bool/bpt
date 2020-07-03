@@ -41,7 +41,7 @@ auto reject_unknown_key(std::string_view path) {
     return [path = std::string(path)](auto key, auto&&) {  //
         return reject(fmt::format("{}: unknown key '{}'", path, key));
     };
-};
+}
 
 std::vector<dependency> parse_deps_json_v1(const json5::data& deps, std::string_view path) {
     std::vector<dependency> acc_deps;
@@ -139,6 +139,10 @@ package_info parse_pkg_json_v1(std::string_view   name,
         throw_user_error<
             errc::invalid_catalog_json>("{}: Requires a remote listing (e.g. a 'git' proprety).",
                                         path);
+    }
+    auto rej = std::get_if<semester::dc_reject_t>(&result);
+    if (rej) {
+        throw_user_error<errc::invalid_catalog_json>("{}: {}", path, rej->message);
     }
     return ret;
 }
