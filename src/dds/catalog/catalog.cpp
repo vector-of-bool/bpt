@@ -1,9 +1,12 @@
 #include "./catalog.hpp"
 
+#include "./import.hpp"
+
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 
+#include <neo/assert.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
@@ -131,96 +134,6 @@ std::vector<dds::glob> parse_glob_list(const nlohmann::json& data, std::string_v
     return ret;
 }
 
-std::optional<dds::repo_transform::copy_move> parse_copy_move_transform(nlohmann::json copy) {
-    if (copy.is_null()) {
-        return std::nullopt;
-    }
-
-    check_json(copy.is_object(), "'transform[.]/{copy,move}' must be an object");
-
-    auto from = copy["from"];
-    auto to   = copy["to"];
-    check_json(from.is_string(),
-               "'transform[.]/{copy,move}/from' must be present and must be a string");
-    check_json(to.is_string(),
-               "'transform[.]/{copy,move}/to' must be present and must be a string");
-
-    dds::repo_transform::copy_move operation;
-    operation.from = fs::path(std::string(from));
-    operation.to   = fs::path(std::string(to));
-    if (operation.from.is_absolute()) {
-        throw_user_error<errc::invalid_catalog_json>(
-            "The 'from' filepath for a copy/move operation [{}] is an absolute path. These paths "
-            "*must* be relative paths only.",
-            operation.from.string());
-    }
-    if (operation.to.is_absolute()) {
-        throw_user_error<errc::invalid_catalog_json>(
-            "The 'to' filepath for a copy/move operation [{}] is an absolute path. These paths "
-            "*must* be relative paths only.",
-            operation.to.string());
-    }
-    operation.include = parse_glob_list(copy["include"], "transform[.]/{copy,move}/include");
-    operation.exclude = parse_glob_list(copy["exclude"], "transform[.]/{copy,move}/exclude");
-
-    auto strip_comps = copy["strip_components"];
-    if (!strip_comps.is_null()) {
-        check_json(strip_comps.is_number() || int(strip_comps) < 0,
-                   "transform[.]/{copy,move}/strip_components must be a positive integer");
-        operation.strip_components = int(strip_comps);
-    }
-
-    return operation;
-}
-
-dds::repo_transform parse_transform(nlohmann::json data) {
-    assert(data.is_object());
-
-    dds::repo_transform transform;
-    transform.copy = parse_copy_move_transform(data["copy"]);
-    transform.move = parse_copy_move_transform(data["move"]);
-    return transform;
-}
-
-nlohmann::json transform_to_json(const dds::repo_transform::copy_move& tr) {
-    auto obj       = nlohmann::json::object();
-    obj["from"]    = tr.from.string();
-    obj["to"]      = tr.to.string();
-    obj["include"] = ranges::views::all(tr.include) | ranges::views::transform(&dds::glob::string);
-    obj["exclude"] = ranges::views::all(tr.exclude) | ranges::views::transform(&dds::glob::string);
-    return obj;
-}
-
-nlohmann::json transform_to_json(const struct dds::repo_transform::remove& rm) {
-    auto obj    = nlohmann::json::object();
-    obj["path"] = rm.path.string();
-    obj["only_matching"]
-        = ranges::views::all(rm.only_matching) | ranges::views::transform(&dds::glob::string);
-    return obj;
-}
-
-nlohmann::json transform_to_json(const dds::repo_transform& tr) {
-    auto obj = nlohmann::json::object();
-    if (tr.copy) {
-        obj["copy"] = transform_to_json(*tr.copy);
-    }
-    if (tr.move) {
-        obj["move"] = transform_to_json(*tr.move);
-    }
-    if (tr.remove) {
-        obj["remove"] = transform_to_json(*tr.remove);
-    }
-    return obj;
-}
-
-std::string transform_to_json(const std::vector<dds::repo_transform>& trs) {
-    auto arr = nlohmann::json::array();
-    for (auto& tr : trs) {
-        arr.push_back(transform_to_json(tr));
-    }
-    return to_string(arr);
-}
-
 }  // namespace
 
 catalog catalog::open(const std::string& db_path) {
@@ -242,6 +155,15 @@ catalog catalog::open(const std::string& db_path) {
 
 catalog::catalog(sqlite3::database db)
     : _db(std::move(db)) {}
+
+void catalog::_store_pkg(const package_info& pkg, std::monostate) {
+    neo_assert_always(
+        invariant,
+        false,
+        "There was an attempt to insert a package listing into the database where that package "
+        "listing does not have a remote listing. If you see this message, it is a dds bug.",
+        pkg.ident.to_string());
+}
 
 void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git) {
     auto lm_usage = git.auto_lib.value_or(lm::usage{});
@@ -275,8 +197,9 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
             git.ref,
             lm_usage.name,
             lm_usage.namespace_,
-            pkg.description,
-            transform_to_json(pkg.transforms)));
+            pkg.description
+            //, transform_to_json(pkg.transforms))
+            ));
 }
 
 void catalog::store(const package_info& pkg) {
@@ -378,9 +301,10 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         check_json(tr_json.is_array(),
                    fmt::format("Database record for {} has an invalid 'repo_transform' field",
                                pkg_id));
-        for (const auto& el : tr_json) {
-            info.transforms.push_back(parse_transform(el));
-        }
+        /// XXX:
+        // for (const auto& el : tr_json) {
+        //     info.transforms.push_back(parse_transform(el));
+        // }
     }
     return info;
 }
@@ -436,86 +360,10 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
 }
 
 void catalog::import_json_str(std::string_view content) {
-    using nlohmann::json;
-
-    auto root = json::parse(content);
-    check_json(root.is_object(), "Root of JSON must be an object (key-value mapping)");
-
-    auto version = root["version"];
-    check_json(version.is_number_integer(), "/version must be an integral value");
-    check_json(version <= 1, "/version is too new. We don't know how to parse this.");
-
-    auto packages = root["packages"];
-    check_json(packages.is_object(), "/packages must be an object");
+    auto pkgs = parse_packages_json(content);
 
     sqlite3::transaction_guard tr{_db};
-
-    for (const auto& [pkg_name_, versions_map] : packages.items()) {
-        std::string pkg_name = pkg_name_;
-        check_json(versions_map.is_object(),
-                   fmt::format("/packages/{} must be an object", pkg_name));
-
-        for (const auto& [version_, pkg_info] : versions_map.items()) {
-            auto version = semver::version::parse(version_);
-            check_json(pkg_info.is_object(),
-                       fmt::format("/packages/{}/{} must be an object", pkg_name, version_));
-
-            package_info info{{pkg_name, version}, {}, {}, {}, {}};
-            auto         deps = pkg_info["depends"];
-
-            if (!deps.is_null()) {
-                check_json(deps.is_object(),
-                           fmt::format("/packages/{}/{}/depends must be an object",
-                                       pkg_name,
-                                       version_));
-
-                for (const auto& [dep_name, dep_version] : deps.items()) {
-                    check_json(dep_version.is_string(),
-                               fmt::format("/packages/{}/{}/depends/{} must be a string",
-                                           pkg_name,
-                                           version_,
-                                           dep_name));
-                    auto range = semver::range::parse(std::string(dep_version));
-                    info.deps.push_back({
-                        std::string(dep_name),
-                        {range.low(), range.high()},
-                    });
-                }
-            }
-
-            auto git_remote = pkg_info["git"];
-            if (!git_remote.is_null()) {
-                check_json(git_remote.is_object(), "`git` must be an object");
-                std::string              url      = git_remote["url"];
-                std::string              ref      = git_remote["ref"];
-                auto                     lm_usage = git_remote["auto-lib"];
-                std::optional<lm::usage> autolib;
-                if (!lm_usage.is_null()) {
-                    autolib = lm::split_usage_string(std::string(lm_usage));
-                }
-                info.remote = git_remote_listing{url, ref, autolib};
-            } else {
-                throw_user_error<errc::no_catalog_remote_info>("No remote info for /packages/{}/{}",
-                                                               pkg_name,
-                                                               version_);
-            }
-
-            auto transforms = pkg_info["transform"];
-            if (!transforms.is_null()) {
-                check_json(transforms.is_array(), "`transform` must be an array of objects");
-                for (nlohmann::json const& el : transforms) {
-                    check_json(el.is_object(), "Each element of `transform` must be an object");
-                    info.transforms.emplace_back(parse_transform(el));
-                }
-            }
-
-            auto desc_ = pkg_info["description"];
-            if (!desc_.is_null()) {
-                check_json(desc_.is_string(), "`description` must be a string");
-                info.description = desc_;
-            }
-
-            store(info);
-        }
+    for (const auto& pkg : pkgs) {
+        store(pkg);
     }
 }

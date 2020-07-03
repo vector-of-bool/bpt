@@ -328,6 +328,10 @@ struct cli_catalog {
             }
         }
 
+        void print_remote_info(std::monostate) {
+            std::cout << "THIS ENTRY IS MISSING REMOTE INFORMATION!\n";
+        }
+
         int run() {
             auto pk_id = dds::package_id::parse(ident.Get());
             auto cat   = cat_path.open();

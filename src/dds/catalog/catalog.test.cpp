@@ -20,6 +20,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
         {},
         "example",
         dds::git_remote_listing{"http://example.com", "master", std::nullopt},
+        {},
     });
 
     auto pkgs = db.by_name("foo");
@@ -39,6 +40,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
         {},
         "example",
         dds::git_remote_listing{"http://example.com", "develop", std::nullopt},
+        {},
     }));
     // The previous pkg_id is still a valid lookup key
     info = db.get(pkgs[0]);
@@ -55,6 +57,7 @@ TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
         },
         "example",
         dds::git_remote_listing{"http://example.com", "master", std::nullopt},
+        {},
     });
     auto pkgs = db.by_name("foo");
     REQUIRE(pkgs.size() == 1);
