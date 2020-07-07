@@ -6,7 +6,9 @@
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 
+#include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
+#include <neo/concepts.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
@@ -120,20 +122,6 @@ void check_json(bool b, std::string_view what) {
     }
 }
 
-std::vector<dds::glob> parse_glob_list(const nlohmann::json& data, std::string_view what) {
-    std::vector<dds::glob> ret;
-
-    if (!data.is_null()) {
-        check_json(data.is_array(), fmt::format("'{}' must be an array of strings", what));
-        for (nlohmann::json const& glob : data) {
-            check_json(glob.is_string(), fmt::format("'{}[.]' must be strings", what));
-            ret.emplace_back(dds::glob::compile(std::string(glob)));
-        }
-    }
-
-    return ret;
-}
-
 }  // namespace
 
 catalog catalog::open(const std::string& db_path) {
@@ -164,6 +152,21 @@ void catalog::_store_pkg(const package_info& pkg, std::monostate) {
         "listing does not have a remote listing. If you see this message, it is a dds bug.",
         pkg.ident.to_string());
 }
+
+namespace {
+
+std::string transforms_to_json(const std::vector<fs_transformation>& trs) {
+    std::string acc = "[";
+    for (auto it = trs.begin(); it != trs.end(); ++it) {
+        acc += it->as_json();
+        if (std::next(it) != trs.end()) {
+            acc += ", ";
+        }
+    }
+    return acc + "]";
+}
+
+}  // namespace
 
 void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git) {
     auto lm_usage = git.auto_lib.value_or(lm::usage{});
@@ -197,9 +200,8 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
             git.ref,
             lm_usage.name,
             lm_usage.namespace_,
-            pkg.description
-            //, transform_to_json(pkg.transforms))
-            ));
+            pkg.description,
+            transforms_to_json(git.transforms)));
 }
 
 void catalog::store(const package_info& pkg) {
@@ -293,18 +295,33 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             *git_url,
             *git_ref,
             lm_name ? std::make_optional(lm::usage{*lm_namespace, *lm_name}) : std::nullopt,
+            {},
         },
-        {},
     };
+
+    auto append_transform = [](auto transform) {
+        return [transform = std::move(transform)](auto& remote) {
+            if constexpr (neo::alike<decltype(remote), std::monostate>) {
+                // Do nothing
+            } else {
+                remote.transforms.push_back(std::move(transform));
+            }
+        };
+    };
+
     if (!repo_transform.empty()) {
-        auto tr_json = nlohmann::json::parse(repo_transform);
+        auto tr_json = json5::parse_data(repo_transform);
         check_json(tr_json.is_array(),
-                   fmt::format("Database record for {} has an invalid 'repo_transform' field",
+                   fmt::format("Database record for {} has an invalid 'repo_transform' field [1]",
                                pkg_id));
-        /// XXX:
-        // for (const auto& el : tr_json) {
-        //     info.transforms.push_back(parse_transform(el));
-        // }
+        for (const auto& el : tr_json.as_array()) {
+            check_json(
+                el.is_object(),
+                fmt::format("Database record for {} has an invalid 'repo_transform' field [2]",
+                            pkg_id));
+            auto tr = fs_transformation::from_json(el);
+            std::visit(append_transform(tr), info.remote);
+        }
     }
     return info;
 }

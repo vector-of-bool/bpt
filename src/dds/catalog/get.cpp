@@ -31,10 +31,9 @@ temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_list
     spdlog::info("Cloning Git repository: {} [{}] ...", git.url, git.ref);
     git.clone(tmpdir.path());
 
-    /// XXX:
-    // for (const auto& tr : listing.transforms) {
-    //     tr.apply_to(tmpdir.path());
-    // }
+    for (const auto& tr : git.transforms) {
+        tr.apply_to(tmpdir.path());
+    }
 
     spdlog::info("Create sdist from clone ...");
     if (git.auto_lib.has_value()) {

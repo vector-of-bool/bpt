@@ -37,6 +37,30 @@ TEST_CASE("Valid/invalid package JSON5") {
         // Objects in 'packages' shuold have version strings
         "{version:1, packages:{foo:{'lol':{}}}}",
         "{version:1, packages:{foo:{'1.2':{}}}}",
+        // No remote
+        "{version:1, packages:{foo:{'1.2.3':{}}}}",
+        // Bad empty git
+        "{version:1, packages:{foo:{'1.2.3':{git:{}}}}}",
+        // Git `url` and `ref` should be a string
+        "{version:1, packages:{foo:{'1.2.3':{git:{url:2, ref:''}}}}}",
+        "{version:1, packages:{foo:{'1.2.3':{git:{url:'', ref:2}}}}}",
+        // 'auto-lib' should be a usage string
+        "{version:1, packages:{foo:{'1.2.3':{git:{url:'', ref:'', 'auto-lib':3}}}}}",
+        "{version:1, packages:{foo:{'1.2.3':{git:{url:'', ref:'', 'auto-lib':'ffasdf'}}}}}",
+        // 'transform' should be an array
+        R"(
+            {
+                version: 1,
+                packages: {foo: {'1.2.3': {
+                    git: {
+                        url: '',
+                        ref: '',
+                        'auto-lib': 'a/b',
+                        transform: 'lol hi',
+                    }
+                }}}
+            }
+        )",
     };
 
     for (auto bad : bads) {
@@ -50,6 +74,49 @@ TEST_CASE("Valid/invalid package JSON5") {
         "{version:1, packages:{}}",
         // No versions for 'foo' is weird, but okay
         "{version:1, packages:{foo:{}}}",
+        // Basic package with minimum info:
+        "{version:1, packages:{foo:{'1.2.3':{git:{url:'', ref:''}}}}}",
+        // Minimal auto-lib:
+        "{version:1, packages:{foo:{'1.2.3':{git:{url:'', ref:'', 'auto-lib':'a/b'}}}}}",
+        // Empty transforms:
+        R"(
+            {
+                version: 1,
+                packages: {foo: {'1.2.3': {
+                    git: {
+                        url: '',
+                        ref: '',
+                        'auto-lib': 'a/b',
+                        transform: [],
+                    }
+                }}}
+            }
+        )",
+        // Basic transform:
+        R"(
+            {
+                version: 1,
+                packages: {foo: {'1.2.3': {
+                    git: {
+                        url: '',
+                        ref: '',
+                        'auto-lib': 'a/b',
+                        transform: [{
+                            copy: {
+                                from: 'here',
+                                to: 'there',
+                                include: [
+                                    "*.c",
+                                    "*.cpp",
+                                    "*.h",
+                                    '*.txt'
+                                ]
+                            }
+                        }],
+                    }
+                }}}
+            }
+        )",
     };
     for (auto good : goods) {
         INFO("Parse: " << good);
@@ -66,14 +133,22 @@ TEST_CASE("Check a single object") {
                 '1.2.3': {
                     git: {
                         url: 'foo',
-                        ref: 'fasdf'
+                        ref: 'fasdf',
+                        'auto-lib': 'a/b',
                     }
                 }
             }
         }
     })");
-    CHECK(pkgs.size() == 1);
+    REQUIRE(pkgs.size() == 1);
     CHECK(pkgs[0].ident.name == "foo");
     CHECK(pkgs[0].ident.to_string() == "foo@1.2.3");
     CHECK(std::holds_alternative<dds::git_remote_listing>(pkgs[0].remote));
+
+    auto git = std::get<dds::git_remote_listing>(pkgs[0].remote);
+    CHECK(git.url == "foo");
+    CHECK(git.ref == "fasdf");
+    REQUIRE(git.auto_lib);
+    CHECK(git.auto_lib->namespace_ == "a");
+    CHECK(git.auto_lib->name == "b");
 }

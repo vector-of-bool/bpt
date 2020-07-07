@@ -9,11 +9,11 @@
         "range-v3": "0.10.0",
         "nlohmann-json": "3.7.1",
         "neo-sqlite3": "0.2.3",
-        "neo-fun": "0.3.0",
+        "neo-fun": "0.3.2",
         "semver": "0.2.2",
         "pubgrub": "0.2.1",
         "vob-json5": "0.1.5",
-        "vob-semester": "0.1.1",
+        "vob-semester": "0.2.1",
         "ctre": "2.7.0",
     },
     "test_driver": "Catch-Main"

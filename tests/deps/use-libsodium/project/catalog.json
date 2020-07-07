@@ -6,34 +6,41 @@
                 "git": {
                     "url": "https://github.com/jedisct1/libsodium.git",
                     "ref": "1.0.18",
-                    "auto-lib": "sodium/sodium"
-                },
-                "transform": [
-                    {
-                        "move": {
-                            "from": "src/libsodium/include",
-                            "to": "include/"
+                    "auto-lib": "sodium/sodium",
+                    "transform": [
+                        {
+                            "move": {
+                                "from": "src/libsodium/include",
+                                "to": "include/"
+                            }
+                        },
+                        {
+                            "copy": {
+                                "from": "builds/msvc/version.h",
+                                "to": "include/sodium/version.h"
+                            }
+                        },
+                        {
+                            "copy": {
+                                "from": "include/sodium",
+                                "to": "src/libsodium"
+                            },
+                            "move": {
+                                "from": "src/libsodium",
+                                "to": "src_root"
+                            },
+                            "remove": {
+                                "path": "src"
+                            }
+                        },
+                        {
+                            "move": {
+                                "from": "src_root",
+                                "to": "src"
+                            }
                         }
-                    },
-                    {
-                        "copy": {
-                            "from": "builds/msvc/version.h",
-                            "to": "include/sodium/version.h"
-                        }
-                    },
-                    {
-                        "copy": {
-                            "from": "include/sodium",
-                            "to": "src/libsodium"
-                        }
-                    },
-                    {
-                        "move": {
-                            "from": "src/libsodium",
-                            "to": "src"
-                        }
-                    }
-                ]
+                    ]
+                }
             }
         }
     }

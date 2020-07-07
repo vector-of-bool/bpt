@@ -10,11 +10,13 @@ class Git(NamedTuple):
     auto_lib: Optional[str] = None
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             'url': self.url,
             'ref': self.ref,
-            'auto-lib': self.auto_lib,
         }
+        if self.auto_lib:
+            d['auto-lib'] = self.auto_lib
+        return d
 
 
 RemoteInfo = Union[Git]
@@ -135,6 +137,9 @@ packages = [
             '0.2.0',
             '0.2.1',
             '0.2.2',
+            '0.3.0',
+            '0.3.1',
+            '0.3.2',
         ),
         description=
         'Minimal C++ concepts library. Contains many definitions from C++20.',
@@ -191,6 +196,24 @@ packages = [
             depends={
                 'neo-fun': '^0.1.1',
                 'neo-concepts': '^0.2.2',
+            }),
+        Version(
+            '0.2.0',
+            description='A C++ library to process recursive dynamic data',
+            remote=Git('https://github.com/vector-of-bool/semester.git',
+                       '0.2.0'),
+            depends={
+                'neo-fun': '^0.3.2',
+                'neo-concepts': '^0.3.2',
+            }),
+        Version(
+            '0.2.1',
+            description='A C++ library to process recursive dynamic data',
+            remote=Git('https://github.com/vector-of-bool/semester.git',
+                       '0.2.1'),
+            depends={
+                'neo-fun': '^0.3.2',
+                'neo-concepts': '^0.3.2',
             }),
     ]),
     Package('ctre', [

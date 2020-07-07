@@ -4,213 +4,177 @@
 
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
-#include <semester/decomp.hpp>
+#include <semester/walk.hpp>
 #include <spdlog/fmt/fmt.h>
 
 #include <optional>
 
 using namespace dds;
 
-template <typename... Args>
+template <typename KeyFunc, typename... Args>
 struct any_key {
-    semester::try_seq<Args...> _seq;
-    std::string_view&          _key;
+    KeyFunc                     _key_fn;
+    semester::walk_seq<Args...> _seq;
 
-    any_key(std::string_view& key_var, Args&&... args)
-        : _seq(NEO_FWD(args)...)
-        , _key{key_var} {}
+    any_key(KeyFunc&& kf, Args&&... args)
+        : _key_fn(kf)
+        , _seq(NEO_FWD(args)...) {}
 
     template <typename Data>
-    semester::dc_result_t operator()(std::string_view key, Data&& dat) const {
-        _key = key;
-        return _seq.invoke(dat);
+    semester::walk_result operator()(std::string_view key, Data&& dat) {
+        auto res = _key_fn(key);
+        if (res.rejected()) {
+            return res;
+        }
+        return _seq.invoke(NEO_FWD(dat));
     }
 };
 
-template <typename... Args>
-any_key(std::string_view, Args&&...) -> any_key<Args&&...>;
+template <typename KF, typename... Args>
+any_key(KF&&, Args&&...) -> any_key<KF, Args...>;
 
 namespace {
 
-semester::dc_result_t reject(std::string s) { return semester::dc_reject_t{s}; }
-semester::dc_result_t pass   = semester::dc_pass;
-semester::dc_result_t accept = semester::dc_accept;
-using require_obj            = semester::require_type<json5::data::mapping_type>;
+using require_obj   = semester::require_type<json5::data::mapping_type>;
+using require_array = semester::require_type<json5::data::array_type>;
+using require_str   = semester::require_type<std::string>;
 
-auto reject_unknown_key(std::string_view path) {
-    return [path = std::string(path)](auto key, auto&&) {  //
-        return reject(fmt::format("{}: unknown key '{}'", path, key));
-    };
+template <typename... Args>
+[[noreturn]] void import_error(Args&&... args) {
+    throw_user_error<dds::errc::invalid_catalog_json>(NEO_FWD(args)...);
 }
 
-std::vector<dependency> parse_deps_json_v1(const json5::data& deps, std::string_view path) {
-    std::vector<dependency> acc_deps;
-    std::string_view        dep_name;
-    std::string_view        dep_version_range_str;
+git_remote_listing parse_git_remote(const json5::data& data) {
+    git_remote_listing git;
 
-    using namespace semester::decompose_ops;
-    auto result = semester::decompose(  //
-        deps,
-        mapping{any_key{
-            dep_name,
-            [&](auto&& range_str) {
-                if (!range_str.is_string()) {
-                    throw_user_error<
-                        errc::invalid_catalog_json>("{}/{} should be a string version range",
-                                                    path,
-                                                    dep_name);
-                }
-                try {
-                    auto rng = semver::range::parse_restricted(range_str.as_string());
-                    acc_deps.push_back(dependency{std::string{dep_name}, {rng.low(), rng.high()}});
-                    return accept;
-                } catch (const semver::invalid_range&) {
-                    throw_user_error<errc::invalid_version_range_string>(
-                        "Invalid version range string '{}' at {}/{}",
-                        range_str.as_string(),
-                        path,
-                        dep_name);
-                }
-            },
-        }});
+    using namespace semester::walk_ops;
 
-    neo_assert(invariant,
-               std::holds_alternative<semester::dc_accept_t>(result),
-               "Parsing dependency object did not accept??");
+    walk(data,
+         require_obj{"Git remote should be an object"},
+         mapping{required_key{"url",
+                              "A git 'url' string is required",
+                              require_str("Git URL should be a string"),
+                              put_into(git.url)},
+                 required_key{"ref",
+                              "A git 'ref' is required, and must be a tag or branch name",
+                              require_str("Git ref should be a string"),
+                              put_into(git.ref)},
+                 if_key{"auto-lib",
+                        require_str("'auto-lib' should be a string"),
+                        put_into(git.auto_lib,
+                                 [](std::string const& str) {
+                                     try {
+                                         return lm::split_usage_string(str);
+                                     } catch (const std::runtime_error& e) {
+                                         import_error("{}: {}", walk.path(), e.what());
+                                     }
+                                 })},
+                 if_key{"transform",
+                        require_array{"Expect an array of transforms"},
+                        for_each{put_into(std::back_inserter(git.transforms), [](auto&& dat) {
+                            try {
+                                return fs_transformation::from_json(dat);
+                            } catch (const semester::walk_error& e) {
+                                import_error(e.what());
+                            }
+                        })}}});
 
-    return acc_deps;
+    return git;
 }
 
-package_info parse_pkg_json_v1(std::string_view   name,
-                               semver::version    version,
-                               std::string_view   path,
-                               const json5::data& pkg) {
-    using namespace semester::decompose_ops;
+package_info
+parse_pkg_json_v1(std::string_view name, semver::version version, const json5::data& data) {
     package_info ret;
     ret.ident = package_id{std::string{name}, version};
 
-    auto result = semester::decompose(  //
-        pkg,
-        mapping{if_key{"description",
-                       require_type<std::string>{
-                           fmt::format("{}/description should be a string", path)},
-                       put_into{ret.description}},
-                if_key{"depends",
-                       require_obj{fmt::format("{}/depends must be a JSON object", path)},
-                       [&](auto&& dep_obj) {
-                           ret.deps = parse_deps_json_v1(dep_obj, fmt::format("{}/depends", path));
-                           return accept;
-                       }},
-                if_key{
-                    "git",
-                    require_obj{fmt::format("{}/git must be a JSON object", path)},
-                    [&](auto&& git_obj) {
-                        git_remote_listing git_remote;
+    using namespace semester::walk_ops;
 
-                        auto r = semester::decompose(
-                            git_obj,
-                            mapping{
-                                if_key{"url", put_into{git_remote.url}},
-                                if_key{"ref", put_into{git_remote.ref}},
-                                if_key{"auto-lib",
-                                       require_type<std::string>{
-                                           fmt::format("{}/git/auto-lib must be a string", path)},
-                                       [&](auto&& al) {
-                                           git_remote.auto_lib
-                                               = lm::split_usage_string(al.as_string());
-                                           return accept;
-                                       }},
-                                reject_unknown_key(std::string(path) + "/git"),
-                            });
+    std::string dep_name;
+    auto        dep_range       = semver::range::everything();
+    auto        parse_dep_range = [&](const std::string& s) {
+        try {
+            return semver::range::parse_restricted(s);
+        } catch (const semver::invalid_range& e) {
+            import_error(std::string(walk.path()) + e.what());
+        }
+    };
+    auto make_dep = [&](auto&&) {
+        return dependency{dep_name, {dep_range.low(), dep_range.high()}};
+    };
 
-                        if (git_remote.url.empty() || git_remote.ref.empty()) {
-                            throw_user_error<errc::invalid_catalog_json>(
-                                "{}/git requires both 'url' and 'ref' non-empty string properties",
-                                path);
-                        }
+    auto check_one_remote = [&](auto&&) {
+        if (!semester::holds_alternative<std::monostate>(ret.remote)) {
+            return walk.reject("Cannot specify multiple remotes for a package");
+        }
+        return walk.pass;
+    };
 
-                        ret.remote = git_remote;
-                        return r;
-                    },
-                },
-                reject_unknown_key(path)});
+    auto add_dep = any_key{put_into(dep_name),
+                           require_str{"Dependency should specify a version range string"},
+                           put_into_pass{dep_range, parse_dep_range},
+                           put_into{std::back_inserter(ret.deps), make_dep}};
 
-    if (std::holds_alternative<std::monostate>(ret.remote)) {
-        throw_user_error<
-            errc::invalid_catalog_json>("{}: Requires a remote listing (e.g. a 'git' proprety).",
-                                        path);
+    walk(data,
+         mapping{if_key{"description",
+                        require_str{"'description' should be a string"},
+                        put_into{ret.description}},
+                 if_key{"depends",
+                        require_obj{"'depends' must be a JSON object"},
+                        mapping{add_dep}},
+                 if_key{
+                     "git",
+                     check_one_remote,
+                     put_into(ret.remote, parse_git_remote),
+                 }});
+
+    if (semester::holds_alternative<std::monostate>(ret.remote)) {
+        import_error("{}: Package listing for {} does not have any remote information",
+                     walk.path(),
+                     ret.ident.to_string());
     }
-    auto rej = std::get_if<semester::dc_reject_t>(&result);
-    if (rej) {
-        throw_user_error<errc::invalid_catalog_json>("{}: {}", path, rej->message);
-    }
+
     return ret;
 }
 
 std::vector<package_info> parse_json_v1(const json5::data& data) {
-    using namespace semester::decompose_ops;
-    auto packages_it = data.as_object().find("packages");
-    if (packages_it == data.as_object().end() || !packages_it->second.is_object()) {
-        throw_user_error<errc::invalid_catalog_json>(
-            "Root JSON object requires a 'packages' property");
-    }
-
     std::vector<package_info> acc_pkgs;
 
-    std::string_view pkg_name;
-    std::string_view pkg_version_str;
+    std::string     pkg_name;
+    semver::version pkg_version;
+    package_info    dummy;
 
-    auto result = semester::decompose(
-        data,
-        mapping{
-            // Ignore the "version" key at this level
-            if_key{"version", just_accept},
-            if_key{
-                "packages",
-                mapping{any_key{
-                    pkg_name,
-                    [&](auto&& entry) {
-                        if (!entry.is_object()) {
-                            return reject(
-                                fmt::format("/packages/{} must be a JSON object", pkg_name));
-                        }
-                        return pass;
-                    },
-                    mapping{any_key{
-                        pkg_version_str,
-                        [&](auto&& pkg_def) {
-                            semver::version version;
-                            try {
-                                version = semver::version::parse(pkg_version_str);
-                            } catch (const semver::invalid_version& e) {
-                                throw_user_error<errc::invalid_catalog_json>(
-                                    "/packages/{} version string '{}' is invalid: {}",
-                                    pkg_name,
-                                    pkg_version_str,
-                                    e.what());
-                            }
-                            if (!pkg_def.is_object()) {
-                                return reject(fmt::format("/packages/{}/{} must be a JSON object"));
-                            }
-                            auto pkg = parse_pkg_json_v1(pkg_name,
-                                                         version,
-                                                         fmt::format("/packages/{}/{}",
-                                                                     pkg_name,
-                                                                     pkg_version_str),
-                                                         pkg_def);
-                            acc_pkgs.emplace_back(std::move(pkg));
-                            return accept;
-                        },
-                    }},
-                }},
-            },
-            reject_unknown_key("/"),
-        });
+    using namespace semester::walk_ops;
 
-    auto rej = std::get_if<semester::dc_reject_t>(&result);
-    if (rej) {
-        throw_user_error<errc::invalid_catalog_json>(rej->message);
-    }
+    auto convert_pkg_obj
+        = [&](auto&& dat) { return parse_pkg_json_v1(pkg_name, pkg_version, dat); };
+
+    auto convert_version_str = [&](std::string_view str) {
+        try {
+            return semver::version::parse(str);
+        } catch (const semver::invalid_version& e) {
+            throw_user_error<errc::invalid_catalog_json>("{}: version string '{}' is invalid: {}",
+                                                         walk.path(),
+                                                         pkg_name,
+                                                         str,
+                                                         e.what());
+        }
+    };
+
+    auto import_pkg_versions
+        = walk_seq{require_obj{"Package entries must be JSON objects"},
+                   mapping{any_key{put_into(pkg_version, convert_version_str),
+                                   require_obj{"Package+version entries must be JSON"},
+                                   put_into{std::back_inserter(acc_pkgs), convert_pkg_obj}}}};
+
+    auto import_pkgs = walk_seq{require_obj{"'packages' should be a JSON object"},
+                                mapping{any_key{put_into(pkg_name), import_pkg_versions}}};
+
+    walk(data,
+         mapping{
+             if_key{"version", just_accept},
+             required_key{"packages", "'packages' should be an object of packages", import_pkgs},
+         });
+
     return acc_pkgs;
 }
 
@@ -237,9 +201,14 @@ std::vector<package_info> dds::parse_packages_json(std::string_view content) {
 
     double version = version_it->second.as_number();
 
-    if (version == 1.0) {
-        return parse_json_v1(data);
-    } else {
-        throw_user_error<errc::invalid_catalog_json>("Unknown catalog JSON version '{}'", version);
+    try {
+        if (version == 1.0) {
+            return parse_json_v1(data);
+        } else {
+            throw_user_error<errc::invalid_catalog_json>("Unknown catalog JSON version '{}'",
+                                                         version);
+        }
+    } catch (const semester::walk_error& e) {
+        throw_user_error<errc::invalid_catalog_json>(e.what());
     }
 }

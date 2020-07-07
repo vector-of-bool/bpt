@@ -1,0 +1,4 @@
+{
+    name: 'use-cryptopp',
+    uses: ['cryptopp/cryptopp']
+}

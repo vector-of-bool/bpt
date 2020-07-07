@@ -144,6 +144,7 @@ dds::detail::glob_impl compile_glob_expr(std::string_view pattern) {
     using namespace dds::detail;
 
     glob_impl acc{};
+    acc.spelling = std::string(pattern);
 
     while (!pattern.empty()) {
         const auto next_slash = pattern.find('/');
@@ -165,7 +166,6 @@ dds::detail::glob_impl compile_glob_expr(std::string_view pattern) {
         throw std::runtime_error("Invalid path glob expression (Must not be empty!)");
     }
 
-    acc.spelling = std::string(pattern);
     return acc;
 }
 

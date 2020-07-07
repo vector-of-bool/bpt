@@ -270,13 +270,13 @@ struct cli_catalog {
                 // deps.push_back({dep_id.name, dep_id.version});
             }
 
-            dds::package_info info{ident, std::move(deps), description.Get(), {}, {}};
+            dds::package_info info{ident, std::move(deps), description.Get(), {}};
 
             if (git_url) {
                 if (!git_ref) {
                     dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
                 }
-                auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt};
+                auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt, {}};
                 if (auto_lib) {
                     git.auto_lib = lm::split_usage_string(auto_lib.Get());
                 }

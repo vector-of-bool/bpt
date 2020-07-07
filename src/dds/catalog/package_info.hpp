@@ -20,8 +20,6 @@ struct package_info {
     std::string             description;
 
     std::variant<std::monostate, git_remote_listing> remote;
-
-    std::vector<fs_transformation> transforms;
 };
 
 }  // namespace dds
