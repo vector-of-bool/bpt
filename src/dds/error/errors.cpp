@@ -37,6 +37,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "no-catalog-remote-info.html";
     case errc::git_clone_failure:
         return "git-clone-failure.html";
+    case errc::invalid_repo_transform:
+        return "invalid-repo-transform.html";
     case errc::sdist_ident_mismatch:
         return "sdist-ident-mismatch.html";
     case errc::corrupted_build_db:
@@ -67,6 +69,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "dup-lib-name.html";
     case errc::unknown_usage_name:
         return "unknown-usage.html";
+    case errc::template_error:
+        return "template-error.html";
     case errc::none:
         break;
     }
@@ -170,6 +174,11 @@ dds tried to clone a repository using Git, but the clone operation failed.
 There are a variety of possible causes. It is best to check the output from
 Git in diagnosing this failure.
 )";
+    case errc::invalid_repo_transform:
+        return R"(
+A 'transform' property in a catalog entry contains an invalid transformation.
+These cannot and should not be saved to the catalog.
+)";
     case errc::sdist_ident_mismatch:
         return R"(
 We tried to automatically generate a source distribution from a package, but
@@ -239,12 +248,16 @@ Check your spelling, and check that the package containing the library is
 available, either from the `package.json5` or from the `INDEX.lmi` that was used
 for the build.
 )";
+    case errc::template_error:
+        return R"(dds encountered a problem while rendering a file template and cannot continue.)";
     case errc::none:
         break;
     }
     assert(false && "Unexpected execution path during error explanation. This is a DDS bug");
     std::terminate();
 }
+
+#define BUG_STRING_SUFFIX " <- (Seeing this text is a `dds` bug. Please report it.)"
 
 std::string_view dds::default_error_string(dds::errc ec) noexcept {
     switch (ec) {
@@ -275,9 +288,11 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
                "packages";
     case errc::git_clone_failure:
         return "A git-clone operation failed.";
+    case errc::invalid_repo_transform:
+        return "A repository filesystem transformation is invalid";
     case errc::sdist_ident_mismatch:
-        return "The package version of a generated source distribution did not match the version\n"
-               "that was expected of it";
+        return "The package version of a generated source distribution did not match the "
+               "version\n that was expected of it";
     case errc::corrupted_build_db:
         return "The build database file is corrupted";
     case errc::invalid_lib_manifest:
@@ -285,27 +300,20 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::invalid_pkg_manifest:
         return "The package manifest is invalid";
     case errc::invalid_version_range_string:
-        return "Attempted to parse an invalid version range string. <- (Seeing this text is a "
-               "`dds` bug. Please report it.)";
+        return "Attempted to parse an invalid version range string." BUG_STRING_SUFFIX;
     case errc::invalid_version_string:
-        return "Attempted to parse an invalid version string. <- (Seeing this text is a `dds` "
-               "bug. Please report it.)";
+        return "Attempted to parse an invalid version string." BUG_STRING_SUFFIX;
     case errc::invalid_config_key:
-        return "Found an invalid configuration key. <- (Seeing this text is a `dds` bug. "
-               "Please report it.)";
+        return "Found an invalid configuration key." BUG_STRING_SUFFIX;
     case errc::invalid_lib_filesystem:
     case errc::invalid_pkg_filesystem:
-        return "The filesystem structure of the package/library is invalid. <- (Seeing this "
-               "text is a `dds` bug. Please report it.)";
+        return "The filesystem structure of the package/library is invalid." BUG_STRING_SUFFIX;
     case errc::invalid_pkg_id:
-        return "A package identifier is invalid  <- (Seeing this text is a `dds` bug. Please "
-               "report it.)";
+        return "A package identifier is invalid." BUG_STRING_SUFFIX;
     case errc::invalid_pkg_name:
-        return "A package name is invalid  <- (Seeing this text is a `dds` bug. Please report "
-               "it.)";
+        return "A package name is invalid." BUG_STRING_SUFFIX;
     case errc::sdist_exists:
-        return "The source ditsribution already exists at the destination  <- (Seeing this "
-               "text is a `dds` bug. Please report it.)";
+        return "The source ditsribution already exists at the destination " BUG_STRING_SUFFIX;
     case errc::unknown_test_driver:
         return "The specified test_driver is not known to `dds`";
     case errc::dependency_resolve_failure:
@@ -314,6 +322,8 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "More than one library has claimed the same name.";
     case errc::unknown_usage_name:
         return "A `uses` or `links` field names a library that isn't recognized.";
+    case errc::template_error:
+        return "There was an error while rendering a template file." BUG_STRING_SUFFIX;
     case errc::none:
         break;
     }
