@@ -252,7 +252,8 @@ void do_write(const struct fs_transformation::write& oper, path_ref root) {
 
 }  // namespace
 
-void dds::fs_transformation::apply_to(dds::path_ref root) const {
+void dds::fs_transformation::apply_to(dds::path_ref root_) const {
+    auto root = fs::weakly_canonical(root_);
     if (copy) {
         do_relocate(*copy, root, true);
     }
