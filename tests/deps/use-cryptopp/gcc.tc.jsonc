@@ -1,7 +1,6 @@
 {
-    "compiler_id": 'gnu',
-    "cxx_version": 'c++17',
-    "cxx_compiler": 'g++-9',
-    "flags": '-march=native',
-    "link_flags": '-static-libgcc -static-libstdc++'
+    "compiler_id": "gnu",
+    "cxx_compiler": "g++-9",
+    // All required for Crypto++ intrinsics:
+    "flags": "-msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mpclmul -maes -mavx -mavx2 -msha",
 }
