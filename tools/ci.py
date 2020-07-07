@@ -115,12 +115,7 @@ def main(argv: Sequence[str]) -> int:
         )
         return 0
 
-    # Delete the catalog database, since there may be schema changes since the
-    # bootstrap executable was built
     new_cat_path = paths.BUILD_DIR / 'catalog.db'
-    if new_cat_path.exists():
-        new_cat_path.unlink()
-
     proc.check_run([
         paths.CUR_BUILT_DDS,
         'catalog',
