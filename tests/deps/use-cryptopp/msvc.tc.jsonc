@@ -1,3 +1,4 @@
 {
     "compiler_id": 'msvc',
+    "flags": "/std:c++17"
 }
