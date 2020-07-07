@@ -9,7 +9,7 @@
                     "auto-lib": "cryptopp/cryptopp",
                     "transform": [
                         {
-                            "copy": {
+                            "move": {
                                 "from": ".",
                                 "to": "src/cryptopp",
                                 "include": [

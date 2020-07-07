@@ -21,22 +21,19 @@
                             }
                         },
                         {
-                            "copy": {
-                                "from": "include/sodium",
-                                "to": "src/libsodium"
-                            },
                             "move": {
                                 "from": "src/libsodium",
-                                "to": "src_root"
+                                "to": "src/"
                             },
                             "remove": {
-                                "path": "src"
+                                "path": "src/libsodium"
                             }
                         },
                         {
-                            "move": {
-                                "from": "src_root",
-                                "to": "src"
+                            "copy": {
+                                "from": "include/",
+                                "to": "src/",
+                                "strip-components": 1,
                             }
                         }
                     ]
