@@ -82,11 +82,15 @@ public:
     std::vector<std::string> definition_args(std::string_view s) const noexcept;
     std::vector<std::string> include_args(const fs::path& p) const noexcept;
     std::vector<std::string> external_include_args(const fs::path& p) const noexcept;
-    compile_command_info     create_compile_command(const compile_file_spec&,
-                                                    toolchain_knobs) const noexcept;
-    std::vector<std::string> create_archive_command(const archive_spec&,
-                                                    toolchain_knobs) const noexcept;
+
+    compile_command_info
+    create_compile_command(const compile_file_spec&, path_ref cwd, toolchain_knobs) const noexcept;
+
+    std::vector<std::string>
+    create_archive_command(const archive_spec&, path_ref cwd, toolchain_knobs) const noexcept;
+
     std::vector<std::string> create_link_executable_command(const link_exe_spec&,
+                                                            path_ref cwd,
                                                             toolchain_knobs) const noexcept;
 
     static std::optional<toolchain> get_builtin(std::string_view key) noexcept;

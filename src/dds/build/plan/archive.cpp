@@ -24,7 +24,7 @@ void create_archive_plan::archive(const build_env& env) const {
     archive_spec ar;
     ar.input_files = std::move(objects);
     ar.out_path    = env.output_root / calc_archive_file_path(env.toolchain);
-    auto ar_cmd    = env.toolchain.create_archive_command(ar, env.knobs);
+    auto ar_cmd    = env.toolchain.create_archive_command(ar, fs::current_path(), env.knobs);
 
     // `out_relpath` is purely for the benefit of the user to have a short name
     // in the logs

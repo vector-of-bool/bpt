@@ -6,6 +6,8 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
+#include <range/v3/view/transform.hpp>
+
 #include <cassert>
 #include <optional>
 #include <string>
@@ -52,7 +54,25 @@ vector<string> toolchain::definition_args(std::string_view s) const noexcept {
     return replace(_def_template, "[def]", s);
 }
 
+static fs::path shortest_path_from(path_ref file, path_ref base) {
+    auto relative = file.lexically_normal().lexically_proximate(base);
+    auto abs      = file.lexically_normal();
+    if (relative.string().size() > abs.string().size()) {
+        return abs;
+    } else {
+        return relative;
+    }
+}
+
+template <typename R>
+static auto shortest_path_args(path_ref base, R&& r) {
+    return ranges::views::all(r)  //
+        | ranges::views::transform(
+               [base](auto&& path) { return shortest_path_from(path, base).string(); });  //
+}
+
 compile_command_info toolchain::create_compile_command(const compile_file_spec& spec,
+                                                       path_ref,
                                                        toolchain_knobs knobs) const noexcept {
     using namespace std::literals;
 
@@ -119,32 +139,30 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
 }
 
 vector<string> toolchain::create_archive_command(const archive_spec& spec,
+                                                 path_ref            cwd,
                                                  toolchain_knobs) const noexcept {
     vector<string> cmd;
+
+    auto out_arg = shortest_path_from(spec.out_path, cwd).string();
     for (auto& arg : _link_archive) {
         if (arg == "[in]") {
-            std::transform(spec.input_files.begin(),
-                           spec.input_files.end(),
-                           std::back_inserter(cmd),
-                           [](auto&& p) { return p.string(); });
+            extend(cmd, shortest_path_args(cwd, spec.input_files));
         } else {
-            cmd.push_back(replace(arg, "[out]", spec.out_path.string()));
+            cmd.push_back(replace(arg, "[out]", out_arg));
         }
     }
     return cmd;
 }
 
 vector<string> toolchain::create_link_executable_command(const link_exe_spec& spec,
+                                                         path_ref             cwd,
                                                          toolchain_knobs) const noexcept {
     vector<string> cmd;
     for (auto& arg : _link_exe) {
         if (arg == "[in]") {
-            std::transform(spec.inputs.begin(),
-                           spec.inputs.end(),
-                           std::back_inserter(cmd),
-                           [](auto&& p) { return p.string(); });
+            extend(cmd, shortest_path_args(cwd, spec.inputs));
         } else {
-            cmd.push_back(replace(arg, "[out]", spec.output.string()));
+            cmd.push_back(replace(arg, "[out]", shortest_path_from(spec.output, cwd).string()));
         }
     }
     return cmd;
