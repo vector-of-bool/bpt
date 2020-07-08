@@ -25,7 +25,6 @@ struct library_manifest {
      * Load the library manifest from an existing file
      */
     static library_manifest load_from_file(path_ref);
-    static library_manifest load_from_dds_file(path_ref);
 
     /**
      * Find a library manifest within a directory. This will search for a few

@@ -59,11 +59,7 @@ library_root library_root::from_directory(path_ref lib_dir) {
     man.name   = lib_dir.filename().string();
     auto found = library_manifest::find_in_directory(lib_dir);
     if (found) {
-        if (found->extension() == ".dds") {
-            man = library_manifest::load_from_dds_file(*found);
-        } else {
-            man = library_manifest::load_from_file(*found);
-        }
+        man = library_manifest::load_from_file(*found);
     }
 
     auto lib = library_root(lib_dir, std::move(sources), std::move(man));

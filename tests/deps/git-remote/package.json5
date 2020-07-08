@@ -3,7 +3,7 @@
     "namespace": "test",
     version: '0.0.0',
     depends: {
-        'neo-buffer': '0.1.0',
+        'neo-fun': '0.3.2',
         'range-v3': '0.9.1',
     }
 }
