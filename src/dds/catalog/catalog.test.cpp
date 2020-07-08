@@ -71,9 +71,9 @@ TEST_CASE_METHOD(catalog_test_case, "Parse JSON repo") {
         "packages": {
             "foo": {
                 "1.2.3": {
-                    "depends": {
-                        "bar": "~4.2.1"
-                    },
+                    "depends": [
+                        "bar~4.2.1"
+                    ],
                     "git": {
                         "url": "http://example.com",
                         "ref": "master"
