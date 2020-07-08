@@ -2,7 +2,7 @@
   "packages": {
     "ctre": {
       "2.7.0": {
-        "depends": [],
+        "depends": {},
         "description": "A compile-time PCRE (almost) compatible regular expression matcher",
         "git": {
           "auto-lib": "hanickadot/ctre",
@@ -13,7 +13,7 @@
     },
     "fmt": {
       "0.10.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -22,7 +22,7 @@
         }
       },
       "0.12.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -31,7 +31,7 @@
         }
       },
       "0.8.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -40,7 +40,7 @@
         }
       },
       "0.9.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -49,7 +49,7 @@
         }
       },
       "1.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -58,7 +58,7 @@
         }
       },
       "1.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -67,7 +67,7 @@
         }
       },
       "2.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -76,7 +76,7 @@
         }
       },
       "2.0.1": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -85,7 +85,7 @@
         }
       },
       "2.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -94,7 +94,7 @@
         }
       },
       "2.1.1": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -103,7 +103,7 @@
         }
       },
       "3.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -112,7 +112,7 @@
         }
       },
       "3.0.1": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -121,7 +121,7 @@
         }
       },
       "3.0.2": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -130,7 +130,7 @@
         }
       },
       "4.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -139,7 +139,7 @@
         }
       },
       "4.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -148,7 +148,7 @@
         }
       },
       "5.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -157,7 +157,7 @@
         }
       },
       "5.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -166,7 +166,7 @@
         }
       },
       "5.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -175,7 +175,7 @@
         }
       },
       "5.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -184,7 +184,7 @@
         }
       },
       "5.3.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -193,7 +193,7 @@
         }
       },
       "6.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -202,7 +202,7 @@
         }
       },
       "6.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -211,7 +211,7 @@
         }
       },
       "6.1.1": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -220,7 +220,7 @@
         }
       },
       "6.1.2": {
-        "depends": [],
+        "depends": {},
         "description": "A modern formatting library : https://fmt.dev/",
         "git": {
           "auto-lib": "fmt/fmt",
@@ -231,7 +231,7 @@
     },
     "ms-wil": {
       "2020.03.16": {
-        "depends": [],
+        "depends": {},
         "description": "The Windows Implementation Library",
         "git": {
           "ref": "dds/2020.03.16",
@@ -241,7 +241,7 @@
     },
     "neo-concepts": {
       "0.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.1.0",
@@ -249,7 +249,7 @@
         }
       },
       "0.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.2.0",
@@ -257,7 +257,7 @@
         }
       },
       "0.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.2.1",
@@ -265,7 +265,7 @@
         }
       },
       "0.2.2": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.2.2",
@@ -273,7 +273,7 @@
         }
       },
       "0.3.0": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.3.0",
@@ -281,7 +281,7 @@
         }
       },
       "0.3.1": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.3.1",
@@ -289,7 +289,7 @@
         }
       },
       "0.3.2": {
-        "depends": [],
+        "depends": {},
         "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
         "git": {
           "ref": "0.3.2",
@@ -299,7 +299,7 @@
     },
     "neo-fun": {
       "0.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.1.0",
@@ -307,7 +307,7 @@
         }
       },
       "0.1.1": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.1.1",
@@ -315,7 +315,7 @@
         }
       },
       "0.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.2.0",
@@ -323,7 +323,7 @@
         }
       },
       "0.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.2.1",
@@ -331,7 +331,7 @@
         }
       },
       "0.3.0": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.3.0",
@@ -339,7 +339,7 @@
         }
       },
       "0.3.1": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.3.1",
@@ -347,7 +347,7 @@
         }
       },
       "0.3.2": {
-        "depends": [],
+        "depends": {},
         "description": "Some library fundamentals that you might find useful",
         "git": {
           "ref": "0.3.2",
@@ -357,7 +357,7 @@
     },
     "neo-sqlite3": {
       "0.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern and low-level C++ SQLite API",
         "git": {
           "ref": "0.1.0",
@@ -365,7 +365,7 @@
         }
       },
       "0.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "A modern and low-level C++ SQLite API",
         "git": {
           "ref": "0.2.0",
@@ -373,7 +373,7 @@
         }
       },
       "0.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "A modern and low-level C++ SQLite API",
         "git": {
           "ref": "0.2.1",
@@ -381,7 +381,7 @@
         }
       },
       "0.2.2": {
-        "depends": [],
+        "depends": {},
         "description": "A modern and low-level C++ SQLite API",
         "git": {
           "ref": "0.2.2",
@@ -389,7 +389,7 @@
         }
       },
       "0.2.3": {
-        "depends": [],
+        "depends": {},
         "description": "A modern and low-level C++ SQLite API",
         "git": {
           "ref": "0.2.3",
@@ -399,7 +399,7 @@
     },
     "nlohmann-json": {
       "3.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.0.0",
@@ -407,7 +407,7 @@
         }
       },
       "3.0.1": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.0.1",
@@ -415,7 +415,7 @@
         }
       },
       "3.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.1.0",
@@ -423,7 +423,7 @@
         }
       },
       "3.1.1": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.1.1",
@@ -431,7 +431,7 @@
         }
       },
       "3.1.2": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.1.2",
@@ -439,7 +439,7 @@
         }
       },
       "3.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.2.0",
@@ -447,7 +447,7 @@
         }
       },
       "3.3.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.3.0",
@@ -455,7 +455,7 @@
         }
       },
       "3.4.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.4.0",
@@ -463,7 +463,7 @@
         }
       },
       "3.5.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.5.0",
@@ -471,7 +471,7 @@
         }
       },
       "3.6.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.6.0",
@@ -479,7 +479,7 @@
         }
       },
       "3.6.1": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.6.1",
@@ -487,7 +487,7 @@
         }
       },
       "3.7.0": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.7.0",
@@ -495,7 +495,7 @@
         }
       },
       "3.7.1": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.7.1",
@@ -503,7 +503,7 @@
         }
       },
       "3.7.2": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.7.2",
@@ -511,7 +511,7 @@
         }
       },
       "3.7.3": {
-        "depends": [],
+        "depends": {},
         "description": "JSON for Modern C++",
         "git": {
           "ref": "dds/3.7.3",
@@ -521,7 +521,7 @@
     },
     "pubgrub": {
       "0.1.2": {
-        "depends": [],
+        "depends": {},
         "description": "A C++ implementation of the Pubgrub version solving algorithm",
         "git": {
           "ref": "0.1.2",
@@ -529,7 +529,7 @@
         }
       },
       "0.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "A C++ implementation of the Pubgrub version solving algorithm",
         "git": {
           "ref": "0.2.0",
@@ -537,7 +537,7 @@
         }
       },
       "0.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "A C++ implementation of the Pubgrub version solving algorithm",
         "git": {
           "ref": "0.2.1",
@@ -547,7 +547,7 @@
     },
     "range-v3": {
       "0.10.0": {
-        "depends": [],
+        "depends": {},
         "description": "Range library for C++14/17/20, basis for C++20's std::ranges",
         "git": {
           "auto-lib": "range-v3/range-v3",
@@ -556,7 +556,7 @@
         }
       },
       "0.5.0": {
-        "depends": [],
+        "depends": {},
         "description": "Range library for C++14/17/20, basis for C++20's std::ranges",
         "git": {
           "auto-lib": "range-v3/range-v3",
@@ -565,7 +565,7 @@
         }
       },
       "0.9.0": {
-        "depends": [],
+        "depends": {},
         "description": "Range library for C++14/17/20, basis for C++20's std::ranges",
         "git": {
           "auto-lib": "range-v3/range-v3",
@@ -574,7 +574,7 @@
         }
       },
       "0.9.1": {
-        "depends": [],
+        "depends": {},
         "description": "Range library for C++14/17/20, basis for C++20's std::ranges",
         "git": {
           "auto-lib": "range-v3/range-v3",
@@ -585,7 +585,7 @@
     },
     "semver": {
       "0.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "A C++ library that implements Semantic Versioning parsing, emitting, types, ordering, and operations. See https://semver.org/",
         "git": {
           "ref": "0.2.1",
@@ -593,7 +593,7 @@
         }
       },
       "0.2.2": {
-        "depends": [],
+        "depends": {},
         "description": "A C++ library that implements Semantic Versioning parsing, emitting, types, ordering, and operations. See https://semver.org/",
         "git": {
           "ref": "0.2.2",
@@ -603,7 +603,7 @@
     },
     "spdlog": {
       "0.10.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -612,7 +612,7 @@
         }
       },
       "0.11.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -621,7 +621,7 @@
         }
       },
       "0.12.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -630,7 +630,7 @@
         }
       },
       "0.13.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -639,7 +639,7 @@
         }
       },
       "0.14.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -648,7 +648,7 @@
         }
       },
       "0.16.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -657,7 +657,7 @@
         }
       },
       "0.16.1": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -666,7 +666,7 @@
         }
       },
       "0.16.2": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -675,7 +675,7 @@
         }
       },
       "0.17.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -684,7 +684,7 @@
         }
       },
       "0.9.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -693,7 +693,7 @@
         }
       },
       "1.0.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -702,7 +702,7 @@
         }
       },
       "1.1.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -711,7 +711,7 @@
         }
       },
       "1.2.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -720,7 +720,7 @@
         }
       },
       "1.2.1": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -729,7 +729,7 @@
         }
       },
       "1.3.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -738,7 +738,7 @@
         }
       },
       "1.3.1": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -747,7 +747,7 @@
         }
       },
       "1.4.0": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -756,7 +756,7 @@
         }
       },
       "1.4.1": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -765,7 +765,7 @@
         }
       },
       "1.4.2": {
-        "depends": [],
+        "depends": {},
         "description": "Fast C++ logging library",
         "git": {
           "auto-lib": "spdlog/spdlog",
@@ -776,7 +776,7 @@
     },
     "vob-json5": {
       "0.1.5": {
-        "depends": [],
+        "depends": {},
         "description": "A C++ implementation of a JSON5 parser",
         "git": {
           "ref": "0.1.5",
@@ -786,10 +786,10 @@
     },
     "vob-semester": {
       "0.1.0": {
-        "depends": [
-          "neo-fun^0.1.0",
-          "neo-concepts^0.2.1"
-        ],
+        "depends": {
+          "neo-concepts": "^0.2.1",
+          "neo-fun": "^0.1.0"
+        },
         "description": "A C++ library to process recursive dynamic data",
         "git": {
           "ref": "0.1.0",
@@ -797,10 +797,10 @@
         }
       },
       "0.1.1": {
-        "depends": [
-          "neo-fun^0.1.1",
-          "neo-concepts^0.2.2"
-        ],
+        "depends": {
+          "neo-concepts": "^0.2.2",
+          "neo-fun": "^0.1.1"
+        },
         "description": "A C++ library to process recursive dynamic data",
         "git": {
           "ref": "0.1.1",
@@ -808,10 +808,10 @@
         }
       },
       "0.2.0": {
-        "depends": [
-          "neo-fun^0.3.2",
-          "neo-concepts^0.3.2"
-        ],
+        "depends": {
+          "neo-concepts": "^0.3.2",
+          "neo-fun": "^0.3.2"
+        },
         "description": "A C++ library to process recursive dynamic data",
         "git": {
           "ref": "0.2.0",
@@ -819,10 +819,10 @@
         }
       },
       "0.2.1": {
-        "depends": [
-          "neo-fun^0.3.2",
-          "neo-concepts^0.3.2"
-        ],
+        "depends": {
+          "neo-concepts": "^0.3.2",
+          "neo-fun": "^0.3.2"
+        },
         "description": "A C++ library to process recursive dynamic data",
         "git": {
           "ref": "0.2.1",

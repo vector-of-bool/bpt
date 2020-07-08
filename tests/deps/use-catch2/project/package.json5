@@ -2,7 +2,7 @@
     name: 'use-catch2',
     version: '1.0.0',
     namespace: 'test',
-    depends: {
-        'catch2': '2.12.4'
-    }
+    depends: [
+        'catch2@2.12.4'
+    ]
 }

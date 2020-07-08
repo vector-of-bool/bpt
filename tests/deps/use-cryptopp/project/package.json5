@@ -2,7 +2,7 @@
     name: 'use-cryptopp',
     version: '1.0.0',
     namespace: 'test',
-    depends: {
-        'cryptopp': '8.2.0'
-    }
+    depends: [
+        'cryptopp@8.2.0'
+    ]
 }

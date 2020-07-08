@@ -1,3 +1,4 @@
+import argparse
 import json
 from typing import NamedTuple, Tuple, List, Sequence, Union, Optional, Mapping
 import sys
@@ -28,11 +29,14 @@ class Version(NamedTuple):
     depends: Mapping[str, str] = {}
     description: str = '(No description provided)'
 
-    def to_dict(self) -> dict:
+    def to_dict(self, new=False) -> dict:
         ret: dict = {
             'description': self.description,
         }
-        ret['depends'] = self.depends
+        if new:
+            ret['depends'] = [k + v for k, v in self.depends.items()]
+        else:
+            ret['depends'] = self.depends
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
         return ret
@@ -60,7 +64,7 @@ def many_versions(name: str,
     ])
 
 
-packages = [
+PACKAGES = [
     many_versions(
         'range-v3',
         (
@@ -289,13 +293,19 @@ packages = [
     ),
 ]
 
-data = {
-    'version': 1,
-    'packages': {
-        pkg.name: {ver.version: ver.to_dict()
-                   for ver in pkg.versions}
-        for pkg in packages
-    }
-}
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--new', action='store_true')
+    args = parser.parse_args()
 
-print(json.dumps(data, indent=2, sort_keys=True))
+    data = {
+        'version': 1,
+        'packages': {
+            pkg.name:
+            {ver.version: ver.to_dict(new=args.new)
+             for ver in pkg.versions}
+            for pkg in PACKAGES
+        }
+    }
+
+    print(json.dumps(data, indent=2, sort_keys=True))

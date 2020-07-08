@@ -4,6 +4,7 @@ import sys
 import pytest
 from pathlib import Path
 from typing import Sequence, NamedTuple
+import multiprocessing
 import subprocess
 import urllib.request
 import shutil
@@ -91,21 +92,16 @@ def main(argv: Sequence[str]) -> int:
     if old_cat_path.is_file():
         old_cat_path.unlink()
 
-    ci_repo_dir = paths.PREBUILT_DIR / '_ci-repo'
+    ci_repo_dir = paths.PREBUILT_DIR / 'ci-repo'
     if ci_repo_dir.exists():
         shutil.rmtree(ci_repo_dir)
 
-    proc.check_run([
+    self_build(
         paths.PREBUILT_DDS,
-        'catalog',
-        'import',
-        ('--catalog', old_cat_path),
-        ('--json', paths.PROJECT_ROOT / 'catalog.json'),
-    ])
-    self_build(paths.PREBUILT_DDS,
-               toolchain=opts.toolchain,
-               cat_path=old_cat_path,
-               dds_flags=[('--repo-dir', ci_repo_dir)])
+        toolchain=opts.toolchain,
+        cat_path=old_cat_path,
+        cat_json_path=Path('catalog.old.json'),
+        dds_flags=[('--repo-dir', ci_repo_dir)])
     print('Main build PASSED!')
     print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
 
@@ -115,25 +111,21 @@ def main(argv: Sequence[str]) -> int:
         )
         return 0
 
+    print('Bootstrapping myself:')
     new_cat_path = paths.BUILD_DIR / 'catalog.db'
-    proc.check_run([
+    self_build(
         paths.CUR_BUILT_DDS,
-        'catalog',
-        'import',
-        ('--catalog', new_cat_path),
-        ('--json', paths.PROJECT_ROOT / 'catalog.json'),
-    ])
-    self_build(paths.CUR_BUILT_DDS,
-               toolchain=opts.toolchain,
-               cat_path=new_cat_path,
-               dds_flags=[f'--repo-dir={ci_repo_dir}'])
+        toolchain=opts.toolchain,
+        cat_path=new_cat_path,
+        dds_flags=[f'--repo-dir={ci_repo_dir}'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([
         '-v',
         '--durations=10',
         f'--basetemp={paths.BUILD_DIR / "_tmp"}',
-        '-n4',
+        '-n',
+        str(multiprocessing.cpu_count() + 2),
         'tests/',
     ])
 
