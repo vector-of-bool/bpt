@@ -276,7 +276,7 @@ struct cli_catalog {
                 if (!git_ref) {
                     dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
                 }
-                auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt};
+                auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt, {}};
                 if (auto_lib) {
                     git.auto_lib = lm::split_usage_string(auto_lib.Get());
                 }
@@ -326,6 +326,10 @@ struct cli_catalog {
                 std::cout << "Auto-lib: " << git.auto_lib->name << "/" << git.auto_lib->namespace_
                           << '\n';
             }
+        }
+
+        void print_remote_info(std::monostate) {
+            std::cout << "THIS ENTRY IS MISSING REMOTE INFORMATION!\n";
         }
 
         int run() {

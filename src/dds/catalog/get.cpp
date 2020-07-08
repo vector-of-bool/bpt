@@ -2,34 +2,39 @@
 
 #include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/proc.hpp>
 
+#include <neo/assert.hpp>
 #include <nlohmann/json.hpp>
+#include <range/v3/algorithm/all_of.hpp>
+#include <range/v3/algorithm/any_of.hpp>
+#include <range/v3/distance.hpp>
+#include <range/v3/numeric/accumulate.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace dds;
 
 namespace {
 
+temporary_sdist do_pull_sdist(const package_info& listing, std::monostate) {
+    neo_assert_always(
+        invariant,
+        false,
+        "A package listing in the catalog has no defined remote from which to pull. This "
+        "shouldn't happen in normal usage. This will occur if the database has been "
+        "manually altered, or if DDS has a bug.",
+        listing.ident.to_string());
+}
+
 temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_listing& git) {
     auto tmpdir = dds::temporary_dir::create();
-    using namespace std::literals;
+
     spdlog::info("Cloning Git repository: {} [{}] ...", git.url, git.ref);
-    auto command = {"git"s,
-                    "clone"s,
-                    "--depth=1"s,
-                    "--branch"s,
-                    git.ref,
-                    git.url,
-                    tmpdir.path().generic_string()};
-    auto git_res = run_proc(command);
-    if (!git_res.okay()) {
-        throw_external_error<errc::git_clone_failure>(
-            "Git clone operation failed [Git command: {}] [Exitted {}]:\n{}",
-            quote_command(command),
-            git_res.retc,
-            git_res.output);
+    git.clone(tmpdir.path());
+
+    for (const auto& tr : git.transforms) {
+        tr.apply_to(tmpdir.path());
     }
+
     spdlog::info("Create sdist from clone ...");
     if (git.auto_lib.has_value()) {
         spdlog::info("Generating library data automatically");

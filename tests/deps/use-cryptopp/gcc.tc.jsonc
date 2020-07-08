@@ -1,0 +1,7 @@
+{
+    "compiler_id": "gnu",
+    "cxx_compiler": "g++-9",
+    "cxx_version": "c++17",
+    // All required for Crypto++ intrinsics:
+    "flags": "-msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mpclmul -maes -mavx -mavx2 -msha -Wa,-q -DCRYPTOPP_DISABLE_ASM=1",
+}

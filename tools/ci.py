@@ -87,11 +87,11 @@ def main(argv: Sequence[str]) -> int:
     else:
         assert False, 'impossible'
 
-    cat_path = paths.BUILD_DIR / 'catalog.db'
-    if cat_path.is_file():
-        cat_path.unlink()
+    old_cat_path = paths.PREBUILT_DIR / 'catalog.db'
+    if old_cat_path.is_file():
+        old_cat_path.unlink()
 
-    ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
+    ci_repo_dir = paths.PREBUILT_DIR / '_ci-repo'
     if ci_repo_dir.exists():
         shutil.rmtree(ci_repo_dir)
 
@@ -99,16 +99,13 @@ def main(argv: Sequence[str]) -> int:
         paths.PREBUILT_DDS,
         'catalog',
         'import',
-        ('--catalog', cat_path),
+        ('--catalog', old_cat_path),
         ('--json', paths.PROJECT_ROOT / 'catalog.json'),
     ])
-    self_build(
-        paths.PREBUILT_DDS,
-        toolchain=opts.toolchain,
-        dds_flags=[
-            ('--catalog', cat_path),
-            ('--repo-dir', ci_repo_dir),
-        ])
+    self_build(paths.PREBUILT_DDS,
+               toolchain=opts.toolchain,
+               cat_path=old_cat_path,
+               dds_flags=[('--repo-dir', ci_repo_dir)])
     print('Main build PASSED!')
     print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
 
@@ -118,21 +115,18 @@ def main(argv: Sequence[str]) -> int:
         )
         return 0
 
-    # Delete the catalog database, since there may be schema changes since the
-    # bootstrap executable was built
-    cat_path.unlink()
-
+    new_cat_path = paths.BUILD_DIR / 'catalog.db'
     proc.check_run([
         paths.CUR_BUILT_DDS,
         'catalog',
         'import',
-        ('--catalog', cat_path),
+        ('--catalog', new_cat_path),
         ('--json', paths.PROJECT_ROOT / 'catalog.json'),
     ])
-    self_build(
-        paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain,
-        dds_flags=[f'--repo-dir={ci_repo_dir}', f'--catalog={cat_path}'])
+    self_build(paths.CUR_BUILT_DDS,
+               toolchain=opts.toolchain,
+               cat_path=new_cat_path,
+               dds_flags=[f'--repo-dir={ci_repo_dir}'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([

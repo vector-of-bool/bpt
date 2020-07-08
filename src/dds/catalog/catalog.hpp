@@ -1,9 +1,11 @@
 #pragma once
 
-#include <dds/catalog/git.hpp>
 #include <dds/deps.hpp>
 #include <dds/package/id.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/glob.hpp>
+
+#include "./package_info.hpp"
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
@@ -16,14 +18,6 @@
 
 namespace dds {
 
-struct package_info {
-    package_id              ident;
-    std::vector<dependency> deps;
-    std::string             description;
-
-    std::variant<git_remote_listing> remote;
-};
-
 class catalog {
     neo::sqlite3::database                _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
@@ -32,6 +26,7 @@ class catalog {
     catalog(const catalog&) = delete;
 
     void _store_pkg(const package_info&, const git_remote_listing&);
+    void _store_pkg(const package_info&, std::monostate);
 
 public:
     catalog(catalog&&) = default;
