@@ -370,24 +370,58 @@ PACKAGES = [
         description=
         'A compile-time PCRE (almost) compatible regular expression matcher',
     ),
-    many_versions(
+    Package(
         'spdlog',
-        (
-            '1.0.0',
-            '1.1.0',
-            '1.2.0',
-            '1.2.1',
-            '1.3.0',
-            '1.3.1',
-            '1.4.0',
-            '1.4.1',
-            '1.4.2',
-        ),
-        git_url='https://github.com/gabime/spdlog.git',
-        tag_fmt='v{}',
-        auto_lib='spdlog/spdlog',
-        description='Fast C++ logging library',
-    ),
+        [
+            Version(
+                ver,
+                description='Fast C++ logging library',
+                depends={'fmt': '+6.0.0'},
+                remote=Git(
+                    url='https://github.com/gabime/spdlog.git',
+                    ref=f'v{ver}',
+                    transforms=[
+                        FSTransform(
+                            write=WriteTransform(
+                                path='package.json',
+                                content=json.dumps({
+                                    'name': 'spdlog',
+                                    'namespace': 'spdlog',
+                                    'version': ver,
+                                    'depends': ['fmt+6.0.0'],
+                                }))),
+                        FSTransform(
+                            write=WriteTransform(
+                                path='library.json',
+                                content=json.dumps({
+                                    'name': 'spdlog',
+                                    'uses': ['fmt/fmt']
+                                }))),
+                        FSTransform(
+                            # It's all just template instantiations.
+                            remove=RemoveTransform(path='src/'),
+                            # Tell spdlog to use the external fmt library
+                            edit=EditTransform(
+                                path='include/spdlog/tweakme.h',
+                                edits=[
+                                    OneEdit(
+                                        kind='insert',
+                                        content='#define SPDLOG_FMT_EXTERNAL 1',
+                                        line=13,
+                                    ),
+                                ])),
+                    ],
+                ),
+            ) for ver in (
+                '1.4.0',
+                '1.4.1',
+                '1.4.2',
+                '1.5.0',
+                '1.6.0',
+                '1.6.1',
+                '1.7.0',
+            )
+        ]),
     many_versions(
         'fmt',
         (

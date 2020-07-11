@@ -536,8 +536,26 @@ add_cases(
     }
     ''')
 
+# spdlog
+"""
+ ######  ########  ########  ##        #######   ######
+##    ## ##     ## ##     ## ##       ##     ## ##    ##
+##       ##     ## ##     ## ##       ##     ## ##
+ ######  ########  ##     ## ##       ##     ## ##   ####
+      ## ##        ##     ## ##       ##     ## ##    ##
+##    ## ##        ##     ## ##       ##     ## ##    ##
+ ######  ##        ########  ########  #######   ######
+"""
+add_cases(
+    'spdlog', 'spdlog/spdlog', ['auto'], r'''
+    #include <spdlog/spdlog.h>
 
-@pytest.mark.deps_test
+    int main() {
+        spdlog::info("Howdy!");
+    }
+    ''')
+
+
 @pytest.mark.parametrize('case', CASES, ids=[c.dep for c in CASES])
 def test_dep(case: DepsCase, dds: DDS) -> None:
     case.setup_root(dds)

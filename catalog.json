@@ -2895,93 +2895,283 @@
       }
     },
     "spdlog": {
-      "1.0.0": {
-        "depends": [],
-        "description": "Fast C++ logging library",
-        "git": {
-          "auto-lib": "spdlog/spdlog",
-          "ref": "v1.0.0",
-          "transform": [],
-          "url": "https://github.com/gabime/spdlog.git"
-        }
-      },
-      "1.1.0": {
-        "depends": [],
-        "description": "Fast C++ logging library",
-        "git": {
-          "auto-lib": "spdlog/spdlog",
-          "ref": "v1.1.0",
-          "transform": [],
-          "url": "https://github.com/gabime/spdlog.git"
-        }
-      },
-      "1.2.0": {
-        "depends": [],
-        "description": "Fast C++ logging library",
-        "git": {
-          "auto-lib": "spdlog/spdlog",
-          "ref": "v1.2.0",
-          "transform": [],
-          "url": "https://github.com/gabime/spdlog.git"
-        }
-      },
-      "1.2.1": {
-        "depends": [],
-        "description": "Fast C++ logging library",
-        "git": {
-          "auto-lib": "spdlog/spdlog",
-          "ref": "v1.2.1",
-          "transform": [],
-          "url": "https://github.com/gabime/spdlog.git"
-        }
-      },
-      "1.3.0": {
-        "depends": [],
-        "description": "Fast C++ logging library",
-        "git": {
-          "auto-lib": "spdlog/spdlog",
-          "ref": "v1.3.0",
-          "transform": [],
-          "url": "https://github.com/gabime/spdlog.git"
-        }
-      },
-      "1.3.1": {
-        "depends": [],
-        "description": "Fast C++ logging library",
-        "git": {
-          "auto-lib": "spdlog/spdlog",
-          "ref": "v1.3.1",
-          "transform": [],
-          "url": "https://github.com/gabime/spdlog.git"
-        }
-      },
       "1.4.0": {
-        "depends": [],
+        "depends": [
+          "fmt+6.0.0"
+        ],
         "description": "Fast C++ logging library",
         "git": {
-          "auto-lib": "spdlog/spdlog",
           "ref": "v1.4.0",
-          "transform": [],
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.4.0\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
           "url": "https://github.com/gabime/spdlog.git"
         }
       },
       "1.4.1": {
-        "depends": [],
+        "depends": [
+          "fmt+6.0.0"
+        ],
         "description": "Fast C++ logging library",
         "git": {
-          "auto-lib": "spdlog/spdlog",
           "ref": "v1.4.1",
-          "transform": [],
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.4.1\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
           "url": "https://github.com/gabime/spdlog.git"
         }
       },
       "1.4.2": {
-        "depends": [],
+        "depends": [
+          "fmt+6.0.0"
+        ],
         "description": "Fast C++ logging library",
         "git": {
-          "auto-lib": "spdlog/spdlog",
           "ref": "v1.4.2",
-          "transform": [],
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.4.2\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
+          "url": "https://github.com/gabime/spdlog.git"
+        }
+      },
+      "1.5.0": {
+        "depends": [
+          "fmt+6.0.0"
+        ],
+        "description": "Fast C++ logging library",
+        "git": {
+          "ref": "v1.5.0",
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.5.0\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
+          "url": "https://github.com/gabime/spdlog.git"
+        }
+      },
+      "1.6.0": {
+        "depends": [
+          "fmt+6.0.0"
+        ],
+        "description": "Fast C++ logging library",
+        "git": {
+          "ref": "v1.6.0",
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.6.0\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
+          "url": "https://github.com/gabime/spdlog.git"
+        }
+      },
+      "1.6.1": {
+        "depends": [
+          "fmt+6.0.0"
+        ],
+        "description": "Fast C++ logging library",
+        "git": {
+          "ref": "v1.6.1",
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.6.1\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
+          "url": "https://github.com/gabime/spdlog.git"
+        }
+      },
+      "1.7.0": {
+        "depends": [
+          "fmt+6.0.0"
+        ],
+        "description": "Fast C++ logging library",
+        "git": {
+          "ref": "v1.7.0",
+          "transform": [
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"namespace\": \"spdlog\", \"version\": \"1.7.0\", \"depends\": [\"fmt+6.0.0\"]}",
+                "path": "package.json"
+              }
+            },
+            {
+              "write": {
+                "content": "{\"name\": \"spdlog\", \"uses\": [\"fmt/fmt\"]}",
+                "path": "library.json"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#define SPDLOG_FMT_EXTERNAL 1",
+                    "kind": "insert",
+                    "line": 13
+                  }
+                ],
+                "path": "include/spdlog/tweakme.h"
+              },
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
           "url": "https://github.com/gabime/spdlog.git"
         }
       }
