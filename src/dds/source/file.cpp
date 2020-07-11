@@ -18,6 +18,7 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
         ".hh",
         ".hpp",
         ".hxx",
+        ".inc",
         ".inl",
         ".ipp",
     };
