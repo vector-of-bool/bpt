@@ -1,4 +1,9 @@
-{
+
+#include <dds/catalog/package_info.hpp>
+#include <dds/catalog/init_catalog.hpp>
+#include <dds/catalog/import.hpp>
+
+static constexpr std::string_view INIT_PACKAGES_CONTENT= R"json({
   "packages": {
     "abseil": {
       "2018.6.0": {
@@ -3973,4 +3978,11 @@
     }
   },
   "version": 1
+})json";
+
+const std::vector<dds::package_info>&
+dds::init_catalog_packages() noexcept {
+    using std::nullopt;
+    static auto pkgs = dds::parse_packages_json(INIT_PACKAGES_CONTENT);
+    return pkgs;
 }

@@ -25,9 +25,6 @@ class catalog {
     explicit catalog(neo::sqlite3::database db);
     catalog(const catalog&) = delete;
 
-    void _store_pkg(const package_info&, const git_remote_listing&);
-    void _store_pkg(const package_info&, std::monostate);
-
 public:
     catalog(catalog&&) = default;
     catalog& operator=(catalog&&) = default;

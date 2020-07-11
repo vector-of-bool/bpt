@@ -2,6 +2,7 @@
 
 #include "./import.hpp"
 
+#include <dds/catalog/init_catalog.hpp>
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
@@ -77,84 +78,6 @@ void migrate_repodb_2(sqlite3::database& db) {
     )");
 }
 
-void ensure_migrated(sqlite3::database& db) {
-    sqlite3::transaction_guard tr{db};
-    db.exec(R"(
-        PRAGMA foreign_keys = 1;
-        CREATE TABLE IF NOT EXISTS dds_cat_meta AS
-            WITH init(meta) AS (VALUES ('{"version": 0}'))
-            SELECT * FROM init;
-    )");
-    auto meta_st     = db.prepare("SELECT meta FROM dds_cat_meta");
-    auto [meta_json] = sqlite3::unpack_single<std::string>(meta_st);
-
-    auto meta = nlohmann::json::parse(meta_json);
-    if (!meta.is_object()) {
-        throw_external_error<errc::corrupted_catalog_db>();
-    }
-
-    auto version_ = meta["version"];
-    if (!version_.is_number_integer()) {
-        throw_external_error<errc::corrupted_catalog_db>(
-            "The catalog database metadata is invalid [bad dds_meta.version]");
-    }
-
-    constexpr int current_database_version = 2;
-
-    int version = version_;
-    if (version > current_database_version) {
-        throw_external_error<errc::catalog_too_new>();
-    }
-
-    if (version < 1) {
-        migrate_repodb_1(db);
-    }
-    if (version < 2) {
-        migrate_repodb_2(db);
-    }
-    meta["version"] = 2;
-    exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
-}
-
-void check_json(bool b, std::string_view what) {
-    if (!b) {
-        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
-    }
-}
-
-}  // namespace
-
-catalog catalog::open(const std::string& db_path) {
-    if (db_path != ":memory:") {
-        fs::create_directories(fs::weakly_canonical(db_path).parent_path());
-    }
-    auto db = sqlite3::database::open(db_path);
-    try {
-        ensure_migrated(db);
-    } catch (const sqlite3::sqlite3_error& e) {
-        spdlog::critical(
-            "Failed to load the repository database. It appears to be invalid/corrupted. The "
-            "exception message is: {}",
-            e.what());
-        throw_external_error<errc::corrupted_catalog_db>();
-    }
-    return catalog(std::move(db));
-}
-
-catalog::catalog(sqlite3::database db)
-    : _db(std::move(db)) {}
-
-void catalog::_store_pkg(const package_info& pkg, std::monostate) {
-    neo_assert_always(
-        invariant,
-        false,
-        "There was an attempt to insert a package listing into the database where that package "
-        "listing does not have a remote listing. If you see this message, it is a dds bug.",
-        pkg.ident.to_string());
-}
-
-namespace {
-
 std::string transforms_to_json(const std::vector<fs_transformation>& trs) {
     std::string acc = "[";
     for (auto it = trs.begin(); it != trs.end(); ++it) {
@@ -166,12 +89,23 @@ std::string transforms_to_json(const std::vector<fs_transformation>& trs) {
     return acc + "]";
 }
 
-}  // namespace
+void store_with_remote(const neo::sqlite3::statement_cache&,
+                       const package_info& pkg,
+                       std::monostate) {
+    neo_assert_always(
+        invariant,
+        false,
+        "There was an attempt to insert a package listing into the database where that package "
+        "listing does not have a remote listing. If you see this message, it is a dds bug.",
+        pkg.ident.to_string());
+}
 
-void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git) {
+void store_with_remote(neo::sqlite3::statement_cache& stmts,
+                       const package_info&            pkg,
+                       const git_remote_listing&      git) {
     auto lm_usage = git.auto_lib.value_or(lm::usage{});
     sqlite3::exec(  //
-        _stmt_cache,
+        stmts,
         R"(
             INSERT OR REPLACE INTO dds_cat_pkgs (
                 name,
@@ -204,13 +138,12 @@ void catalog::_store_pkg(const package_info& pkg, const git_remote_listing& git)
             transforms_to_json(git.transforms)));
 }
 
-void catalog::store(const package_info& pkg) {
-    sqlite3::transaction_guard tr{_db};
-
-    std::visit([&](auto&& remote) { _store_pkg(pkg, remote); }, pkg.remote);
-
-    auto  db_pkg_id  = _db.last_insert_rowid();
-    auto& new_dep_st = _stmt_cache(R"(
+void do_store_pkg(neo::sqlite3::database&        db,
+                  neo::sqlite3::statement_cache& st_cache,
+                  const package_info&            pkg) {
+    std::visit([&](auto&& remote) { store_with_remote(st_cache, pkg, remote); }, pkg.remote);
+    auto  db_pkg_id  = db.last_insert_rowid();
+    auto& new_dep_st = st_cache(R"(
         INSERT INTO dds_cat_pkg_deps (
             pkg_id,
             dep_name,
@@ -233,6 +166,98 @@ void catalog::store(const package_info& pkg) {
                                             iv_1.low.to_string(),
                                             iv_1.high.to_string()));
     }
+}
+
+void store_init_packages(sqlite3::database& db, sqlite3::statement_cache& st_cache) {
+    for (auto& pkg : init_catalog_packages()) {
+        do_store_pkg(db, st_cache, pkg);
+    }
+}
+
+void ensure_migrated(sqlite3::database& db) {
+    sqlite3::transaction_guard tr{db};
+    db.exec(R"(
+        PRAGMA foreign_keys = 1;
+        CREATE TABLE IF NOT EXISTS dds_cat_meta AS
+            WITH init(meta) AS (VALUES ('{"version": 0}'))
+            SELECT * FROM init;
+    )");
+    auto meta_st     = db.prepare("SELECT meta FROM dds_cat_meta");
+    auto [meta_json] = sqlite3::unpack_single<std::string>(meta_st);
+
+    auto meta = nlohmann::json::parse(meta_json);
+    if (!meta.is_object()) {
+        throw_external_error<errc::corrupted_catalog_db>();
+    }
+
+    auto version_ = meta["version"];
+    if (!version_.is_number_integer()) {
+        throw_external_error<errc::corrupted_catalog_db>(
+            "The catalog database metadata is invalid [bad dds_meta.version]");
+    }
+
+    constexpr int current_database_version = 2;
+
+    int version = version_;
+
+    // If this is the first time we're working here, import the initial
+    // catalog with some useful tidbits.
+    bool import_init_packages = version == 0;
+
+    if (version > current_database_version) {
+        throw_external_error<errc::catalog_too_new>();
+    }
+
+    if (version < 1) {
+        migrate_repodb_1(db);
+    }
+    if (version < 2) {
+        migrate_repodb_2(db);
+    }
+    meta["version"] = 2;
+    exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
+
+    if (import_init_packages) {
+        spdlog::info(
+            "A new catalog database case been created, and has been populated with some initial "
+            "contents.");
+        neo::sqlite3::statement_cache stmts{db};
+        store_init_packages(db, stmts);
+    }
+}
+
+void check_json(bool b, std::string_view what) {
+    if (!b) {
+        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
+    }
+}
+
+}  // namespace
+
+catalog catalog::open(const std::string& db_path) {
+    if (db_path != ":memory:") {
+        fs::create_directories(fs::weakly_canonical(db_path).parent_path());
+    }
+    auto db = sqlite3::database::open(db_path);
+    try {
+        ensure_migrated(db);
+    } catch (const sqlite3::sqlite3_error& e) {
+        spdlog::critical(
+            "Failed to load the repository database. It appears to be invalid/corrupted. The "
+            "exception message is: {}",
+            e.what());
+        throw_external_error<errc::corrupted_catalog_db>();
+    }
+    return catalog(std::move(db));
+}
+
+catalog::catalog(sqlite3::database db)
+    : _db(std::move(db)) {}
+
+void catalog::store(const package_info& pkg) {
+    sqlite3::transaction_guard tr{_db};
+
+    do_store_pkg(_db, _stmt_cache, pkg);
 }
 
 std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept {
