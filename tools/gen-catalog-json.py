@@ -120,14 +120,11 @@ class Version(NamedTuple):
     depends: Mapping[str, str] = {}
     description: str = '(No description provided)'
 
-    def to_dict(self, new=False) -> dict:
+    def to_dict(self) -> dict:
         ret: dict = {
             'description': self.description,
+            'depends': [k + v for k, v in self.depends.items()],
         }
-        if new:
-            ret['depends'] = [k + v for k, v in self.depends.items()]
-        else:
-            ret['depends'] = self.depends
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
         return ret
@@ -910,28 +907,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
 
-    data_old = {
+    data = {
         'version': 1,
         'packages': {
-            pkg.name:
-            {ver.version: ver.to_dict(new=False)
-             for ver in pkg.versions}
+            pkg.name: {ver.version: ver.to_dict()
+                       for ver in pkg.versions}
             for pkg in PACKAGES
         }
     }
-    data_new = {
-        'version': 1,
-        'packages': {
-            pkg.name:
-            {ver.version: ver.to_dict(new=True)
-             for ver in pkg.versions}
-            for pkg in PACKAGES
-        }
-    }
-    Path('catalog.old.json').write_text(
-        json.dumps(data_old, indent=2, sort_keys=True))
-    new_json_str = json.dumps(data_new, indent=2, sort_keys=True)
-    Path('catalog.json').write_text(new_json_str)
+    json_str = json.dumps(data, indent=2, sort_keys=True)
+    Path('catalog.json').write_text(json_str)
 
     cpp_template = textwrap.dedent(r'''
         #include <dds/catalog/package_info.hpp>
@@ -958,12 +943,12 @@ if __name__ == "__main__":
         }
         ''')
 
-    new_json_small = json.dumps(data_new, sort_keys=True)
-    new_json_str_arr = ', '.join(str(ord(c)) for c in new_json_small)
+    json_small = json.dumps(data, sort_keys=True)
+    json_small_arr = ', '.join(str(ord(c)) for c in json_small)
 
-    new_json_str_arr = '\n'.join(textwrap.wrap(new_json_str_arr, width=120))
-    new_json_str_arr = textwrap.indent(new_json_str_arr, prefix=' ' * 4)
+    json_small_arr = '\n'.join(textwrap.wrap(json_small_arr, width=120))
+    json_small_arr = textwrap.indent(json_small_arr, prefix=' ' * 4)
 
-    cpp_content = cpp_template.replace('@JSON@', new_json_str_arr).replace(
-        '@JSON_LEN@', str(len(new_json_small)))
+    cpp_content = cpp_template.replace('@JSON@', json_small_arr).replace(
+        '@JSON_LEN@', str(len(json_small)))
     Path('src/dds/catalog/init_catalog.cpp').write_text(cpp_content)

@@ -556,6 +556,7 @@ add_cases(
     ''')
 
 
+@pytest.mark.deps_test
 @pytest.mark.parametrize('case', CASES, ids=[c.dep for c in CASES])
 def test_dep(case: DepsCase, dds: DDS) -> None:
     case.setup_root(dds)
