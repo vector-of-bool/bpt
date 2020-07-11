@@ -1,8 +1,0 @@
-{
-    name: 'use-libsodium',
-    version: '1.0.0',
-    namespace: 'test',
-    depends: [
-        'libsodium@1.0.18'
-    ]
-}

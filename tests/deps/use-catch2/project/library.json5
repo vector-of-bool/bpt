@@ -1,4 +1,0 @@
-{
-    name: 'use-catch2',
-    uses: ['catch2/catch2']
-}

@@ -29,10 +29,37 @@ def dds(request, tmp_path: Path, worker_id: str, scope: ExitStack):
         project_dir = test_root / params.subdir
 
     # Create the instance. Auto-clean when we're done
-    yield scope.enter_context(scoped_dds(test_root, project_dir, request.function.__name__))
+    yield scope.enter_context(
+        scoped_dds(test_root, project_dir, request.function.__name__))
 
 
 @pytest.fixture
 def scope():
     with ExitStack() as scope:
         yield scope
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        '--test-deps',
+        action='store_true',
+        default=False,
+        help='Run the exhaustive and intensive dds-deps tests')
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        'markers', 'deps_test: Deps tests are slow. Enable with --test-deps')
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption('--test-deps'):
+        return
+    for item in items:
+        if 'deps_test' not in item.keywords:
+            continue
+        item.add_marker(
+            pytest.mark.skip(
+                reason=
+                'Exhaustive deps tests are slow and perform many Git clones. Use --test-deps to run them.'
+            ))
