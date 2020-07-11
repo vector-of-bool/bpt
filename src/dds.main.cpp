@@ -170,6 +170,7 @@ struct cli_catalog {
         catalog_path_flag cat_path{cmd};
 
         args::Flag import_stdin{cmd, "stdin", "Import JSON from stdin", {"stdin"}};
+        args::Flag init{cmd, "initial", "Re-import the initial catalog contents", {"initial"}};
         args::ValueFlagList<std::string>
             json_paths{cmd,
                        "json",
@@ -178,6 +179,9 @@ struct cli_catalog {
 
         int run() {
             auto cat = cat_path.open();
+            if (init.Get()) {
+                cat.import_initial();
+            }
             for (const auto& json_fpath : json_paths.Get()) {
                 cat.import_json_file(json_fpath);
             }

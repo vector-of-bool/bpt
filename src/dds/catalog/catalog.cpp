@@ -409,3 +409,9 @@ void catalog::import_json_str(std::string_view content) {
         store(pkg);
     }
 }
+
+void catalog::import_initial() {
+    sqlite3::transaction_guard tr{_db};
+    spdlog::info("Restoring built-in initial catalog contents");
+    store_init_packages(_db, _stmt_cache);
+}
