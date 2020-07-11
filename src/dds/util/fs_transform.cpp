@@ -85,6 +85,9 @@ dds::fs_transformation dds::fs_transformation::from_json(const json5::data& data
         };
     };
 
+    struct fs_transformation::edit pending_edit;
+    fs_transformation::one_edit    pending_edit_item;
+
     walk(data,
          require_obj{"Each transform must be a JSON object"},
          mapping{
@@ -115,6 +118,66 @@ dds::fs_transformation dds::fs_transformation::from_json(const json5::data& data
                                      require_str{"'content' must be a string"},
                                      put_into(ret.write->content)},
                     }},
+             if_key{
+                 "edit",
+                 require_obj{"'edit' should be a JSON object"},
+                 prep_optional(ret.edit),
+                 mapping{
+                     required_key{"path",
+                                  "'path' is required",
+                                  require_str{"'path' should be a string path"},
+                                  put_into(ret.edit->path, str_to_path)},
+                     required_key{
+                         "edits",
+                         "An 'edits' array is required",
+                         require_array{"'edits' should be an array"},
+                         for_each{
+                             require_obj{"Each edit should be a JSON object"},
+                             [&](auto&&) {
+                                 ret.edit->edits.emplace_back();
+                                 return walk.pass;
+                             },
+                             [&](auto&& dat) {
+                                 return mapping{
+                                     required_key{
+                                         "kind",
+                                         "Edit 'kind' is required",
+                                         require_str{"'kind' should be a string"},
+                                         [&](std::string s) {
+                                             auto& ed = ret.edit->edits.back();
+                                             if (s == "delete") {
+                                                 ed.kind = ed.delete_;
+                                             } else if (s == "insert") {
+                                                 ed.kind = ed.insert;
+                                             } else {
+                                                 return walk.reject("Invalid edit kind");
+                                             }
+                                             return walk.accept;
+                                         },
+                                     },
+                                     required_key{
+                                         "line",
+                                         "Edit 'line' number is required",
+                                         require_type<double>{"'line' should be an integer"},
+                                         [&](double d) {
+                                             ret.edit->edits.back().line = int(d);
+                                             return walk.accept;
+                                         },
+                                     },
+                                     if_key{
+                                         "content",
+                                         require_str{"'content' should be a string"},
+                                         [&](std::string s) {
+                                             ret.edit->edits.back().content = s;
+                                             return walk.accept;
+                                         },
+                                     },
+                                 }(dat);
+                             },
+                         },
+                     },
+                 },
+             },
          });
 
     return ret;
@@ -224,7 +287,8 @@ void do_remove(const struct fs_transformation::remove& oper, path_ref root) {
             if (child.is_directory()) {
                 continue;
             }
-            if (!oper.only_matching.empty() && !matches_any(child, oper.only_matching)) {
+            auto relpath = child.path().lexically_proximate(from);
+            if (!oper.only_matching.empty() && !matches_any(relpath, oper.only_matching)) {
                 continue;
             }
             fs::remove_all(child);
@@ -244,10 +308,34 @@ void do_write(const struct fs_transformation::write& oper, path_ref root) {
             root.string());
     }
 
-    std::cout << "Write content: " << oper.content;
-
     auto of = dds::open(dest, std::ios::binary | std::ios::out);
     of << oper.content;
+}
+
+void do_edit(path_ref filepath, const fs_transformation::one_edit& edit) {
+    auto file = open(filepath, std::ios::in | std::ios::binary);
+    file.exceptions(std::ios::badbit);
+    std::string lines;
+    std::string line;
+    int         line_n = 1;
+    for (; std::getline(file, line, '\n'); ++line_n) {
+        if (line_n != edit.line) {
+            lines += line + "\n";
+            continue;
+        }
+        switch (edit.kind) {
+        case edit.delete_:
+            // Just delete the line. Ignore it.
+            continue;
+        case edit.insert:
+            // Insert some new content
+            lines += edit.content + "\n";
+            lines += line + "\n";
+            continue;
+        }
+    }
+    file = open(filepath, std::ios::out | std::ios::binary);
+    file << lines;
 }
 
 }  // namespace
@@ -265,6 +353,19 @@ void dds::fs_transformation::apply_to(dds::path_ref root_) const {
     }
     if (write) {
         do_write(*write, root);
+    }
+    if (edit) {
+        auto fpath = root / edit->path;
+        if (!parent_dir_of(root, fpath)) {
+            throw_external_error<errc::invalid_repo_transform>(
+                "Filesystem transformation wants to edit a file outside of the root. Attempted to "
+                "modify [{}]. Writing is restricted to [{}].",
+                fpath.string(),
+                root.string());
+        }
+        for (auto&& ed : edit->edits) {
+            do_edit(fpath, ed);
+        }
     }
 }
 
@@ -315,7 +416,7 @@ std::string fs_transformation::as_json() const noexcept {
             for (auto&& gl : remove->only_matching) {
                 if_arr.push_back(gl.string());
             }
-            rm["only-matching"] = rm;
+            rm["only-matching"] = if_arr;
         }
         obj["remove"] = rm;
     }
@@ -324,6 +425,20 @@ std::string fs_transformation::as_json() const noexcept {
         wr["path"]    = write->path.string();
         wr["content"] = write->content;
         obj["write"]  = wr;
+    }
+    if (edit) {
+        auto ed    = nlohmann::json::object();
+        ed["path"] = edit->path.string();
+        auto edits = nlohmann::json::array();
+        for (auto&& one : edit->edits) {
+            auto one_ed       = nlohmann::json::object();
+            one_ed["kind"]    = one.kind == one.delete_ ? "delete" : "insert";
+            one_ed["line"]    = one.line;
+            one_ed["content"] = one.content;
+            edits.push_back(std::move(one_ed));
+        }
+        ed["edits"] = edits;
+        obj["edit"] = ed;
     }
 
     return to_string(obj);
