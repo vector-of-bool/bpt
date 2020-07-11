@@ -904,15 +904,32 @@ if __name__ == "__main__":
         #include <dds/catalog/init_catalog.hpp>
         #include <dds/catalog/import.hpp>
 
-        static constexpr std::string_view INIT_PACKAGES_CONTENT= R"json(@JSON@)json";
+        /**
+         * The following array of integers is generated and contains the JSON
+         * encoded initial catalog. MSVC can't handle string literals over
+         * 64k large, so we have to resort to using a regular char array:
+         */
+        static constexpr const char INIT_PACKAGES_CONTENT[] = {
+        @JSON@
+        };
+
+        static constexpr int INIT_PACKAGES_STR_LEN = @JSON_LEN@;
 
         const std::vector<dds::package_info>&
         dds::init_catalog_packages() noexcept {
             using std::nullopt;
-            static auto pkgs = dds::parse_packages_json(INIT_PACKAGES_CONTENT);
+            static auto pkgs = dds::parse_packages_json(
+                std::string_view(INIT_PACKAGES_CONTENT, INIT_PACKAGES_STR_LEN));
             return pkgs;
         }
         ''')
 
-    cpp_content = cpp_template.replace('@JSON@', new_json_str)
+    new_json_small = json.dumps(data_new, sort_keys=True)
+    new_json_str_arr = ', '.join(str(ord(c)) for c in new_json_small)
+
+    new_json_str_arr = '\n'.join(textwrap.wrap(new_json_str_arr, width=120))
+    new_json_str_arr = textwrap.indent(new_json_str_arr, prefix=' ' * 4)
+
+    cpp_content = cpp_template.replace('@JSON@', new_json_str_arr).replace(
+        '@JSON_LEN@', str(len(new_json_small)))
     Path('src/dds/catalog/init_catalog.cpp').write_text(cpp_content)
