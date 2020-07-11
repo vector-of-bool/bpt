@@ -1051,6 +1051,18 @@
               }
             },
             {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
+              }
+            },
+            {
               "copy": {
                 "exclude": [],
                 "from": "builds/msvc/version.h",
@@ -1107,6 +1119,18 @@
                 "include": [],
                 "strip-components": 0,
                 "to": "include/"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
               }
             },
             {
@@ -1169,6 +1193,18 @@
               }
             },
             {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
+              }
+            },
+            {
               "copy": {
                 "exclude": [],
                 "from": "builds/msvc/version.h",
@@ -1225,6 +1261,18 @@
                 "include": [],
                 "strip-components": 0,
                 "to": "include/"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
               }
             },
             {
@@ -1287,6 +1335,18 @@
               }
             },
             {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
+              }
+            },
+            {
               "copy": {
                 "exclude": [],
                 "from": "builds/msvc/version.h",
@@ -1343,6 +1403,18 @@
                 "include": [],
                 "strip-components": 0,
                 "to": "include/"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
               }
             },
             {
@@ -1405,6 +1477,18 @@
               }
             },
             {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
+              }
+            },
+            {
               "copy": {
                 "exclude": [],
                 "from": "builds/msvc/version.h",
@@ -1464,6 +1548,18 @@
               }
             },
             {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
+              }
+            },
+            {
               "copy": {
                 "exclude": [],
                 "from": "builds/msvc/version.h",
@@ -1520,6 +1616,18 @@
                 "include": [],
                 "strip-components": 0,
                 "to": "include/"
+              }
+            },
+            {
+              "edit": {
+                "edits": [
+                  {
+                    "content": "#pragma once\n\n// clang-format off\n\n/**\n * Header checks\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_SYS_MMAN_H 1\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_SYS_RANDOM_H 1\n#endif\n\n#if __has_include(<intrin.h>)\n    #define HAVE_INTRIN_H 1\n#endif\n\n#if __has_include(<sys/auxv.h>)\n    #define HAVE_SYS_AUXV_H 1\n#endif\n\n/**\n * Architectural checks for intrinsics\n */\n#if __has_include(<mmintrin.h>) && __MMX__\n    #define HAVE_MMINTRIN_H 1\n#endif\n\n#if __has_include(<emmintrin.h>) && __SSE2__\n    #define HAVE_EMMINTRIN_H 1\n#endif\n\n#if __SSE3__\n    #if __has_include(<pmmintrin.h>)\n        #define HAVE_PMMINTRIN_H 1\n    #endif\n    #if __has_include(<tmmintrin.h>)\n        #define HAVE_TMMINTRIN_H 1\n    #endif\n#endif\n\n#if __has_include(<smmintrin.h>) && __SSE4_1__\n    #define HAVE_SMMINTRIN_H\n#endif\n\n#if __has_include(<immintrin.h>)\n    #if __AVX__\n        #define HAVE_AVXINTRIN_H\n    #endif\n    #if __AVX2__\n        #define HAVE_AVX2INTRIN_H\n    #endif\n    #if __AVX512F__\n        #if defined(__clang__) && __clang_major__ < 4\n            // AVX512 may be broken\n        #elif defined(__GNUC__) && __GNUC__ < 6\n            // ''\n        #else\n            #define HAVE_AVX512FINTRIN_H\n        #endif\n    #endif\n#endif\n\n#if __has_include(<wmmintrin.h>) && __AES__\n    #define HAVE_WMMINTRIN_H 1\n#endif\n\n#if __RDRND__\n    #define HAVE_RDRAND\n#endif\n\n/**\n * Detect mman APIs\n */\n#if __has_include(<sys/mman.h>)\n    #define HAVE_MMAP 1\n    #define HAVE_MPROTECT 1\n    #define HAVE_MLOCK 1\n\n    #if defined(_DEFAULT_SOURCE) || defined(_BSD_SOURCE)\n        #define HAVE_MADVISE 1\n    #endif\n#endif\n\n#if __has_include(<sys/random.h>)\n    #define HAVE_GETRANDOM 1\n#endif\n\n/**\n * POSIX-Only stuff\n */\n#if __has_include(<unistd.h>)\n    #if defined(_DEFAULT_SOURCE)\n        #define HAVE_GETENTROPY 1\n    #endif\n\n    /**\n     * Default POSIX APIs\n     */\n    #define HAVE_POSIX_MEMALIGN 1\n    #define HAVE_GETPID 1\n    #define HAVE_NANOSLEEP 1\n\n    /**\n     * Language/library features from C11\n     */\n    #if __STDC_VERSION__ >= 201112L\n        #define HAVE_MEMSET_S 1\n    #endif\n\n    #if __linux__\n        #define HAVE_EXPLICIT_BZERO 1\n    #endif\n#endif\n\n/**\n * Miscellaneous\n */\n#if __has_include(<pthread.h>)\n    #define HAVE_PTHREAD 1\n#endif\n\n#if __has_include(<sys/param.h>)\n    #include <sys/param.h>\n    #if __BYTE_ORDER == __BIG_ENDIAN\n        #define NATIVE_BIG_ENDIAN 1\n    #elif __BYTE_ORDER == __LITTLE_ENDIAN\n        #define NATIVE_LITTLE_ENDIAN 1\n    #else\n        #error \"Unknown endianness for this platform.\"\n    #endif\n#elif defined(_MSVC)\n    // At time of writing, MSVC only targets little-endian.\n    #define NATIVE_LITTLE_ENDIAN 1\n#else\n    #error \"Unknown endianness for this platform.\"\n#endif\n\n#define CONFIGURED 1\n",
+                    "kind": "insert",
+                    "line": 1
+                  }
+                ],
+                "path": "include/sodium/private/common.h"
               }
             },
             {

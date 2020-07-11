@@ -777,6 +777,17 @@ PACKAGES = [
                             content='#define SODIUM_STATIC 1')
                     ])),
             FSTransform(
+                edit=EditTransform(
+                    path='include/sodium/private/common.h',
+                    edits=[
+                        OneEdit(
+                            kind='insert',
+                            line=1,
+                            content=Path(__file__).parent.joinpath(
+                                'libsodium-config.h').read_text(),
+                        )
+                    ])),
+            FSTransform(
                 copy=CopyMoveTransform(
                     frm='builds/msvc/version.h',
                     to='include/sodium/version.h',
