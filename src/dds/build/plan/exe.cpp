@@ -78,13 +78,18 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
     auto exe_path = calc_executable_path(env);
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
     spdlog::info(msg);
-    auto&& [dur, res]
-        = timed<std::chrono::microseconds>([&] { return run_proc({exe_path.string()}); });
+    using namespace std::chrono_literals;
+    auto&& [dur, res] = timed<std::chrono::microseconds>(
+        [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
+
     if (res.okay()) {
         spdlog::info("{} - PASSED - {:>9n}μs", msg, dur.count());
         return std::nullopt;
     } else {
-        spdlog::error("{} - FAILED - {:>9n}μs [exited {}]", msg, dur.count(), res.retc);
+        auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
+                                    res.signal ? res.signal : res.retc);
+        auto fail_str = res.timed_out ? "TIMEOUT" : "FAILED ";
+        spdlog::error("{} - {} - {:>9n}μs [{}]", msg, fail_str, dur.count(), exit_msg);
         test_failure f;
         f.executable_path = exe_path;
         f.output          = res.output;

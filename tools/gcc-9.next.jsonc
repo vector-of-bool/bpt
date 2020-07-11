@@ -5,17 +5,17 @@
     "cxx_compiler": "g++-9",
     "flags": [
         "-Werror=return-type",
-        "-fsanitize=address",
+        // "-fsanitize=address",
     ],
     "cxx_flags": [
         "-fconcepts",
         "-std=c++2a",
     ],
     "link_flags": [
-        // "-static-libgcc",
-        // "-static-libstdc++"
-        "-fsanitize=address",
-        "-fuse-ld=lld",
+        "-static-libgcc",
+        "-static-libstdc++"
+        // "-fsanitize=address",
+        // "-fuse-ld=lld",
     ],
     "debug": true,
     // "optimize": true,

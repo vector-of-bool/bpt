@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 
 #include <poll.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -61,8 +62,8 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
 
 }  // namespace
 
-proc_result dds::run_proc(const std::vector<std::string>& command) {
-    spdlog::debug("Spawning subprocess: {}", quote_command(command));
+proc_result dds::run_proc(const proc_options& opts) {
+    spdlog::debug("Spawning subprocess: {}", quote_command(opts.command));
     int  stdio_pipe[2] = {};
     auto rc            = ::pipe(stdio_pipe);
     check_rc(rc == 0, "Create stdio pipe for subprocess");
@@ -70,7 +71,7 @@ proc_result dds::run_proc(const std::vector<std::string>& command) {
     int read_pipe  = stdio_pipe[0];
     int write_pipe = stdio_pipe[1];
 
-    auto child = spawn_child(command, write_pipe, read_pipe);
+    auto child = spawn_child(opts.command, write_pipe, read_pipe);
 
     ::close(write_pipe);
 
@@ -80,13 +81,23 @@ proc_result dds::run_proc(const std::vector<std::string>& command) {
 
     proc_result res;
 
+    using namespace std::chrono_literals;
+
+    auto timeout = opts.timeout;
     while (true) {
-        rc = ::poll(&stdio_fd, 1, -1);
+        rc = ::poll(&stdio_fd, 1, static_cast<int>(timeout.value_or(-1ms).count()));
         if (rc && errno == EINTR) {
             errno = 0;
             continue;
         }
-        check_rc(rc > 0, "Failed in poll()");
+        if (rc == 0) {
+            // Timeout!
+            ::kill(child, SIGINT);
+            timeout       = std::nullopt;
+            res.timed_out = true;
+            spdlog::debug("Subprocess [{}] timed out", quote_command(opts.command));
+            continue;
+        }
         std::string buffer;
         buffer.resize(1024);
         auto nread = ::read(stdio_fd.fd, buffer.data(), buffer.size());
