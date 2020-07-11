@@ -66,4 +66,7 @@ TEST_CASE("Check globs") {
     CHECK(glob.match("foo/thing/bar/thing/baz.txt"));
     CHECK(glob.match("foo/bar/thing/baz.txt"));
     CHECK(glob.match("foo/bar/baz/baz.txt"));
+
+    glob = dds::glob::compile("doc/**");
+    CHECK(glob.match("doc/something.txt"));
 }

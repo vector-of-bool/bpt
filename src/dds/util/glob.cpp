@@ -221,6 +221,10 @@ bool check_matches(path_iter       elem_it,
     } else {
         // An rglob pattern "**". Check by peeling of individual path elements
         const auto next_pat = std::next(pat_it);
+        if (next_pat == pat_stop) {
+            // The "**" is at the end of the glob. This matches everything.
+            return true;
+        }
         for (; elem_it != elem_stop; ++elem_it) {
             if (check_matches(elem_it, elem_stop, next_pat, pat_stop)) {
                 return true;
