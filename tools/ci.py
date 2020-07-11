@@ -15,6 +15,7 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
+    toolchain_2: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -72,12 +73,18 @@ def main(argv: Sequence[str]) -> int:
         required=True,
     )
     parser.add_argument(
+        '--toolchain-2',
+        '-T2',
+        help='The toolchain to use for the self-build',
+        required=True,
+    )
+    parser.add_argument(
         '--build-only',
         action='store_true',
         help='Only build the `dds` executable. Skip second-phase and tests.')
     args = parser.parse_args(argv)
 
-    opts = CIOptions(toolchain=args.toolchain)
+    opts = CIOptions(toolchain=args.toolchain, toolchain_2=args.toolchain_2)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -113,11 +120,12 @@ def main(argv: Sequence[str]) -> int:
 
     print('Bootstrapping myself:')
     new_cat_path = paths.BUILD_DIR / 'catalog.db'
+    new_repo_dir = paths.BUILD_DIR / 'ci-repo'
     self_build(
         paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain,
+        toolchain=opts.toolchain_2,
         cat_path=new_cat_path,
-        dds_flags=[f'--repo-dir={ci_repo_dir}'])
+        dds_flags=[f'--repo-dir={new_repo_dir}'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([

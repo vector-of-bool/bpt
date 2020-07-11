@@ -4,7 +4,6 @@
     "c_compiler": "gcc9",
     "cxx_compiler": "g++9",
     "flags": [
-        "-DSPDLOG_COMPILED_LIB", // Required to use a compiled spdlog
         "-Werror=return-type",
     ],
     "cxx_flags": [
