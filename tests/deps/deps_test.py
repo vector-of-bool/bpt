@@ -62,7 +62,7 @@ def add_cases(pkg: str, uses: str, versions: Sequence[str], source: str):
 ##     ## ##     ##  ######   ####  ######  ####### ######## ##    ##  #######  ##     ##
 """
 add_cases(
-    'magic_enum', 'magic_enum/magic_enum', ['auto'], r'''
+    'magic_enum', 'neargye/magic_enum', ['auto'], r'''
     #include <magic_enum.hpp>
     #include <string_view>
 
