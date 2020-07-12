@@ -25,12 +25,14 @@
       backdrop-filter: blur(5px);
       border-bottom: 1px solid #444;
       color: white;
-      padding: 20px;
+      padding: 10px;
       position: sticky;
       top: 0;
       bottom: 0;
       display: flex;
       justify-content: space-between;
+      justify-items: center;
+      align-items: center;
       box-shadow: 0 4px 5px #000a, 0 2px 2px #000a;
     }
 
@@ -41,7 +43,14 @@
       position: initial;
     }
 
-    div.head div.links>a {
+    div.links {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-flow: row wrap;
+    }
+
+    div.links>a {
       color: white;
       text-decoration: none;
       border: 2px solid #eeee;
@@ -50,7 +59,7 @@
       margin: 6px;
     }
 
-    div.head div.links>a:hover {
+    div.links>a:hover {
       box-shadow: 0 0 4px #fffa;
       background-color: #fff4;
     }
@@ -105,32 +114,61 @@
 
     div.main {
       display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 20px;
       padding: 20px;
       color: #333;
       box-shadow: 0 0 15px #000a;
     }
 
-    div.main>* {
-      padding: 20px;
-      margin-bottom: 40px;
-    }
-
     div.main>:nth-child(odd) {
-      justify-self: end;
       font-size: 32pt;
       font-style: italic;
-      max-width: 500px;
-      text-align: right;
     }
 
-    div.main>:nth-child(even) {
-      border-width: 0 0 2px 2px;
-      border-bottom-left-radius: 5px;
-      max-width: 350px;
-      padding-top: 35px;
-      align-self: flex-start;
+    @media (min-width: 600px) {
+      div.main {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      div.main>* {
+        padding: 20px;
+        margin-bottom: 40px;
+      }
+
+      div.main>:nth-child(odd) {
+        justify-self: end;
+        max-width: 500px;
+        text-align: right;
+      }
+
+      div.main>:nth-child(even) {
+        max-width: 350px;
+        padding-top: 35px;
+        align-self: flex-start;
+      }
+    }
+
+    @media (max-width: 600px) {
+      div.head {
+        flex-direction: column;
+      }
+
+      div.title {
+        font-size: 18pt;
+      }
+
+      div.main {
+        grid-template-columns: auto;
+      }
+
+      div.main>* {
+        text-align: left;
+      }
+
+      div.main>:nth-child(even) {
+        align-self: center;
+        margin-bottom: 40px;
+      }
     }
   </style>
 </head>
