@@ -2,7 +2,7 @@
 
 .PHONY: \
 	docs docs-server docs-watch docs-sync-server nix-ci linux-ci macos-ci \
-	vagrant-freebsd-ci
+	vagrant-freebsd-ci site
 
 _invalid:
 	echo "Specify a target name to execute"
@@ -64,3 +64,10 @@ vagrant-freebsd-ci:
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt
+
+site: docs
+	rm -r -f -- _site/
+	mkdir -p _site/
+	cp site/index.html _site/
+	cp -r _build/docs _site/
+	echo "Site generated at _site/"

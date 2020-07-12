@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DDS</title>
+  <style>
+    html {
+      background-color: #ddd;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+  </style>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+    }
+
+    div.head,
+    div.footer {
+      background-color: #000a;
+      background-image: linear-gradient(to bottom, #000a, #333a);
+      backdrop-filter: blur(5px);
+      border-bottom: 1px solid #444;
+      color: white;
+      padding: 20px;
+      position: sticky;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      box-shadow: 0 4px 5px #000a, 0 2px 2px #000a;
+    }
+
+    div.footer {
+      font-size: 12pt;
+      padding: 4px 7px;
+      justify-content: space-evenly;
+      position: initial;
+    }
+
+    div.head div.links>a {
+      color: white;
+      text-decoration: none;
+      border: 2px solid #eeee;
+      padding: 5px 7px;
+      border-radius: 5px;
+      margin: 6px;
+    }
+
+    div.head div.links>a:hover {
+      box-shadow: 0 0 4px #fffa;
+      background-color: #fff4;
+    }
+
+    div.hero {
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(to bottom right,
+          rgb(109, 184, 255) 0,
+          rgb(55, 158, 255) 25%,
+          rgb(41, 132, 216) 30%,
+          rgb(109, 184, 255) 30.5%,
+          rgb(55, 158, 255) 75%,
+          rgb(29, 103, 173) 75.5%,
+          rgb(55, 158, 255) 90%,
+          rgb(55, 158, 255));
+      font-size: 56pt;
+      color: white;
+      text-shadow: 0 2px #000a;
+      padding: 30px;
+    }
+
+    div.hero .text {
+      display: grid;
+      align-items: flex-start;
+      grid-template-columns: 1fr 1fr;
+      justify-items: end;
+    }
+
+    .hero .text>* {
+      padding: 10px;
+    }
+
+    .hero .right {
+      max-width: 300px;
+      border-left: 5px solid white;
+      font-size: 32pt;
+    }
+
+    .hero .buttons>a {
+      text-decoration: none;
+      color: white;
+      border: 1px solid white;
+      padding: 4px 7px;
+      font-size: 18pt;
+      border-radius: 10px;
+      text-shadow: 0 0 1px black;
+    }
+
+    div.main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+      color: #333;
+      box-shadow: 0 0 15px #000a;
+    }
+
+    div.main>* {
+      padding: 20px;
+      margin-bottom: 40px;
+    }
+
+    div.main>:nth-child(odd) {
+      justify-self: end;
+      font-size: 32pt;
+      font-style: italic;
+      max-width: 500px;
+      text-align: right;
+    }
+
+    div.main>:nth-child(even) {
+      border-width: 0 0 2px 2px;
+      border-bottom-left-radius: 5px;
+      max-width: 350px;
+      padding-top: 35px;
+      align-self: flex-start;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="head">
+    <div class="title">DDS - The Simplest</div>
+    <div class="links">
+      <a href="https://github.com/vector-of-bool/dds/releases">Releases & Downloads</a>
+      <a href="docs/">Documentation</a>
+      <a href="https://github.com/vector-of-bool/dds">Development</a>
+      <a href="https://github.com/vector-of-bool/dds/issues">Issues</a>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="text">
+      <div class="left">DDS</div>
+      <div class="right">Tooling for a new decade</div>
+    </div>
+  </div>
+  <div class="main">
+
+    <div>What is DDS?</div>
+    <div>
+      DDS is a new build, test, and packaging tool for native C and C++
+      libraries and applications, with a focus on simplicity, speed, and
+      integratability.
+    </div>
+
+    <div>What makes DDS <strong>different</strong>?</div>
+    <div>
+      <em>Convention over configuration</em>.
+      <br><br>
+      Traditional build tools have been built to cede all control to their
+      users. While this may sound appealing, it leads to rampant ecosystem
+      fragmentation that impedes the ability for us to <em>compose</em> our
+      libraries and tools.
+      <br><br>
+      DDS's approach is to trade this flexibility for something sorely lacking
+      in the C and C++ build and distribution ecosystem: <em>Simplicity</em>.
+    </div>
+
+    <div>Does DDS replace [XYZ] build tool?</div>
+    <div>
+      While DDS <em>is</em> a build tool, it is not meant as a full replacement
+      for all use cases of other build tools (e.g. CMake and Meson).
+      <br><br>
+      For many use cases, DDS will serve as a possible replacement for more
+      flexible build systems, especially when the build itself is far simpler
+      than is warranted by the flexibility offered by those tools.
+      <br><br>
+      Additionally, DDS is built to <em>augment</em> other build tools. The
+      output from DDS can be fed into other build and packaging systems.
+    </div>
+
+    <div>Does DDS replace [XYZ] packaging tool?</div>
+    <div>
+      Yes and no.
+      <br><br>
+      DDS supports dependency resolution, procurement, and building, much like
+      many other tools, but has a few important differences of opinion. Refer
+      to the documentation for more information.
+    </div>
+
+    <div>Is DDS "production ready"?</div>
+    <div>
+      At the time of writing, DDS is still in its alpha stages, is missing
+      several end-goal features, and will have several breaking changes before
+      its first "1.0" release.
+      <br><br>
+      Even then, DDS is ready to be used for experiments, hobby projects, and
+      in any place that doesn't require stability.
+    </div>
+
+    <div>Is DDS free?</div>
+    <div>
+      Yes! DDS and its source code are available free of charge.
+    </div>
+
+    <div>Is DDS open source?</div>
+    <div>
+      Yes!
+      <br><br>
+      The main DDS codebase is licensed under the
+      <em>Mozilla Public License Version 2.0</em>, although it is built upon
+      many components variously licensed as MIT, BSD, Boost, and public domain.
+    </div>
+
+    <div>What platforms are supported?</div>
+    <div>
+      DDS is built, tested, distributed, and supported on Windows, macOS,
+      Linux, and FreeBSD.
+      <br><br>
+      The Microsoft Visual C++, GNU GCC, LLVM/Clang, and AppleClang compilers
+      are all supported.
+    </div>
+
+    <div>Is DDS centralized?</div>
+    <div>
+      No / "not yet"
+      <br><br>
+      DDS's package procurement is in very early stages, and there is no
+      centralized repository of packages available for download.
+      <br><br>
+      DDS maintains a local catalog database that contain instructions it can
+      use to obtain packages from the internet. At the moment, this involves
+      cloning a Git repository, but there are plans to support catalog updates
+      and source distributions delivered over HTTP(S) in the future. This
+      includes the ability to host private package repositories.
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="disclaimer">
+      This site is built without cookies, trackers, or analytics.
+    </div>
+  </div>
+</body>
+
+</html>
