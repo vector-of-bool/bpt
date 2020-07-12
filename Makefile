@@ -8,6 +8,10 @@ _invalid:
 	echo "Specify a target name to execute"
 	exit 1
 
+clean:
+	rm -f -r -- $(shell find -name __pycache__ -type d)
+	rm -f -r -- _build/ _prebuilt/
+
 docs:
 	sphinx-build -b html \
 		docs \
@@ -31,8 +35,17 @@ docs-sync-server:
 		--reload-delay 300 \
 		--watch **/*.html
 
-macos-ci: nix-ci
-linux-ci: nix-ci
+macos-ci:
+	python3 -u tools/ci.py \
+		-B download \
+		-T tools/gcc-9.jsonc \
+		-T2 tools/gcc-9.next.jsonc \
+
+linux-ci:
+	python3 -u tools/ci.py \
+		-B download \
+		-T tools/gcc-9.jsonc \
+		-T2 tools/gcc-9-static.jsonc
 
 nix-ci:
 	python3 -u tools/ci.py \
@@ -46,7 +59,8 @@ vagrant-freebsd-ci:
 		cd /vagrant && \
 		python3.7 tools/ci.py \
 			-B download \
-			-T  tools/freebsd-gcc-9.jsonc \
+			-T tools/freebsd-gcc-9.jsonc \
+			-T2 tools/freebsd-gcc-9.next.jsonc \
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt

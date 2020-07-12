@@ -25,9 +25,6 @@ class catalog {
     explicit catalog(neo::sqlite3::database db);
     catalog(const catalog&) = delete;
 
-    void _store_pkg(const package_info&, const git_remote_listing&);
-    void _store_pkg(const package_info&, std::monostate);
-
 public:
     catalog(catalog&&) = default;
     catalog& operator=(catalog&&) = default;
@@ -42,6 +39,7 @@ public:
     std::vector<package_id> by_name(std::string_view sv) const noexcept;
     std::vector<dependency> dependencies_of(const package_id& pkg) const noexcept;
 
+    void import_initial();
     void import_json_str(std::string_view json_str);
     void import_json_file(path_ref json_path) {
         auto content = dds::slurp_file(json_path);

@@ -210,7 +210,7 @@ dependencies we want to install::
 You can also list your dependencies as an inline string in your CMakeLists.txt
 instead of a separate file::
 
-    pmm(DDS DEPENDS "neo-sqlite3 ^0.2.2")
+    pmm(DDS DEPENDS neo-sqlite3^0.2.2)
 
 Since you'll probably want to be using ``libman.cmake`` at the same time, the
 calls for ``CMakeCM`` and ``DDS`` can simply be combined. This is how our new
@@ -225,7 +225,7 @@ CMake project might look:
 
     include(pmm.cmake)
     pmm(CMakeCM ROLLING
-        DDS DEPENDS "neo-sqlite3 ^0.2.2"
+        DDS DEPENDS neo-sqlite3^0.2.2
         )
 
     include(libman)

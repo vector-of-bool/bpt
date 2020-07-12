@@ -89,17 +89,12 @@ parse_pkg_json_v1(std::string_view name, semver::version version, const json5::d
 
     using namespace semester::walk_ops;
 
-    std::string dep_name;
-    auto        dep_range       = semver::range::everything();
-    auto        parse_dep_range = [&](const std::string& s) {
+    auto make_dep = [&](std::string const& str) {
         try {
-            return semver::range::parse_restricted(s);
-        } catch (const semver::invalid_range& e) {
+            return dependency::parse_depends_string(str);
+        } catch (std::runtime_error const& e) {
             import_error(std::string(walk.path()) + e.what());
         }
-    };
-    auto make_dep = [&](auto&&) {
-        return dependency{dep_name, {dep_range.low(), dep_range.high()}};
     };
 
     auto check_one_remote = [&](auto&&) {
@@ -109,18 +104,14 @@ parse_pkg_json_v1(std::string_view name, semver::version version, const json5::d
         return walk.pass;
     };
 
-    auto add_dep = any_key{put_into(dep_name),
-                           require_str{"Dependency should specify a version range string"},
-                           put_into_pass{dep_range, parse_dep_range},
-                           put_into{std::back_inserter(ret.deps), make_dep}};
-
     walk(data,
          mapping{if_key{"description",
                         require_str{"'description' should be a string"},
                         put_into{ret.description}},
                  if_key{"depends",
-                        require_obj{"'depends' must be a JSON object"},
-                        mapping{add_dep}},
+                        require_array{"'depends' must be an array of dependency strings"},
+                        for_each{require_str{"Each dependency should be a string"},
+                                 put_into{std::back_inserter(ret.deps), make_dep}}},
                  if_key{
                      "git",
                      check_one_remote,

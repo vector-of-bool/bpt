@@ -24,7 +24,7 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    spdlog::error("Test '{}' failed! [exitted {}]", fail.executable_path.string(), fail.retc);
+    spdlog::error("Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
     if (fail.signal) {
         spdlog::error("Test execution received signal {}", fail.signal);
     }

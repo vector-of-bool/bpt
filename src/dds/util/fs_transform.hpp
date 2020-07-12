@@ -34,10 +34,26 @@ struct fs_transformation {
         std::string content;
     };
 
-    std::optional<struct copy>  copy;
-    std::optional<struct move>  move;
-    std::optional<remove>       remove;
-    std::optional<struct write> write;
+    struct one_edit {
+        int         line = 0;
+        std::string content;
+        enum kind_t {
+            delete_,
+            insert,
+        } kind
+            = delete_;
+    };
+
+    struct edit {
+        fs::path              path;
+        std::vector<one_edit> edits;
+    };
+
+    std::optional<struct copy>   copy;
+    std::optional<struct move>   move;
+    std::optional<struct remove> remove;
+    std::optional<struct write>  write;
+    std::optional<struct edit>   edit;
 
     void apply_to(path_ref root) const;
 

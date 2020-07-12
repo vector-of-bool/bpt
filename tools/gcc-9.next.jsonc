@@ -1,11 +1,11 @@
 {
     "$schema": "../res/toolchain-schema.json",
     "compiler_id": "gnu",
-    "c_compiler": "gcc9",
-    "cxx_compiler": "g++9",
+    "c_compiler": "gcc-9",
+    "cxx_compiler": "g++-9",
     "flags": [
-        "-DSPDLOG_COMPILED_LIB", // Required to use a compiled spdlog
         "-Werror=return-type",
+        // "-fsanitize=address",
     ],
     "cxx_flags": [
         "-fconcepts",
@@ -13,9 +13,11 @@
     ],
     "link_flags": [
         "-static-libgcc",
-        "-static-libstdc++",
+        "-static-libstdc++"
+        // "-fsanitize=address",
+        // "-fuse-ld=lld",
     ],
-    // "debug": true,
-    "optimize": true,
+    "debug": true,
+    // "optimize": true,
     "compiler_launcher": "ccache"
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,11 +27,25 @@ std::string quote_command(const Container& c) {
 struct proc_result {
     int         signal = 0;
     int         retc   = 0;
+    bool        timed_out = false;
     std::string output;
 
     bool okay() const noexcept { return retc == 0 && signal == 0; }
 };
 
-proc_result run_proc(const std::vector<std::string>& args);
+struct proc_options {
+    std::vector<std::string> command;
+
+    /**
+     * Timeout for the subprocess, in milliseconds. If zero, will wait forever
+     */
+    std::optional<std::chrono::milliseconds> timeout = std::nullopt;
+};
+
+proc_result run_proc(const proc_options& opts);
+
+inline proc_result run_proc(std::vector<std::string> args) {
+    return run_proc(proc_options{.command = std::move(args)});
+}
 
 }  // namespace dds

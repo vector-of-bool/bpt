@@ -7,7 +7,7 @@
                     "url": "https://github.com/vector-of-bool/json.git",
                     "ref": "dds/3.7.1"
                 },
-                "depends": {}
+                "depends": []
             }
         }
     }

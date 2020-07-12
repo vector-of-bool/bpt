@@ -14,23 +14,24 @@
 using namespace dds;
 
 dependency dependency::parse_depends_string(std::string_view str) {
-    const auto str_begin = str.data();
-    auto       str_iter  = str_begin;
-    const auto str_end   = str_iter + str.size();
-
-    while (str_iter != str_end && !std::isspace(*str_iter)) {
-        ++str_iter;
+    auto sep_pos = str.find_first_of("=@^~+");
+    if (sep_pos == str.npos) {
+        throw_user_error<errc::invalid_version_range_string>("Invalid dependency string '{}'", str);
     }
 
-    auto name        = trim_view(std::string_view(str_begin, str_iter - str_begin));
-    auto version_str = trim_view(std::string_view(str_iter, str_end - str_iter));
+    auto name = str.substr(0, sep_pos);
+
+    if (str[sep_pos] == '@') {
+        ++sep_pos;
+    }
+    auto range_str = str.substr(sep_pos);
 
     try {
-        auto rng = semver::range::parse_restricted(version_str);
+        auto rng = semver::range::parse_restricted(range_str);
         return dependency{std::string(name), {rng.low(), rng.high()}};
     } catch (const semver::invalid_range&) {
         throw_user_error<errc::invalid_version_range_string>(
-            "Invalid version range string '{}' in dependency declaration '{}'", version_str, str);
+            "Invalid version range string '{}' in dependency string '{}'", range_str, str);
     }
 }
 

@@ -8,7 +8,7 @@
                     "ref": "v1.4.2",
                     "auto-lib": "spdlog/spdlog"
                 },
-                "depends": {}
+                "depends": []
             }
         }
     }

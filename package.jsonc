@@ -14,7 +14,7 @@
         "pubgrub": "0.2.1",
         "vob-json5": "0.1.5",
         "vob-semester": "0.2.1",
-        "ctre": "2.7.0",
+        "ctre": "2.8.1",
     },
     "test_driver": "Catch-Main"
 }

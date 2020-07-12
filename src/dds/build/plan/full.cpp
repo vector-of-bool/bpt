@@ -3,6 +3,7 @@
 #include <dds/build/iter_compilations.hpp>
 #include <dds/build/plan/compile_exec.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/util/parallel.hpp>
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -19,60 +20,6 @@
 using namespace dds;
 
 namespace {
-
-/// XXX: Duplicated in compile_exec.cpp !!
-template <typename Range, typename Fn>
-bool parallel_run(Range&& rng, int n_jobs, Fn&& fn) {
-    // We don't bother with a nice thread pool, as the overhead of most build
-    // tasks dwarf the cost of interlocking.
-    std::mutex mut;
-
-    auto       iter = rng.begin();
-    const auto stop = rng.end();
-
-    std::vector<std::exception_ptr> exceptions;
-
-    auto run_one = [&]() mutable {
-        while (true) {
-            std::unique_lock lk{mut};
-            if (!exceptions.empty()) {
-                break;
-            }
-            if (iter == stop) {
-                break;
-            }
-            auto&& item = *iter;
-            ++iter;
-            lk.unlock();
-            try {
-                fn(item);
-            } catch (...) {
-                lk.lock();
-                exceptions.push_back(std::current_exception());
-                break;
-            }
-        }
-    };
-
-    std::unique_lock         lk{mut};
-    std::vector<std::thread> threads;
-    if (n_jobs < 1) {
-        n_jobs = std::thread::hardware_concurrency() + 2;
-    }
-    std::generate_n(std::back_inserter(threads), n_jobs, [&] { return std::thread(run_one); });
-    lk.unlock();
-    for (auto& t : threads) {
-        t.join();
-    }
-    for (auto eptr : exceptions) {
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception& e) {
-            spdlog::error(e.what());
-        }
-    }
-    return exceptions.empty();
-}
 
 template <typename T, typename Range>
 decltype(auto) pair_up(T& left, Range& right) {

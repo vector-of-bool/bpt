@@ -2,6 +2,8 @@
 
 #include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/repo/repo.hpp>
+#include <dds/util/parallel.hpp>
 
 #include <neo/assert.hpp>
 #include <nlohmann/json.hpp>
@@ -9,6 +11,8 @@
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/distance.hpp>
 #include <range/v3/numeric/accumulate.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace dds;
@@ -75,4 +79,33 @@ temporary_sdist dds::get_package_sdist(const package_info& pkg) {
             tsd.sdist.manifest.pkg_id.to_string());
     }
     return tsd;
+}
+
+void dds::get_all(const std::vector<package_id>& pkgs, repository& repo, const catalog& cat) {
+    std::mutex repo_mut;
+
+    auto absent_pkg_infos = pkgs  //
+        | ranges::views::filter([&](auto pk) {
+                                std::scoped_lock lk{repo_mut};
+                                return !repo.find(pk);
+                            })
+        | ranges::views::transform([&](auto id) {
+                                auto info = cat.get(id);
+                                neo_assert(invariant,
+                                           info.has_value(),
+                                           "No catalog entry for package id?",
+                                           id.to_string());
+                                return *info;
+                            });
+
+    auto okay = parallel_run(absent_pkg_infos, 8, [&](package_info inf) {
+        spdlog::info("Download package: {}", inf.ident.to_string());
+        auto             tsd = get_package_sdist(inf);
+        std::scoped_lock lk{repo_mut};
+        repo.add_sdist(tsd.sdist, if_exists::throw_exc);
+    });
+
+    if (!okay) {
+        throw_external_error<errc::dependency_resolve_failure>("Downloading of packages failed.");
+    }
 }
