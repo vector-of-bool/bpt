@@ -7,6 +7,7 @@
 
 #include <libman/parse.hpp>
 
+#include <neo/assert.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/view/filter.hpp>
 
@@ -105,6 +106,10 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 sdist sdist::from_directory(path_ref where) {
     auto pkg_man = package_manifest::load_from_directory(where);
     // Code paths should only call here if they *know* that the sdist is valid
-    assert(pkg_man.has_value());
+    neo_assert(invariant,
+               pkg_man.has_value(),
+               "All dirs in the repo should be proper source distributions. If you see this, it "
+               "means one of the directories in the repository is not a valid sdist.",
+               where.string());
     return sdist{pkg_man.value(), where};
 }
