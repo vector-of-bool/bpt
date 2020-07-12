@@ -64,7 +64,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                     [&](auto&& dat) {
                         if (dat.is_object()) {
                             spdlog::warn(
-                                "{}: Using a JSON object for 'depends' is deprecated. Use an"
+                                "{}: Using a JSON object for 'depends' is deprecated. Use an "
                                 "array of strings instead.",
                                 fpath);
                             return mapping{push_depends_obj_kv}(dat);
