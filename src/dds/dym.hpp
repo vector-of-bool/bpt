@@ -58,11 +58,4 @@ did_you_mean(std::string_view given, std::initializer_list<std::string_view> str
     return did_you_mean(given, ranges::views::all(strings));
 }
 
-struct lm_reject_dym {
-    std::initializer_list<std::string_view> candidates;
-
-    [[noreturn]] bool
-    operator()(std::string_view context, std::string_view key, std::string_view value) const;
-};
-
 }  // namespace dds
