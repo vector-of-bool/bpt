@@ -19,64 +19,7 @@ list the IDs of the packages, but none of the additional metadata about them.
 Adding Packages to the Catalog
 ******************************
 
-There are two primary ways to add entries to the package catalog.
-
-
-Adding Individual Packages
-==========================
-
-A single package can be added to the catalog with the ``dds catalog add``
-command:
-
-.. code-block:: text
-
-    dds catalog add <package-id>
-        [--depends <requirement> [--depends <requirement> [...]]]
-        [--git-url <url> --git-ref <ref>]
-        [--auto-lib <namespace>/<name>]
-
-The ``<package-id>`` positional arguments is the ``name@version`` package ID
-that will be added to the catalog. The following options are supported:
-
-``--depends <requirement>``
-    This argument, which can be specified multiple times to represent multiple
-    dependencies, sets the dependencies of the package within the catalog. If
-    the obtained package root contains a ``package.json5``, then the
-    dependencies listed here must be identical to those listed in
-    ``package.json5``, or dependency resolution may yield unexpected results.
-
-``--git-url <url>``
-    Specify a Git URL to clone from to obtain the package. The root of the
-    cloned repository must be a package root, but does not necessarily need to
-    have the ``package.json5`` and ``library.json5`` files if relying on the
-    ``--auto-lib`` parameter.
-
-    ``--git-ref`` **must** be passed with ``--git-url``.
-
-``--git-ref <ref>``
-    Specify a Git ref to clone. The remote must support cloning by the ref that
-    is specified here. Most usually this should be a Git tag.
-
-    ``dds`` will perform a shallow clone of the package at the specified
-    Git reference.
-
-``--auto-lib``
-    This option must be provided if the upstream does not already contain the
-    ``dds`` files that are necessary to export the library information. This
-    can only be specified for packages that contain a single library root at
-    the package root.
-
-    The form of the argument is that of ``<namespace>/<name>``, where
-    ``namespace`` and ``name`` are the usage requirement keys that should be
-    generated for the library.
-
-
-.. _catalog.adding.json:
-
-Bulk Imports via JSON
-=====================
-
-The ``dds catalog import`` supports a ``--json`` flag that specifies a JSON
+The ``dds catalog import`` supports a ``--json`` flag that specifies a JSON5
 file from which catalog entries will be generated.
 
 .. note::
@@ -89,35 +32,34 @@ The JSON file has the following structure:
 
   {
     // Import version spec.
-    "version": 1,
+    version: 1,
     // Packages section
-    "packages": {
+    packages: {
       // Subkeys are package names
       "acme-gadgets": {
         // Keys within the package names are the versions that are
         // available for each package.
         "0.4.2": {
-          // `depends` is an object of dependencies for this
+          // `depends` is an array of dependency statements for this
           // particular version of the package. (Optional)
-          "depends": {
-            // A mapping of package names to version ranges
-            "acme-widgets": "^1.4.1"
-          },
+          depends: [
+            "acme-widgets^1.4.1"
+          ],
           // `description` is an attribute to give a string to describe
           // the package. (Optional)
-          "description": "A collection of useful gadgets.",
+          description: "A collection of useful gadgets.",
           // Specify the Git remote information
-          "git": {
+          git: {
             // `url` and `ref` are required.
-            "url": "http://example.com/git/repo/acme-gadgets.git",
-            "ref": "v0.4.2-stable",
+            url: "http://example.com/git/repo/acme-gadgets.git",
+            ref: "v0.4.2-stable",
             // The `auto-lib` is optional, to specify an automatic
             // library name/namespace pair to generate for the
             // root library
             "auto-lib": "Acme/Gadgets",
             // List of filesystem transformations to apply to the repository
             // (optional)
-            "transform": [
+            transform: [
               // ... (see below) ...
             ]
           }
@@ -132,7 +74,22 @@ The JSON file has the following structure:
 Filesystem Transformations
 **************************
 
-A catalog entry can have a set of filesystem transformations attached to its remote information (e.g. the ``git`` property). When ``dds`` is obtaining a copy of the code for the package, it will apply the associated transformations to the filesystem based in the directory of the downloaded/cloned directory. In this was, ``dds`` can effectively "patch" the filesystem structure of a project arbitrarily. This allows many software projects to be imported into ``dds`` without needing to patch/fork the original project to support the required filesystem structure.
+.. note::
+  Filesystem transformations is a transitional feature that is likely to be
+  removed in a future release, and replaced with a more robust system when
+  ``dds`` has a better way to download packages. Its aim is to allow ``dds``
+  projects to use existing libraries that might not meet the layout
+  requirements that ``dds`` imposes, but can otherwise be consumed by ``dds``
+  with a few tweaks.
+
+A catalog entry can have a set of filesystem transformations attached to its
+remote information (e.g. the ``git`` property). When ``dds`` is obtaining a
+copy of the code for the package, it will apply the associated transformations
+to the filesystem based in the directory of the downloaded/cloned directory. In
+this way, ``dds`` can effectively "patch" the filesystem structure of a project
+arbitrarily. This allows many software projects to be imported into ``dds``
+without needing to patch/fork the original project to support the required
+filesystem structure.
 
 .. important::
   While ``dds`` allows you to patch directories downloaded via the catalog, a
@@ -140,16 +97,11 @@ A catalog entry can have a set of filesystem transformations attached to its rem
 
   The intention of filesystem transformations is to act as a "bridge" that will allow ``dds`` projects to more easily utilize existing libraries.
 
-.. note::
-  Filesystem transformations can only be added to catalog entries using the
-  :ref:`JSON import method <catalog.adding.json>`. It is not available in the
-  command-line import method.
-
 
 Available Transformations
 =========================
 
-At time of writing, there are four main transformations available to catalog entries:
+At time of writing, there are five transformations available to catalog entries:
 
 ``copy`` and ``move``
   Copies or moves a set of files/directories from one location to another. Allows the following options:
@@ -176,15 +128,37 @@ At time of writing, there are four main transformations available to catalog ent
   - ``path`` - The path of the file to write. **Required**
   - ``content`` - A string that will be written to the file. **Required**
 
-  If the file exists and is not a directory, the file will be replaced. If the path names an existing directory, an error will be generated.
+  If the file exists and is not a directory, the file will be replaced. If the
+  path names an existing directory, an error will be generated.
 
-Transformations are added as a JSON array to the JSON object that specifies the remote information for the package. Each element of the array is an object, with one or more of the four keys listed above. If an object features more than one of the above keys, they are applied in the same order as they have been listed.
+``edit``
+  Modifies the contents of the files in the package.
+
+  - ``path`` - Path to the file to edit. **Required**
+  - ``edits`` - An array of edit objects, applied in order, with the following
+    keys:
+
+    - ``kind`` - One of ``insert`` or ``delete`` to insert/delete lines,
+      respectively. **Required**
+    - ``line`` - The line at which to perform the insert/delete. The first line
+      of the file is line one, *not* line zero. **Required**
+    - ``content`` - For ``insert``, the string content to insert into the file.
+      A newline will be appended after the content has been inserted.
+
+Transformations are added as a JSON array to the JSON object that specifies
+the remote information for the package. Each element of the array is an
+object, with one or more of the keys listed above. If an object features more
+than one of the above keys, they are applied in the same order as they have
+been listed.
 
 
 Example: Crypto++
 =================
 
-The following catalog entry will build and import `Crypto++`_ for use by a ``dds`` project. This uses the unmodified Crypto++ repository, which ``dds`` doesn't know how to build immediately. With some simple moving of files, we end up with something ``dds`` can build directly:
+The following catalog entry will build and import `Crypto++`_ for use by a
+``dds`` project. This uses the unmodified Crypto++ repository, which ``dds``
+doesn't know how to build immediately. With some simple moving of files, we
+end up with something ``dds`` can build directly:
 
 .. code-block:: javascript
 
@@ -224,7 +198,11 @@ The following catalog entry will build and import `Crypto++`_ for use by a ``dds
 Example: libsodium
 ==================
 
-For example, this catalog entry will build and import `libsodium`_ for use in a ``dds`` project. This uses the upstream libsodium repository, which does not meet the layout requirements needed by ``dds``. With a few simple transformations, we can allow ``dds`` to build and consume libsodium successfully:
+For example, this catalog entry will build and import `libsodium`_ for use in
+a ``dds`` project. This uses the upstream libsodium repository, which does not
+meet the layout requirements needed by ``dds``. With a few simple
+transformations, we can allow ``dds`` to build and consume libsodium
+successfully:
 
 .. code-block:: javascript
 

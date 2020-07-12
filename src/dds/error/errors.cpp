@@ -51,8 +51,6 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "invalid-version-string.html#range";
     case errc::invalid_version_string:
         return "invalid-version-string.html";
-    case errc::invalid_config_key:
-        return "invalid-config-key.html";
     case errc::invalid_lib_filesystem:
     case errc::invalid_pkg_filesystem:
         return "invalid-pkg-filesystem.html";
@@ -203,8 +201,6 @@ information.
 specification. Refer to the documentation and https://semver.org/ for more
 information.
 )";
-    case errc::invalid_config_key:
-        return R"(The `key' in a `key: value' pair was not recognized.)";
     case errc::invalid_lib_filesystem:
     case errc::invalid_pkg_filesystem:
         return R"(
@@ -303,8 +299,6 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "Attempted to parse an invalid version range string." BUG_STRING_SUFFIX;
     case errc::invalid_version_string:
         return "Attempted to parse an invalid version string." BUG_STRING_SUFFIX;
-    case errc::invalid_config_key:
-        return "Found an invalid configuration key." BUG_STRING_SUFFIX;
     case errc::invalid_lib_filesystem:
     case errc::invalid_pkg_filesystem:
         return "The filesystem structure of the package/library is invalid." BUG_STRING_SUFFIX;

@@ -9,7 +9,7 @@ author = 'vector-of-bool'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.0-alpha.3'
+release = '0.1.0-alpha.4'
 
 # -- General configuration ---------------------------------------------------
 extensions = []
@@ -21,7 +21,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = None
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'pyramid'
+html_theme = 'nature'
 html_theme_options = {}
 html_static_path = []
 html_sidebars = {}

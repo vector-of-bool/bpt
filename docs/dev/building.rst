@@ -62,9 +62,9 @@ interest:
 The ``ci.py`` script performs the following actions, in order:
 
 #. Prepare the build output directory
-#. Bootstrap the prior version of ``dds`` that will build the current version.
+#. Prepare the prior version of ``dds`` that will build the current version.
 #. Import the embedded ``catalog.json`` into a catalog database stored within
-   ``_build/``. This will be used to resolve the third-party packages that
+   ``_prebuilt/``. This will be used to resolve the third-party packages that
    ``dds`` itself uses.
 #. Invoke the build of ``dds`` using the prebuilt ``dds`` from the prior
    bootstrap phase. If ``--build-only`` was specified, the CI script stops
@@ -173,8 +173,8 @@ it:
 .. code-block:: bash
 
     $ _prebuilt/dds build -t [toolchain] \
-        --catalog _build/catalog.db \
-        --repo-dir _build/ci-repo
+        --catalog _prebuilt/catalog.db \
+        --repo-dir _prebuilt/ci-repo
 
 The ``--catalog`` and ``--repo-dir`` arguments are not strictly necessary, but
 help to isolate the ``dds`` dev environment from the user-local ``dds``

@@ -20,7 +20,7 @@ name and version in the ``package.json5`` in the package root:
 .. code-block:: js
 
     {
-        name: 'acme-widgets',
+        name: 'acme-gadgets',
         version: '4.3.6',
         namespace: 'acme',
     }
@@ -31,8 +31,8 @@ name and version in the ``package.json5`` in the package root:
 
 Suppose that our package's libraries build upon the libraries in the
 ``acme-widgets`` package, and that we require version ``1.4.3`` or newer, but
-not as new as ``2.0.0``. Such a dependency can be declared with the ``Depends``
-key:
+not as new as ``2.0.0``. Such a dependency can be declared with the ``depends``
+array:
 
 .. code-block:: js
     :emphasize-lines: 5-7
@@ -41,15 +41,15 @@ key:
         name: 'acme-gadgets',
         version: '4.3.6',
         namespace: 'acme',
-        depends: {
-            'acme-widgets': '^1.4.3',
-        },
+        depends: [
+            'acme-widgets^1.4.3',
+        ],
     }
 
 .. seealso:: :ref:`deps.ranges`.
 
 If we wish to declare additional dependencies, we simply declare them with
-additional ``Depends`` keys
+additional ``depends`` items:
 
 .. code-block::
     :emphasize-lines: 7-8
@@ -58,11 +58,11 @@ additional ``Depends`` keys
         name: 'acme-gadgets',
         version: '4.3.6',
         namespace: 'acme',
-        depends: {
-            'acme-widgets': '^1.4.3',
-            'acme-gizmos': '~5.6.5',
-            'acme-utils': '^3.3.0',
-        },
+        depends: [
+            'acme-widgets^1.4.3',
+            'acme-gizmos~5.6.5',
+            'acme-utils^3.3.0',
+        ],
     }
 
 When ``dds`` attempts to build a project, it will first build the dependency
@@ -88,7 +88,7 @@ versions of the dependency are supported.
 supported by ``npm`` and ``npm``-like tools. There are five (and a half)
 version range formats available, listed in order of most-to-least restrictive:
 
-Exact: ``1.2.3`` and ``=1.2.3``
+Exact: ``@1.2.3``
     Specifies an *exact* requirement. The dependency must match the named
     version *exactly* or it is considered incompatible.
 
@@ -111,9 +111,7 @@ At-least: ``+1.2.3``
     Specifies an *at least* requirement. The version must be *at least* the
     given version, but any newer version is acceptable.
 
-Anything: ``*``
-    An asterisk ``*`` represents than *any* version is acceptable. This is not
-    recommended for most dependencies.
+A dependency string is simply the name of the package with the range suffix appended.
 
 
 .. _deps.ranges.why-lowest:
@@ -129,7 +127,8 @@ Imagine a scenario where we *did* select the "latest-matching-version":
 
 Suppose we are developing a library ``Gadgets``, and we wish to make use of
 ``Widgets``. The latest version is ``1.5.2``, and they promise Semantic
-Versioning compatibility, so we select a version range of ``^1.5.2``.
+Versioning compatibility, so we select a dependency statement of
+``Widgets^1.5.2``.
 
 Suppose a month passes, and ``Widgets@1.6.0`` is published. A few things
 happen:
@@ -146,7 +145,7 @@ happen:
    *everyone* is developing against ``1.6.0`` without realizing that they
    actually only require ``1.5.2`` in their dependency declarations.
 #. Code in our project is written that presupposes features or bugfixes added
-   in ``1.6.0``, and thus makes the dependency declaration on ``Widgets ^1.5.2``
+   in ``1.6.0``, and thus makes the dependency declaration on ``Widgets^1.5.2``
    a *lie*.
 
 Pulling the lowest-matching-version has two *huge* benefits:
@@ -173,9 +172,9 @@ using lowest-matching-version.
 In short: *Your* compatibility ranges are not for *you*. They are for *your
 users*.
 
-Suppose package ``A`` requires ``B ^1.0.0``, and ``B`` requires ``C ^1.2.0``.
+Suppose package ``A`` requires ``B^1.0.0``, and ``B`` requires ``C^1.2.0``.
 Now let us suppose that ``A`` wishes to use a newer feature of ``C``, and thus
-declares a dependency on ``C ^1.3.0``. ``B`` and ``A`` have different
+declares a dependency on ``C^1.3.0``. ``B`` and ``A`` have different
 compatibility ranges on ``C``, but this will work perfectly fine **as long as
 the compatible version ranges of A and B have some overlap**.
 

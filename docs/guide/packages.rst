@@ -48,7 +48,8 @@ supported:
       * ``.cpp``, ``.c++``, ``.cc``, and ``.cxx``
 
     - * Not compiled
-      * ``.H``, ``.H++``, ``.h``, ``.h++``, ``.hh``, ``.hpp``, ``.hxx``, and ``.inl``
+      * ``.H``, ``.H++``, ``.h``, ``.h++``, ``.hh``, ``.hpp``, ``.hxx``,
+        ``.ipp``, ``.inc``, and ``.inl``
 
 If a file's extension is not listed in the table above, ``dds`` will ignore it.
 

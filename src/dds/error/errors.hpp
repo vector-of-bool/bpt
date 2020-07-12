@@ -36,7 +36,6 @@ enum class errc {
     invalid_version_string,
     invalid_pkg_id,
     invalid_pkg_name,
-    invalid_config_key,
     unknown_test_driver,
     dependency_resolve_failure,
     dup_lib_name,
