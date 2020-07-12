@@ -623,15 +623,8 @@ struct cli_build {
                 [&](dds::repository repo) {
                     // Download dependencies
                     auto deps = repo.solve(man.dependencies, cat);
+                    dds::get_all(deps, repo, cat);
                     for (const dds::package_id& pk : deps) {
-                        auto exists = !!repo.find(pk);
-                        if (!exists) {
-                            spdlog::info("Download dependency: {}", pk.to_string());
-                            auto opt_pkg = cat.get(pk);
-                            assert(opt_pkg);
-                            auto tsd = dds::get_package_sdist(*opt_pkg);
-                            repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
-                        }
                         auto sdist_ptr = repo.find(pk);
                         assert(sdist_ptr);
                         dds::sdist_build_params deps_params;
@@ -717,15 +710,8 @@ struct cli_build_deps {
                 // Download dependencies
                 spdlog::info("Loading {} dependencies", all_deps.size());
                 auto deps = repo.solve(all_deps, cat);
+                dds::get_all(deps, repo, cat);
                 for (const dds::package_id& pk : deps) {
-                    auto exists = !!repo.find(pk);
-                    if (!exists) {
-                        spdlog::info("Download dependency: {}", pk.to_string());
-                        auto opt_pkg = cat.get(pk);
-                        assert(opt_pkg);
-                        auto tsd = dds::get_package_sdist(*opt_pkg);
-                        repo.add_sdist(tsd.sdist, dds::if_exists::throw_exc);
-                    }
                     auto sdist_ptr = repo.find(pk);
                     assert(sdist_ptr);
                     dds::sdist_build_params deps_params;

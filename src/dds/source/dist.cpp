@@ -18,7 +18,7 @@ namespace {
 
 void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     auto relpath = fs::relative(filepath, in_root);
-    spdlog::info("Export file {}", relpath.string());
+    spdlog::debug("Export file {}", relpath.string());
     auto dest = out_root / relpath;
     fs::create_directories(dest.parent_path());
     fs::copy(filepath, dest);
