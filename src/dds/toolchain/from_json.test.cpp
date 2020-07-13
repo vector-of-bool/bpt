@@ -13,30 +13,33 @@ void check_tc_compile(std::string_view tc_content,
     auto tc = dds::parse_toolchain_json5(tc_content);
 
     dds::compile_file_spec cf;
-    cf.source_path  = "foo.cpp";
-    cf.out_path     = "foo.o";
-    auto cf_cmd     = tc.create_compile_command(cf, dds::toolchain_knobs{});
+    cf.source_path = "foo.cpp";
+    cf.out_path    = "foo.o";
+    auto cf_cmd    = tc.create_compile_command(cf, dds::fs::current_path(), dds::toolchain_knobs{});
     auto cf_cmd_str = dds::quote_command(cf_cmd.command);
     CHECK(cf_cmd_str == expected_compile);
 
     cf.enable_warnings = true;
-    cf_cmd             = tc.create_compile_command(cf, dds::toolchain_knobs{});
-    cf_cmd_str         = dds::quote_command(cf_cmd.command);
+    cf_cmd     = tc.create_compile_command(cf, dds::fs::current_path(), dds::toolchain_knobs{});
+    cf_cmd_str = dds::quote_command(cf_cmd.command);
     CHECK(cf_cmd_str == expected_compile_warnings);
 
     dds::archive_spec ar_spec;
     ar_spec.input_files.push_back("foo.o");
     ar_spec.input_files.push_back("bar.o");
     ar_spec.out_path = "stuff.a";
-    auto ar_cmd      = tc.create_archive_command(ar_spec, dds::toolchain_knobs{});
-    auto ar_cmd_str  = dds::quote_command(ar_cmd);
+    auto ar_cmd
+        = tc.create_archive_command(ar_spec, dds::fs::current_path(), dds::toolchain_knobs{});
+    auto ar_cmd_str = dds::quote_command(ar_cmd);
     CHECK(ar_cmd_str == expected_ar);
 
     dds::link_exe_spec exe_spec;
     exe_spec.inputs.push_back("foo.o");
     exe_spec.inputs.push_back("bar.a");
     exe_spec.output  = "meow.exe";
-    auto exe_cmd     = tc.create_link_executable_command(exe_spec, dds::toolchain_knobs{});
+    auto exe_cmd     = tc.create_link_executable_command(exe_spec,
+                                                     dds::fs::current_path(),
+                                                     dds::toolchain_knobs{});
     auto exe_cmd_str = dds::quote_command(exe_cmd);
     CHECK(exe_cmd_str == expected_exe);
 }
@@ -93,7 +96,7 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
     dds::compile_file_spec cfs;
     cfs.source_path = "foo.cpp";
     cfs.out_path    = "foo.o";
-    auto cmd        = tc.create_compile_command(cfs, dds::toolchain_knobs{});
+    auto cmd = tc.create_compile_command(cfs, dds::fs::current_path(), dds::toolchain_knobs{});
     CHECK(cmd.command
           == std::vector<std::string>{"g++",
                                       "-fPIC",
@@ -108,7 +111,9 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "-ofoo.o"});
 
     cfs.definitions.push_back("FOO=BAR");
-    cmd = tc.create_compile_command(cfs, dds::toolchain_knobs{.is_tty = true});
+    cmd = tc.create_compile_command(cfs,
+                                    dds::fs::current_path(),
+                                    dds::toolchain_knobs{.is_tty = true});
     CHECK(cmd.command
           == std::vector<std::string>{"g++",
                                       "-fPIC",
@@ -126,7 +131,7 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "-ofoo.o"});
 
     cfs.include_dirs.push_back("fake-dir");
-    cmd = tc.create_compile_command(cfs, dds::toolchain_knobs{});
+    cmd = tc.create_compile_command(cfs, dds::fs::current_path(), dds::toolchain_knobs{});
     CHECK(cmd.command
           == std::vector<std::string>{"g++",
                                       "-fPIC",

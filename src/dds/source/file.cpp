@@ -18,7 +18,9 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
         ".hh",
         ".hpp",
         ".hxx",
+        ".inc",
         ".inl",
+        ".ipp",
     };
     assert(std::is_sorted(header_exts.begin(), header_exts.end()));
     static std::vector<std::string_view> source_exts = {
@@ -29,6 +31,7 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
         ".cpp",
         ".cxx",
     };
+    assert(std::is_sorted(header_exts.begin(), header_exts.end()));
     assert(std::is_sorted(source_exts.begin(), source_exts.end()));
     auto leaf = p.filename();
 

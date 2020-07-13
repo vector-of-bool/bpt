@@ -94,7 +94,7 @@ The following pseudo-toolchains are also available:
 Providing a Default Toolchain File
 **********************************
 
-If you do not which to provide a new toolchain for every individual project,
+If you do not wish to provide a new toolchain for every individual project,
 and the built-in toolchains do not suit your needs, you can write a toolchain
 file to one of a few predefined paths, and ``dds`` will find and use it for the
 build. The following directories are searched, in order:
@@ -208,7 +208,7 @@ is equivalent to this one::
 
 Despite splitting strings as-if they were shell commands, ``dds`` does nothing
 else shell-like. It does not expand environment variables, nor does it expand
-globs.
+globs and wildcards.
 
 
 ``compiler_id``
@@ -271,18 +271,16 @@ Valid ``cxx_version`` values are:
 ``warning_flags``
 -----------------
 
-Override the compiler flags that should be used to enable warnings. This option
-is stored separately from ``flags``, as these options may be enabled/disabled
-separately depending on how ``dds`` is invoked.
+Provide *additional* compiler flags that should be used to enable warnings. This option is stored separately from ``flags``, as these options may be enabled/disabled separately depending on how ``dds`` is invoked.
 
 .. note::
-    If ``compiler_id`` is provided, a default value will be used that enables
-    common warning levels.
+    If ``compiler_id`` is provided, a default set of warning flags will be provided when warnings are enabled.
 
-    If you need to tweak warnings further, use this option.
+    Adding flags to this toolchain option will *append* flags to the basis warning flag list rather than overwrite them.
 
-On GNU-like compilers, the default flags are ``-Wall -Wextra -Wpedantic
--Wconversion``. On MSVC the default flag is ``/W4``.
+.. seealso::
+
+    Refer to :ref:`toolchains.opts.base_warning_flags` for more information.
 
 
 ``flags``, ``c_flags``, and ``cxx_flags``
@@ -468,9 +466,26 @@ standard output is an ANSI-capable terminal.
 On GNU and Clang this will be ``-fdiagnostics-color`` by default.
 
 
-``obj_prefix``, ``obj_suffix``, ``archive_prefix``, ``archive_suffix``,
-``exe_prefix``, and ``exe_suffix``
-----------------------------------
+``obj_prefix``, ``obj_suffix``, ``archive_prefix``, ``archive_suffix``, ``exe_prefix``, and ``exe_suffix``
+----------------------------------------------------------------------------------------------------------
 
 Set the filename prefixes and suffixes for object files, library archive files,
 and executable files, respectively.
+
+
+.. _toolchains.opts.base_warning_flags:
+
+``base_warning_flags``
+----------------------
+
+When you compile your project and request warning flags, ``dds`` will
+concatenate the warning flags from this option with the flags provided by
+``warning_flags``. This option is "advanced," because it provides a set of
+defaults based on the ``compiler_id``.
+
+On GNU-like compilers, the base warning flags are ``-Wall -Wextra -Wpedantic
+-Wconversion``. On MSVC the default flag is ``/W4``.
+
+For example, if you set ``warning_flags`` to ``"-Werror"`` on a GNU-like
+compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
+-Wconversion -Werror``.

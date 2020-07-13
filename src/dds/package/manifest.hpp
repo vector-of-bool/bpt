@@ -35,7 +35,6 @@ struct package_manifest {
      * Load a package manifest from a file on disk.
      */
     static package_manifest load_from_file(path_ref);
-    static package_manifest load_from_dds_file(path_ref);
 
     /**
      * Find a package manifest contained within a directory. This will search

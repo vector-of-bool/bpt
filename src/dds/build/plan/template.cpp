@@ -13,7 +13,7 @@
 
 using namespace dds;
 
-using json_data = semester::basic_data<semester::json_traits<std::allocator<void>>>;
+using json_data = semester::json_data;
 
 namespace {
 

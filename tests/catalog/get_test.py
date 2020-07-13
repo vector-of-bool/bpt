@@ -15,13 +15,12 @@ def test_get(dds: DDS):
         'version': 1,
         'packages': {
             'neo-sqlite3': {
-                '0.2.2': {
-                    'depends': {},
+                '0.3.0': {
                     'git': {
                         'url':
                         'https://github.com/vector-of-bool/neo-sqlite3.git',
                         'ref':
-                        '0.2.2',
+                        '0.3.0',
                     },
                 },
             },
@@ -33,6 +32,6 @@ def test_get(dds: DDS):
 
     dds.catalog_import(json_path)
 
-    dds.catalog_get('neo-sqlite3@0.2.2')
-    assert (dds.source_root / 'neo-sqlite3@0.2.2').is_dir()
-    assert (dds.source_root / 'neo-sqlite3@0.2.2/package.dds').is_file()
+    dds.catalog_get('neo-sqlite3@0.3.0')
+    assert (dds.source_root / 'neo-sqlite3@0.3.0').is_dir()
+    assert (dds.source_root / 'neo-sqlite3@0.3.0/package.jsonc').is_file()

@@ -1,5 +1,5 @@
 {
-    depends: {
-        'neo-sqlite3': '+0.2.2',
-    },
+    depends: [
+        'neo-fun+0.3.0'
+    ],
 }

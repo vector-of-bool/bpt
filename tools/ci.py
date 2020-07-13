@@ -4,6 +4,7 @@ import sys
 import pytest
 from pathlib import Path
 from typing import Sequence, NamedTuple
+import multiprocessing
 import subprocess
 import urllib.request
 import shutil
@@ -14,7 +15,7 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
-    toolchain_json5: str
+    toolchain_2: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -31,11 +32,13 @@ def _do_bootstrap_download() -> None:
         'win32': 'dds-win-x64.exe',
         'linux': 'dds-linux-x64',
         'darwin': 'dds-macos-x64',
+        'freebsd11': 'dds-freebsd-x64',
+        'freebsd12': 'dds-freebsd-x64',
     }.get(sys.platform)
     if filename is None:
         raise RuntimeError(f'We do not have a prebuilt DDS binary for '
                            f'the "{sys.platform}" platform')
-    url = f'https://github.com/vector-of-bool/dds/releases/download/0.0.1/{filename}'
+    url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.3/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
@@ -67,11 +70,13 @@ def main(argv: Sequence[str]) -> int:
         '--toolchain',
         '-T',
         help='The toolchain to use for the CI process',
-        required=True)
+        required=True,
+    )
     parser.add_argument(
-        '--toolchain-json5',
+        '--toolchain-2',
         '-T2',
-        help='The toolchain JSON to use with the bootstrapped executable',
+        help='The toolchain to use for the self-build',
+        required=True,
     )
     parser.add_argument(
         '--build-only',
@@ -79,13 +84,7 @@ def main(argv: Sequence[str]) -> int:
         help='Only build the `dds` executable. Skip second-phase and tests.')
     args = parser.parse_args(argv)
 
-    if not args.build_only and not args.toolchain_json5:
-        raise RuntimeError(
-            'The --toolchain-json5/-T2 argument is required (unless using --build-only)'
-        )
-
-    opts = CIOptions(
-        toolchain=args.toolchain, toolchain_json5=args.toolchain_json5)
+    opts = CIOptions(toolchain=args.toolchain, toolchain_2=args.toolchain_2)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -96,28 +95,20 @@ def main(argv: Sequence[str]) -> int:
     else:
         assert False, 'impossible'
 
-    cat_path = paths.BUILD_DIR / 'catalog.db'
-    if cat_path.is_file():
-        cat_path.unlink()
+    old_cat_path = paths.PREBUILT_DIR / 'catalog.db'
+    if old_cat_path.is_file():
+        old_cat_path.unlink()
 
-    ci_repo_dir = paths.BUILD_DIR / '_ci-repo'
+    ci_repo_dir = paths.PREBUILT_DIR / 'ci-repo'
     if ci_repo_dir.exists():
         shutil.rmtree(ci_repo_dir)
 
-    proc.check_run([
-        paths.PREBUILT_DDS,
-        'catalog',
-        'import',
-        ('--catalog', cat_path),
-        ('--json', paths.PROJECT_ROOT / 'catalog.json'),
-    ])
     self_build(
         paths.PREBUILT_DDS,
         toolchain=opts.toolchain,
-        dds_flags=[
-            ('--catalog', cat_path),
-            ('--repo-dir', ci_repo_dir),
-        ])
+        cat_path=old_cat_path,
+        cat_json_path=Path('catalog.old.json'),
+        dds_flags=[('--repo-dir', ci_repo_dir)])
     print('Main build PASSED!')
     print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
 
@@ -127,28 +118,22 @@ def main(argv: Sequence[str]) -> int:
         )
         return 0
 
-    # Delete the catalog database, since there may be schema changes since the
-    # bootstrap executable was built
-    cat_path.unlink()
-
-    proc.check_run([
-        paths.CUR_BUILT_DDS,
-        'catalog',
-        'import',
-        ('--catalog', cat_path),
-        ('--json', paths.PROJECT_ROOT / 'catalog.json'),
-    ])
+    print('Bootstrapping myself:')
+    new_cat_path = paths.BUILD_DIR / 'catalog.db'
+    new_repo_dir = paths.BUILD_DIR / 'ci-repo'
     self_build(
         paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain_json5,
-        dds_flags=[f'--repo-dir={ci_repo_dir}', f'--catalog={cat_path}'])
+        toolchain=opts.toolchain_2,
+        cat_path=new_cat_path,
+        dds_flags=[f'--repo-dir={new_repo_dir}'])
     print('Bootstrap test PASSED!')
 
     return pytest.main([
         '-v',
         '--durations=10',
         f'--basetemp={paths.BUILD_DIR / "_tmp"}',
-        '-n4',
+        '-n',
+        str(multiprocessing.cpu_count() + 2),
         'tests/',
     ])
 

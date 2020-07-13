@@ -16,8 +16,7 @@ contents therein will be significant.
    The term *package root* is further described in the :doc:`/guide/packages` page.
 
 From here on, this created directory will simply be noted as ``<root>``. In
-the examples, this will refer to the directory package root directory we have
-created.
+the examples, this will refer to the package root directory we have created.
 
 
 Creating the First *Source Root*
@@ -96,7 +95,7 @@ For example, if you are using ``gcc``, you would run the command as::
 
 > dds build -t :gcc
 
-If all successful, ``dds`` will emit information about the compile and link
+If all is successful, ``dds`` will emit information about the compile and link
 process, and then exit without error.
 
 By default, build results will be placed in a subdirectory of the package root

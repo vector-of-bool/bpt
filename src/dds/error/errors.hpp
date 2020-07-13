@@ -24,6 +24,7 @@ enum class errc {
     no_catalog_remote_info,
 
     git_clone_failure,
+    invalid_repo_transform,
     sdist_ident_mismatch,
     sdist_exists,
 
@@ -35,7 +36,6 @@ enum class errc {
     invalid_version_string,
     invalid_pkg_id,
     invalid_pkg_name,
-    invalid_config_key,
     unknown_test_driver,
     dependency_resolve_failure,
     dup_lib_name,

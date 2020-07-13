@@ -1,4 +1,5 @@
 _build/
+_site/
 __pycache__/
 .vscode/
 .mypy_cache/

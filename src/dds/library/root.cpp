@@ -52,17 +52,14 @@ auto collect_pf_sources(path_ref path) {
 }  // namespace
 
 library_root library_root::from_directory(path_ref lib_dir) {
+    assert(lib_dir.is_absolute());
     auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
     man.name   = lib_dir.filename().string();
     auto found = library_manifest::find_in_directory(lib_dir);
     if (found) {
-        if (found->extension() == ".dds") {
-            man = library_manifest::load_from_dds_file(*found);
-        } else {
-            man = library_manifest::load_from_file(*found);
-        }
+        man = library_manifest::load_from_file(*found);
     }
 
     auto lib = library_root(lib_dir, std::move(sources), std::move(man));
@@ -99,7 +96,7 @@ auto has_library_dirs
 std::vector<library_root> dds::collect_libraries(path_ref root) {
     std::vector<library_root> ret;
     if (has_library_dirs(root)) {
-        ret.emplace_back(library_root::from_directory(root));
+        ret.emplace_back(library_root::from_directory(fs::canonical(root)));
     }
 
     auto pf_libs_dir = root / "libs";
@@ -109,7 +106,7 @@ std::vector<library_root> dds::collect_libraries(path_ref root) {
                fs::directory_iterator(pf_libs_dir)            //
                    | ranges::views::filter(has_library_dirs)  //
                    | ranges::views::transform(
-                       [&](auto p) { return library_root::from_directory(p); }));
+                       [&](auto p) { return library_root::from_directory(fs::canonical(p)); }));
     }
     return ret;
 }

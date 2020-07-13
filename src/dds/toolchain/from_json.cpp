@@ -573,8 +573,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
 #endif
     });
 
-    /// TODO: Handle base_warning_flags:
-    tc.warning_flags = read_opt(warning_flags, [&]() -> string_seq {
+    // `base_warning_flags` is loaded first, and switches based on compiler_id.
+    // This one is "advanced," and sets a common base for warning sets
+    tc.warning_flags = read_opt(base_warning_flags, [&]() -> string_seq {
         if (!compiler_id) {
             // No error. Just no warning flags
             return {};
@@ -587,6 +588,11 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         assert(false && "No warning flags");
         std::terminate();
     });
+
+    // `warning_flags` allows the user to provide additional warnings/errors
+    if (warning_flags) {
+        extend(tc.warning_flags, *warning_flags);
+    }
 
     tc.link_archive = read_opt(create_archive, [&]() -> string_seq {
         if (!compiler_id) {

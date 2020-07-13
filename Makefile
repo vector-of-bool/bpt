@@ -2,11 +2,15 @@
 
 .PHONY: \
 	docs docs-server docs-watch docs-sync-server nix-ci linux-ci macos-ci \
-	vagrant-freebsd-ci
+	vagrant-freebsd-ci site
 
 _invalid:
 	echo "Specify a target name to execute"
 	exit 1
+
+clean:
+	rm -f -r -- $(shell find -name __pycache__ -type d)
+	rm -f -r -- _build/ _prebuilt/
 
 docs:
 	sphinx-build -b html \
@@ -31,23 +35,39 @@ docs-sync-server:
 		--reload-delay 300 \
 		--watch **/*.html
 
-macos-ci: nix-ci
-linux-ci: nix-ci
+macos-ci:
+	python3 -u tools/ci.py \
+		-B download \
+		-T tools/gcc-9.jsonc \
+		-T2 tools/gcc-9.next.jsonc \
+
+linux-ci:
+	python3 -u tools/ci.py \
+		-B download \
+		-T tools/gcc-9.jsonc \
+		-T2 tools/gcc-9-static.jsonc
 
 nix-ci:
 	python3 -u tools/ci.py \
-		-B build \
-		-T tools/gcc-9.dds \
-		-T2 tools/gcc-9.jsonc
+		-B download \
+		-T tools/gcc-9.jsonc
 
 vagrant-freebsd-ci:
 	vagrant up freebsd11
+	vagrant rsync
 	vagrant ssh freebsd11 -c '\
 		cd /vagrant && \
 		python3.7 tools/ci.py \
-			-B build \
-			-T  tools/freebsd-gcc-9.dds \
-			-T2 tools/freebsd-gcc-9.jsonc \
+			-B download \
+			-T tools/freebsd-gcc-9.jsonc \
+			-T2 tools/freebsd-gcc-9.next.jsonc \
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt
+
+site: docs
+	rm -r -f -- _site/
+	mkdir -p _site/
+	cp site/index.html _site/
+	cp -r _build/docs _site/
+	echo "Site generated at _site/"

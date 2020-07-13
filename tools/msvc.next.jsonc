@@ -1,0 +1,13 @@
+{
+    "$schema": "../res/toolchain-schema.json",
+    "compiler_id": "msvc",
+    "flags": [
+        "/Zc:preprocessor",
+        "/std:c++latest",
+    ],
+    "link_flags": [
+        "rpcrt4.lib",
+    ],
+    // "debug": true,
+    "optimize": true
+}

@@ -1,13 +1,12 @@
 {
     "version": 1,
     "packages": {
-        "neo-buffer": {
-            "0.1.0": {
+        "neo-fun": {
+            "0.3.2": {
                 "git": {
-                    "url": "https://github.com/vector-of-bool/neo-buffer.git",
-                    "ref": "0.1.0"
-                },
-                "depends": {}
+                    "url": "https://github.com/vector-of-bool/neo-fun.git",
+                    "ref": "0.3.2"
+                }
             }
         },
         "range-v3": {
@@ -16,8 +15,7 @@
                     "url": "https://github.com/ericniebler/range-v3.git",
                     "ref": "0.9.1",
                     "auto-lib": "Niebler/range-v3"
-                },
-                "depends": {}
+                }
             }
         }
     }

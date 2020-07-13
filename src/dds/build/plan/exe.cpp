@@ -43,7 +43,8 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     std::reverse(spec.inputs.begin(), spec.inputs.end());
 
     // Do it!
-    const auto link_command = env.toolchain.create_link_executable_command(spec, env.knobs);
+    const auto link_command
+        = env.toolchain.create_link_executable_command(spec, dds::fs::current_path(), env.knobs);
     fs::create_directories(spec.output.parent_path());
     auto msg = fmt::format("[{}] Link: {:30}",
                            lib.qualified_name(),
@@ -77,13 +78,18 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
     auto exe_path = calc_executable_path(env);
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
     spdlog::info(msg);
-    auto&& [dur, res]
-        = timed<std::chrono::microseconds>([&] { return run_proc({exe_path.string()}); });
+    using namespace std::chrono_literals;
+    auto&& [dur, res] = timed<std::chrono::microseconds>(
+        [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
+
     if (res.okay()) {
         spdlog::info("{} - PASSED - {:>9n}μs", msg, dur.count());
         return std::nullopt;
     } else {
-        spdlog::error("{} - FAILED - {:>9n}μs [exited {}]", msg, dur.count(), res.retc);
+        auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
+                                    res.signal ? res.signal : res.retc);
+        auto fail_str = res.timed_out ? "TIMEOUT" : "FAILED ";
+        spdlog::error("{} - {} - {:>9n}μs [{}]", msg, fail_str, dur.count(), exit_msg);
         test_failure f;
         f.executable_path = exe_path;
         f.output          = res.output;

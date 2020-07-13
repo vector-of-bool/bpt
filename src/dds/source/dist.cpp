@@ -7,6 +7,7 @@
 
 #include <libman/parse.hpp>
 
+#include <neo/assert.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/view/filter.hpp>
 
@@ -18,7 +19,7 @@ namespace {
 
 void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     auto relpath = fs::relative(filepath, in_root);
-    spdlog::info("Export file {}", relpath.string());
+    spdlog::debug("Export file {}", relpath.string());
     auto dest = out_root / relpath;
     fs::create_directories(dest.parent_path());
     fs::copy(filepath, dest);
@@ -96,8 +97,7 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
             params.project_dir.string());
     }
 
-    auto pkg_man = man_path->extension() == ".dds" ? package_manifest::load_from_dds_file(*man_path)
-                                                   : package_manifest::load_from_file(*man_path);
+    auto pkg_man = package_manifest::load_from_file(*man_path);
     sdist_export_file(out, params.project_dir, *man_path);
     spdlog::info("Generated export as {}", pkg_man.pkg_id.to_string());
     return sdist::from_directory(out);
@@ -106,6 +106,10 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 sdist sdist::from_directory(path_ref where) {
     auto pkg_man = package_manifest::load_from_directory(where);
     // Code paths should only call here if they *know* that the sdist is valid
-    assert(pkg_man.has_value());
+    neo_assert(invariant,
+               pkg_man.has_value(),
+               "All dirs in the repo should be proper source distributions. If you see this, it "
+               "means one of the directories in the repository is not a valid sdist.",
+               where.string());
     return sdist{pkg_man.value(), where};
 }

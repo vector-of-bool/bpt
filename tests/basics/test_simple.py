@@ -12,17 +12,20 @@ def test_simple_lib(dds: DDS, scope: ExitStack):
 
     scope.enter_context(
         dds.set_contents(
-            'library.dds',
-            b'Name: TestLibrary',
+            'library.json5',
+            b'''{
+                name: 'TestLibrary',
+            }''',
         ))
 
     scope.enter_context(
         dds.set_contents(
-            'package.dds',
-            b'''
-            Name: TestProject
-            Version: 0.0.0
-            ''',
+            'package.json5',
+            b'''{
+                name: 'TestProject',
+                version: '0.0.0',
+                namespace: 'test',
+            }''',
         ))
 
     dds.build(tests=True, apps=False, warnings=False)

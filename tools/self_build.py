@@ -15,6 +15,8 @@ def self_build(exe: Path,
                *,
                toolchain: str,
                lmi_path: Path = None,
+               cat_path: Path = Path('_build/catalog.db'),
+               cat_json_path: Path = Path('catalog.json'),
                dds_flags: proc.CommandLine = ()):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
@@ -25,13 +27,13 @@ def self_build(exe: Path,
             new_exe,
             'catalog',
             'import',
-            f'--catalog=_build/catalog.db',
-            f'--json=catalog.json',
+            f'--catalog={cat_path}',
+            f'--json={cat_json_path}',
         )
         proc.check_run(
             new_exe,
             'build',
-            f'--catalog=_build/catalog.db',
+            f'--catalog={cat_path}',
             f'--repo-dir=_build/ci-repo',
             dds_flags,
             ('--toolchain', toolchain),

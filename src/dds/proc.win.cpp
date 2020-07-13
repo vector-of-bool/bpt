@@ -1,6 +1,7 @@
 #ifdef _WIN32
 #include "./proc.hpp"
 
+#include <neo/assert.hpp>
 #include <spdlog/spdlog.h>
 #include <wil/resource.h>
 
@@ -12,6 +13,7 @@
 #include <stdexcept>
 
 using namespace dds;
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -21,8 +23,8 @@ namespace {
 
 }  // namespace
 
-proc_result dds::run_proc(const std::vector<std::string>& cmd) {
-    auto cmd_str = quote_command(cmd);
+proc_result dds::run_proc(const proc_options& opts) {
+    auto cmd_str = quote_command(opts.command);
 
     ::SECURITY_ATTRIBUTES security = {};
     security.bInheritHandle        = TRUE;
@@ -36,6 +38,8 @@ proc_result dds::run_proc(const std::vector<std::string>& cmd) {
     }
 
     ::SetHandleInformation(reader.get(), HANDLE_FLAG_INHERIT, 0);
+    ::COMMTIMEOUTS timeouts;
+    ::GetCommTimeouts(reader.get(), &timeouts);
 
     wil::unique_process_information proc_info;
 
@@ -50,7 +54,7 @@ proc_result dds::run_proc(const std::vector<std::string>& cmd) {
                             nullptr,
                             nullptr,
                             true,
-                            0,
+                            CREATE_NEW_PROCESS_GROUP,
                             nullptr,
                             nullptr,
                             &startup_info,
@@ -62,11 +66,30 @@ proc_result dds::run_proc(const std::vector<std::string>& cmd) {
     writer.reset();
 
     std::string output;
+    proc_result res;
+
+    auto timeout = opts.timeout;
     while (true) {
         const int buffer_size = 256;
         char      buffer[buffer_size];
         DWORD     nread = 0;
-        okay            = ::ReadFile(reader.get(), buffer, buffer_size, &nread, nullptr);
+        // Reload the timeout on the pipe
+        timeouts.ReadTotalTimeoutConstant = static_cast<DWORD>(timeout.value_or(0ms).count());
+        ::SetCommTimeouts(reader.get(), &timeouts);
+        // Read some bytes from the process
+        okay = ::ReadFile(reader.get(), buffer, buffer_size, &nread, nullptr);
+        if (!okay && ::GetLastError() == ERROR_TIMEOUT) {
+            // We didn't read any bytes. Hit the timeout
+            neo_assert_always(invariant,
+                              nread == 0,
+                              "Didn't expect to read bytes when a timeout was reached",
+                              nread,
+                              timeout->count());
+            res.timed_out = true;
+            timeout       = std::nullopt;
+            ::GenerateConsoleCtrlEvent(CTRL_C_EVENT, proc_info.dwProcessId);
+            continue;
+        }
         if (!okay && ::GetLastError() != ERROR_BROKEN_PIPE) {
             throw_system_error("Failed while reading from the stdio pipe");
         }
@@ -85,7 +108,6 @@ proc_result dds::run_proc(const std::vector<std::string>& cmd) {
         throw_system_error("Failed reading exit code of process");
     }
 
-    proc_result res;
     res.retc   = rc;
     res.output = std::move(output);
     return res;
