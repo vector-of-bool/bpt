@@ -3,8 +3,8 @@
     "compiler_id": "gnu",
     "c_compiler": "gcc9",
     "cxx_compiler": "g++9",
-    "flags": [
-        "-Werror=return-type",
+    "warning_flags": [
+        "-Werror",
     ],
     "cxx_flags": [
         "-fconcepts",
