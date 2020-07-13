@@ -83,9 +83,15 @@ proc_result dds::run_proc(const proc_options& opts) {
 
     using namespace std::chrono_literals;
 
-    auto timeout = opts.timeout;
+    /// Quirk: We _could_ just use opts.timeout.value_or, but it seems like something
+    /// is weird in GCC 9's data flow analysis and it will warn that `timeout` is
+    /// used uninitialized when its value is passed to poll() ??
+    auto timeout = -1ms;
+    if (opts.timeout) {
+        timeout = *opts.timeout;
+    }
     while (true) {
-        rc = ::poll(&stdio_fd, 1, static_cast<int>(timeout.value_or(-1ms).count()));
+        rc = ::poll(&stdio_fd, 1, static_cast<int>(timeout.count()));
         if (rc && errno == EINTR) {
             errno = 0;
             continue;
@@ -93,7 +99,7 @@ proc_result dds::run_proc(const proc_options& opts) {
         if (rc == 0) {
             // Timeout!
             ::kill(child, SIGINT);
-            timeout       = std::nullopt;
+            timeout       = -1ms;
             res.timed_out = true;
             spdlog::debug("Subprocess [{}] timed out", quote_command(opts.command));
             continue;
