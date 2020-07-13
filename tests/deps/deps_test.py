@@ -555,6 +555,30 @@ add_cases(
     }
     ''')
 
+# date
+"""
+########     ###    ######## ########
+##     ##   ## ##      ##    ##
+##     ##  ##   ##     ##    ##
+##     ## ##     ##    ##    ######
+##     ## #########    ##    ##
+##     ## ##     ##    ##    ##
+########  ##     ##    ##    ########
+"""
+add_cases(
+    'hinnant-date', 'hinnant/date', ['auto'], r'''
+    #include <date/date.h>
+    #include <iostream>
+
+    int main() {
+        auto now = std::chrono::system_clock::now();
+        using namespace date::literals;
+        auto year = date::year_month_day{date::floor<date::days>(now)}.year();
+        std::cout << "The current year is " << year << '\n';
+        return year < 2020_y;
+    }
+    ''')
+
 
 @pytest.mark.deps_test
 @pytest.mark.parametrize('case', CASES, ids=[c.dep for c in CASES])

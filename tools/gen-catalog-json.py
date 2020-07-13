@@ -912,6 +912,16 @@ PACKAGES = [
                 ref='v0.98.1',
                 auto_lib='pcg/pcg-cpp'))
     ]),
+    many_versions(
+        'hinnant-date',
+        ['2.4.1', '3.0.0'],
+        description=
+        'A date and time library based on the C++11/14/17 <chrono> header',
+        auto_lib='hinnant/date',
+        git_url='https://github.com/HowardHinnant/date.git',
+        tag_fmt='v{}',
+        transforms=[FSTransform(remove=RemoveTransform(path='src/'))],
+    ),
 ]
 
 if __name__ == "__main__":

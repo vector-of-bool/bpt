@@ -943,6 +943,42 @@
         }
       }
     },
+    "hinnant-date": {
+      "2.4.1": {
+        "depends": [],
+        "description": "A date and time library based on the C++11/14/17 <chrono> header",
+        "git": {
+          "auto-lib": "hinnant/date",
+          "ref": "v2.4.1",
+          "transform": [
+            {
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
+          "url": "https://github.com/HowardHinnant/date.git"
+        }
+      },
+      "3.0.0": {
+        "depends": [],
+        "description": "A date and time library based on the C++11/14/17 <chrono> header",
+        "git": {
+          "auto-lib": "hinnant/date",
+          "ref": "v3.0.0",
+          "transform": [
+            {
+              "remove": {
+                "only-matching": [],
+                "path": "src/"
+              }
+            }
+          ],
+          "url": "https://github.com/HowardHinnant/date.git"
+        }
+      }
+    },
     "inja": {
       "1.0.0": {
         "depends": [],
