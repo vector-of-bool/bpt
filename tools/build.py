@@ -38,7 +38,9 @@ def main(argv: Sequence[str]) -> int:
     else:
         tc_fpath = ROOT / 'tools/gcc-9.jsonc'
 
-    self_build(dds_exe, toolchain=str(tc_fpath))
+    self_build(dds_exe,
+               cat_json_path=ROOT / 'catalog.old.json',
+               toolchain=str(tc_fpath))
 
     return 0
 
