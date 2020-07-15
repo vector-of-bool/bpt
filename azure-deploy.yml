@@ -1,0 +1,27 @@
+parameters:
+  - name: branch
+    type: string
+    displayName: Branch
+  - name: targetPath
+    type: string
+    displayName: Target Path
+
+jobs:
+  - ${{ if eq(variables.build.SourceBranchName, parameters.branch) }}:
+    - job: deploy_${{ parameters.branch }}
+      displayName: Deploy for ${{parameters.branch}}
+      condition: succeeded()
+      steps:
+        - task: DownloadPipelineArtifact@2
+          displayName: Download builds
+          inputs:
+            targetPath: art/
+        - task: CopyFilesOverSSH@0
+          displayName: Post builds
+          inputs:
+            sshEndpoint: dds.pizza
+            sourceFolder: art/
+            targetFolder: ${{ parameters.targetPath }}
+            failOnEmptySource: true
+            overwrite: true
+

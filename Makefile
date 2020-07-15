@@ -39,13 +39,15 @@ macos-ci:
 	python3 -u tools/ci.py \
 		-B download \
 		-T tools/gcc-9.jsonc \
-		-T2 tools/gcc-9.next.jsonc \
+		-T2 tools/gcc-9.next.jsonc
+	mv _build/dds _build/dds-macos-x64
 
 linux-ci:
 	python3 -u tools/ci.py \
 		-B download \
 		-T tools/gcc-9.jsonc \
 		-T2 tools/gcc-9-static.jsonc
+	mv _build/dds _build/dds-linux-x64
 
 nix-ci:
 	python3 -u tools/ci.py \
