@@ -1,11 +1,12 @@
 # Refer: https://aka.ms/yaml
 
 variables:
-  shouldDeploy: >
+  shouldDeploy: >-
     ${{ or(
-      eq(variables.Build.SourceBranch, 'refs/heads/develop'),
-      eq(variables.Build.SourceBranch, 'refs/heads/master')
+      eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+      eq(variables['Build.SourceBranch'], 'refs/heads/master')
     ) }}
+  deployDest: ${{ format('~/{0}/', variables['Build.SourceBranchName']) }}
 
 stages:
   - stage: build_test
@@ -64,12 +65,12 @@ stages:
 
   - stage: deploy_build
     displayName: Deploy
-    condition: eq(variables.shouldDeploy, true)
+    condition: and(succeeded(), eq(variables.shouldDeploy, 'true'))
     jobs:
       - job: deploy
-        displayName: Deploy for ${{variables.Build.SourceBranchName}}
-        condition: succeeded()
+        displayName: Deploy (${{variables['Build.SourceBranch']}})
         steps:
+          - checkout: none
           - task: DownloadPipelineArtifact@2
             displayName: Download builds
             inputs:
@@ -79,23 +80,6 @@ stages:
             inputs:
               sshEndpoint: dds.pizza
               sourceFolder: art/
-              targetFolder: ~/${{variables.Build.SourceBranchName}}/
+              targetFolder: ${{ variables.deployDest }}
               failOnEmptySource: true
               overwrite: true
-      # - job: deploy
-      #   displayName: Deploy Canary
-      #   # Only deploy the "canary" build when we are on the 'develop' branch
-      #   condition: and(succeeded(), eq(variables.Build.SourceBranchName, 'develop'))
-      #   steps:
-      #     - task: DownloadPipelineArtifact@2
-      #       displayName: Download builds
-      #       inputs:
-      #         targetPath: art/
-      #     - task: CopyFilesOverSSH@0
-      #       displayName: Post builds
-      #       inputs:
-      #         sshEndpoint: dds.pizza
-      #         sourceFolder: art/
-      #         targetFolder: ~/canary/
-      #         failOnEmptySource: true
-      #         overwrite: true
