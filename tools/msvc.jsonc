@@ -2,8 +2,7 @@
     "$schema": "../res/toolchain-schema.json",
     "compiler_id": "msvc",
     "flags": [
-        "/Zc:preprocessor", // Required for range-v3
-        "/DSPDLOG_COMPILED_LIB", // Required to use spdlog as a compiled lib
+        "/Zc:preprocessor",
         "/std:c++latest",
     ],
     "link_flags": [

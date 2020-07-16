@@ -15,7 +15,6 @@ from dds_ci import paths, proc
 
 class CIOptions(NamedTuple):
     toolchain: str
-    toolchain_2: str
 
 
 def _do_bootstrap_build(opts: CIOptions) -> None:
@@ -38,7 +37,7 @@ def _do_bootstrap_download() -> None:
     if filename is None:
         raise RuntimeError(f'We do not have a prebuilt DDS binary for '
                            f'the "{sys.platform}" platform')
-    url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.3/{filename}'
+    url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
     stream = urllib.request.urlopen(url)
@@ -73,18 +72,12 @@ def main(argv: Sequence[str]) -> int:
         required=True,
     )
     parser.add_argument(
-        '--toolchain-2',
-        '-T2',
-        help='The toolchain to use for the self-build',
-        required=True,
-    )
-    parser.add_argument(
         '--build-only',
         action='store_true',
         help='Only build the `dds` executable. Skip second-phase and tests.')
     args = parser.parse_args(argv)
 
-    opts = CIOptions(toolchain=args.toolchain, toolchain_2=args.toolchain_2)
+    opts = CIOptions(toolchain=args.toolchain)
 
     if args.bootstrap_with == 'build':
         _do_bootstrap_build(opts)
@@ -107,7 +100,7 @@ def main(argv: Sequence[str]) -> int:
         paths.PREBUILT_DDS,
         toolchain=opts.toolchain,
         cat_path=old_cat_path,
-        cat_json_path=Path('catalog.old.json'),
+        cat_json_path=Path('catalog.json'),
         dds_flags=[('--repo-dir', ci_repo_dir)])
     print('Main build PASSED!')
     print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
@@ -123,7 +116,7 @@ def main(argv: Sequence[str]) -> int:
     new_repo_dir = paths.BUILD_DIR / 'ci-repo'
     self_build(
         paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain_2,
+        toolchain=opts.toolchain,
         cat_path=new_cat_path,
         dds_flags=[f'--repo-dir={new_repo_dir}'])
     print('Bootstrap test PASSED!')

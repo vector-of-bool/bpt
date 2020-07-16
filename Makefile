@@ -38,15 +38,13 @@ docs-sync-server:
 macos-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc \
-		-T2 tools/gcc-9.next.jsonc
+		-T tools/gcc-9.jsonc
 	mv _build/dds _build/dds-macos-x64
 
 linux-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc \
-		-T2 tools/gcc-9-static.jsonc
+		-T tools/gcc-9.jsonc
 	mv _build/dds _build/dds-linux-x64
 
 nix-ci:

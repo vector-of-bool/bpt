@@ -3,10 +3,8 @@
     "compiler_id": "gnu",
     "c_compiler": "gcc-9",
     "cxx_compiler": "g++-9",
-    "flags": [
-        "-DSPDLOG_COMPILED_LIB", // Required to use a compiled spdlog
-        "-Werror=return-type",
-        // "-fsanitize=address",
+    "warning_flags": [
+        "-Werror",
     ],
     "cxx_flags": [
         "-fconcepts",
@@ -15,8 +13,6 @@
     "link_flags": [
         "-static-libgcc",
         "-static-libstdc++"
-        // "-fsanitize=address",
-        // "-fuse-ld=lld",
     ],
     // "debug": true,
     "optimize": true,

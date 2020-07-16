@@ -22,7 +22,7 @@ stages:
               echo Executing Build and Tests
               reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
               python -m pip install pytest pytest-xdist || exit 1
-              python -u tools/ci.py -B download -T tools\msvc.jsonc -T2 tools\msvc.next.jsonc || exit 1
+              python -u tools/ci.py -B download -T tools\msvc.jsonc || exit 1
               move _build\dds.exe _build\dds-win-x64.exe || exit 1
             displayName: Build and Test
           - publish: _build\dds-win-x64.exe
