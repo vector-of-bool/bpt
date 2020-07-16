@@ -6,7 +6,7 @@ variables:
       eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
       eq(variables['Build.SourceBranch'], 'refs/heads/master')
     ) }}
-  deployDest: ${{ format('~/{0}/', variables['Build.SourceBranchName']) }}
+  deployDest: ${{ format('~/web/{0}/', variables['Build.SourceBranchName']) }}
 
 stages:
   - stage: build_test
@@ -74,7 +74,12 @@ stages:
           - task: DownloadPipelineArtifact@2
             displayName: Download builds
             inputs:
-              targetPath: art/
+              targetPath: art-dirs/
+          - bash: |
+              set -eu
+              mkdir -p art/
+              mv -- $(find art-dirs/ -type f) art/
+            displayName: Rearrange
           - task: CopyFilesOverSSH@0
             displayName: Post builds
             inputs:
