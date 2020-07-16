@@ -4,6 +4,7 @@
 
 #include <dds/util/log.hpp>
 
+#include <cassert>
 #include <cstdlib>
 
 using namespace dds;

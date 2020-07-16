@@ -4,6 +4,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <ostream>
+
 void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
     static auto logger = [] {
         auto logger = spdlog::default_logger_raw();

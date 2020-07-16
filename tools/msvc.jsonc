@@ -4,6 +4,7 @@
     "flags": [
         "/Zc:preprocessor",
         "/std:c++latest",
+        "/DNOMINMAX",
     ],
     "link_flags": [
         "rpcrt4.lib",
