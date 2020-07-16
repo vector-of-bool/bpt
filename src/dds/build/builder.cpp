@@ -6,10 +6,9 @@
 #include <dds/compdb.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include <array>
 #include <set>
@@ -24,14 +23,14 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    spdlog::error("Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
+    log::error("Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
     if (fail.signal) {
-        spdlog::error("Test execution received signal {}", fail.signal);
+        log::error("Test execution received signal {}", fail.signal);
     }
     if (trim_view(fail.output).empty()) {
-        spdlog::error("(Test executable produced no output");
+        log::error("(Test executable produced no output");
     } else {
-        spdlog::error("Test output:\n{}[dds - test output end]", fail.output);
+        log::error("Test output:\n{}[dds - test output end]", fail.output);
     }
 }
 
@@ -84,7 +83,7 @@ prepare_catch2_driver(test_lib test_driver, const build_params& params, build_en
     auto obj_file = plan.calc_object_file_path(env2);
 
     if (!fs::exists(obj_file)) {
-        spdlog::info("Compiling Catch2 test driver (This will only happen once)...");
+        log::info("Compiling Catch2 test driver (This will only happen once)...");
         compile_all(std::array{plan}, env2, 1);
     }
 
@@ -242,19 +241,19 @@ void builder::build(const build_params& params) const {
 
     dds::stopwatch sw;
     plan.compile_all(env, params.parallel_jobs);
-    spdlog::info("Compilation completed in {:n}ms", sw.elapsed_ms().count());
+    log::info("Compilation completed in {:n}ms", sw.elapsed_ms().count());
 
     sw.reset();
     plan.archive_all(env, params.parallel_jobs);
-    spdlog::info("Archiving completed in {:n}ms", sw.elapsed_ms().count());
+    log::info("Archiving completed in {:n}ms", sw.elapsed_ms().count());
 
     sw.reset();
     plan.link_all(env, params.parallel_jobs);
-    spdlog::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
+    log::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
 
     sw.reset();
     auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-    spdlog::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
+    log::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
 
     for (auto& fail : test_failures) {
         log_failure(fail);

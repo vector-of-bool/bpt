@@ -4,9 +4,8 @@
 #include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/time.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -49,10 +48,10 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     auto msg = fmt::format("[{}] Link: {:30}",
                            lib.qualified_name(),
                            fs::relative(spec.output, env.output_root).string());
-    spdlog::info(msg);
+    log::info(msg);
     auto [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(link_command); });
-    spdlog::info("{} - {:>6n}ms", msg, dur_ms.count());
+    log::info("{} - {:>6n}ms", msg, dur_ms.count());
 
     // Check and throw if errant
     if (!proc_res.okay()) {
@@ -77,19 +76,19 @@ bool link_executable_plan::is_test() const noexcept {
 std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) const {
     auto exe_path = calc_executable_path(env);
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
-    spdlog::info(msg);
+    log::info(msg);
     using namespace std::chrono_literals;
     auto&& [dur, res] = timed<std::chrono::microseconds>(
         [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
 
     if (res.okay()) {
-        spdlog::info("{} - PASSED - {:>9n}μs", msg, dur.count());
+        log::info("{} - PASSED - {:>9n}μs", msg, dur.count());
         return std::nullopt;
     } else {
         auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
                                     res.signal ? res.signal : res.retc);
         auto fail_str = res.timed_out ? "TIMEOUT" : "FAILED ";
-        spdlog::error("{} - {} - {:>9n}μs [{}]", msg, fail_str, dur.count(), exit_msg);
+        log::error("{} - {} - {:>9n}μs [{}]", msg, fail_str, dur.count(), exit_msg);
         test_failure f;
         f.executable_path = exe_path;
         f.output          = res.output;

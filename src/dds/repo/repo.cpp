@@ -4,10 +4,9 @@
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/source/dist.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include <range/v3/action/sort.hpp>
 #include <range/v3/action/unique.hpp>
@@ -33,9 +32,9 @@ auto load_sdists(path_ref root) {
         try {
             return sdist::from_directory(p);
         } catch (const std::runtime_error& e) {
-            spdlog::error("Failed to load source distribution from directory '{}': {}",
-                          p.string(),
-                          e.what());
+            log::error("Failed to load source distribution from directory '{}': {}",
+                       p.string(),
+                       e.what());
             return std::nullopt;
         }
     };
@@ -54,8 +53,8 @@ auto load_sdists(path_ref root) {
 }  // namespace
 
 void repository::_log_blocking(path_ref dirpath) noexcept {
-    spdlog::warn("Another process has the repository directory locked [{}]", dirpath.string());
-    spdlog::warn("Waiting for repository to be released...");
+    log::warn("Another process has the repository directory locked [{}]", dirpath.string());
+    log::warn("Waiting for repository to be released...");
 }
 
 void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_directories(dirpath); }
@@ -69,7 +68,7 @@ repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
 
 void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     if (!_write_enabled) {
-        spdlog::critical(
+        log::critical(
             "DDS attempted to write into a repository that wasn't opened with a write-lock. This "
             "is a hard bug and should be reported. For the safety and integrity of the local "
             "repository, we'll hard-exit immediately.");
@@ -82,10 +81,10 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
         if (ife_action == if_exists::throw_exc) {
             throw_user_error<errc::sdist_exists>(msg);
         } else if (ife_action == if_exists::ignore) {
-            spdlog::warn(msg);
+            log::warn(msg);
             return;
         } else {
-            spdlog::info(msg + " - Replacing");
+            log::info(msg + " - Replacing");
         }
     }
     auto tmp_copy = sd_dest;
@@ -100,7 +99,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     }
     fs::rename(tmp_copy, sd_dest);
     _sdists.insert(sdist::from_directory(sd_dest));
-    spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
+    log::info("Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
 }
 
 const sdist* repository::find(const package_id& pkg) const noexcept {

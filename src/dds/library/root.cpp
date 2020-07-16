@@ -4,10 +4,10 @@
 #include <dds/error/errors.hpp>
 #include <dds/source/root.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
 
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -28,8 +28,7 @@ auto collect_pf_sources(path_ref path) {
         // Drop any source files we found within `include/`
         erase_if(sources, [&](auto& info) {
             if (info.kind != source_kind::header) {
-                spdlog::warn("Source file in `include` will not be compiled: {}",
-                             info.path.string());
+                log::warn("Source file in `include` will not be compiled: {}", info.path.string());
                 return true;
             }
             return false;

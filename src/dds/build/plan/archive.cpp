@@ -2,10 +2,10 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/time.hpp>
 
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -40,16 +40,14 @@ void create_archive_plan::archive(const build_env& env) const {
     fs::create_directories(ar.out_path.parent_path());
 
     // Do it!
-    spdlog::info("[{}] Archive: {}", _qual_name, out_relpath);
+    log::info("[{}] Archive: {}", _qual_name, out_relpath);
     auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
-    spdlog::info("[{}] Archive: {} - {:n}ms", _qual_name, out_relpath, dur_ms.count());
+    log::info("[{}] Archive: {} - {:n}ms", _qual_name, out_relpath, dur_ms.count());
 
     // Check, log, and throw
     if (!ar_res.okay()) {
-        spdlog::error("Creating static library archive [{}] failed for '{}'",
-                      out_relpath,
-                      _qual_name);
-        spdlog::error("Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
+        log::error("Creating static library archive [{}] failed for '{}'", out_relpath, _qual_name);
+        log::error("Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
         throw_external_error<
             errc::archive_failure>("Creating static library archive [{}] failed for '{}'",
                                    out_relpath,

@@ -6,6 +6,7 @@
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
+#include <dds/util/log.hpp>
 
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
@@ -17,8 +18,6 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/join.hpp>
 #include <range/v3/view/transform.hpp>
-
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -218,7 +217,7 @@ void ensure_migrated(sqlite3::database& db) {
     exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
 
     if (import_init_packages) {
-        spdlog::info(
+        log::info(
             "A new catalog database case been created, and has been populated with some initial "
             "contents.");
         neo::sqlite3::statement_cache stmts{db};
@@ -242,7 +241,7 @@ catalog catalog::open(const std::string& db_path) {
     try {
         ensure_migrated(db);
     } catch (const sqlite3::sqlite3_error& e) {
-        spdlog::critical(
+        log::critical(
             "Failed to load the repository database. It appears to be invalid/corrupted. The "
             "exception message is: {}",
             e.what());
@@ -412,6 +411,6 @@ void catalog::import_json_str(std::string_view content) {
 
 void catalog::import_initial() {
     sqlite3::transaction_guard tr{_db};
-    spdlog::info("Restoring built-in initial catalog contents");
+    log::info("Restoring built-in initial catalog contents");
     store_init_packages(_db, _stmt_cache);
 }

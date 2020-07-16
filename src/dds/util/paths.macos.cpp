@@ -2,7 +2,7 @@
 
 #include "./paths.hpp"
 
-#include <spdlog/spdlog.h>
+#include <dds/util/log.hpp>
 
 #include <cstdlib>
 
@@ -12,7 +12,7 @@ fs::path dds::user_home_dir() {
     static auto ret = []() -> fs::path {
         auto home_env = std::getenv("HOME");
         if (!home_env) {
-            spdlog::warn("No HOME environment variable set!");
+            log::warn("No HOME environment variable set!");
             return "/";
         }
         return fs::absolute(fs::path(home_env));

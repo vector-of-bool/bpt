@@ -3,13 +3,13 @@
 #include <dds/build/file_deps.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
 
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <atomic>
@@ -54,16 +54,16 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
                            fs::relative(source_path, cf.plan.source().basis_path).string());
 
     // Do it!
-    spdlog::info(msg);
+    log::info(msg);
     auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(cf.cmd_info.command); });
     auto nth = counter.n.fetch_add(1);
-    spdlog::info("{:60} - {:>7n}ms [{:{}}/{}]",
-                 msg,
-                 dur_ms.count(),
-                 nth,
-                 counter.max_digits,
-                 counter.max);
+    log::info("{:60} - {:>7n}ms [{:{}}/{}]",
+              msg,
+              dur_ms.count(),
+              nth,
+              counter.max_digits,
+              counter.max);
 
     const bool  compiled_okay   = proc_res.okay();
     const auto  compile_retc    = proc_res.retc;
@@ -78,7 +78,7 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
         assert(cf.cmd_info.gnu_depfile_path.has_value());
         auto& df_path = *cf.cmd_info.gnu_depfile_path;
         if (!fs::is_regular_file(df_path)) {
-            spdlog::critical(
+            log::critical(
                 "The expected Makefile deps were not generated on disk. This is a bug! "
                 "(Expected file to exist: [{}])",
                 df_path.string());
@@ -121,23 +121,23 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
 
     // Log a compiler failure
     if (!compiled_okay) {
-        spdlog::error("Compilation failed: {}", source_path.string());
-        spdlog::error("Subcommand FAILED [Exitted {}]: {}\n{}",
-                      compile_retc,
-                      quote_command(cf.cmd_info.command),
-                      compiler_output);
+        log::error("Compilation failed: {}", source_path.string());
+        log::error("Subcommand FAILED [Exitted {}]: {}\n{}",
+                   compile_retc,
+                   quote_command(cf.cmd_info.command),
+                   compiler_output);
         if (compile_signal) {
-            spdlog::error("Process exited via signal {}", compile_signal);
+            log::error("Process exited via signal {}", compile_signal);
         }
         throw_user_error<errc::compile_failure>("Compilation failed [{}]", source_path.string());
     }
 
     // Print any compiler output, sans whitespace
     if (!dds::trim_view(compiler_output).empty()) {
-        spdlog::warn("While compiling file {} [{}]:\n{}",
-                     source_path.string(),
-                     quote_command(cf.cmd_info.command),
-                     compiler_output);
+        log::warn("While compiling file {} [{}]:\n{}",
+                  source_path.string(),
+                  quote_command(cf.cmd_info.command),
+                  compiler_output);
     }
 
     // We'll only get here if the compilation was successful, otherwise we throw

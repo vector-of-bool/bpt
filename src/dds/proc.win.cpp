@@ -2,7 +2,6 @@
 #include "./proc.hpp"
 
 #include <neo/assert.hpp>
-#include <spdlog/spdlog.h>
 #include <wil/resource.h>
 
 #include <windows.h>

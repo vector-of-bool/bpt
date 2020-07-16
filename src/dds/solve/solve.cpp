@@ -1,12 +1,12 @@
 #include "./solve.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 
 #include <pubgrub/solve.hpp>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 #include <sstream>
 
@@ -129,7 +129,7 @@ struct explainer {
     void operator()(pubgrub::explain::premise<T> pr) {
         strm.str("");
         put(pr.value);
-        spdlog::error("{} {},", at_head ? "┌─ Given that" : "│         and", strm.str());
+        log::error("{} {},", at_head ? "┌─ Given that" : "│         and", strm.str());
         at_head = false;
     }
 
@@ -138,10 +138,10 @@ struct explainer {
         at_head = true;
         strm.str("");
         put(cncl.value);
-        spdlog::error("╘═       then {}.", strm.str());
+        log::error("╘═       then {}.", strm.str());
     }
 
-    void operator()(pubgrub::explain::separator) { spdlog::error(""); }
+    void operator()(pubgrub::explain::separator) { log::error(""); }
 };
 
 }  // namespace
@@ -156,7 +156,7 @@ std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
         auto solution = pubgrub::solve(wrap_req, solver_provider{pkgs_prov, deps_prov});
         return solution | ranges::views::transform(as_pkg_id) | ranges::to_vector;
     } catch (const solve_fail_exc& failure) {
-        spdlog::error("Dependency resolution has failed! Explanation:");
+        log::error("Dependency resolution has failed! Explanation:");
         pubgrub::generate_explaination(failure, explainer());
         throw_user_error<errc::dependency_resolve_failure>();
     }

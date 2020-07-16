@@ -7,6 +7,7 @@
 #include <dds/source/dist.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
 
@@ -14,9 +15,9 @@
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>
+#include <spdlog/spdlog.h>
 
 #include <dds/3rd/args.hxx>
-#include <spdlog/spdlog.h>
 
 #include <filesystem>
 #include <iostream>
@@ -226,7 +227,7 @@ struct cli_catalog {
                 auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();
                 auto dest     = out_path / id.to_string();
-                spdlog::info("Create sdist at {}", dest.string());
+                dds::log::info("Create sdist at {}", dest.string());
                 dds::fs::remove_all(dest);
                 dds::safe_rename(tsd.sdist.path, dest);
             }
@@ -341,7 +342,7 @@ struct cli_catalog {
             auto cat   = cat_path.open();
             auto pkg   = cat.get(pk_id);
             if (!pkg) {
-                spdlog::error("No package '{}' in the catalog", pk_id.to_string());
+                dds::log::error("No package '{}' in the catalog", pk_id.to_string());
                 return 1;
             }
             std::cout << "Name:     " << pkg->ident.name << '\n'
@@ -418,9 +419,9 @@ struct cli_repo {
                                    });
 
                 for (const auto& [name, grp] : grp_by_name) {
-                    spdlog::info("{}:", name);
+                    dds::log::info("{}:", name);
                     for (const dds::sdist& sd : grp) {
-                        spdlog::info("  - {}", sd.manifest.pkg_id.version.to_string());
+                        dds::log::info("  - {}", sd.manifest.pkg_id.version.to_string());
                     }
                 }
 
@@ -691,7 +692,7 @@ struct cli_build_deps {
 
         auto all_file_deps = deps_files.Get()  //
             | ranges::views::transform([&](auto dep_fpath) {
-                                 spdlog::info("Reading deps from {}", dep_fpath.string());
+                                 dds::log::info("Reading deps from {}", dep_fpath.string());
                                  return dds::dependency_manifest::from_file(dep_fpath).dependencies;
                              })
             | ranges::actions::join;
@@ -708,7 +709,7 @@ struct cli_build_deps {
             dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
             [&](dds::repository repo) {
                 // Download dependencies
-                spdlog::info("Loading {} dependencies", all_deps.size());
+                dds::log::info("Loading {} dependencies", all_deps.size());
                 auto deps = repo.solve(all_deps, cat);
                 dds::get_all(deps, repo, cat);
                 for (const dds::package_id& pk : deps) {
@@ -716,7 +717,7 @@ struct cli_build_deps {
                     assert(sdist_ptr);
                     dds::sdist_build_params deps_params;
                     deps_params.subdir = sdist_ptr->manifest.pkg_id.to_string();
-                    spdlog::info("Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
+                    dds::log::info("Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
                     bd.add(*sdist_ptr, deps_params);
                 }
             });
@@ -740,7 +741,7 @@ struct cli_build_deps {
 
 int main(int argc, char** argv) {
 #if DDS_DEBUG
-    spdlog::set_level(spdlog::level::debug);
+    dds::log::current_log_level = dds::log::level::debug;
 #endif
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
@@ -783,15 +784,15 @@ int main(int argc, char** argv) {
             std::terminate();
         }
     } catch (const dds::user_cancelled&) {
-        spdlog::critical("Operation cancelled by user");
+        dds::log::critical("Operation cancelled by user");
         return 2;
     } catch (const dds::error_base& e) {
-        spdlog::error("{}", e.what());
-        spdlog::error("{}", e.explanation());
-        spdlog::error("Refer: {}", e.error_reference());
+        dds::log::error("{}", e.what());
+        dds::log::error("{}", e.explanation());
+        dds::log::error("Refer: {}", e.error_reference());
         return 1;
     } catch (const std::exception& e) {
-        spdlog::critical(e.what());
+        dds::log::critical(e.what());
         return 2;
     }
 }

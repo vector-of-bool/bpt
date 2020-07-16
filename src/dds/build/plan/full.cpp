@@ -12,8 +12,6 @@
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
 
-#include <spdlog/spdlog.h>
-
 #include <mutex>
 #include <thread>
 

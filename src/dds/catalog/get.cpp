@@ -3,6 +3,7 @@
 #include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 
 #include <neo/assert.hpp>
@@ -13,7 +14,6 @@
 #include <range/v3/numeric/accumulate.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -32,16 +32,16 @@ temporary_sdist do_pull_sdist(const package_info& listing, std::monostate) {
 temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_listing& git) {
     auto tmpdir = dds::temporary_dir::create();
 
-    spdlog::info("Cloning Git repository: {} [{}] ...", git.url, git.ref);
+    log::info("Cloning Git repository: {} [{}] ...", git.url, git.ref);
     git.clone(tmpdir.path());
 
     for (const auto& tr : git.transforms) {
         tr.apply_to(tmpdir.path());
     }
 
-    spdlog::info("Create sdist from clone ...");
+    log::info("Create sdist from clone ...");
     if (git.auto_lib.has_value()) {
-        spdlog::info("Generating library data automatically");
+        log::info("Generating library data automatically");
 
         auto pkg_strm
             = dds::open(tmpdir.path() / "package.json5", std::ios::binary | std::ios::out);
@@ -99,7 +99,7 @@ void dds::get_all(const std::vector<package_id>& pkgs, repository& repo, const c
                             });
 
     auto okay = parallel_run(absent_pkg_infos, 8, [&](package_info inf) {
-        spdlog::info("Download package: {}", inf.ident.to_string());
+        log::info("Download package: {}", inf.ident.to_string());
         auto             tsd = get_package_sdist(inf);
         std::scoped_lock lk{repo_mut};
         repo.add_sdist(tsd.sdist, if_exists::throw_exc);

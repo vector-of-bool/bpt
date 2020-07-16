@@ -2,13 +2,13 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/string.hpp>
 
 #include <range/v3/view/split.hpp>
 #include <range/v3/view/split_when.hpp>
 #include <range/v3/view/transform.hpp>
 #include <semester/walk.hpp>
-#include <spdlog/spdlog.h>
 
 #include <json5/parse_data.hpp>
 
@@ -63,7 +63,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
              if_key{"depends",
                     [&](auto&& dat) {
                         if (dat.is_object()) {
-                            spdlog::warn(
+                            log::warn(
                                 "{}: Using a JSON object for 'depends' is deprecated. Use an "
                                 "array of strings instead.",
                                 fpath);
