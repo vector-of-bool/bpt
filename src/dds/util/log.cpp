@@ -6,10 +6,23 @@
 
 #include <ostream>
 
+#if _WIN32
+#include <consoleapi2.h>
+static void set_utf8_output() {
+    // 65'001 is the codepage id for UTF-8 output
+    ::SetConsoleOutputCP(65'001);
+}
+#else
+static void set_utf8_output() {
+    // Nothing on other platforms
+}
+#endif
+
 void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
-    static auto logger = [] {
+    static auto logger_inst = [] {
         auto logger = spdlog::default_logger_raw();
         logger->set_level(spdlog::level::trace);
+        set_utf8_output();
         return logger;
     }();
 
@@ -31,5 +44,5 @@ void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
         neo_assert_always(invariant, false, "Invalid log level", msg, int(l));
     }();
 
-    logger->log(lvl, msg);
+    logger_inst->log(lvl, "{}", msg);
 }
