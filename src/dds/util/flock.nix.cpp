@@ -10,6 +10,8 @@
 #include <sys/file.h>
 #include <unistd.h>
 
+#include <cassert>
+
 using namespace dds;
 
 namespace {
