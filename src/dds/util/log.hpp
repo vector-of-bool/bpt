@@ -26,7 +26,7 @@ concept formattable = requires (const T item) {
 };
 
 template <formattable... Args>
-void log(level l, std::string_view s, const Args&... args) {
+void log(level l, std::string_view s, const Args&... args) noexcept {
     if (int(l) >= int(current_log_level)) {
         auto message = fmt::format(s, args...);
         log_print(l, message);

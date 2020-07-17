@@ -1,6 +1,6 @@
 #include "./fs.hpp"
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <sstream>
 

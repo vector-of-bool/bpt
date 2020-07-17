@@ -6,9 +6,9 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/shlex.hpp>
 
+#include <fmt/core.h>
 #include <json5/parse_data.hpp>
 #include <semester/decomp.hpp>
-#include <spdlog/fmt/fmt.h>
 
 #include <string>
 

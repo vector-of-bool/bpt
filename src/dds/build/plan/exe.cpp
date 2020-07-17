@@ -51,7 +51,7 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     log::info(msg);
     auto [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(link_command); });
-    log::info("{} - {:>6n}ms", msg, dur_ms.count());
+    log::info("{} - {:>6L}ms", msg, dur_ms.count());
 
     // Check and throw if errant
     if (!proc_res.okay()) {
@@ -82,13 +82,13 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
         [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
 
     if (res.okay()) {
-        log::info("{} - PASSED - {:>9n}μs", msg, dur.count());
+        log::info("{} - PASSED - {:>9L}μs", msg, dur.count());
         return std::nullopt;
     } else {
         auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
                                     res.signal ? res.signal : res.retc);
         auto fail_str = res.timed_out ? "TIMEOUT" : "FAILED ";
-        log::error("{} - {} - {:>9n}μs [{}]", msg, fail_str, dur.count(), exit_msg);
+        log::error("{} - {} - {:>9L}μs [{}]", msg, fail_str, dur.count(), exit_msg);
         test_failure f;
         f.executable_path = exe_path;
         f.output          = res.output;

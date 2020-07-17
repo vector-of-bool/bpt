@@ -42,7 +42,7 @@ void create_archive_plan::archive(const build_env& env) const {
     // Do it!
     log::info("[{}] Archive: {}", _qual_name, out_relpath);
     auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
-    log::info("[{}] Archive: {} - {:n}ms", _qual_name, out_relpath, dur_ms.count());
+    log::info("[{}] Archive: {} - {:L}ms", _qual_name, out_relpath, dur_ms.count());
 
     // Check, log, and throw
     if (!ar_res.okay()) {

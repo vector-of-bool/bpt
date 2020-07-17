@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <stdexcept>
 #include <string_view>

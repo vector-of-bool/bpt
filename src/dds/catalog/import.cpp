@@ -2,10 +2,10 @@
 
 #include <dds/error/errors.hpp>
 
+#include <fmt/core.h>
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
 #include <semester/walk.hpp>
-#include <spdlog/fmt/fmt.h>
 
 #include <optional>
 
@@ -31,7 +31,7 @@ struct any_key {
 };
 
 template <typename KF, typename... Args>
-any_key(KF&&, Args&&...) -> any_key<KF, Args...>;
+any_key(KF&&, Args&&...)->any_key<KF, Args...>;
 
 namespace {
 

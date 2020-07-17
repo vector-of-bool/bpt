@@ -4,7 +4,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <stdexcept>
 

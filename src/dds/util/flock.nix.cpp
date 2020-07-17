@@ -4,7 +4,7 @@
 
 #include <dds/util/signal.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <fcntl.h>
 #include <sys/file.h>

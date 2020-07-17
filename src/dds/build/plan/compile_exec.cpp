@@ -58,7 +58,7 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
     auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(cf.cmd_info.command); });
     auto nth = counter.n.fetch_add(1);
-    log::info("{:60} - {:>7n}ms [{:{}}/{}]",
+    log::info("{:60} - {:>7L}ms [{:{}}/{}]",
               msg,
               dur_ms.count(),
               nth,

@@ -241,19 +241,19 @@ void builder::build(const build_params& params) const {
 
     dds::stopwatch sw;
     plan.compile_all(env, params.parallel_jobs);
-    log::info("Compilation completed in {:n}ms", sw.elapsed_ms().count());
+    log::info("Compilation completed in {:L}ms", sw.elapsed_ms().count());
 
     sw.reset();
     plan.archive_all(env, params.parallel_jobs);
-    log::info("Archiving completed in {:n}ms", sw.elapsed_ms().count());
+    log::info("Archiving completed in {:L}ms", sw.elapsed_ms().count());
 
     sw.reset();
     plan.link_all(env, params.parallel_jobs);
-    log::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
+    log::info("Runtime binary linking completed in {:L}ms", sw.elapsed_ms().count());
 
     sw.reset();
     auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-    log::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
+    log::info("Test execution finished in {:L}ms", sw.elapsed_ms().count());
 
     for (auto& fail : test_failures) {
         log_failure(fail);

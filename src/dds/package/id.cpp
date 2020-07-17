@@ -2,7 +2,7 @@
 
 #include <dds/error/errors.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <tuple>
 

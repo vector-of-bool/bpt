@@ -6,7 +6,7 @@
 #include <json5/parse_data.hpp>
 #include <semester/walk.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <cctype>
 #include <sstream>
