@@ -473,7 +473,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             if (debug_bool == true || debug_str == "embedded") {
                 return {"/Z7"};
             } else if (debug_str == "split") {
-                return {"/Zi"};
+                return {"/Zi", "/FS"};
             } else {
                 // Do not generate any debug infro
                 return {};

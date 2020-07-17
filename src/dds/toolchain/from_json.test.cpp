@@ -99,10 +99,10 @@ TEST_CASE("Generating toolchain commands") {
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: 'split'}",
-        "cl.exe /MTd /Zi /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-        "cl.exe /MTd /Zi /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+        "cl.exe /MTd /Zi /FS /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
+        "cl.exe /MTd /Zi /FS /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
-        "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Zi");
+        "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Zi /FS");
 
     check_tc_compile(
         "{compiler_id: 'msvc', flags: '-DFOO'}",
