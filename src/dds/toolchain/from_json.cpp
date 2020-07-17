@@ -61,8 +61,11 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string_seq link_flags;
     opt_string_seq warning_flags;
 
-    optional<bool> do_debug;
+    optional<bool> debug_bool;
+    opt_string     debug_str;
     optional<bool> do_optimize;
+    optional<bool> runtime_static;
+    optional<bool> runtime_debug;
 
     // Advanced-mode:
     opt_string     deps_mode_str;
@@ -130,12 +133,25 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                 KEY_EXTEND_FLAGS(link_flags),
                 KEY_EXTEND_FLAGS(compiler_launcher),
                 if_key{"debug",
-                       require_type<bool>("`debug` must be a boolean value"),
-                       put_into{do_debug}},
+                       if_type<bool>(put_into{debug_bool}),
+                       if_type<std::string>(put_into{debug_str}),
+                       reject_with{"'debug' must be a bool or string"}},
                 if_key{"optimize",
                        require_type<bool>("`optimize` must be a boolean value"),
                        put_into{do_optimize}},
                 if_key{"flags", extend_flags("flags", common_flags)},
+                if_key{"runtime",
+                       require_type<json5::data::mapping_type>("'runtime' must be a JSON object"),
+                       mapping{if_key{"static",
+                                      require_type<bool>("'/runtime/static' should be a boolean"),
+                                      put_into(runtime_static)},
+                               if_key{"debug",
+                                      require_type<bool>("'/runtime/debug' should be a boolean"),
+                                      put_into(runtime_debug)},
+                               [](auto&& key, auto&&) {
+                                   fail("Unknown 'runtime' key '{}'", key);
+                                   return dc_reject_t();
+                               }}},
                 if_key{
                     "advanced",
                     require_type<json5::data::mapping_type>("`advanced` must be a mapping"),
@@ -202,6 +218,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                 "flags",
                                                 "debug",
                                                 "optimize",
+                                                "runtime",
                                             });
                     fail(context,
                          "Unknown toolchain config key ‘{}’ (Did you mean ‘{}’?)",
@@ -215,6 +232,11 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     auto rej_opt = std::get_if<dc_reject_t>(&result);
     if (rej_opt) {
         fail(context, rej_opt->message);
+    }
+
+    if (debug_str.has_value() && debug_str != "embedded" && debug_str != "split"
+        && debug_str != "none") {
+        fail(context, "'debug' string must be one of 'none', 'embedded', or 'split'");
     }
 
     enum compiler_id_e_t {
@@ -404,26 +426,78 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         return cxx_ver_iter->second;
     };
 
-    auto get_link_flags = [&]() -> string_seq {
+    auto get_runtime_flags = [&]() -> string_seq {
         string_seq ret;
         if (is_msvc) {
-            strv rt_lib = "/MT";
-            if (do_optimize.value_or(false)) {
-                extend(ret, {"/O2"});
+            std::string rt_flag = "/M";
+            // Select debug/release runtime flag. Default is 'true'
+            if (runtime_static.value_or(true)) {
+                rt_flag.push_back('T');
+            } else {
+                rt_flag.push_back('D');
             }
-            if (do_debug.value_or(false)) {
-                extend(ret, {"/Z7", "/DEBUG"});
-                rt_lib = "/MTd";
+            if (runtime_debug.value_or(debug_bool.value_or(false) || debug_str == "embedded"
+                                       || debug_str == "split")) {
+                rt_flag.push_back('d');
             }
-            ret.emplace_back(rt_lib);
+            ret.push_back(rt_flag);
         } else if (is_gnu_like) {
-            if (do_optimize.value_or(false)) {
-                extend(ret, {"-O2"});
+            if (runtime_static.value_or(false)) {
+                extend(ret, {"-static-libgcc", "-static-libstdc++"});
             }
-            if (do_debug.value_or(false)) {
-                extend(ret, {"-g"});
+            if (runtime_debug.value_or(false)) {
+                extend(ret, {"-D_GLIBCXX_DEBUG"});
             }
+        } else {
+            // No flags if we don't know the compiler
         }
+
+        return ret;
+    };
+
+    auto get_optim_flags = [&]() -> string_seq {
+        if (do_optimize != true) {
+            return {};
+        }
+        if (is_msvc) {
+            return {"/O2"};
+        } else if (is_gnu_like) {
+            return {"-O2"};
+        } else {
+            return {};
+        }
+    };
+
+    auto get_debug_flags = [&]() -> string_seq {
+        if (is_msvc) {
+            if (debug_bool == true || debug_str == "embedded") {
+                return {"/Z7"};
+            } else if (debug_str == "split") {
+                return {"/Zi"};
+            } else {
+                // Do not generate any debug infro
+                return {};
+            }
+        } else if (is_gnu_like) {
+            if (debug_bool == true || debug_str == "embedded") {
+                return {"-g"};
+            } else if (debug_str == "split") {
+                return {"-g", "-gsplit-dwarf"};
+            } else {
+                // Do not generate debug info
+                return {};
+            }
+        } else {
+            // Cannont deduce the debug flags
+            return {};
+        }
+    };
+
+    auto get_link_flags = [&]() -> string_seq {
+        string_seq ret;
+        extend(ret, get_runtime_flags());
+        extend(ret, get_optim_flags());
+        extend(ret, get_debug_flags());
         if (link_flags) {
             extend(ret, *link_flags);
         }
@@ -432,27 +506,15 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
 
     auto get_flags = [&](language lang) -> string_seq {
         string_seq ret;
+        extend(ret, get_runtime_flags());
+        extend(ret, get_optim_flags());
+        extend(ret, get_debug_flags());
         if (is_msvc) {
-            strv rt_lib = "/MT";
-            if (do_optimize.has_value() && *do_optimize) {
-                extend(ret, {"/O2"});
-            }
-            if (do_debug.has_value() && *do_debug) {
-                extend(ret, {"/Z7", "/DEBUG"});
-                rt_lib = "/MTd";
-            }
-            ret.emplace_back(rt_lib);
             if (lang == language::cxx) {
                 extend(ret, {"/EHsc"});
             }
             extend(ret, {"/nologo", "/permissive-", "[flags]", "/c", "[in]", "/Fo[out]"});
         } else if (is_gnu_like) {
-            if (do_optimize.has_value() && *do_optimize) {
-                extend(ret, {"-O2"});
-            }
-            if (do_debug.has_value() && *do_debug) {
-                extend(ret, {"-g"});
-            }
             extend(ret, {"-fPIC", "-pthread", "[flags]", "-c", "[in]", "-o[out]"});
         }
         if (common_flags) {
