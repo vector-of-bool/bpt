@@ -63,10 +63,10 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
              if_key{"depends",
                     [&](auto&& dat) {
                         if (dat.is_object()) {
-                            log::warn(
-                                "{}: Using a JSON object for 'depends' is deprecated. Use an "
-                                "array of strings instead.",
-                                fpath);
+                            dds_log(warn,
+                                    "{}: Using a JSON object for 'depends' is deprecated. Use an "
+                                    "array of strings instead.",
+                                    fpath);
                             return mapping{push_depends_obj_kv}(dat);
                         } else if (dat.is_array()) {
                             return for_each{put_into{std::back_inserter(ret.dependencies),

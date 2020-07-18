@@ -25,6 +25,7 @@ namespace {
 
 proc_result dds::run_proc(const proc_options& opts) {
     auto cmd_str = quote_command(opts.command);
+    dds_log(debug, "Spawning subprocess: {}", cmd_str);
 
     ::SECURITY_ATTRIBUTES security = {};
     security.bInheritHandle        = TRUE;

@@ -1,6 +1,7 @@
 #include "./library.hpp"
 
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
 
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -81,10 +82,15 @@ library_plan library_plan::create(const library_root&             lib,
     // for this library
     std::optional<create_archive_plan> archive_plan;
     if (!lib_compile_files.empty()) {
+        dds_log(debug, "Generating an archive library for {}", qual_name);
         archive_plan.emplace(lib.manifest().name,
                              qual_name,
                              params.out_subdir,
                              std::move(lib_compile_files));
+    } else {
+        dds_log(debug,
+                "Library {} has no compiled inputs, so no archive will be generated",
+                qual_name);
     }
 
     // Collect the paths to linker inputs that should be used when generating executables for this

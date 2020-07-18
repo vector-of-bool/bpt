@@ -18,7 +18,7 @@ namespace {
 
 void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     auto relpath = fs::relative(filepath, in_root);
-    log::debug("Export file {}", relpath.string());
+    dds_log(debug, "Export file {}", relpath.string());
     auto dest = out_root / relpath;
     fs::create_directories(dest.parent_path());
     fs::copy(filepath, dest);
@@ -52,7 +52,7 @@ void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_
     }
     sdist_export_file(out_root, params.project_dir, *lib_man_path);
 
-    log::info("sdist: Export library from {}", lib.path().string());
+    dds_log(info, "sdist: Export library from {}", lib.path().string());
     fs::create_directories(out_root);
     for (const auto& source : sources_to_keep) {
         sdist_export_file(out_root, params.project_dir, source.path);
@@ -77,7 +77,7 @@ sdist dds::create_sdist(const sdist_params& params) {
     }
     fs::create_directories(dest.parent_path());
     safe_rename(tempdir.path(), dest);
-    log::info("Source distribution created in {}", dest.string());
+    dds_log(info, "Source distribution created in {}", dest.string());
     return sdist::from_directory(dest);
 }
 
@@ -98,7 +98,7 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 
     auto pkg_man = package_manifest::load_from_file(*man_path);
     sdist_export_file(out, params.project_dir, *man_path);
-    log::info("Generated export as {}", pkg_man.pkg_id.to_string());
+    dds_log(info, "Generated export as {}", pkg_man.pkg_id.to_string());
     return sdist::from_directory(out);
 }
 

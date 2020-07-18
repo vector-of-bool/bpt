@@ -76,21 +76,31 @@ struct solver_provider {
     mutable std::map<std::string, std::vector<package_id>> pkgs_by_name = {};
 
     std::optional<req_type> best_candidate(const req_type& req) const {
+        dds_log(debug, "Find best candidate of {}", req.dep.to_string());
+        // Look up in the cachce for the packages we have with the given name
         auto found = pkgs_by_name.find(req.dep.name);
         if (found == pkgs_by_name.end()) {
+            // If it isn't there, insert an entry in the cache
             found = pkgs_by_name.emplace(req.dep.name, pkgs_for_name(req.dep.name)).first;
         }
-        auto& vec  = found->second;
-        auto  cand = std::find_if(vec.cbegin(), vec.cend(), [&](const package_id& pk) {
+        // Find the first package with the version contained by the ranges in the requirement
+        auto& for_name = found->second;
+        auto  cand = std::find_if(for_name.cbegin(), for_name.cend(), [&](const package_id& pk) {
             return req.dep.versions.contains(pk.version);
         });
-        if (cand == vec.cend()) {
+        if (cand == for_name.cend()) {
+            dds_log(debug, "No candidate for requirement {}", req.dep.to_string());
             return std::nullopt;
         }
+        dds_log(debug, "Select candidate {}@{}", cand->to_string());
         return req_type{dependency{cand->name, {cand->version, cand->version.next_after()}}};
     }
 
     std::vector<req_type> requirements_of(const req_type& req) const {
+        dds_log(trace,
+                "Lookup requirements of {}@{}",
+                req.key(),
+                (*req.dep.versions.iter_intervals().begin()).low.to_string());
         auto pk_id = as_pkg_id(req);
         auto deps  = deps_for_pkg(pk_id);
         return deps                                                                          //
@@ -129,7 +139,7 @@ struct explainer {
     void operator()(pubgrub::explain::premise<T> pr) {
         strm.str("");
         put(pr.value);
-        log::error("{} {},", at_head ? "┌─ Given that" : "│         and", strm.str());
+        dds_log(error, "{} {},", at_head ? "┌─ Given that" : "│         and", strm.str());
         at_head = false;
     }
 
@@ -138,10 +148,10 @@ struct explainer {
         at_head = true;
         strm.str("");
         put(cncl.value);
-        log::error("╘═       then {}.", strm.str());
+        dds_log(error, "╘═       then {}.", strm.str());
     }
 
-    void operator()(pubgrub::explain::separator) { log::error(""); }
+    void operator()(pubgrub::explain::separator) { dds_log(error, ""); }
 };
 
 }  // namespace
@@ -156,7 +166,7 @@ std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
         auto solution = pubgrub::solve(wrap_req, solver_provider{pkgs_prov, deps_prov});
         return solution | ranges::views::transform(as_pkg_id) | ranges::to_vector;
     } catch (const solve_fail_exc& failure) {
-        log::error("Dependency resolution has failed! Explanation:");
+        dds_log(error, "Dependency resolution has failed! Explanation:");
         pubgrub::generate_explaination(failure, explainer());
         throw_user_error<errc::dependency_resolve_failure>();
     }

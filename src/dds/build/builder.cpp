@@ -23,14 +23,14 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    log::error("Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
+    dds_log(error, "Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
     if (fail.signal) {
-        log::error("Test execution received signal {}", fail.signal);
+        dds_log(error, "Test execution received signal {}", fail.signal);
     }
     if (trim_view(fail.output).empty()) {
-        log::error("(Test executable produced no output");
+        dds_log(error, "(Test executable produced no output");
     } else {
-        log::error("Test output:\n{}[dds - test output end]", fail.output);
+        dds_log(error, "Test output:\n{}[dds - test output end]", fail.output);
     }
 }
 
@@ -83,7 +83,7 @@ prepare_catch2_driver(test_lib test_driver, const build_params& params, build_en
     auto obj_file = plan.calc_object_file_path(env2);
 
     if (!fs::exists(obj_file)) {
-        log::info("Compiling Catch2 test driver (This will only happen once)...");
+        dds_log(info, "Compiling Catch2 test driver (This will only happen once)...");
         compile_all(std::array{plan}, env2, 1);
     }
 
@@ -241,19 +241,19 @@ void builder::build(const build_params& params) const {
 
     dds::stopwatch sw;
     plan.compile_all(env, params.parallel_jobs);
-    log::info("Compilation completed in {:L}ms", sw.elapsed_ms().count());
+    dds_log(info, "Compilation completed in {:L}ms", sw.elapsed_ms().count());
 
     sw.reset();
     plan.archive_all(env, params.parallel_jobs);
-    log::info("Archiving completed in {:L}ms", sw.elapsed_ms().count());
+    dds_log(info, "Archiving completed in {:L}ms", sw.elapsed_ms().count());
 
     sw.reset();
     plan.link_all(env, params.parallel_jobs);
-    log::info("Runtime binary linking completed in {:L}ms", sw.elapsed_ms().count());
+    dds_log(info, "Runtime binary linking completed in {:L}ms", sw.elapsed_ms().count());
 
     sw.reset();
     auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-    log::info("Test execution finished in {:L}ms", sw.elapsed_ms().count());
+    dds_log(info, "Test execution finished in {:L}ms", sw.elapsed_ms().count());
 
     for (auto& fail : test_failures) {
         log_failure(fail);

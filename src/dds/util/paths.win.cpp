@@ -13,7 +13,7 @@ fs::path dds::user_home_dir() {
     static auto ret = []() -> fs::path {
         auto userprofile_env = std::getenv("USERPROFILE");
         if (!userprofile_env) {
-            log::warn("No USERPROFILE environment variable set!");
+            dds_log(warn, "No USERPROFILE environment variable set!");
             return "/";
         }
         return fs::absolute(fs::path(userprofile_env));

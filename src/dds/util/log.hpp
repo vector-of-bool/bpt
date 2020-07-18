@@ -19,11 +19,12 @@ inline level current_log_level = level::info;
 
 void log_print(level l, std::string_view s) noexcept;
 
-// clang-format off
 template <typename T>
-concept formattable = requires (const T item) {
+concept formattable = requires(const T item) {
     fmt::format("{}", item);
 };
+
+inline bool level_enabled(level l) { return int(l) >= int(current_log_level); }
 
 template <formattable... Args>
 void log(level l, std::string_view s, const Args&... args) noexcept {
@@ -38,31 +39,11 @@ void trace(std::string_view s, const Args&... args) {
     log(level::trace, s, args...);
 }
 
-template <formattable... Args>
-void debug(std::string_view s, const Args&... args) {
-    log(level::debug, s, args...);
-}
-
-template <formattable... Args>
-void info(std::string_view s, const Args&... args) {
-    log(level::info, s, args...);
-}
-
-template <formattable... Args>
-void warn(std::string_view s, const Args&... args) {
-    log(level::warn, s, args...);
-}
-
-template <formattable... Args>
-void error(std::string_view s, const Args&... args) {
-    log(level::error, s, args...);
-}
-
-template <formattable... Args>
-void critical(std::string_view s, const Args&&... args) {
-    log(level::critical, s, args...);
-}
-
-// clang-format on
+#define dds_log(Level, str, ...)                                                                   \
+    do {                                                                                           \
+        if (int(dds::log::level::Level) >= int(dds::log::current_log_level)) {                     \
+            ::dds::log::log(::dds::log::level::Level, str __VA_OPT__(, ) __VA_ARGS__);             \
+        }                                                                                          \
+    } while (0)
 
 }  // namespace dds::log

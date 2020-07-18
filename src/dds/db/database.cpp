@@ -87,7 +87,8 @@ database database::open(const std::string& db_path) {
     try {
         ensure_migrated(db);
     } catch (const sqlite3::sqlite3_error& e) {
-        log::error(
+        dds_log(
+            error,
             "Failed to load the databsae. It appears to be invalid/corrupted. We'll delete it and "
             "create a new one. The exception message is: {}",
             e.what());
@@ -96,10 +97,10 @@ database database::open(const std::string& db_path) {
         try {
             ensure_migrated(db);
         } catch (const sqlite3::sqlite3_error& e) {
-            log::critical(
-                "Failed to apply database migrations to recovery database. This is a critical "
-                "error. The exception message is: {}",
-                e.what());
+            dds_log(critical,
+                    "Failed to apply database migrations to recovery database. This is a critical "
+                    "error. The exception message is: {}",
+                    e.what());
             std::terminate();
         }
     }
