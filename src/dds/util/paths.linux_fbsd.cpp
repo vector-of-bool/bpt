@@ -12,7 +12,7 @@ fs::path dds::user_home_dir() {
     static auto ret = []() -> fs::path {
         auto home_env = std::getenv("HOME");
         if (!home_env) {
-            log::error("No HOME environment variable set!");
+            dds_log(error, "No HOME environment variable set!");
             return "/";
         }
         return fs::absolute(fs::path(home_env));

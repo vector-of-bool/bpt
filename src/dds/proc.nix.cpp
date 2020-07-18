@@ -62,7 +62,7 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
 }  // namespace
 
 proc_result dds::run_proc(const proc_options& opts) {
-    log::debug("Spawning subprocess: {}", quote_command(opts.command));
+    dds_log(debug, "Spawning subprocess: {}", quote_command(opts.command));
     int  stdio_pipe[2] = {};
     auto rc            = ::pipe(stdio_pipe);
     check_rc(rc == 0, "Create stdio pipe for subprocess");
@@ -100,7 +100,7 @@ proc_result dds::run_proc(const proc_options& opts) {
             ::kill(child, SIGINT);
             timeout       = -1ms;
             res.timed_out = true;
-            log::debug("Subprocess [{}] timed out", quote_command(opts.command));
+            dds_log(debug, "Subprocess [{}] timed out", quote_command(opts.command));
             continue;
         }
         std::string buffer;

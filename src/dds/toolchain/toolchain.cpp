@@ -3,6 +3,7 @@
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
@@ -72,9 +73,14 @@ static auto shortest_path_args(path_ref base, R&& r) {
 }
 
 compile_command_info toolchain::create_compile_command(const compile_file_spec& spec,
-                                                       path_ref,
+                                                       path_ref                 cwd,
                                                        toolchain_knobs knobs) const noexcept {
     using namespace std::literals;
+
+    dds_log(trace,
+            "Calculate compile command for source file [{}] to object file [{}]",
+            spec.source_path.string(),
+            spec.out_path.string());
 
     language lang = spec.lang;
     if (lang == language::automatic) {
@@ -87,15 +93,20 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
 
     vector<string> flags;
     if (knobs.is_tty) {
+        dds_log(trace, "Enabling TTY flags.");
         extend(flags, _tty_flags);
     }
 
+    dds_log(trace, "#include-search dirs:");
     for (auto&& inc_dir : spec.include_dirs) {
-        auto inc_args = include_args(inc_dir);
+        dds_log(trace, "  - search: {}", inc_dir.string());
+        auto shortest = shortest_path_from(inc_dir, cwd);
+        auto inc_args = include_args(shortest);
         extend(flags, inc_args);
     }
 
     for (auto&& ext_inc_dir : spec.external_include_dirs) {
+        dds_log(trace, "  - search (external): {}", ext_inc_dir.string());
         auto inc_args = external_include_args(ext_inc_dir);
         extend(flags, inc_args);
     }
@@ -142,10 +153,14 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec,
                                                  path_ref            cwd,
                                                  toolchain_knobs) const noexcept {
     vector<string> cmd;
-
+    dds_log(trace, "Creating archive command [output: {}]", spec.out_path.string());
     auto out_arg = shortest_path_from(spec.out_path, cwd).string();
     for (auto& arg : _link_archive) {
         if (arg == "[in]") {
+            dds_log(trace, "Expand [in] placeholder:");
+            for (auto&& in : spec.input_files) {
+                dds_log(trace, "  - input: [{}]", in.string());
+            }
             extend(cmd, shortest_path_args(cwd, spec.input_files));
         } else {
             cmd.push_back(replace(arg, "[out]", out_arg));
@@ -158,8 +173,13 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
                                                          path_ref             cwd,
                                                          toolchain_knobs) const noexcept {
     vector<string> cmd;
+    dds_log(trace, "Creating link command [output: {}]", spec.output.string());
     for (auto& arg : _link_exe) {
         if (arg == "[in]") {
+            dds_log(trace, "Expand [in] placeholder:");
+            for (auto&& in : spec.inputs) {
+                dds_log(trace, "  - input: [{}]", in.string());
+            }
             extend(cmd, shortest_path_args(cwd, spec.inputs));
         } else {
             cmd.push_back(replace(arg, "[out]", shortest_path_from(spec.output, cwd).string()));
@@ -280,7 +300,9 @@ std::optional<dds::toolchain> dds::toolchain::get_default() {
         user_home_dir() / "toolchain.json",
     };
     for (auto&& cand : candidates) {
+        dds_log(trace, "Checking for default toolchain at [{}]", cand.string());
         if (fs::exists(cand)) {
+            dds_log(debug, "Using default toolchain file: {}", cand.string());
             return parse_toolchain_json5(slurp_file(cand));
         }
     }

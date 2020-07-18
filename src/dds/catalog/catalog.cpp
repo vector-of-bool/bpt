@@ -140,6 +140,7 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
 void do_store_pkg(neo::sqlite3::database&        db,
                   neo::sqlite3::statement_cache& st_cache,
                   const package_info&            pkg) {
+    dds_log(debug, "Recording package {}@{}", pkg.ident.name, pkg.ident.version.to_string());
     std::visit([&](auto&& remote) { store_with_remote(st_cache, pkg, remote); }, pkg.remote);
     auto  db_pkg_id  = db.last_insert_rowid();
     auto& new_dep_st = st_cache(R"(
@@ -159,6 +160,7 @@ void do_store_pkg(neo::sqlite3::database&        db,
         new_dep_st.reset();
         assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
+        dds_log(trace, "  Depends on: {}", dep.to_string());
         sqlite3::exec(new_dep_st,
                       std::forward_as_tuple(db_pkg_id,
                                             dep.name,
@@ -168,6 +170,7 @@ void do_store_pkg(neo::sqlite3::database&        db,
 }
 
 void store_init_packages(sqlite3::database& db, sqlite3::statement_cache& st_cache) {
+    dds_log(debug, "Restoring initial package data");
     for (auto& pkg : init_catalog_packages()) {
         do_store_pkg(db, st_cache, pkg);
     }
@@ -186,11 +189,13 @@ void ensure_migrated(sqlite3::database& db) {
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
+        dds_log(critical, "Root of catalog dds_cat_meta cell should be a JSON object");
         throw_external_error<errc::corrupted_catalog_db>();
     }
 
     auto version_ = meta["version"];
     if (!version_.is_number_integer()) {
+        dds_log(critical, "'version' key in dds_cat_meta is not an integer");
         throw_external_error<errc::corrupted_catalog_db>(
             "The catalog database metadata is invalid [bad dds_meta.version]");
     }
@@ -204,20 +209,27 @@ void ensure_migrated(sqlite3::database& db) {
     bool import_init_packages = version == 0;
 
     if (version > current_database_version) {
+        dds_log(critical,
+                "Catalog version is {}, but we only support up to {}",
+                version,
+                current_database_version);
         throw_external_error<errc::catalog_too_new>();
     }
 
     if (version < 1) {
+        dds_log(debug, "Applying catalog migration 1");
         migrate_repodb_1(db);
     }
     if (version < 2) {
+        dds_log(debug, "Applying catalog migration 2");
         migrate_repodb_2(db);
     }
     meta["version"] = 2;
     exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
 
     if (import_init_packages) {
-        log::info(
+        dds_log(
+            info,
             "A new catalog database case been created, and has been populated with some initial "
             "contents.");
         neo::sqlite3::statement_cache stmts{db};
@@ -235,18 +247,22 @@ void check_json(bool b, std::string_view what) {
 
 catalog catalog::open(const std::string& db_path) {
     if (db_path != ":memory:") {
-        fs::create_directories(fs::weakly_canonical(db_path).parent_path());
+        auto pardir = fs::weakly_canonical(db_path).parent_path();
+        dds_log(trace, "Ensuring parent directory [{}]", pardir.string());
+        fs::create_directories(pardir);
     }
+    dds_log(debug, "Opening package catalog [{}]", db_path);
     auto db = sqlite3::database::open(db_path);
     try {
         ensure_migrated(db);
     } catch (const sqlite3::sqlite3_error& e) {
-        log::critical(
-            "Failed to load the repository database. It appears to be invalid/corrupted. The "
-            "exception message is: {}",
-            e.what());
+        dds_log(critical,
+                "Failed to load the repository database. It appears to be invalid/corrupted. The "
+                "exception message is: {}",
+                e.what());
         throw_external_error<errc::corrupted_catalog_db>();
     }
+    dds_log(trace, "Successfully opened catalog");
     return catalog(std::move(db));
 }
 
@@ -255,11 +271,12 @@ catalog::catalog(sqlite3::database db)
 
 void catalog::store(const package_info& pkg) {
     sqlite3::transaction_guard tr{_db};
-
     do_store_pkg(_db, _stmt_cache, pkg);
 }
 
 std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept {
+    auto ver_str = pk_id.version.to_string();
+    dds_log(trace, "Lookup package {}@{}", pk_id.name, ver_str);
     auto& st = _stmt_cache(R"(
         SELECT
             pkg_id,
@@ -275,7 +292,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         WHERE name = ? AND version = ?
     )"_sql);
     st.reset();
-    st.bindings  = std::forward_as_tuple(pk_id.name, pk_id.version.to_string());
+    st.bindings  = std::forward_as_tuple(pk_id.name, ver_str);
     auto opt_tup = sqlite3::unpack_single_opt<std::int64_t,
                                               std::string,
                                               std::string,
@@ -323,28 +340,27 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         },
     };
 
-    auto append_transform = [](auto transform) {
-        return [transform = std::move(transform)](auto& remote) {
-            if constexpr (neo::alike<decltype(remote), std::monostate>) {
-                // Do nothing
-            } else {
-                remote.transforms.push_back(std::move(transform));
-            }
-        };
-    };
-
     if (!repo_transform.empty()) {
-        auto tr_json = json5::parse_data(repo_transform);
-        check_json(tr_json.is_array(),
+        // Transforms are stored in the DB as JSON strings. Convert them back to real objects.
+        auto tr_data = json5::parse_data(repo_transform);
+        check_json(tr_data.is_array(),
                    fmt::format("Database record for {} has an invalid 'repo_transform' field [1]",
                                pkg_id));
-        for (const auto& el : tr_json.as_array()) {
+        for (const auto& el : tr_data.as_array()) {
             check_json(
                 el.is_object(),
                 fmt::format("Database record for {} has an invalid 'repo_transform' field [2]",
                             pkg_id));
             auto tr = fs_transformation::from_json(el);
-            std::visit(append_transform(tr), info.remote);
+            std::visit(
+                [&](auto& remote) {
+                    if constexpr (neo::alike<decltype(remote), std::monostate>) {
+                        // Do nothing
+                    } else {
+                        remote.transforms.push_back(std::move(tr));
+                    }
+                },
+                info.remote);
         }
     }
     return info;
@@ -377,6 +393,7 @@ std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
 }
 
 std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const noexcept {
+    dds_log(trace, "Lookup dependencies of {}@{}", pkg.name, pkg.version.to_string());
     return sqlite3::exec_iter<std::string,
                               std::string,
                               std::string>(  //
@@ -395,12 +412,16 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                std::forward_as_tuple(pkg.name, pkg.version.to_string()))  //
         | ranges::views::transform([](auto&& pair) {
                auto& [name, low, high] = pair;
-               return dependency{name, {semver::version::parse(low), semver::version::parse(high)}};
+               auto dep
+                   = dependency{name, {semver::version::parse(low), semver::version::parse(high)}};
+               dds_log(trace, "  Depends: {}", dep.to_string());
+               return dep;
            })  //
         | ranges::to_vector;
 }
 
 void catalog::import_json_str(std::string_view content) {
+    dds_log(trace, "Importing JSON string into catalog");
     auto pkgs = parse_packages_json(content);
 
     sqlite3::transaction_guard tr{_db};
@@ -411,6 +432,6 @@ void catalog::import_json_str(std::string_view content) {
 
 void catalog::import_initial() {
     sqlite3::transaction_guard tr{_db};
-    log::info("Restoring built-in initial catalog contents");
+    dds_log(info, "Restoring built-in initial catalog contents");
     store_init_packages(_db, _stmt_cache);
 }

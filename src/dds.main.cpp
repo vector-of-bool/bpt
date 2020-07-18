@@ -107,6 +107,22 @@ struct cli_base {
                              "Print `yes` and exit 0. Useful for scripting.",
                              {"are-you-the-real-dds?"}};
 
+    args::MapFlag<std::string, dds::log::level> log_level{
+        parser,
+        "log-level",
+        "Set the logging level",
+        {"log-level", 'l'},
+        {
+            {"trace", dds::log::level::trace},
+            {"debug", dds::log::level::debug},
+            {"info", dds::log::level::info},
+            {"warn", dds::log::level::warn},
+            {"error", dds::log::level::error},
+            {"critical", dds::log::level::critical},
+        },
+        dds::log::level::info,
+    };
+
     args::Group cmd_group{parser, "Available Commands"};
 };
 
@@ -227,7 +243,7 @@ struct cli_catalog {
                 auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();
                 auto dest     = out_path / id.to_string();
-                dds::log::info("Create sdist at {}", dest.string());
+                dds_log(info, "Create sdist at {}", dest.string());
                 dds::fs::remove_all(dest);
                 dds::safe_rename(tsd.sdist.path, dest);
             }
@@ -342,14 +358,14 @@ struct cli_catalog {
             auto cat   = cat_path.open();
             auto pkg   = cat.get(pk_id);
             if (!pkg) {
-                dds::log::error("No package '{}' in the catalog", pk_id.to_string());
+                dds_log(error, "No package '{}' in the catalog", pk_id.to_string());
                 return 1;
             }
             std::cout << "Name:     " << pkg->ident.name << '\n'
                       << "Version:  " << pkg->ident.version << '\n';
 
             for (const auto& dep : pkg->deps) {
-                std::cout << "Depends: " << dep.to_string() << '\n';
+                std::cout << "Depends:  " << dep.to_string() << '\n';
             }
 
             std::visit([&](const auto& remote) { print_remote_info(remote); }, pkg->remote);
@@ -419,9 +435,9 @@ struct cli_repo {
                                    });
 
                 for (const auto& [name, grp] : grp_by_name) {
-                    dds::log::info("{}:", name);
+                    dds_log(info, "{}:", name);
                     for (const dds::sdist& sd : grp) {
-                        dds::log::info("  - {}", sd.manifest.pkg_id.version.to_string());
+                        dds_log(info, "  - {}", sd.manifest.pkg_id.version.to_string());
                     }
                 }
 
@@ -692,7 +708,7 @@ struct cli_build_deps {
 
         auto all_file_deps = deps_files.Get()  //
             | ranges::views::transform([&](auto dep_fpath) {
-                                 dds::log::info("Reading deps from {}", dep_fpath.string());
+                                 dds_log(info, "Reading deps from {}", dep_fpath.string());
                                  return dds::dependency_manifest::from_file(dep_fpath).dependencies;
                              })
             | ranges::actions::join;
@@ -709,7 +725,7 @@ struct cli_build_deps {
             dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
             [&](dds::repository repo) {
                 // Download dependencies
-                dds::log::info("Loading {} dependencies", all_deps.size());
+                dds_log(info, "Loading {} dependencies", all_deps.size());
                 auto deps = repo.solve(all_deps, cat);
                 dds::get_all(deps, repo, cat);
                 for (const dds::package_id& pk : deps) {
@@ -717,7 +733,7 @@ struct cli_build_deps {
                     assert(sdist_ptr);
                     dds::sdist_build_params deps_params;
                     deps_params.subdir = sdist_ptr->manifest.pkg_id.to_string();
-                    dds::log::info("Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
+                    dds_log(info, "Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
                     bd.add(*sdist_ptr, deps_params);
                 }
             });
@@ -740,9 +756,6 @@ struct cli_build_deps {
 */
 
 int main(int argc, char** argv) {
-#if DDS_DEBUG
-    dds::log::current_log_level = dds::log::level::debug;
-#endif
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
@@ -752,6 +765,7 @@ int main(int argc, char** argv) {
     cli_repo       repo{cli};
     cli_catalog    catalog{cli};
     cli_build_deps build_deps{cli};
+
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -764,6 +778,7 @@ int main(int argc, char** argv) {
     }
 
     dds::install_signal_handlers();
+    dds::log::current_log_level = cli.log_level.Get();
 
     try {
         if (cli._verify_ident) {
@@ -784,15 +799,15 @@ int main(int argc, char** argv) {
             std::terminate();
         }
     } catch (const dds::user_cancelled&) {
-        dds::log::critical("Operation cancelled by user");
+        dds_log(critical, "Operation cancelled by user");
         return 2;
     } catch (const dds::error_base& e) {
-        dds::log::error("{}", e.what());
-        dds::log::error("{}", e.explanation());
-        dds::log::error("Refer: {}", e.error_reference());
+        dds_log(error, "{}", e.what());
+        dds_log(error, "{}", e.explanation());
+        dds_log(error, "Refer: {}", e.error_reference());
         return 1;
     } catch (const std::exception& e) {
-        dds::log::critical(e.what());
+        dds_log(critical, e.what());
         return 2;
     }
 }

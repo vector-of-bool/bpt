@@ -21,18 +21,24 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     link_exe_spec spec;
     spec.output = calc_executable_path(env);
     spec.inputs = _input_libs;
+    dds_log(debug, "Performing link for {}", spec.output.string());
     for (const lm::usage& links : _links) {
+        dds_log(trace, "  - Link with: {}/{}", links.name, links.namespace_);
         extend(spec.inputs, env.ureqs.link_paths(links));
     }
     if (lib.archive_plan()) {
         // The associated library has compiled components. Add the static library a as a linker
         // input
+        dds_log(trace, "Adding the library's archive as a linker input");
         spec.inputs.push_back(env.output_root
                               / lib.archive_plan()->calc_archive_file_path(env.toolchain));
+    } else {
+        dds_log(trace, "Executable has no corresponding archive library input");
     }
 
     // The main object should be a linker input, of course.
     auto main_obj = _main_compile.calc_object_file_path(env);
+    dds_log(trace, "Add entry point object file: {}", main_obj.string());
     spec.inputs.push_back(std::move(main_obj));
 
     // Linker inputs are order-dependent in some cases. The top-most input should appear first, and
@@ -48,10 +54,10 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     auto msg = fmt::format("[{}] Link: {:30}",
                            lib.qualified_name(),
                            fs::relative(spec.output, env.output_root).string());
-    log::info(msg);
+    dds_log(info, msg);
     auto [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(link_command); });
-    log::info("{} - {:>6L}ms", msg, dur_ms.count());
+    dds_log(info, "{} - {:>6L}ms", msg, dur_ms.count());
 
     // Check and throw if errant
     if (!proc_res.okay()) {
@@ -76,19 +82,19 @@ bool link_executable_plan::is_test() const noexcept {
 std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) const {
     auto exe_path = calc_executable_path(env);
     auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
-    log::info(msg);
+    dds_log(info, msg);
     using namespace std::chrono_literals;
     auto&& [dur, res] = timed<std::chrono::microseconds>(
         [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
 
     if (res.okay()) {
-        log::info("{} - PASSED - {:>9L}μs", msg, dur.count());
+        dds_log(info, "{} - PASSED - {:>9L}μs", msg, dur.count());
         return std::nullopt;
     } else {
         auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
                                     res.signal ? res.signal : res.retc);
         auto fail_str = res.timed_out ? "TIMEOUT" : "FAILED ";
-        log::error("{} - {} - {:>9L}μs [{}]", msg, fail_str, dur.count(), exit_msg);
+        dds_log(error, "{} - {} - {:>9L}μs [{}]", msg, fail_str, dur.count(), exit_msg);
         test_failure f;
         f.executable_path = exe_path;
         f.output          = res.output;
