@@ -13,7 +13,7 @@ release = '0.1.0-alpha.4'
 
 # -- General configuration ---------------------------------------------------
 extensions = []
-templates_path = ['_templates']
+templates_path = ['.']
 source_suffix = '.rst'
 master_doc = 'index'
 language = None
@@ -21,7 +21,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = None
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'nature'
+html_theme = 'basic'
 html_theme_options = {}
 html_static_path = []
 html_sidebars = {}
