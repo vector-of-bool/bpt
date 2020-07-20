@@ -1,6 +1,8 @@
 #ifdef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/log.hpp>
+
 #include <fmt/core.h>
 #include <neo/assert.hpp>
 #include <wil/resource.h>
