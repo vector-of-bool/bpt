@@ -814,6 +814,7 @@ PACKAGES = [
             '1.3.0',
             # '1.3.2',  # Wrong tag name in upstream
             '1.3.3',
+            '2.0.0',
         ],
         tag_fmt='v{}',
         git_url='https://github.com/marzer/tomlplusplus.git',

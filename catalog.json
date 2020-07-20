@@ -3400,6 +3400,16 @@
           "transform": [],
           "url": "https://github.com/marzer/tomlplusplus.git"
         }
+      },
+      "2.0.0": {
+        "depends": [],
+        "description": "Header-only TOML config file parser and serializer for modern C++",
+        "git": {
+          "auto-lib": "tomlpp/tomlpp",
+          "ref": "v2.0.0",
+          "transform": [],
+          "url": "https://github.com/marzer/tomlplusplus.git"
+        }
       }
     },
     "vob-json5": {
