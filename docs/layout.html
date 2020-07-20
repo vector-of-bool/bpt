@@ -6,14 +6,14 @@ url: docs/{{pagename}}{{file_suffix}}
 {%- endif %}
 ---
 
-<div class="toc global">
+<div class="toc global" open>
   <div class="toc-content" role="navigation" aria-label="global navigation">
     <div class="toc-header">Contents</div>
     {{ toctree(maxdepth=5, titles_only=True) }}
   </div>
 </div>
 
-<div class="toc local">
+<div class="toc local" open>
   <div class="toc-content" role="navigation" aria-label="local navigation">
     <div class="toc-header">On this page</div>
     {{ toc }}

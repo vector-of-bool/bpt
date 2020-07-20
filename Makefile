@@ -20,6 +20,9 @@ docs:
 		-Wqanj8
 	echo "Docs generated to _build/docs"
 
+hugo-docs:
+	env GEN_FOR_HUGO=1 $(MAKE) docs
+
 docs-server: docs
 	echo "Docs are visible on http://localhost:9794/"
 	cd _build/docs && \
