@@ -44,7 +44,7 @@ macos-ci:
 linux-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc
+		-T tools/gcc-9-static.jsonc
 	mv _build/dds _build/dds-linux-x64
 
 nix-ci:
