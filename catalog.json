@@ -2134,36 +2134,9 @@
       }
     },
     "neo-concepts": {
-      "0.1.0": {
-        "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
-        "git": {
-          "ref": "0.1.0",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-concepts.git"
-        }
-      },
-      "0.2.0": {
-        "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
-        "git": {
-          "ref": "0.2.0",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-concepts.git"
-        }
-      },
-      "0.2.1": {
-        "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
-        "git": {
-          "ref": "0.2.1",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-concepts.git"
-        }
-      },
       "0.2.2": {
         "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
+        "description": "A (mostly) backport of C++20 concepts library, with some additions.",
         "git": {
           "ref": "0.2.2",
           "transform": [],
@@ -2172,7 +2145,7 @@
       },
       "0.3.0": {
         "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
+        "description": "A (mostly) backport of C++20 concepts library, with some additions.",
         "git": {
           "ref": "0.3.0",
           "transform": [],
@@ -2181,7 +2154,7 @@
       },
       "0.3.1": {
         "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
+        "description": "A (mostly) backport of C++20 concepts library, with some additions.",
         "git": {
           "ref": "0.3.1",
           "transform": [],
@@ -2190,7 +2163,7 @@
       },
       "0.3.2": {
         "depends": [],
-        "description": "Minimal C++ concepts library. Contains many definitions from C++20.",
+        "description": "A (mostly) backport of C++20 concepts library, with some additions.",
         "git": {
           "ref": "0.3.2",
           "transform": [],
@@ -2199,18 +2172,9 @@
       }
     },
     "neo-fun": {
-      "0.1.0": {
-        "depends": [],
-        "description": "Some library fundamentals that you might find useful",
-        "git": {
-          "ref": "0.1.0",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-fun.git"
-        }
-      },
       "0.1.1": {
         "depends": [],
-        "description": "Some library fundamentals that you might find useful",
+        "description": "Some library components that didn't quite fit anywhere else...",
         "git": {
           "ref": "0.1.1",
           "transform": [],
@@ -2219,7 +2183,7 @@
       },
       "0.2.0": {
         "depends": [],
-        "description": "Some library fundamentals that you might find useful",
+        "description": "Some library components that didn't quite fit anywhere else...",
         "git": {
           "ref": "0.2.0",
           "transform": [],
@@ -2228,7 +2192,7 @@
       },
       "0.2.1": {
         "depends": [],
-        "description": "Some library fundamentals that you might find useful",
+        "description": "Some library components that didn't quite fit anywhere else...",
         "git": {
           "ref": "0.2.1",
           "transform": [],
@@ -2237,7 +2201,7 @@
       },
       "0.3.0": {
         "depends": [],
-        "description": "Some library fundamentals that you might find useful",
+        "description": "Some library components that didn't quite fit anywhere else...",
         "git": {
           "ref": "0.3.0",
           "transform": [],
@@ -2246,7 +2210,7 @@
       },
       "0.3.1": {
         "depends": [],
-        "description": "Some library fundamentals that you might find useful",
+        "description": "Some library components that didn't quite fit anywhere else...",
         "git": {
           "ref": "0.3.1",
           "transform": [],
@@ -2255,51 +2219,24 @@
       },
       "0.3.2": {
         "depends": [],
-        "description": "Some library fundamentals that you might find useful",
+        "description": "Some library components that didn't quite fit anywhere else...",
         "git": {
           "ref": "0.3.2",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.4.0": {
+        "depends": [],
+        "description": "Some library components that didn't quite fit anywhere else...",
+        "git": {
+          "ref": "0.4.0",
           "transform": [],
           "url": "https://github.com/vector-of-bool/neo-fun.git"
         }
       }
     },
     "neo-sqlite3": {
-      "0.1.0": {
-        "depends": [],
-        "description": "A modern and low-level C++ SQLite API",
-        "git": {
-          "ref": "0.1.0",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-sqlite3.git"
-        }
-      },
-      "0.2.0": {
-        "depends": [],
-        "description": "A modern and low-level C++ SQLite API",
-        "git": {
-          "ref": "0.2.0",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-sqlite3.git"
-        }
-      },
-      "0.2.1": {
-        "depends": [],
-        "description": "A modern and low-level C++ SQLite API",
-        "git": {
-          "ref": "0.2.1",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-sqlite3.git"
-        }
-      },
-      "0.2.2": {
-        "depends": [],
-        "description": "A modern and low-level C++ SQLite API",
-        "git": {
-          "ref": "0.2.2",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/neo-sqlite3.git"
-        }
-      },
       "0.2.3": {
         "depends": [],
         "description": "A modern and low-level C++ SQLite API",
@@ -2481,27 +2418,9 @@
       }
     },
     "pubgrub": {
-      "0.1.2": {
-        "depends": [],
-        "description": "A C++ implementation of the Pubgrub version solving algorithm",
-        "git": {
-          "ref": "0.1.2",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/pubgrub.git"
-        }
-      },
-      "0.2.0": {
-        "depends": [],
-        "description": "A C++ implementation of the Pubgrub version solving algorithm",
-        "git": {
-          "ref": "0.2.0",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/pubgrub.git"
-        }
-      },
       "0.2.1": {
         "depends": [],
-        "description": "A C++ implementation of the Pubgrub version solving algorithm",
+        "description": "Pubgrub dependency resolution algorithm for C++",
         "git": {
           "ref": "0.2.1",
           "transform": [],
@@ -2672,6 +2591,16 @@
           "url": "https://github.com/ericniebler/range-v3.git"
         }
       },
+      "0.11.0": {
+        "depends": [],
+        "description": "Range library for C++14/17/20, basis for C++20's std::ranges",
+        "git": {
+          "auto-lib": "range-v3/range-v3",
+          "ref": "0.11.0",
+          "transform": [],
+          "url": "https://github.com/ericniebler/range-v3.git"
+        }
+      },
       "0.5.0": {
         "depends": [],
         "description": "Range library for C++14/17/20, basis for C++20's std::ranges",
@@ -2704,18 +2633,9 @@
       }
     },
     "semver": {
-      "0.2.1": {
-        "depends": [],
-        "description": "A C++ library that implements Semantic Versioning parsing, emitting, types, ordering, and operations. See https://semver.org/",
-        "git": {
-          "ref": "0.2.1",
-          "transform": [],
-          "url": "https://github.com/vector-of-bool/semver.git"
-        }
-      },
       "0.2.2": {
         "depends": [],
-        "description": "A C++ library that implements Semantic Versioning parsing, emitting, types, ordering, and operations. See https://semver.org/",
+        "description": "A C++ Library for Dealing with Semantic Versioning",
         "git": {
           "ref": "0.2.2",
           "transform": [],
@@ -3415,7 +3335,7 @@
     "vob-json5": {
       "0.1.5": {
         "depends": [],
-        "description": "A C++ implementation of a JSON5 parser",
+        "description": "A json5 library for C++",
         "git": {
           "ref": "0.1.5",
           "transform": [],
@@ -3429,7 +3349,7 @@
           "neo-fun^0.1.0",
           "neo-concepts^0.2.1"
         ],
-        "description": "A C++ library to process recursive dynamic data",
+        "description": "A generic library for dealing with semistructured data",
         "git": {
           "ref": "0.1.0",
           "transform": [],
@@ -3441,7 +3361,7 @@
           "neo-fun^0.1.1",
           "neo-concepts^0.2.2"
         ],
-        "description": "A C++ library to process recursive dynamic data",
+        "description": "A generic library for dealing with semistructured data",
         "git": {
           "ref": "0.1.1",
           "transform": [],
@@ -3453,7 +3373,7 @@
           "neo-fun^0.3.2",
           "neo-concepts^0.3.2"
         ],
-        "description": "A C++ library to process recursive dynamic data",
+        "description": "A generic library for dealing with semistructured data",
         "git": {
           "ref": "0.2.0",
           "transform": [],
@@ -3465,7 +3385,7 @@
           "neo-fun^0.3.2",
           "neo-concepts^0.3.2"
         ],
-        "description": "A C++ library to process recursive dynamic data",
+        "description": "A generic library for dealing with semistructured data",
         "git": {
           "ref": "0.2.1",
           "transform": [],
