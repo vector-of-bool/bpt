@@ -205,14 +205,15 @@ void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, pat
     }
 }
 
-}  // namespace
-
-void builder::build(const build_params& params) const {
+template <typename Func>
+void with_build_plan(const build_params&              params,
+                     const std::vector<sdist_target>& sdists,
+                     Func&&                           fn) {
     fs::create_directories(params.out_root);
     auto db = database::open(params.out_root / ".dds.db");
 
     state     st;
-    auto      plan  = prepare_build_plan(st, _sdists);
+    auto      plan  = prepare_build_plan(st, sdists);
     auto      ureqs = prepare_ureqs(plan, params.toolchain, params.out_root);
     build_env env{
         params.toolchain,
@@ -239,30 +240,44 @@ void builder::build(const build_params& params) const {
 
     plan.render_all(env);
 
-    dds::stopwatch sw;
-    plan.compile_all(env, params.parallel_jobs);
-    dds_log(info, "Compilation completed in {:L}ms", sw.elapsed_ms().count());
+    fn(std::move(env), std::move(plan));
+}
 
-    sw.reset();
-    plan.archive_all(env, params.parallel_jobs);
-    dds_log(info, "Archiving completed in {:L}ms", sw.elapsed_ms().count());
+}  // namespace
 
-    sw.reset();
-    plan.link_all(env, params.parallel_jobs);
-    dds_log(info, "Runtime binary linking completed in {:L}ms", sw.elapsed_ms().count());
+void builder::compile_files(const std::vector<fs::path>& files, const build_params& params) const {
+    with_build_plan(params, _sdists, [&](build_env_ref env, build_plan plan) {
+        plan.compile_files(env, params.parallel_jobs, files);
+    });
+}
 
-    sw.reset();
-    auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-    dds_log(info, "Test execution finished in {:L}ms", sw.elapsed_ms().count());
+void builder::build(const build_params& params) const {
+    with_build_plan(params, _sdists, [&](build_env_ref env, const build_plan& plan) {
+        dds::stopwatch sw;
+        plan.compile_all(env, params.parallel_jobs);
+        dds_log(info, "Compilation completed in {:L}ms", sw.elapsed_ms().count());
 
-    for (auto& fail : test_failures) {
-        log_failure(fail);
-    }
-    if (!test_failures.empty()) {
-        throw_user_error<errc::test_failure>();
-    }
+        sw.reset();
+        plan.archive_all(env, params.parallel_jobs);
+        dds_log(info, "Archiving completed in {:L}ms", sw.elapsed_ms().count());
 
-    if (params.emit_lmi) {
-        write_lmi(env, plan, params.out_root, *params.emit_lmi);
-    }
+        sw.reset();
+        plan.link_all(env, params.parallel_jobs);
+        dds_log(info, "Runtime binary linking completed in {:L}ms", sw.elapsed_ms().count());
+
+        sw.reset();
+        auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
+        dds_log(info, "Test execution finished in {:L}ms", sw.elapsed_ms().count());
+
+        for (auto& fail : test_failures) {
+            log_failure(fail);
+        }
+        if (!test_failures.empty()) {
+            throw_user_error<errc::test_failure>();
+        }
+
+        if (params.emit_lmi) {
+            write_lmi(env, plan, params.out_root, *params.emit_lmi);
+        }
+    });
 }

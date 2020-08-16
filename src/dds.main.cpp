@@ -573,6 +573,113 @@ struct cli_sdist {
     }
 };
 
+void load_project_deps(dds::builder&                bd,
+                       const dds::package_manifest& man,
+                       dds::path_ref                cat_path,
+                       dds::path_ref                repo_path) {
+    auto cat = dds::catalog::open(cat_path);
+    // Build the dependencies
+    dds::repository::with_repository(  //
+        repo_path,
+        dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
+        [&](dds::repository repo) {
+            // Download dependencies
+            auto deps = repo.solve(man.dependencies, cat);
+            dds::get_all(deps, repo, cat);
+            for (const dds::package_id& pk : deps) {
+                auto sdist_ptr = repo.find(pk);
+                assert(sdist_ptr);
+                dds::sdist_build_params deps_params;
+                deps_params.subdir
+                    = dds::fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
+                bd.add(*sdist_ptr, deps_params);
+            }
+        });
+}
+
+dds::builder create_project_builder(dds::path_ref                  pr_dir,
+                                    dds::path_ref                  cat_path,
+                                    dds::path_ref                  repo_path,
+                                    bool                           load_deps,
+                                    const dds::sdist_build_params& project_params) {
+    auto man = dds::package_manifest::load_from_directory(pr_dir).value_or(dds::package_manifest{});
+
+    dds::builder builder;
+    if (load_deps) {
+        load_project_deps(builder, man, cat_path, repo_path);
+    }
+    builder.add(dds::sdist{std::move(man), pr_dir}, project_params);
+    return builder;
+}
+
+/*
+ ######   #######  ##     ## ########  #### ##       ########
+##    ## ##     ## ###   ### ##     ##  ##  ##       ##
+##       ##     ## #### #### ##     ##  ##  ##       ##
+##       ##     ## ## ### ## ########   ##  ##       ######
+##       ##     ## ##     ## ##         ##  ##       ##
+##    ## ##     ## ##     ## ##         ##  ##       ##
+ ######   #######  ##     ## ##        #### ######## ########
+*/
+
+struct cli_compile_file {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "compile-file", "Compile a single file"};
+
+    common_flags _flags{cmd};
+
+    common_project_flags project{cmd};
+
+    catalog_path_flag cat_path{cmd};
+    repo_path_flag    repo_path{cmd};
+
+    args::Flag     no_warnings{cmd, "no-warnings", "Disable compiler warnings", {"no-warnings"}};
+    toolchain_flag tc_filepath{cmd};
+
+    path_flag
+        lm_index{cmd,
+                 "lm_index",
+                 "Path to an existing libman index from which to load deps (usually INDEX.lmi)",
+                 {"lm-index", 'I'}};
+
+    num_jobs_flag n_jobs{cmd};
+
+    path_flag out{cmd,
+                  "out",
+                  "The root build directory",
+                  {"out"},
+                  dds::fs::current_path() / "_build"};
+
+    args::PositionalList<dds::fs::path> source_files{cmd,
+                                                     "source-files",
+                                                     "One or more source files to compile"};
+
+    int run() {
+        dds::sdist_build_params main_params = {
+            .subdir          = "",
+            .build_tests     = true,
+            .build_apps      = true,
+            .enable_warnings = !no_warnings.Get(),
+        };
+        auto bd = create_project_builder(project.root.Get(),
+                                         cat_path.Get(),
+                                         repo_path.Get(),
+                                         /* load_deps = */ !lm_index,
+                                         main_params);
+
+        bd.compile_files(source_files.Get(),
+                         {
+                             .out_root = out.Get(),
+                             .existing_lm_index
+                             = lm_index ? std::make_optional(lm_index.Get()) : std::nullopt,
+                             .emit_lmi      = {},
+                             .toolchain     = tc_filepath.get_toolchain(),
+                             .parallel_jobs = n_jobs.Get(),
+                         });
+        return 0;
+    }
+};
+
 /*
 ########  ##     ## #### ##       ########
 ##     ## ##     ##  ##  ##       ##     ##
@@ -614,45 +721,26 @@ struct cli_build {
                   dds::fs::current_path() / "_build"};
 
     int run() {
-        dds::build_params params;
-        params.out_root      = out.Get();
-        params.toolchain     = tc_filepath.get_toolchain();
-        params.parallel_jobs = n_jobs.Get();
+        dds::sdist_build_params main_params = {
+            .subdir          = "",
+            .build_tests     = !no_tests.Get(),
+            .run_tests       = !no_tests.Get(),
+            .build_apps      = !no_apps.Get(),
+            .enable_warnings = !no_warnings.Get(),
+        };
+        auto bd = create_project_builder(project.root.Get(),
+                                         cat_path.Get(),
+                                         repo_path.Get(),
+                                         /* load_deps = */ !lm_index,
+                                         main_params);
 
-        auto man = dds::package_manifest::load_from_directory(project.root.Get())
-                       .value_or(dds::package_manifest{});
-
-        dds::builder            bd;
-        dds::sdist_build_params main_params;
-        main_params.build_apps      = !no_apps.Get();
-        main_params.enable_warnings = !no_warnings.Get();
-        main_params.run_tests = main_params.build_tests = !no_tests.Get();
-
-        bd.add(dds::sdist{man, project.root.Get()}, main_params);
-        if (lm_index) {
-            params.existing_lm_index = lm_index.Get();
-        } else {
-            // Download and build dependencies
-            // Build the dependencies
-            auto cat = cat_path.open();
-            dds::repository::with_repository(  //
-                this->repo_path.Get(),
-                dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
-                [&](dds::repository repo) {
-                    // Download dependencies
-                    auto deps = repo.solve(man.dependencies, cat);
-                    dds::get_all(deps, repo, cat);
-                    for (const dds::package_id& pk : deps) {
-                        auto sdist_ptr = repo.find(pk);
-                        assert(sdist_ptr);
-                        dds::sdist_build_params deps_params;
-                        deps_params.subdir
-                            = dds::fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
-                        bd.add(*sdist_ptr, deps_params);
-                    }
-                });
-        }
-        bd.build(params);
+        bd.build({
+            .out_root          = out.Get(),
+            .existing_lm_index = lm_index ? std::make_optional(lm_index.Get()) : std::nullopt,
+            .emit_lmi          = {},
+            .toolchain         = tc_filepath.get_toolchain(),
+            .parallel_jobs     = n_jobs.Get(),
+        });
         return 0;
     }
 };
@@ -760,12 +848,13 @@ int main(int argc, char** argv) {
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
-    cli_base       cli{parser};
-    cli_build      build{cli};
-    cli_sdist      sdist{cli};
-    cli_repo       repo{cli};
-    cli_catalog    catalog{cli};
-    cli_build_deps build_deps{cli};
+    cli_base         cli{parser};
+    cli_compile_file compile_file{cli};
+    cli_build        build{cli};
+    cli_sdist        sdist{cli};
+    cli_repo         repo{cli};
+    cli_catalog      catalog{cli};
+    cli_build_deps   build_deps{cli};
 
     try {
         parser.ParseCLI(argc, argv);
@@ -785,6 +874,8 @@ int main(int argc, char** argv) {
         if (cli._verify_ident) {
             std::cout << "yes\n";
             return 0;
+        } else if (compile_file.cmd) {
+            return compile_file.run();
         } else if (build.cmd) {
             return build.run();
         } else if (sdist.cmd) {

@@ -53,6 +53,11 @@ public:
      * Execute the build
      */
     void build(const build_params& params) const;
+
+    /**
+     * Compile one or more source files
+     */
+    void compile_files(const std::vector<fs::path>& files, const build_params& params) const;
 };
 
 }  // namespace dds
