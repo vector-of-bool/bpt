@@ -6,6 +6,7 @@
 #include <dds/util/shlex.hpp>
 #include <dds/util/string.hpp>
 
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 

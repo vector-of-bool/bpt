@@ -5,6 +5,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/time.hpp>
 
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 
 using namespace dds;

@@ -6,6 +6,7 @@
 #include <dds/source/dist.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
+#include <dds/util/ranges.hpp>
 #include <dds/util/string.hpp>
 
 #include <range/v3/action/sort.hpp>
@@ -19,12 +20,16 @@ using namespace dds;
 
 using namespace ranges;
 
-namespace {
+void repository::_log_blocking(path_ref dirpath) noexcept {
+    dds_log(warn, "Another process has the repository directory locked [{}]", dirpath.string());
+    dds_log(warn, "Waiting for repository to be released...");
+}
 
-auto load_sdists(path_ref root) {
-    using namespace ranges;
-    using namespace ranges::views;
+void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_directories(dirpath); }
 
+fs::path repository::default_local_path() noexcept { return dds_data_dir() / "repo"; }
+
+repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
     auto try_read_sdist = [](path_ref p) -> std::optional<sdist> {
         if (starts_with(p.filename().string(), ".")) {
             return std::nullopt;
@@ -40,30 +45,16 @@ auto load_sdists(path_ref root) {
         }
     };
 
-    return
+    auto entries =
         // Get the top-level `name-version` dirs
-        fs::directory_iterator(root)  //
+        view_safe(fs::directory_iterator(dirpath))  //
         // // Convert each dir into an `sdist` object
-        | transform(try_read_sdist)  //
+        | ranges::views::transform(try_read_sdist)  //
         // // Drop items that failed to load
-        | filter([](auto&& opt) { return opt.has_value(); })  //
-        | transform([](auto&& opt) { return *opt; })          //
-        ;
-}
+        | ranges::views::filter([](auto&& opt) { return opt.has_value(); })  //
+        | ranges::views::transform([](auto&& opt) { return *opt; })          //
+        | to<sdist_set>();
 
-}  // namespace
-
-void repository::_log_blocking(path_ref dirpath) noexcept {
-    dds_log(warn, "Another process has the repository directory locked [{}]", dirpath.string());
-    dds_log(warn, "Waiting for repository to be released...");
-}
-
-void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_directories(dirpath); }
-
-fs::path repository::default_local_path() noexcept { return dds_data_dir() / "repo"; }
-
-repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
-    sdist_set entries = load_sdists(dirpath) | to<sdist_set>();
     return {writeable, dirpath, std::move(entries)};
 }
 

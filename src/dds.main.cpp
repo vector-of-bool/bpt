@@ -12,6 +12,7 @@
 #include <dds/util/signal.hpp>
 
 #include <range/v3/action/join.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>

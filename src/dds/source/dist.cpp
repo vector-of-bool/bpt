@@ -10,6 +10,7 @@
 
 #include <neo/assert.hpp>
 #include <range/v3/algorithm/sort.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 
 using namespace dds;

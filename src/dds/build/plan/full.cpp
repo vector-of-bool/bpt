@@ -5,6 +5,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/util/parallel.hpp>
 
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>

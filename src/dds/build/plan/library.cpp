@@ -3,6 +3,7 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>

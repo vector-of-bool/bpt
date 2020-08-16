@@ -7,6 +7,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/ranges.hpp>
 
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
@@ -372,31 +373,31 @@ auto pair_to_pkg_id = [](auto&& pair) {
 };
 
 std::vector<package_id> catalog::all() const noexcept {
-    return sqlite3::exec_iter<std::string, std::string>(  //
+    return view_safe(sqlite3::exec_iter<std::string, std::string>(  //
                _stmt_cache,
-               "SELECT name, version FROM dds_cat_pkgs"_sql)
+               "SELECT name, version FROM dds_cat_pkgs"_sql))
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
 std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
-    return sqlite3::exec_iter<std::string, std::string>(  //
+    return view_safe(sqlite3::exec_iter<std::string, std::string>(  //
                _stmt_cache,
                R"(
                 SELECT name, version
                   FROM dds_cat_pkgs
                  WHERE name = ?
                 )"_sql,
-               std::tie(sv))                        //
+               std::tie(sv)))                       //
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
 std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const noexcept {
     dds_log(trace, "Lookup dependencies of {}@{}", pkg.name, pkg.version.to_string());
-    return sqlite3::exec_iter<std::string,
-                              std::string,
-                              std::string>(  //
+    return view_safe(sqlite3::exec_iter<std::string,
+                                        std::string,
+                                        std::string>(  //
                _stmt_cache,
                R"(
                 WITH this_pkg_id AS (
@@ -409,7 +410,7 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
                 )"_sql,
-               std::forward_as_tuple(pkg.name, pkg.version.to_string()))  //
+               std::forward_as_tuple(pkg.name, pkg.version.to_string())))  //
         | ranges::views::transform([](auto&& pair) {
                auto& [name, low, high] = pair;
                auto dep

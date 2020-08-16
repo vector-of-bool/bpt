@@ -5,6 +5,7 @@
 #include <dds/source/root.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/ranges.hpp>
 
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
@@ -104,8 +105,8 @@ std::vector<library_root> dds::collect_libraries(path_ref root) {
 
     if (fs::is_directory(pf_libs_dir)) {
         extend(ret,
-               fs::directory_iterator(pf_libs_dir)            //
-                   | ranges::views::filter(has_library_dirs)  //
+               view_safe(fs::directory_iterator(pf_libs_dir))  //
+                   | ranges::views::filter(has_library_dirs)   //
                    | ranges::views::transform(
                        [&](auto p) { return library_root::from_directory(fs::canonical(p)); }));
     }
