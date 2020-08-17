@@ -446,7 +446,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                 extend(ret, {"-static-libgcc", "-static-libstdc++"});
             }
             if (runtime_debug.value_or(false)) {
-                extend(ret, {"-D_GLIBCXX_DEBUG"});
+                extend(ret, {"-D_GLIBCXX_DEBUG", "-D_LIBCPP_DEBUG=1"});
             }
         } else {
             // No flags if we don't know the compiler
