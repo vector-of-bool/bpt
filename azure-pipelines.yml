@@ -38,7 +38,7 @@ stages:
           - script: |
               set -eu
               sudo apt update -y
-              sudo apt install -y python3-minimal g++-9 ccache
+              sudo apt install -y python3-minimal python3-setuptools g++-9 ccache
               python3 -m pip install pytest pytest-xdist
             displayName: Prepare System
           - script: make linux-ci
