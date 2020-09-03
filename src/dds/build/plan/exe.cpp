@@ -28,10 +28,6 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
     dds_log(trace, "Add entry point object file: {}", main_obj.string());
     spec.inputs.push_back(std::move(main_obj));
 
-    for (const lm::usage& links : _links) {
-        dds_log(trace, "  - Link with: {}/{}", links.name, links.namespace_);
-        extend(spec.inputs, env.ureqs.link_paths(links));
-    }
     if (lib.archive_plan()) {
         // The associated library has compiled components. Add the static library a as a linker
         // input
@@ -40,6 +36,11 @@ void link_executable_plan::link(build_env_ref env, const library_plan& lib) cons
                               / lib.archive_plan()->calc_archive_file_path(env.toolchain));
     } else {
         dds_log(trace, "Executable has no corresponding archive library input");
+    }
+
+    for (const lm::usage& links : _links) {
+        dds_log(trace, "  - Link with: {}/{}", links.name, links.namespace_);
+        extend(spec.inputs, env.ureqs.link_paths(links));
     }
 
     // Do it!
