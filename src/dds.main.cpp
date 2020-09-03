@@ -452,6 +452,47 @@ struct cli_repo {
 
     struct {
         cli_repo&     parent;
+        args::Command cmd{parent.repo_group,
+                          "import",
+                          "Import a source distribution archive file into the repository"};
+        common_flags  _common{cmd};
+
+        args::PositionalList<dds::fs::path>
+            sdist_paths{cmd, "sdist-path", "Path to one or more source distribution archive"};
+
+        args::Flag force{cmd,
+                         "replace-if-exists",
+                         "Replace an existing package in the repository",
+                         {"replace"}};
+
+        args::Flag import_stdin{cmd,
+                                "import-stdin",
+                                "Import a source distribution tarball from stdin",
+                                {"stdin"}};
+
+        int run() {
+            auto import_sdists = [&](dds::repository repo) {
+                auto if_exists_action
+                    = force.Get() ? dds::if_exists::replace : dds::if_exists::throw_exc;
+                for (auto& tgz_path : sdist_paths.Get()) {
+                    auto tmp_sd = dds::expand_sdist_targz(tgz_path);
+                    repo.add_sdist(tmp_sd.sdist, if_exists_action);
+                }
+                if (import_stdin) {
+                    auto tmp_sd = dds::expand_sdist_from_istream(std::cin, "<stdin>");
+                    repo.add_sdist(tmp_sd.sdist, if_exists_action);
+                }
+                return 0;
+            };
+            return dds::repository::with_repository(parent.where.Get(),
+                                                    dds::repo_flags::write_lock
+                                                        | dds::repo_flags::create_if_absent,
+                                                    import_sdists);
+        }
+    } import_{*this};
+
+    struct {
+        cli_repo&     parent;
         args::Command cmd{parent.repo_group, "init", "Initialize a directory as a repository"};
         common_flags  _common{cmd};
 
@@ -471,6 +512,8 @@ struct cli_repo {
             return ls.run();
         } else if (init.cmd) {
             return init.run();
+        } else if (import_.cmd) {
+            return import_.run();
         } else {
             assert(false);
             std::terminate();
@@ -502,11 +545,7 @@ struct cli_sdist {
 
         common_project_flags project{cmd};
 
-        path_flag out{cmd,
-                      "out",
-                      "The destination of the source distribution",
-                      {"out"},
-                      dds::fs::current_path() / "project.dsd"};
+        path_flag out{cmd, "out", "The destination of the source distribution", {"out"}};
 
         args::Flag force{cmd,
                          "replace-if-exists",
@@ -515,10 +554,23 @@ struct cli_sdist {
 
         int run() {
             dds::sdist_params params;
-            params.project_dir = project.root.Get();
-            params.dest_path   = out.Get();
-            params.force       = force.Get();
-            dds::create_sdist(params);
+            params.project_dir   = project.root.Get();
+            params.dest_path     = out.Get();
+            params.force         = force.Get();
+            params.include_apps  = true;
+            params.include_tests = true;
+            auto pkg_man         = dds::package_manifest::load_from_directory(project.root.Get());
+            if (!pkg_man) {
+                dds::throw_user_error<dds::errc::invalid_pkg_manifest>(
+                    "Creating a source distribution requires a package manifest");
+            }
+            std::string default_filename = fmt::format("{}@{}.tar.gz",
+                                                       pkg_man->pkg_id.name,
+                                                       pkg_man->pkg_id.version.to_string());
+            auto        default_filepath = dds::fs::current_path() / default_filename;
+            auto        out_path         = out.Matched() ? out.Get() : default_filepath;
+            dds::create_sdist_targz(out_path, params);
+            dds_log(info, "Generate source distribution at [{}]", out_path.string());
             return 0;
         }
     } create{*this};

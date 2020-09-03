@@ -3,6 +3,7 @@
 #include <tuple>
 
 #include <dds/package/manifest.hpp>
+#include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 
 namespace dds {
@@ -26,6 +27,11 @@ struct sdist {
     static sdist from_directory(path_ref p);
 };
 
+struct temporary_sdist {
+    temporary_dir tmpdir;
+    struct sdist  sdist;
+};
+
 inline constexpr struct sdist_compare_t {
     bool operator()(const sdist& lhs, const sdist& rhs) const {
         return lhs.manifest.pkg_id < rhs.manifest.pkg_id;
@@ -41,5 +47,9 @@ inline constexpr struct sdist_compare_t {
 
 sdist create_sdist(const sdist_params&);
 sdist create_sdist_in_dir(path_ref, const sdist_params&);
+void  create_sdist_targz(path_ref, const sdist_params&);
+
+temporary_sdist expand_sdist_targz(path_ref targz);
+temporary_sdist expand_sdist_from_istream(std::istream&, std::string_view input_name);
 
 }  // namespace dds

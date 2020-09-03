@@ -1,4 +1,5 @@
 import argparse
+import gzip
 import os
 import json
 import json5
@@ -272,18 +273,26 @@ def many_versions(name: str,
 
 # yapf: disable
 PACKAGES = [
-    github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3', ['0.2.3', '0.3.0']),
-    github_package('neo-fun', 'vector-of-bool/neo-fun', ['0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0']),
+    github_package('neo-buffer', 'vector-of-bool/neo-buffer',
+                   ['0.2.1', '0.3.0', '0.4.0', '0.4.1']),
+    github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0']),
+    github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3',
+                   ['0.2.3', '0.3.0']),
+    github_package('neo-fun', 'vector-of-bool/neo-fun', [
+        '0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0', '0.4.1'
+    ]),
     github_package('neo-concepts', 'vector-of-bool/neo-concepts', (
-            '0.2.2',
-            '0.3.0',
-            '0.3.1',
-            '0.3.2',
-        )),
+        '0.2.2',
+        '0.3.0',
+        '0.3.1',
+        '0.3.2',
+        '0.4.0',
+    )),
     github_package('semver', 'vector-of-bool/semver', ['0.2.2']),
     github_package('pubgrub', 'vector-of-bool/pubgrub', ['0.2.1']),
     github_package('vob-json5', 'vector-of-bool/json5', ['0.1.5']),
-    github_package('vob-semester', 'vector-of-bool/semester', ['0.1.0', '0.1.1', '0.2.0', '0.2.1']),
+    github_package('vob-semester', 'vector-of-bool/semester',
+                   ['0.1.0', '0.1.1', '0.2.0', '0.2.1']),
     many_versions(
         'magic_enum',
         (
@@ -438,6 +447,8 @@ PACKAGES = [
             '6.2.1',
             '7.0.0',
             '7.0.1',
+            '7.0.2',
+            '7.0.3',
         ),
         git_url='https://github.com/fmtlib/fmt.git',
         auto_lib='fmt/fmt',
@@ -568,63 +579,47 @@ PACKAGES = [
                 ('2020.2.25', '20200225.2'),
             ]
         ]),
-    Package(
-        'zlib',
-        [
-            Version(
-                ver,
-                description=
-                'A massively spiffy yet delicately unobtrusive compression library',
-                remote=Git(
-                    'https://github.com/madler/zlib.git',
-                    tag or f'v{ver}',
-                    auto_lib='zlib/zlib',
-                    transforms=[
-                        FSTransform(
-                            move=CopyMoveTransform(
-                                frm='.',
-                                to='src/',
-                                include=[
-                                    '*.c',
-                                    '*.h',
-                                ],
-                            )),
-                        FSTransform(
-                            move=CopyMoveTransform(
-                                frm='src/',
-                                to='include/',
-                                include=['zlib.h', 'zconf.h'],
-                            )),
-                    ]),
-            ) for ver, tag in [
-                ('1.2.11', None),
-                ('1.2.10', None),
-                ('1.2.9', None),
-                ('1.2.8', None),
-                ('1.2.7', 'v1.2.7.3'),
-                ('1.2.6', 'v1.2.6.1'),
-                ('1.2.5', 'v1.2.5.3'),
-                ('1.2.4', 'v1.2.4.5'),
-                ('1.2.3', 'v1.2.3.8'),
-                ('1.2.2', 'v1.2.2.4'),
-                ('1.2.1', 'v1.2.1.2'),
-                ('1.2.0', 'v1.2.0.8'),
-                ('1.1.4', None),
-                ('1.1.3', None),
-                ('1.1.2', None),
-                ('1.1.1', None),
-                ('1.1.0', None),
-                ('1.0.9', None),
-                ('1.0.8', None),
-                ('1.0.7', None),
-                # ('1.0.6', None),  # Does not exist
-                ('1.0.5', None),
-                ('1.0.4', None),
-                # ('1.0.3', None),  # Does not exist
-                ('1.0.2', None),
-                ('1.0.1', None),
-            ]
-        ]),
+    Package('zlib', [
+        Version(
+            ver,
+            description=
+            'A massively spiffy yet delicately unobtrusive compression library',
+            remote=Git(
+                'https://github.com/madler/zlib.git',
+                tag or f'v{ver}',
+                auto_lib='zlib/zlib',
+                transforms=[
+                    FSTransform(
+                        move=CopyMoveTransform(
+                            frm='.',
+                            to='src/',
+                            include=[
+                                '*.c',
+                                '*.h',
+                            ],
+                        )),
+                    FSTransform(
+                        move=CopyMoveTransform(
+                            frm='src/',
+                            to='include/',
+                            include=['zlib.h', 'zconf.h'],
+                        )),
+                ]),
+        ) for ver, tag in [
+            ('1.2.11', None),
+            ('1.2.10', None),
+            ('1.2.9', None),
+            ('1.2.8', None),
+            ('1.2.7', 'v1.2.7.3'),
+            ('1.2.6', 'v1.2.6.1'),
+            ('1.2.5', 'v1.2.5.3'),
+            ('1.2.4', 'v1.2.4.5'),
+            ('1.2.3', 'v1.2.3.8'),
+            ('1.2.2', 'v1.2.2.4'),
+            ('1.2.1', 'v1.2.1.2'),
+            ('1.2.0', 'v1.2.0.8'),
+        ]
+    ]),
     Package('sol2', [
         Version(
             ver,
@@ -954,31 +949,40 @@ if __name__ == "__main__":
         #include <dds/catalog/init_catalog.hpp>
         #include <dds/catalog/import.hpp>
 
+        #include <neo/gzip.hpp>
+        #include <neo/transform_io.hpp>
+        #include <neo/string_io.hpp>
+        #include <neo/inflate.hpp>
+
         /**
-         * The following array of integers is generated and contains the JSON
-         * encoded initial catalog. MSVC can't handle string literals over
+         * The following array of integers is generated and contains gzip-compressed
+         * JSON  encoded initial catalog. MSVC can't handle string literals over
          * 64k large, so we have to resort to using a regular char array:
          */
-        static constexpr const char INIT_PACKAGES_CONTENT[] = {
+        static constexpr const unsigned char INIT_PACKAGES_CONTENT[] = {
         @JSON@
         };
-
-        static constexpr int INIT_PACKAGES_STR_LEN = @JSON_LEN@;
 
         const std::vector<dds::package_info>&
         dds::init_catalog_packages() noexcept {
             using std::nullopt;
-            static auto pkgs = dds::parse_packages_json(
-                std::string_view(INIT_PACKAGES_CONTENT, INIT_PACKAGES_STR_LEN));
+            static auto pkgs = []{
+                using namespace neo;
+                string_dynbuf_io str_out;
+                buffer_copy(str_out,
+                            buffer_transform_source{
+                                buffers_consumer(as_buffer(INIT_PACKAGES_CONTENT)),
+                                gzip_decompressor{inflate_decompressor{}}},
+                            @JSON_LEN@);
+                return dds::parse_packages_json(str_out.read_area_view());
+            }();
             return pkgs;
         }
         ''')
 
     json_small = json.dumps(data, sort_keys=True)
-    json_small_arr = ', '.join(str(ord(c)) for c in json_small)
-
-    json_small_arr = '\n'.join(textwrap.wrap(json_small_arr, width=120))
-    json_small_arr = textwrap.indent(json_small_arr, prefix=' ' * 4)
+    json_compr = gzip.compress(json_small.encode('utf-8'), compresslevel=9)
+    json_small_arr = ','.join(str(c) for c in json_compr)
 
     cpp_content = cpp_template.replace('@JSON@', json_small_arr).replace(
         '@JSON_LEN@', str(len(json_small)))
