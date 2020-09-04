@@ -24,18 +24,19 @@ namespace {
 
 template <typename T, typename Range>
 decltype(auto) pair_up(T& left, Range& right) {
-    auto rep = ranges::view::repeat(left);
-    return ranges::view::zip(rep, right);
+    auto rep = ranges::views::repeat(left);
+    return ranges::views::zip(rep, right);
 }
 
 }  // namespace
 
 void build_plan::render_all(build_env_ref env) const {
-    auto templates = _packages                                                                    //
-        | ranges::view::transform(&package_plan::libraries)                                       //
-        | ranges::view::join                                                                      //
-        | ranges::view::transform([](const auto& lib) { return pair_up(lib, lib.templates()); })  //
-        | ranges::view::join;
+    auto templates = _packages                                //
+        | ranges::views::transform(&package_plan::libraries)  //
+        | ranges::views::join                                 //
+        | ranges::views::transform(
+                         [](const auto& lib) { return pair_up(lib, lib.templates()); })  //
+        | ranges::views::join;
     for (const auto& [lib, tmpl] : templates) {
         tmpl.render(env, lib.library_());
     }
@@ -56,9 +57,9 @@ void build_plan::compile_files(const build_env&             env,
         fs::path filepath;
     };
 
-    auto as_pending =                 //
-        ranges::view::all(filepaths)  //
-        | ranges::view::transform([](auto&& path) {
+    auto as_pending =                  //
+        ranges::views::all(filepaths)  //
+        | ranges::views::transform([](auto&& path) {
               return pending_file{false, fs::weakly_canonical(path)};
           })
         | ranges::to_vector;
@@ -74,10 +75,10 @@ void build_plan::compile_files(const build_env&             env,
     };
 
     auto comps
-        = iter_compilations(*this) | ranges::view::filter(check_compilation) | ranges::to_vector;
+        = iter_compilations(*this) | ranges::views::filter(check_compilation) | ranges::to_vector;
 
     bool any_unmarked = false;
-    auto unmarked     = ranges::view::filter(as_pending, ranges::not_fn(&pending_file::marked));
+    auto unmarked     = ranges::views::filter(as_pending, ranges::not_fn(&pending_file::marked));
     for (auto&& um : unmarked) {
         dds_log(error, "Source file [{}] is not compiled by this project", um.filepath.string());
         any_unmarked = true;
