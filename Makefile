@@ -41,19 +41,19 @@ docs-sync-server:
 macos-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc
+		-T tools/gcc-9-rel.jsonc
 	mv _build/dds _build/dds-macos-x64
 
 linux-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9-static.jsonc
+		-T tools/gcc-9-static-rel.jsonc
 	mv _build/dds _build/dds-linux-x64
 
 nix-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc
+		-T tools/gcc-9-rel.jsonc
 
 vagrant-freebsd-ci:
 	vagrant up freebsd11
@@ -63,7 +63,6 @@ vagrant-freebsd-ci:
 		python3.7 tools/ci.py \
 			-B download \
 			-T tools/freebsd-gcc-9.jsonc \
-			-T2 tools/freebsd-gcc-9.next.jsonc \
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt
