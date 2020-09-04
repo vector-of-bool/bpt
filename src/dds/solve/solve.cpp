@@ -160,7 +160,7 @@ std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
                                    pkg_id_provider_fn             pkgs_prov,
                                    deps_provider_fn               deps_prov) {
     auto wrap_req
-        = deps | ranges::v3::views::transform([](const dependency& dep) { return req_type{dep}; });
+        = deps | ranges::views::transform([](const dependency& dep) { return req_type{dep}; });
 
     try {
         auto solution = pubgrub::solve(wrap_req, solver_provider{pkgs_prov, deps_prov});

@@ -11,10 +11,7 @@
         "-std=c++2a",
     ],
     "link_flags": [
-        "-static-libgcc",
-        "-static-libstdc++"
+        "-static"
     ],
-    // "debug": true,
-    "optimize": true,
-    "compiler_launcher": "ccache"
+    "optimize": true
 }

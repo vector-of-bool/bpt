@@ -69,8 +69,10 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     }
     auto sd_dest = _root / sd.manifest.pkg_id.to_string();
     if (fs::exists(sd_dest)) {
-        auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
-                               sd.path.string());
+        auto msg = fmt::
+            format("Package '{}' (Importing from [{}]) is already available in the local repo",
+                   sd.manifest.pkg_id.to_string(),
+                   sd.path.string());
         if (ife_action == if_exists::throw_exc) {
             throw_user_error<errc::sdist_exists>(msg);
         } else if (ife_action == if_exists::ignore) {

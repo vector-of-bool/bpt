@@ -9,6 +9,7 @@
 #include <libman/parse.hpp>
 
 #include <neo/assert.hpp>
+#include <neo/tar/util.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -82,6 +83,21 @@ sdist dds::create_sdist(const sdist_params& params) {
     return sdist::from_directory(dest);
 }
 
+void dds::create_sdist_targz(path_ref filepath, const sdist_params& params) {
+    if (fs::exists(filepath)) {
+        if (!params.force) {
+            throw_user_error<errc::sdist_exists>("Destination path '{}' already exists",
+                                                 filepath.string());
+        }
+    }
+
+    auto tempdir = temporary_dir::create();
+    dds_log(debug, "Generating source distribution in {}", tempdir.path().string());
+    create_sdist_in_dir(tempdir.path(), params);
+    fs::create_directories(filepath.parent_path());
+    neo::compress_directory_targz(tempdir.path(), filepath);
+}
+
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto libs = collect_libraries(params.project_dir);
 
@@ -112,4 +128,20 @@ sdist sdist::from_directory(path_ref where) {
                "means one of the directories in the repository is not a valid sdist.",
                where.string());
     return sdist{pkg_man.value(), where};
+}
+
+temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
+    auto tempdir = temporary_dir::create();
+    dds_log(debug, "Expanding source ditsribution content into {}", tempdir.path().string());
+    fs::create_directories(tempdir.path());
+    neo::expand_directory_targz(tempdir.path(), targz_path);
+    return {tempdir, sdist::from_directory(tempdir.path())};
+}
+
+temporary_sdist dds::expand_sdist_from_istream(std::istream& is, std::string_view input_name) {
+    auto tempdir = temporary_dir::create();
+    dds_log(debug, "Expanding source ditsribution content into {}", tempdir.path().string());
+    fs::create_directories(tempdir.path());
+    neo::expand_directory_targz(tempdir.path(), is, input_name);
+    return {tempdir, sdist::from_directory(tempdir.path())};
 }

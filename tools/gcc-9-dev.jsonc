@@ -6,14 +6,17 @@
     "warning_flags": [
         "-Werror",
     ],
+    "flags": [
+        "-fsanitize=address,undefined"
+    ],
     "cxx_flags": [
         "-fconcepts",
         "-std=c++2a",
     ],
     "link_flags": [
-        "-static",
+        "-fuse-ld=lld",
+        "-fsanitize=address,undefined"
     ],
-    // "debug": true,
-    "optimize": true,
+    "debug": true,
     "compiler_launcher": "ccache"
 }
