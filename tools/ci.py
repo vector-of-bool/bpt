@@ -75,6 +75,12 @@ def main(argv: Sequence[str]) -> int:
         '--build-only',
         action='store_true',
         help='Only build the `dds` executable. Skip second-phase and tests.')
+    parser.add_argument(
+        '--no-clean',
+        action='store_false',
+        dest='clean',
+        help='Don\'t remove prior build/deps results',
+    )
     args = parser.parse_args(argv)
 
     opts = CIOptions(toolchain=args.toolchain)
@@ -89,11 +95,11 @@ def main(argv: Sequence[str]) -> int:
         assert False, 'impossible'
 
     old_cat_path = paths.PREBUILT_DIR / 'catalog.db'
-    if old_cat_path.is_file():
+    if old_cat_path.is_file() and args.clean:
         old_cat_path.unlink()
 
     ci_repo_dir = paths.PREBUILT_DIR / 'ci-repo'
-    if ci_repo_dir.exists():
+    if ci_repo_dir.exists() and args.clean:
         shutil.rmtree(ci_repo_dir)
 
     self_build(
