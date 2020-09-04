@@ -3494,6 +3494,18 @@
           "transform": [],
           "url": "https://github.com/vector-of-bool/semester.git"
         }
+      },
+      "0.2.2": {
+        "depends": [
+          "neo-fun^0.3.2",
+          "neo-concepts^0.3.2"
+        ],
+        "description": "A generic library for dealing with semistructured data",
+        "git": {
+          "ref": "0.2.2",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/semester.git"
+        }
       }
     },
     "zlib": {

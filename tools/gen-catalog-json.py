@@ -292,7 +292,7 @@ PACKAGES = [
     github_package('pubgrub', 'vector-of-bool/pubgrub', ['0.2.1']),
     github_package('vob-json5', 'vector-of-bool/json5', ['0.1.5']),
     github_package('vob-semester', 'vector-of-bool/semester',
-                   ['0.1.0', '0.1.1', '0.2.0', '0.2.1']),
+                   ['0.1.0', '0.1.1', '0.2.0', '0.2.1', '0.2.2']),
     many_versions(
         'magic_enum',
         (
