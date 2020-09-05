@@ -64,6 +64,7 @@ vagrant-freebsd-ci:
 			-B download \
 			-T tools/freebsd-gcc-10.jsonc \
 		'
+	mkdir -p _build/
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt
 
