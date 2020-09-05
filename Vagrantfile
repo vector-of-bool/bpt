@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
     freebsd11.vm.box = 'generic/freebsd11'
     freebsd11.vm.provision 'shell', inline: <<-SHELL
       set -eu
-      for package in python37 py37-pip ccache gcc9 gcc8 git; do
+      for package in python37 py37-pip ccache gcc10 gcc9 gcc8 git; do
         echo "Installing $package"
         pkg install -qy $package
       done

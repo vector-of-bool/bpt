@@ -62,7 +62,7 @@ vagrant-freebsd-ci:
 		cd /vagrant && \
 		python3.7 tools/ci.py \
 			-B download \
-			-T tools/freebsd-gcc-9.jsonc \
+			-T tools/freebsd-gcc-10.jsonc \
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt
