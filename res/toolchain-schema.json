@@ -5,6 +5,7 @@
     "patternProperties": {
         "^\\$": {}
     },
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
     "definitions": {
         "command_line_flags": {
             "anyOf": [
@@ -98,14 +99,40 @@
             "$ref": "#/definitions/command_line_flags"
         },
         "debug": {
-            "description": "Enable the generation of debug information",
-            "type": "boolean",
-            "default": true
+            "description": "Tweak the generation of debug information",
+            "default": true,
+            "oneOf": [
+                {
+                    "type": "string",
+                    "enum": [
+                        "embedded",
+                        "split"
+                    ]
+                },
+                {
+                    "type": "boolean"
+                }
+            ]
         },
         "optimize": {
             "description": "Optimize generated code",
             "type": "boolean",
             "default": true
+        },
+        "runtime": {
+            "description": "Select the runtime/stdlib modes",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "static": {
+                    "type": "boolean",
+                    "description": "If `true`, enable static stdlib/runtime linking"
+                },
+                "debug": {
+                    "type": "boolean",
+                    "description": "If 'true', enable debug for the stdlib/runtime"
+                }
+            }
         },
         "advanced": {
             "type": "object",

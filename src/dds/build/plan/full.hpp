@@ -46,6 +46,11 @@ public:
     void link_all(const build_env& env, int njobs) const;
 
     /**
+     * Compile the files given in the vector of file paths.
+     */
+    void compile_files(const build_env& env, int njobs, const std::vector<fs::path>& paths) const;
+
+    /**
      * Execute all tests defined in the plan. Returns information for every failed test.
      */
     std::vector<test_failure> run_all_tests(build_env_ref env, int njobs) const;

@@ -271,12 +271,17 @@ Valid ``cxx_version`` values are:
 ``warning_flags``
 -----------------
 
-Provide *additional* compiler flags that should be used to enable warnings. This option is stored separately from ``flags``, as these options may be enabled/disabled separately depending on how ``dds`` is invoked.
+Provide *additional* compiler flags that should be used to enable warnings. This
+option is stored separately from ``flags``, as these options may be
+enabled/disabled separately depending on how ``dds`` is invoked.
 
 .. note::
-    If ``compiler_id`` is provided, a default set of warning flags will be provided when warnings are enabled.
 
-    Adding flags to this toolchain option will *append* flags to the basis warning flag list rather than overwrite them.
+    If ``compiler_id`` is provided, a default set of warning flags will be
+    provided when warnings are enabled.
+
+    Adding flags to this toolchain option will *append* flags to the basis
+    warning flag list rather than overwrite them.
 
 .. seealso::
 
@@ -305,8 +310,52 @@ is ``false``.
 ``debug``
 ---------
 
-Boolean option (``true`` or ``false``) to enable/disable the generation of
-debugging information. Default is ``false``.
+Bool or string. Default is ``false``. If ``true`` or ``"embedded"``, generates
+debug information embedded in the compiled binaries. If ``"split"``, generates
+debug information in a separate file from the binaries.
+
+.. note::
+    ``"split"`` with GCC requires that the compiler support the
+    ``-gsplit-dwarf`` option.
+
+
+``runtime``
+-----------
+
+Select the language runtime/standard library options. Must be an object, and supports two keys:
+
+``static``
+    A boolean. If ``true``, the runtime and standard libraries will be
+    static-linked into the generated binaries. If ``false``, they will be
+    dynamically linked. Default is ``true`` with MSVC, and ``false`` with GCC
+    and Clang.
+
+``debug``
+    A boolean. If ``true``, the debug versions of the runtime and standard
+    library will be compiled and linked into the generated binaries. If
+    ``false``, the default libraries will be used.
+
+    **On MSVC** the default value depends on the top-level ``/debug`` option: If
+    ``/debug`` is not ``false``, then ``/runtime/debug`` defaults to ``true``.
+
+    **On GCC and Clang** the default value is ``false``.
+
+.. note::
+
+    On GNU-like compilers, ``static`` does not generate a static executable, it
+    only statically links the runtime and standard library. To generate a static
+    executable, the ``-static`` option should be added to ``link_flags``.
+
+.. note::
+
+    On GNU and Clang, setting ``/runtime/debug`` to ``true`` will compile all
+    files with the ``_GLIBCXX_DEBUG`` and ``_LIBCPP_DEBUG=1`` preprocessor
+    definitions set. **Translation units compiled with these macros are
+    definitively ABI-incompatible with TUs that have been compiled without these
+    options!!**
+
+    If you link to a static or dynamic library that has not been compiled with
+    the same runtime settings, generated programs will likely crash.
 
 
 ``compiler_launcher``
@@ -373,14 +422,10 @@ Defaults::
         // On GNU-like compilers (GCC, Clang):
         c_compile_file:   "<compiler> -fPIC -pthread [flags] -c [in] -o[out]",
         cxx_compile_file: "<compiler> -fPIC -pthread [flags] -c [in] -o[out]",
-        // When `optimize` is enabled, `-O2` is added as a flag
-        // When `debug` is enabled, `-g` is added as a flag
 
         // On MSVC:
-        c_compile_file:   "cl.exe /MT /nologo /permissive- [flags] /c [in] /Fo[out]",
-        cxx_compile_file: "cl.exe /MT /EHsc /nologo /permissive- [flags] /c [in] /Fo[out]",
-        // When `optimize` is enabled, `/O2` is added as a flag
-        // When `debug` is enabled, `/Z7` and `/DEBUG` are added, and `/MT` becomes `/MTd`
+        c_compile_file:   "cl.exe /nologo /permissive- [flags] /c [in] /Fo[out]",
+        cxx_compile_file: "cl.exe /EHsc /nologo /permissive- [flags] /c [in] /Fo[out]",
     }
 
 
@@ -390,7 +435,7 @@ Defaults::
 Override the *command template* that is used to generate static library archive
 files.
 
-This template expects three placeholders:
+This template expects two placeholders:
 
 - ``[in]`` is the a placeholder for the list of inputs. It must not be attached
   to any other arguments. The list of input paths will be inserted in place of

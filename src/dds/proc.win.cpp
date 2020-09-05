@@ -1,8 +1,10 @@
 #ifdef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/log.hpp>
+
+#include <fmt/core.h>
 #include <neo/assert.hpp>
-#include <spdlog/spdlog.h>
 #include <wil/resource.h>
 
 #include <windows.h>
@@ -25,6 +27,7 @@ namespace {
 
 proc_result dds::run_proc(const proc_options& opts) {
     auto cmd_str = quote_command(opts.command);
+    dds_log(debug, "Spawning subprocess: {}", cmd_str);
 
     ::SECURITY_ATTRIBUTES security = {};
     security.bInheritHandle        = TRUE;

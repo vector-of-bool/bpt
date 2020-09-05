@@ -11,9 +11,7 @@
         "-std=c++2a",
     ],
     "link_flags": [
-        "-static",
+        "-static"
     ],
-    // "debug": true,
-    "optimize": true,
-    "compiler_launcher": "ccache"
+    "optimize": true
 }

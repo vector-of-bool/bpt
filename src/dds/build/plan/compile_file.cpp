@@ -5,8 +5,6 @@
 #include <dds/util/signal.hpp>
 #include <dds/util/time.hpp>
 
-#include <spdlog/spdlog.h>
-
 #include <string>
 #include <vector>
 

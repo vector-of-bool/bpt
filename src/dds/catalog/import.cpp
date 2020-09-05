@@ -1,11 +1,12 @@
 #include "./import.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 
+#include <fmt/core.h>
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
 #include <semester/walk.hpp>
-#include <spdlog/fmt/fmt.h>
 
 #include <optional>
 
@@ -174,6 +175,7 @@ std::vector<package_info> parse_json_v1(const json5::data& data) {
 std::vector<package_info> dds::parse_packages_json(std::string_view content) {
     json5::data data;
     try {
+        dds_log(trace, "Parsing packages JSON data: {}", content);
         data = json5::parse_data(content);
     } catch (const json5::parse_error& e) {
         throw_user_error<errc::invalid_catalog_json>("JSON5 syntax error: {}", e.what());
@@ -194,6 +196,7 @@ std::vector<package_info> dds::parse_packages_json(std::string_view content) {
 
     try {
         if (version == 1.0) {
+            dds_log(trace, "Processing JSON data as v1 data");
             return parse_json_v1(data);
         } else {
             throw_user_error<errc::invalid_catalog_json>("Unknown catalog JSON version '{}'",

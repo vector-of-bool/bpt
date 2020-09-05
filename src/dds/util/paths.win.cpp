@@ -2,8 +2,9 @@
 
 #include "./paths.hpp"
 
-#include <spdlog/spdlog.h>
+#include <dds/util/log.hpp>
 
+#include <cassert>
 #include <cstdlib>
 
 using namespace dds;
@@ -12,7 +13,7 @@ fs::path dds::user_home_dir() {
     static auto ret = []() -> fs::path {
         auto userprofile_env = std::getenv("USERPROFILE");
         if (!userprofile_env) {
-            spdlog::warn("No USERPROFILE environment variable set!");
+            dds_log(warn, "No USERPROFILE environment variable set!");
             return "/";
         }
         return fs::absolute(fs::path(userprofile_env));

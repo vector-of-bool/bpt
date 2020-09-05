@@ -3,17 +3,12 @@
 #include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 
 #include <neo/assert.hpp>
-#include <nlohmann/json.hpp>
-#include <range/v3/algorithm/all_of.hpp>
-#include <range/v3/algorithm/any_of.hpp>
-#include <range/v3/distance.hpp>
-#include <range/v3/numeric/accumulate.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -32,32 +27,9 @@ temporary_sdist do_pull_sdist(const package_info& listing, std::monostate) {
 temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_listing& git) {
     auto tmpdir = dds::temporary_dir::create();
 
-    spdlog::info("Cloning Git repository: {} [{}] ...", git.url, git.ref);
-    git.clone(tmpdir.path());
+    git.pull_to(listing.ident, tmpdir.path());
 
-    for (const auto& tr : git.transforms) {
-        tr.apply_to(tmpdir.path());
-    }
-
-    spdlog::info("Create sdist from clone ...");
-    if (git.auto_lib.has_value()) {
-        spdlog::info("Generating library data automatically");
-
-        auto pkg_strm
-            = dds::open(tmpdir.path() / "package.json5", std::ios::binary | std::ios::out);
-        auto man_json         = nlohmann::json::object();
-        man_json["name"]      = listing.ident.name;
-        man_json["version"]   = listing.ident.version.to_string();
-        man_json["namespace"] = git.auto_lib->namespace_;
-        pkg_strm << nlohmann::to_string(man_json);
-
-        auto lib_strm
-            = dds::open(tmpdir.path() / "library.json5", std::ios::binary | std::ios::out);
-        auto lib_json    = nlohmann::json::object();
-        lib_json["name"] = git.auto_lib->name;
-        lib_strm << nlohmann::to_string(lib_json);
-    }
-
+    dds_log(info, "Create sdist from clone ...");
     sdist_params params;
     params.project_dir = tmpdir.path();
     auto sd_tmp_dir    = dds::temporary_dir::create();
@@ -99,7 +71,7 @@ void dds::get_all(const std::vector<package_id>& pkgs, repository& repo, const c
                             });
 
     auto okay = parallel_run(absent_pkg_infos, 8, [&](package_info inf) {
-        spdlog::info("Download package: {}", inf.ident.to_string());
+        dds_log(info, "Download package: {}", inf.ident.to_string());
         auto             tsd = get_package_sdist(inf);
         std::scoped_lock lk{repo_mut};
         repo.add_sdist(tsd.sdist, if_exists::throw_exc);

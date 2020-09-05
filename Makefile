@@ -20,6 +20,9 @@ docs:
 		-Wqanj8
 	echo "Docs generated to _build/docs"
 
+hugo-docs:
+	env GEN_FOR_HUGO=1 $(MAKE) docs
+
 docs-server: docs
 	echo "Docs are visible on http://localhost:9794/"
 	cd _build/docs && \
@@ -38,19 +41,19 @@ docs-sync-server:
 macos-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc \
-		-T2 tools/gcc-9.next.jsonc \
+		-T tools/gcc-9-rel.jsonc
+	mv _build/dds _build/dds-macos-x64
 
 linux-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc \
-		-T2 tools/gcc-9-static.jsonc
+		-T tools/gcc-9-static-rel.jsonc
+	mv _build/dds _build/dds-linux-x64
 
 nix-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9.jsonc
+		-T tools/gcc-9-rel.jsonc
 
 vagrant-freebsd-ci:
 	vagrant up freebsd11
@@ -59,8 +62,7 @@ vagrant-freebsd-ci:
 		cd /vagrant && \
 		python3.7 tools/ci.py \
 			-B download \
-			-T tools/freebsd-gcc-9.jsonc \
-			-T2 tools/freebsd-gcc-9.next.jsonc \
+			-T tools/freebsd-gcc-10.jsonc \
 		'
 	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
 	vagrant halt

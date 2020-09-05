@@ -104,12 +104,9 @@ class DDS:
         )
 
     def sdist_create(self) -> subprocess.CompletedProcess:
-        return self.run([
-            'sdist',
-            'create',
-            self.project_dir_arg,
-            f'--out={self.build_dir / "created-sdist.sds"}',
-        ])
+        self.build_dir.mkdir(exist_ok=True, parents=True)
+        return self.run(['sdist', 'create', self.project_dir_arg],
+                        cwd=self.build_dir)
 
     def sdist_export(self) -> subprocess.CompletedProcess:
         return self.run([
@@ -118,6 +115,9 @@ class DDS:
             self.project_dir_arg,
             self.repo_dir_arg,
         ])
+
+    def repo_import(self, sdist: Path) -> subprocess.CompletedProcess:
+        return self.run(['repo', self.repo_dir_arg, 'import', sdist])
 
     @property
     def default_builtin_toolchain(self) -> str:

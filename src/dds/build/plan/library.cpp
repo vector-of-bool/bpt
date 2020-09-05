@@ -1,7 +1,9 @@
 #include "./library.hpp"
 
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
 
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
@@ -81,10 +83,15 @@ library_plan library_plan::create(const library_root&             lib,
     // for this library
     std::optional<create_archive_plan> archive_plan;
     if (!lib_compile_files.empty()) {
+        dds_log(debug, "Generating an archive library for {}", qual_name);
         archive_plan.emplace(lib.manifest().name,
                              qual_name,
                              params.out_subdir,
                              std::move(lib_compile_files));
+    } else {
+        dds_log(debug,
+                "Library {} has no compiled inputs, so no archive will be generated",
+                qual_name);
     }
 
     // Collect the paths to linker inputs that should be used when generating executables for this
@@ -92,10 +99,6 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<lm::usage> links;
     extend(links, lib.manifest().uses);
     extend(links, lib.manifest().links);
-
-    // Linker inputs for tests may contain additional code for test execution
-    std::vector<fs::path> link_libs;
-    std::vector<fs::path> test_link_libs = params.test_link_files;
 
     // There may also be additional usage requirements for tests
     auto test_rules = compile_rules.clone();
@@ -107,6 +110,14 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<link_executable_plan> link_executables;
     for (const source_file& source : ranges::views::concat(app_sources, test_sources)) {
         const bool is_test = source.kind == source_kind::test;
+        if (is_test && !params.build_tests) {
+            // This is a test, but we don't want to build tests
+            continue;
+        }
+        if (!is_test && !params.build_apps) {
+            // This is an app, but we don't want to build apps
+            continue;
+        }
         // Pick a subdir based on app/test
         const auto subdir_base = is_test ? params.out_subdir / "test" : params.out_subdir;
         // Put test/app executables in a further subdirectory based on the source file path
@@ -114,11 +125,9 @@ library_plan library_plan::create(const library_root&             lib,
         // Pick compile rules based on app/test
         auto rules = is_test ? test_rules : compile_rules;
         // Pick input libs based on app/test
-        auto& exe_link_libs = is_test ? test_link_libs : link_libs;
-        auto& exe_links     = is_test ? test_links : links;
+        auto& exe_links = is_test ? test_links : links;
         // TODO: Apps/tests should only see the _public_ include dir, not both
-        auto exe = link_executable_plan{exe_link_libs,
-                                        exe_links,
+        auto exe = link_executable_plan{exe_links,
                                         compile_file_plan(rules,
                                                           source,
                                                           qual_name,

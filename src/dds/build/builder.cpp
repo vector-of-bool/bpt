@@ -6,10 +6,9 @@
 #include <dds/compdb.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include <array>
 #include <set>
@@ -24,14 +23,14 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    spdlog::error("Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
+    dds_log(error, "Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
     if (fail.signal) {
-        spdlog::error("Test execution received signal {}", fail.signal);
+        dds_log(error, "Test execution received signal {}", fail.signal);
     }
     if (trim_view(fail.output).empty()) {
-        spdlog::error("(Test executable produced no output");
+        dds_log(error, "(Test executable produced no output");
     } else {
-        spdlog::error("Test output:\n{}[dds - test output end]", fail.output);
+        dds_log(error, "Test output:\n{}[dds - test output end]", fail.output);
     }
 }
 
@@ -84,7 +83,7 @@ prepare_catch2_driver(test_lib test_driver, const build_params& params, build_en
     auto obj_file = plan.calc_object_file_path(env2);
 
     if (!fs::exists(obj_file)) {
-        spdlog::info("Compiling Catch2 test driver (This will only happen once)...");
+        dds_log(info, "Compiling Catch2 test driver (This will only happen once)...");
         compile_all(std::array{plan}, env2, 1);
     }
 
@@ -206,14 +205,15 @@ void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, pat
     }
 }
 
-}  // namespace
-
-void builder::build(const build_params& params) const {
+template <typename Func>
+void with_build_plan(const build_params&              params,
+                     const std::vector<sdist_target>& sdists,
+                     Func&&                           fn) {
     fs::create_directories(params.out_root);
     auto db = database::open(params.out_root / ".dds.db");
 
     state     st;
-    auto      plan  = prepare_build_plan(st, _sdists);
+    auto      plan  = prepare_build_plan(st, sdists);
     auto      ureqs = prepare_ureqs(plan, params.toolchain, params.out_root);
     build_env env{
         params.toolchain,
@@ -240,30 +240,44 @@ void builder::build(const build_params& params) const {
 
     plan.render_all(env);
 
-    dds::stopwatch sw;
-    plan.compile_all(env, params.parallel_jobs);
-    spdlog::info("Compilation completed in {:n}ms", sw.elapsed_ms().count());
+    fn(std::move(env), std::move(plan));
+}
 
-    sw.reset();
-    plan.archive_all(env, params.parallel_jobs);
-    spdlog::info("Archiving completed in {:n}ms", sw.elapsed_ms().count());
+}  // namespace
 
-    sw.reset();
-    plan.link_all(env, params.parallel_jobs);
-    spdlog::info("Runtime binary linking completed in {:n}ms", sw.elapsed_ms().count());
+void builder::compile_files(const std::vector<fs::path>& files, const build_params& params) const {
+    with_build_plan(params, _sdists, [&](build_env_ref env, build_plan plan) {
+        plan.compile_files(env, params.parallel_jobs, files);
+    });
+}
 
-    sw.reset();
-    auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
-    spdlog::info("Test execution finished in {:n}ms", sw.elapsed_ms().count());
+void builder::build(const build_params& params) const {
+    with_build_plan(params, _sdists, [&](build_env_ref env, const build_plan& plan) {
+        dds::stopwatch sw;
+        plan.compile_all(env, params.parallel_jobs);
+        dds_log(info, "Compilation completed in {:L}ms", sw.elapsed_ms().count());
 
-    for (auto& fail : test_failures) {
-        log_failure(fail);
-    }
-    if (!test_failures.empty()) {
-        throw_user_error<errc::test_failure>();
-    }
+        sw.reset();
+        plan.archive_all(env, params.parallel_jobs);
+        dds_log(info, "Archiving completed in {:L}ms", sw.elapsed_ms().count());
 
-    if (params.emit_lmi) {
-        write_lmi(env, plan, params.out_root, *params.emit_lmi);
-    }
+        sw.reset();
+        plan.link_all(env, params.parallel_jobs);
+        dds_log(info, "Runtime binary linking completed in {:L}ms", sw.elapsed_ms().count());
+
+        sw.reset();
+        auto test_failures = plan.run_all_tests(env, params.parallel_jobs);
+        dds_log(info, "Test execution finished in {:L}ms", sw.elapsed_ms().count());
+
+        for (auto& fail : test_failures) {
+            log_failure(fail);
+        }
+        if (!test_failures.empty()) {
+            throw_user_error<errc::test_failure>();
+        }
+
+        if (params.emit_lmi) {
+            write_lmi(env, plan, params.out_root, *params.emit_lmi);
+        }
+    });
 }

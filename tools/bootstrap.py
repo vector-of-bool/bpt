@@ -25,6 +25,7 @@ BOOTSTRAP_PHASES = [
     BootstrapPhase('bootstrap-p4.2', 'g++-8', 'cl.exe'),
     BootstrapPhase('bootstrap-p5.2', 'g++-9', 'cl.exe'),
     BootstrapPhase('0.1.0-alpha.3', 'g++-9', 'cl.exe'),
+    BootstrapPhase('0.1.0-alpha.4', 'g++-9', 'cl.exe'),
 ]
 
 HERE = Path(__file__).parent.absolute()

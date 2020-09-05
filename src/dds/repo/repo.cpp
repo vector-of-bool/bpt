@@ -4,10 +4,10 @@
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/source/dist.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
+#include <dds/util/ranges.hpp>
 #include <dds/util/string.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include <range/v3/action/sort.hpp>
 #include <range/v3/action/unique.hpp>
@@ -20,42 +20,9 @@ using namespace dds;
 
 using namespace ranges;
 
-namespace {
-
-auto load_sdists(path_ref root) {
-    using namespace ranges;
-    using namespace ranges::views;
-
-    auto try_read_sdist = [](path_ref p) -> std::optional<sdist> {
-        if (starts_with(p.filename().string(), ".")) {
-            return std::nullopt;
-        }
-        try {
-            return sdist::from_directory(p);
-        } catch (const std::runtime_error& e) {
-            spdlog::error("Failed to load source distribution from directory '{}': {}",
-                          p.string(),
-                          e.what());
-            return std::nullopt;
-        }
-    };
-
-    return
-        // Get the top-level `name-version` dirs
-        fs::directory_iterator(root)  //
-        // // Convert each dir into an `sdist` object
-        | transform(try_read_sdist)  //
-        // // Drop items that failed to load
-        | filter([](auto&& opt) { return opt.has_value(); })  //
-        | transform([](auto&& opt) { return *opt; })          //
-        ;
-}
-
-}  // namespace
-
 void repository::_log_blocking(path_ref dirpath) noexcept {
-    spdlog::warn("Another process has the repository directory locked [{}]", dirpath.string());
-    spdlog::warn("Waiting for repository to be released...");
+    dds_log(warn, "Another process has the repository directory locked [{}]", dirpath.string());
+    dds_log(warn, "Waiting for repository to be released...");
 }
 
 void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_directories(dirpath); }
@@ -63,13 +30,38 @@ void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_director
 fs::path repository::default_local_path() noexcept { return dds_data_dir() / "repo"; }
 
 repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
-    sdist_set entries = load_sdists(dirpath) | to<sdist_set>();
+    auto try_read_sdist = [](path_ref p) -> std::optional<sdist> {
+        if (starts_with(p.filename().string(), ".")) {
+            return std::nullopt;
+        }
+        try {
+            return sdist::from_directory(p);
+        } catch (const std::runtime_error& e) {
+            dds_log(error,
+                    "Failed to load source distribution from directory '{}': {}",
+                    p.string(),
+                    e.what());
+            return std::nullopt;
+        }
+    };
+
+    auto entries =
+        // Get the top-level `name-version` dirs
+        view_safe(fs::directory_iterator(dirpath))  //
+        // // Convert each dir into an `sdist` object
+        | ranges::views::transform(try_read_sdist)  //
+        // // Drop items that failed to load
+        | ranges::views::filter([](auto&& opt) { return opt.has_value(); })  //
+        | ranges::views::transform([](auto&& opt) { return *opt; })          //
+        | to<sdist_set>();
+
     return {writeable, dirpath, std::move(entries)};
 }
 
 void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     if (!_write_enabled) {
-        spdlog::critical(
+        dds_log(
+            critical,
             "DDS attempted to write into a repository that wasn't opened with a write-lock. This "
             "is a hard bug and should be reported. For the safety and integrity of the local "
             "repository, we'll hard-exit immediately.");
@@ -77,15 +69,17 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     }
     auto sd_dest = _root / sd.manifest.pkg_id.to_string();
     if (fs::exists(sd_dest)) {
-        auto msg = fmt::format("Source distribution '{}' is already available in the local repo",
-                               sd.path.string());
+        auto msg = fmt::
+            format("Package '{}' (Importing from [{}]) is already available in the local repo",
+                   sd.manifest.pkg_id.to_string(),
+                   sd.path.string());
         if (ife_action == if_exists::throw_exc) {
             throw_user_error<errc::sdist_exists>(msg);
         } else if (ife_action == if_exists::ignore) {
-            spdlog::warn(msg);
+            dds_log(warn, msg);
             return;
         } else {
-            spdlog::info(msg + " - Replacing");
+            dds_log(info, msg + " - Replacing");
         }
     }
     auto tmp_copy = sd_dest;
@@ -100,7 +94,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     }
     fs::rename(tmp_copy, sd_dest);
     _sdists.insert(sdist::from_directory(sd_dest));
-    spdlog::info("Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
+    dds_log(info, "Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
 }
 
 const sdist* repository::find(const package_id& pkg) const noexcept {

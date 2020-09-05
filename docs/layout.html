@@ -1,0 +1,30 @@
+---
+title: "{{ title | striptags }}"
+layout: single
+{% if not pagename.endswith('index') -%}
+url: docs/{{pagename}}{{file_suffix}}
+{%- endif %}
+---
+
+<div class="toc global" open>
+  <div class="toc-content" role="navigation" aria-label="global navigation">
+    <div class="toc-header">Contents</div>
+    {{ toctree(maxdepth=5, titles_only=True) }}
+  </div>
+</div>
+
+<div class="toc local" open>
+  <div class="toc-content" role="navigation" aria-label="local navigation">
+    <div class="toc-header">On this page</div>
+    {{ toc }}
+  </div>
+</div>
+
+<div class="page-content">
+  {{ body }}
+  {% if next %}
+  <div class="next-link">
+    Next: <a href="{{ next.link }}">{{ next.title }}</a>
+  </div>
+  {% endif %}
+</div>

@@ -30,8 +30,6 @@ struct library_build_params {
 
     /// Directories that should be on the #include search path when compiling tests
     std::vector<fs::path> test_include_dirs;
-    /// Files that should be added as inputs when linking test executables
-    std::vector<fs::path> test_link_files;
 
     /// Libraries that are used by tests
     std::vector<lm::usage> test_uses;

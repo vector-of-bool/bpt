@@ -2,7 +2,7 @@
 
 #include <libman/util.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 
 #include <cctype>
 #include <fstream>

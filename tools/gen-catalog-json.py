@@ -1,10 +1,17 @@
 import argparse
+import gzip
+import os
 import json
+import json5
 import itertools
-from typing import NamedTuple, Tuple, List, Sequence, Union, Optional, Mapping
+import base64
+from urllib import request, parse as url_parse
+from typing import NamedTuple, Tuple, List, Sequence, Union, Optional, Mapping, Iterable
+import re
 from pathlib import Path
 import sys
 import textwrap
+from concurrent.futures import ThreadPoolExecutor
 
 
 class CopyMoveTransform(NamedTuple):
@@ -117,13 +124,13 @@ RemoteInfo = Union[Git]
 class Version(NamedTuple):
     version: str
     remote: RemoteInfo
-    depends: Mapping[str, str] = {}
+    depends: Sequence[str] = []
     description: str = '(No description provided)'
 
     def to_dict(self) -> dict:
         ret: dict = {
             'description': self.description,
-            'depends': [k + v for k, v in self.depends.items()],
+            'depends': list(self.depends),
         }
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
@@ -132,12 +139,99 @@ class Version(NamedTuple):
 
 class VersionSet(NamedTuple):
     version: str
-    depends: Sequence[Tuple[str, str]]
+    depends: Sequence[str]
 
 
 class Package(NamedTuple):
     name: str
     versions: List[Version]
+
+
+HTTP_POOL = ThreadPoolExecutor(10)
+
+
+def github_http_get(url: str):
+    url_dat = url_parse.urlparse(url)
+    req = request.Request(url)
+    req.add_header('Accept-Encoding', 'application/json')
+    req.add_header('Authorization', f'token {os.environ["GITHUB_API_TOKEN"]}')
+    if url_dat.hostname != 'api.github.com':
+        raise RuntimeError(f'Request is outside of api.github.com [{url}]')
+    resp = request.urlopen(req)
+    if resp.status != 200:
+        raise RuntimeError(
+            f'Request to [{url}] failed [{resp.status} {resp.reason}]')
+    return json5.loads(resp.read())
+
+
+def _get_github_tree_file_content(url: str) -> bytes:
+    json_body = github_http_get(url)
+    content_b64 = json_body['content'].encode()
+    assert json_body['encoding'] == 'base64', json_body
+    content = base64.decodebytes(content_b64)
+    return content
+
+
+def _version_for_github_tag(pkg_name: str, desc: str, clone_url: str,
+                            tag) -> Version:
+    print(f'Loading tag {tag["name"]}')
+    commit = github_http_get(tag['commit']['url'])
+    tree = github_http_get(commit['commit']['tree']['url'])
+
+    tree_content = {t['path']: t for t in tree['tree']}
+    cands = ['package.json', 'package.jsonc', 'package.json5']
+    for cand in cands:
+        if cand in tree_content:
+            package_json_fname = cand
+            break
+    else:
+        raise RuntimeError(
+            f'No package JSON5 file in tag {tag["name"]} for {pkg_name} (One of {tree_content.keys()})'
+        )
+
+    package_json = json5.loads(
+        _get_github_tree_file_content(tree_content[package_json_fname]['url']))
+    version = package_json['version']
+    if pkg_name != package_json['name']:
+        raise RuntimeError(f'package name in repo "{package_json["name"]}" '
+                           f'does not match expected name "{pkg_name}"')
+
+    depends = package_json.get('depends')
+    pairs: Iterable[str]
+    if isinstance(depends, dict):
+        pairs = ((k + v) for k, v in depends.items())
+    elif isinstance(depends, list):
+        pairs = depends
+    elif depends is None:
+        pairs = []
+    else:
+        raise RuntimeError(
+            f'Unknown "depends" object from json file: {depends!r}')
+
+    remote = Git(url=clone_url, ref=tag['name'])
+    return Version(
+        version, description=desc, depends=list(pairs), remote=remote)
+
+
+def github_package(name: str, repo: str, want_tags: Iterable[str]) -> Package:
+    print(f'Downloading repo from {repo}')
+    repo_data = github_http_get(f'https://api.github.com/repos/{repo}')
+    desc = repo_data['description']
+    avail_tags = github_http_get(repo_data['tags_url'])
+
+    missing_tags = set(want_tags) - set(t['name'] for t in avail_tags)
+    if missing_tags:
+        raise RuntimeError(
+            'One or more wanted tags do not exist in '
+            f'the repository "{repo}" (Missing: {missing_tags})')
+
+    tag_items = (t for t in avail_tags if t['name'] in want_tags)
+
+    versions = HTTP_POOL.map(
+        lambda tag: _version_for_github_tag(name, desc, repo_data['clone_url'], tag),
+        tag_items)
+
+    return Package(name, list(versions))
 
 
 def simple_packages(name: str,
@@ -153,8 +247,7 @@ def simple_packages(name: str,
             description=description,
             remote=Git(
                 git_url, tag_fmt.format(ver.version), auto_lib=auto_lib),
-            depends={dep_name: dep_rng
-                     for dep_name, dep_rng in ver.depends}) for ver in versions
+            depends=ver.depends) for ver in versions
     ])
 
 
@@ -178,7 +271,28 @@ def many_versions(name: str,
     ])
 
 
+# yapf: disable
 PACKAGES = [
+    github_package('neo-buffer', 'vector-of-bool/neo-buffer',
+                   ['0.2.1', '0.3.0', '0.4.0', '0.4.1']),
+    github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0']),
+    github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3',
+                   ['0.2.3', '0.3.0']),
+    github_package('neo-fun', 'vector-of-bool/neo-fun', [
+        '0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0', '0.4.1'
+    ]),
+    github_package('neo-concepts', 'vector-of-bool/neo-concepts', (
+        '0.2.2',
+        '0.3.0',
+        '0.3.1',
+        '0.3.2',
+        '0.4.0',
+    )),
+    github_package('semver', 'vector-of-bool/semver', ['0.2.2']),
+    github_package('pubgrub', 'vector-of-bool/pubgrub', ['0.2.1']),
+    github_package('vob-json5', 'vector-of-bool/json5', ['0.1.5']),
+    github_package('vob-semester', 'vector-of-bool/semester',
+                   ['0.1.0', '0.1.1', '0.2.0', '0.2.1', '0.2.2']),
     many_versions(
         'magic_enum',
         (
@@ -218,6 +332,7 @@ PACKAGES = [
             '0.9.0',
             '0.9.1',
             '0.10.0',
+            '0.11.0',
         ),
         git_url='https://github.com/ericniebler/range-v3.git',
         auto_lib='range-v3/range-v3',
@@ -255,104 +370,6 @@ PACKAGES = [
                        'dds/2020.03.16'))
     ]),
     many_versions(
-        'neo-sqlite3',
-        (
-            '0.1.0',
-            '0.2.0',
-            '0.2.1',
-            '0.2.2',
-            '0.2.3',
-            '0.3.0',
-        ),
-        description='A modern and low-level C++ SQLite API',
-        git_url='https://github.com/vector-of-bool/neo-sqlite3.git',
-    ),
-    many_versions(
-        'neo-fun',
-        (
-            '0.1.0',
-            '0.1.1',
-            '0.2.0',
-            '0.2.1',
-            '0.3.0',
-            '0.3.1',
-            '0.3.2',
-        ),
-        description='Some library fundamentals that you might find useful',
-        git_url='https://github.com/vector-of-bool/neo-fun.git',
-    ),
-    many_versions(
-        'neo-concepts',
-        (
-            '0.1.0',
-            '0.2.0',
-            '0.2.1',
-            '0.2.2',
-            '0.3.0',
-            '0.3.1',
-            '0.3.2',
-        ),
-        description=
-        'Minimal C++ concepts library. Contains many definitions from C++20.',
-        git_url='https://github.com/vector-of-bool/neo-concepts.git',
-    ),
-    Package('semver', [
-        Version(
-            '0.2.1',
-            description=
-            'A C++ library that implements Semantic Versioning parsing, emitting, '
-            'types, ordering, and operations. See https://semver.org/',
-            remote=Git('https://github.com/vector-of-bool/semver.git',
-                       '0.2.1')),
-        Version(
-            '0.2.2',
-            description=
-            'A C++ library that implements Semantic Versioning parsing, emitting, '
-            'types, ordering, and operations. See https://semver.org/',
-            remote=Git('https://github.com/vector-of-bool/semver.git',
-                       '0.2.2')),
-    ]),
-    many_versions(
-        'pubgrub',
-        (
-            '0.1.2',
-            '0.2.0',
-            '0.2.1',
-        ),
-        description=
-        'A C++ implementation of the Pubgrub version solving algorithm',
-        git_url='https://github.com/vector-of-bool/pubgrub.git',
-    ),
-    many_versions(
-        'vob-json5',
-        ('0.1.5', ),
-        description='A C++ implementation of a JSON5 parser',
-        git_url='https://github.com/vector-of-bool/json5.git',
-    ),
-    simple_packages(
-        'vob-semester',
-        description='A C++ library to process recursive dynamic data',
-        git_url='https://github.com/vector-of-bool/semester.git',
-        versions=[
-            VersionSet('0.1.0', [
-                ('neo-fun', '^0.1.0'),
-                ('neo-concepts', '^0.2.1'),
-            ]),
-            VersionSet('0.1.1', [
-                ('neo-fun', '^0.1.1'),
-                ('neo-concepts', '^0.2.2'),
-            ]),
-            VersionSet('0.2.0', [
-                ('neo-fun', '^0.3.2'),
-                ('neo-concepts', '^0.3.2'),
-            ]),
-            VersionSet('0.2.1', [
-                ('neo-fun', '^0.3.2'),
-                ('neo-concepts', '^0.3.2'),
-            ]),
-        ],
-    ),
-    many_versions(
         'ctre',
         (
             '2.8.1',
@@ -373,7 +390,7 @@ PACKAGES = [
             Version(
                 ver,
                 description='Fast C++ logging library',
-                depends={'fmt': '+6.0.0'},
+                depends=['fmt+6.0.0'],
                 remote=Git(
                     url='https://github.com/gabime/spdlog.git',
                     ref=f'v{ver}',
@@ -430,6 +447,8 @@ PACKAGES = [
             '6.2.1',
             '7.0.0',
             '7.0.1',
+            '7.0.2',
+            '7.0.3',
         ),
         git_url='https://github.com/fmtlib/fmt.git',
         auto_lib='fmt/fmt',
@@ -560,69 +579,53 @@ PACKAGES = [
                 ('2020.2.25', '20200225.2'),
             ]
         ]),
-    Package(
-        'zlib',
-        [
-            Version(
-                ver,
-                description=
-                'A massively spiffy yet delicately unobtrusive compression library',
-                remote=Git(
-                    'https://github.com/madler/zlib.git',
-                    tag or f'v{ver}',
-                    auto_lib='zlib/zlib',
-                    transforms=[
-                        FSTransform(
-                            move=CopyMoveTransform(
-                                frm='.',
-                                to='src/',
-                                include=[
-                                    '*.c',
-                                    '*.h',
-                                ],
-                            )),
-                        FSTransform(
-                            move=CopyMoveTransform(
-                                frm='src/',
-                                to='include/',
-                                include=['zlib.h', 'zconf.h'],
-                            )),
-                    ]),
-            ) for ver, tag in [
-                ('1.2.11', None),
-                ('1.2.10', None),
-                ('1.2.9', None),
-                ('1.2.8', None),
-                ('1.2.7', 'v1.2.7.3'),
-                ('1.2.6', 'v1.2.6.1'),
-                ('1.2.5', 'v1.2.5.3'),
-                ('1.2.4', 'v1.2.4.5'),
-                ('1.2.3', 'v1.2.3.8'),
-                ('1.2.2', 'v1.2.2.4'),
-                ('1.2.1', 'v1.2.1.2'),
-                ('1.2.0', 'v1.2.0.8'),
-                ('1.1.4', None),
-                ('1.1.3', None),
-                ('1.1.2', None),
-                ('1.1.1', None),
-                ('1.1.0', None),
-                ('1.0.9', None),
-                ('1.0.8', None),
-                ('1.0.7', None),
-                # ('1.0.6', None),  # Does not exist
-                ('1.0.5', None),
-                ('1.0.4', None),
-                # ('1.0.3', None),  # Does not exist
-                ('1.0.2', None),
-                ('1.0.1', None),
-            ]
-        ]),
+    Package('zlib', [
+        Version(
+            ver,
+            description=
+            'A massively spiffy yet delicately unobtrusive compression library',
+            remote=Git(
+                'https://github.com/madler/zlib.git',
+                tag or f'v{ver}',
+                auto_lib='zlib/zlib',
+                transforms=[
+                    FSTransform(
+                        move=CopyMoveTransform(
+                            frm='.',
+                            to='src/',
+                            include=[
+                                '*.c',
+                                '*.h',
+                            ],
+                        )),
+                    FSTransform(
+                        move=CopyMoveTransform(
+                            frm='src/',
+                            to='include/',
+                            include=['zlib.h', 'zconf.h'],
+                        )),
+                ]),
+        ) for ver, tag in [
+            ('1.2.11', None),
+            ('1.2.10', None),
+            ('1.2.9', None),
+            ('1.2.8', None),
+            ('1.2.7', 'v1.2.7.3'),
+            ('1.2.6', 'v1.2.6.1'),
+            ('1.2.5', 'v1.2.5.3'),
+            ('1.2.4', 'v1.2.4.5'),
+            ('1.2.3', 'v1.2.3.8'),
+            ('1.2.2', 'v1.2.2.4'),
+            ('1.2.1', 'v1.2.1.2'),
+            ('1.2.0', 'v1.2.0.8'),
+        ]
+    ]),
     Package('sol2', [
         Version(
             ver,
             description=
             'A C++ <-> Lua API wrapper with advanced features and top notch performance',
-            depends={'lua': '+0.0.0'},
+            depends=['lua+0.0.0'],
             remote=Git(
                 'https://github.com/ThePhD/sol2.git',
                 f'v{ver}',
@@ -814,6 +817,7 @@ PACKAGES = [
             '1.3.0',
             # '1.3.2',  # Wrong tag name in upstream
             '1.3.3',
+            '2.0.0',
         ],
         tag_fmt='v{}',
         git_url='https://github.com/marzer/tomlplusplus.git',
@@ -831,7 +835,7 @@ PACKAGES = [
         *(Version(
             ver,
             description='A Template Engine for Modern C++',
-            depends={'nlohmann-json': '+0.0.0'},
+            depends=['nlohmann-json+0.0.0'],
             remote=Git(
                 'https://github.com/pantor/inja.git',
                 f'v{ver}',
@@ -923,6 +927,7 @@ PACKAGES = [
         transforms=[FSTransform(remove=RemoveTransform(path='src/'))],
     ),
 ]
+# yapf: enable
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -944,31 +949,40 @@ if __name__ == "__main__":
         #include <dds/catalog/init_catalog.hpp>
         #include <dds/catalog/import.hpp>
 
+        #include <neo/gzip.hpp>
+        #include <neo/transform_io.hpp>
+        #include <neo/string_io.hpp>
+        #include <neo/inflate.hpp>
+
         /**
-         * The following array of integers is generated and contains the JSON
-         * encoded initial catalog. MSVC can't handle string literals over
+         * The following array of integers is generated and contains gzip-compressed
+         * JSON  encoded initial catalog. MSVC can't handle string literals over
          * 64k large, so we have to resort to using a regular char array:
          */
-        static constexpr const char INIT_PACKAGES_CONTENT[] = {
+        static constexpr const unsigned char INIT_PACKAGES_CONTENT[] = {
         @JSON@
         };
-
-        static constexpr int INIT_PACKAGES_STR_LEN = @JSON_LEN@;
 
         const std::vector<dds::package_info>&
         dds::init_catalog_packages() noexcept {
             using std::nullopt;
-            static auto pkgs = dds::parse_packages_json(
-                std::string_view(INIT_PACKAGES_CONTENT, INIT_PACKAGES_STR_LEN));
+            static auto pkgs = []{
+                using namespace neo;
+                string_dynbuf_io str_out;
+                buffer_copy(str_out,
+                            buffer_transform_source{
+                                buffers_consumer(as_buffer(INIT_PACKAGES_CONTENT)),
+                                gzip_decompressor{inflate_decompressor{}}},
+                            @JSON_LEN@);
+                return dds::parse_packages_json(str_out.read_area_view());
+            }();
             return pkgs;
         }
         ''')
 
     json_small = json.dumps(data, sort_keys=True)
-    json_small_arr = ', '.join(str(ord(c)) for c in json_small)
-
-    json_small_arr = '\n'.join(textwrap.wrap(json_small_arr, width=120))
-    json_small_arr = textwrap.indent(json_small_arr, prefix=' ' * 4)
+    json_compr = gzip.compress(json_small.encode('utf-8'), compresslevel=9)
+    json_small_arr = ','.join(str(c) for c in json_compr)
 
     cpp_content = cpp_template.replace('@JSON@', json_small_arr).replace(
         '@JSON_LEN@', str(len(json_small)))

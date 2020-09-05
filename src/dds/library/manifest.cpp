@@ -7,7 +7,6 @@
 #include <json5/parse_data.hpp>
 #include <range/v3/view/transform.hpp>
 #include <semester/decomp.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 

@@ -1,47 +1,90 @@
 # Refer: https://aka.ms/yaml
 
-jobs:
+variables:
+  shouldDeploy: >-
+    ${{ or(
+      eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+      eq(variables['Build.SourceBranch'], 'refs/heads/master')
+    ) }}
+  deployDest: ${{ format('~/web/{0}/', variables['Build.SourceBranchName']) }}
 
-  - job: Windows_MSVC_VS2019
-    pool:
-      vmImage: windows-2019
-    steps:
-      - script: |
-          echo Loading VS environment
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
-          echo Executing Build and Tests
-          reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
-          python -m pip install pytest pytest-xdist || exit 1
-          python -u tools/ci.py -B download -T tools\msvc.jsonc -T2 tools\msvc.next.jsonc || exit 1
-        displayName: Full CI
-      - publish: _build/dds.exe
-        artifact: DDS Executable - Windows VS2019
+stages:
+  - stage: build_test
+    displayName: Build and Test
+    jobs:
+      - job: win_vs2019
+        displayName: Windows - VS 2019
+        pool:
+          vmImage: windows-2019
+        steps:
+          - script: |
+              echo Loading VS environment
+              call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
+              echo Executing Build and Tests
+              reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
+              python -m pip install pytest pytest-xdist || exit 1
+              python -u tools/ci.py -B download -T tools\msvc.jsonc || exit 1
+              move _build\dds.exe _build\dds-win-x64.exe || exit 1
+            displayName: Build and Test
+          - publish: _build\dds-win-x64.exe
+            displayName: Publish
+            artifact: dds-win-x64
 
-  - job: Linux_GCC9
-    pool:
-      vmImage: ubuntu-18.04
-    steps:
-      - script: |
-          set -eu
-          sudo apt update -y
-          sudo apt install -y python3-minimal g++-9 ccache
-          python3 -m pip install pytest pytest-xdist
-        displayName: Prepare System
-      - script: make linux-ci
-        displayName: Full CI
-      - publish: _build/dds
-        artifact: DDS Executable - Linux
+      - job: linux_gcc9
+        displayName: Linux - GCC 9
+        pool:
+          vmImage: ubuntu-18.04
+        steps:
+          - script: |
+              set -eu
+              sudo apt update -y
+              sudo apt install -y python3-minimal python3-setuptools g++-9 ccache
+              python3 -m pip install pytest pytest-xdist
+            displayName: Prepare System
+          - script: make linux-ci
+            displayName: Build and Test
+          - publish: _build/dds-linux-x64
+            displayName: Publish
+            artifact: dds-linux-x64
 
-  - job: macOS_GCC9
-    pool:
-      vmImage: macOS-10.14
-    steps:
-      - script: brew install gcc@9 ccache
-        displayName: Prepare System
-      - script: |
-          set -eu
-          python3 -m pip install pytest pytest-xdist
-          make macos-ci
-        displayName: Build and Run Unit Tests
-      - publish: _build/dds
-        artifact: DDS Executable - macOS
+      - job: macos_gcc9
+        displayName: macOS - GCC 9
+        pool:
+          vmImage: macOS-10.14
+        steps:
+          - script: brew install gcc@9 ccache
+            displayName: Prepare System
+          - script: |
+              set -eu
+              python3 -m pip install pytest pytest-xdist
+              make macos-ci
+            displayName: Build and Test
+          - publish: _build/dds-macos-x64
+            displayName: Publish
+            artifact: dds-macos-x64
+
+  - stage: deploy_build
+    displayName: Deploy
+    condition: and(succeeded(), eq(variables.shouldDeploy, 'true'))
+    jobs:
+      - job: deploy
+        displayName: Deploy (${{variables['Build.SourceBranch']}})
+        steps:
+          - checkout: none
+          - task: DownloadPipelineArtifact@2
+            displayName: Download builds
+            inputs:
+              targetPath: art-dirs/
+          - bash: |
+              set -eu
+              mkdir -p art/
+              mv -- $(find art-dirs/ -type f) art/
+            displayName: Rearrange
+          - task: CopyFilesOverSSH@0
+            displayName: Post builds
+            inputs:
+              sshEndpoint: dds.pizza
+              sourceFolder: art/
+              targetFolder: ${{ variables.deployDest }}
+              failOnEmptySource: true
+              overwrite: true

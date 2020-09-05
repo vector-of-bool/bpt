@@ -1,20 +1,22 @@
 {
     "$schema": "../res/toolchain-schema.json",
     "compiler_id": "gnu",
-    "c_compiler": "gcc9",
-    "cxx_compiler": "g++9",
+    "c_compiler": "gcc-9",
+    "cxx_compiler": "g++-9",
     "warning_flags": [
         "-Werror",
+    ],
+    "flags": [
+        "-fsanitize=address,undefined"
     ],
     "cxx_flags": [
         "-fconcepts",
         "-std=c++2a",
     ],
     "link_flags": [
-        "-static-libgcc",
-        "-static-libstdc++",
+        "-fuse-ld=lld",
+        "-fsanitize=address,undefined"
     ],
-    // "debug": true,
-    "optimize": true,
+    "debug": true,
     "compiler_launcher": "ccache"
 }

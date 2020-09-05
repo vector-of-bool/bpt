@@ -4,14 +4,15 @@
 #include <dds/library/root.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/log.hpp>
 
 #include <libman/parse.hpp>
 
 #include <neo/assert.hpp>
+#include <neo/tar/util.hpp>
 #include <range/v3/algorithm/sort.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
-
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -19,7 +20,7 @@ namespace {
 
 void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     auto relpath = fs::relative(filepath, in_root);
-    spdlog::debug("Export file {}", relpath.string());
+    dds_log(debug, "Export file {}", relpath.string());
     auto dest = out_root / relpath;
     fs::create_directories(dest.parent_path());
     fs::copy(filepath, dest);
@@ -53,7 +54,7 @@ void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_
     }
     sdist_export_file(out_root, params.project_dir, *lib_man_path);
 
-    spdlog::info("sdist: Export library from {}", lib.path().string());
+    dds_log(info, "sdist: Export library from {}", lib.path().string());
     fs::create_directories(out_root);
     for (const auto& source : sources_to_keep) {
         sdist_export_file(out_root, params.project_dir, source.path);
@@ -78,8 +79,23 @@ sdist dds::create_sdist(const sdist_params& params) {
     }
     fs::create_directories(dest.parent_path());
     safe_rename(tempdir.path(), dest);
-    spdlog::info("Source distribution created in {}", dest.string());
+    dds_log(info, "Source distribution created in {}", dest.string());
     return sdist::from_directory(dest);
+}
+
+void dds::create_sdist_targz(path_ref filepath, const sdist_params& params) {
+    if (fs::exists(filepath)) {
+        if (!params.force) {
+            throw_user_error<errc::sdist_exists>("Destination path '{}' already exists",
+                                                 filepath.string());
+        }
+    }
+
+    auto tempdir = temporary_dir::create();
+    dds_log(debug, "Generating source distribution in {}", tempdir.path().string());
+    create_sdist_in_dir(tempdir.path(), params);
+    fs::create_directories(filepath.parent_path());
+    neo::compress_directory_targz(tempdir.path(), filepath);
 }
 
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
@@ -99,7 +115,7 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 
     auto pkg_man = package_manifest::load_from_file(*man_path);
     sdist_export_file(out, params.project_dir, *man_path);
-    spdlog::info("Generated export as {}", pkg_man.pkg_id.to_string());
+    dds_log(info, "Generated export as {}", pkg_man.pkg_id.to_string());
     return sdist::from_directory(out);
 }
 
@@ -112,4 +128,20 @@ sdist sdist::from_directory(path_ref where) {
                "means one of the directories in the repository is not a valid sdist.",
                where.string());
     return sdist{pkg_man.value(), where};
+}
+
+temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
+    auto tempdir = temporary_dir::create();
+    dds_log(debug, "Expanding source ditsribution content into {}", tempdir.path().string());
+    fs::create_directories(tempdir.path());
+    neo::expand_directory_targz(tempdir.path(), targz_path);
+    return {tempdir, sdist::from_directory(tempdir.path())};
+}
+
+temporary_sdist dds::expand_sdist_from_istream(std::istream& is, std::string_view input_name) {
+    auto tempdir = temporary_dir::create();
+    dds_log(debug, "Expanding source ditsribution content into {}", tempdir.path().string());
+    fs::create_directories(tempdir.path());
+    neo::expand_directory_targz(tempdir.path(), is, input_name);
+    return {tempdir, sdist::from_directory(tempdir.path())};
 }

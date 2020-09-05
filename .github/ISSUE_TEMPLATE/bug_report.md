@@ -55,7 +55,7 @@ List the platform(s) and toolsets which are applicable to the issue, and all of 
 
  - Operating System: [e.g. macOS, Linux, Windows]
  - Compiler: [e.g. MSVC, GCC, Clang]
- - `dds` Version: [e.g. `0.1.0-alpha.2`]
+ - `dds` Version: [e.g. `0.1.0-alpha.5`]
 
 **Additional context**
 

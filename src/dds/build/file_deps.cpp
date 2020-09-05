@@ -2,12 +2,13 @@
 
 #include <dds/db/database.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/shlex.hpp>
 #include <dds/util/string.hpp>
 
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -26,14 +27,15 @@ file_deps_info dds::parse_mkfile_deps_str(std::string_view str) {
     auto iter  = split.begin();
     auto stop  = split.end();
     if (iter == stop) {
-        spdlog::critical(
-            "Invalid deps listing. Shell split was empty. This is almost certainly a bug.");
+        dds_log(critical,
+                "Invalid deps listing. Shell split was empty. This is almost certainly a bug.");
         return ret;
     }
     auto& head = *iter;
     ++iter;
     if (!ends_with(head, ":")) {
-        spdlog::critical(
+        dds_log(
+            critical,
             "Invalid deps listing. Leader item is not colon-terminated. This is probably a bug. "
             "(Are you trying to use C++ Modules? That's not ready yet, sorry. Set `Deps-Mode` to "
             "`None` in your toolchain file.)");

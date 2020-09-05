@@ -2,7 +2,7 @@
 
 #include <libman/parse.hpp>
 
-#include <spdlog/spdlog.h>
+#include <fmt/core.h>
 
 using namespace lm;
 

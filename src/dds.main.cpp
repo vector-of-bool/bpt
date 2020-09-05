@@ -7,16 +7,18 @@
 #include <dds/source/dist.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
 
 #include <range/v3/action/join.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>
+#include <spdlog/spdlog.h>
 
 #include <dds/3rd/args.hxx>
-#include <spdlog/spdlog.h>
 
 #include <filesystem>
 #include <iostream>
@@ -105,6 +107,22 @@ struct cli_base {
                              "test",
                              "Print `yes` and exit 0. Useful for scripting.",
                              {"are-you-the-real-dds?"}};
+
+    args::MapFlag<std::string, dds::log::level> log_level{
+        parser,
+        "log-level",
+        "Set the logging level",
+        {"log-level", 'l'},
+        {
+            {"trace", dds::log::level::trace},
+            {"debug", dds::log::level::debug},
+            {"info", dds::log::level::info},
+            {"warn", dds::log::level::warn},
+            {"error", dds::log::level::error},
+            {"critical", dds::log::level::critical},
+        },
+        dds::log::level::info,
+    };
 
     args::Group cmd_group{parser, "Available Commands"};
 };
@@ -226,7 +244,7 @@ struct cli_catalog {
                 auto tsd      = dds::get_package_sdist(*info);
                 auto out_path = out.Get();
                 auto dest     = out_path / id.to_string();
-                spdlog::info("Create sdist at {}", dest.string());
+                dds_log(info, "Create sdist at {}", dest.string());
                 dds::fs::remove_all(dest);
                 dds::safe_rename(tsd.sdist.path, dest);
             }
@@ -341,14 +359,14 @@ struct cli_catalog {
             auto cat   = cat_path.open();
             auto pkg   = cat.get(pk_id);
             if (!pkg) {
-                spdlog::error("No package '{}' in the catalog", pk_id.to_string());
+                dds_log(error, "No package '{}' in the catalog", pk_id.to_string());
                 return 1;
             }
             std::cout << "Name:     " << pkg->ident.name << '\n'
                       << "Version:  " << pkg->ident.version << '\n';
 
             for (const auto& dep : pkg->deps) {
-                std::cout << "Depends: " << dep.to_string() << '\n';
+                std::cout << "Depends:  " << dep.to_string() << '\n';
             }
 
             std::visit([&](const auto& remote) { print_remote_info(remote); }, pkg->remote);
@@ -418,9 +436,9 @@ struct cli_repo {
                                    });
 
                 for (const auto& [name, grp] : grp_by_name) {
-                    spdlog::info("{}:", name);
+                    dds_log(info, "{}:", name);
                     for (const dds::sdist& sd : grp) {
-                        spdlog::info("  - {}", sd.manifest.pkg_id.version.to_string());
+                        dds_log(info, "  - {}", sd.manifest.pkg_id.version.to_string());
                     }
                 }
 
@@ -431,6 +449,47 @@ struct cli_repo {
                                                     list_contents);
         }
     } ls{*this};
+
+    struct {
+        cli_repo&     parent;
+        args::Command cmd{parent.repo_group,
+                          "import",
+                          "Import a source distribution archive file into the repository"};
+        common_flags  _common{cmd};
+
+        args::PositionalList<dds::fs::path>
+            sdist_paths{cmd, "sdist-path", "Path to one or more source distribution archive"};
+
+        args::Flag force{cmd,
+                         "replace-if-exists",
+                         "Replace an existing package in the repository",
+                         {"replace"}};
+
+        args::Flag import_stdin{cmd,
+                                "import-stdin",
+                                "Import a source distribution tarball from stdin",
+                                {"stdin"}};
+
+        int run() {
+            auto import_sdists = [&](dds::repository repo) {
+                auto if_exists_action
+                    = force.Get() ? dds::if_exists::replace : dds::if_exists::throw_exc;
+                for (auto& tgz_path : sdist_paths.Get()) {
+                    auto tmp_sd = dds::expand_sdist_targz(tgz_path);
+                    repo.add_sdist(tmp_sd.sdist, if_exists_action);
+                }
+                if (import_stdin) {
+                    auto tmp_sd = dds::expand_sdist_from_istream(std::cin, "<stdin>");
+                    repo.add_sdist(tmp_sd.sdist, if_exists_action);
+                }
+                return 0;
+            };
+            return dds::repository::with_repository(parent.where.Get(),
+                                                    dds::repo_flags::write_lock
+                                                        | dds::repo_flags::create_if_absent,
+                                                    import_sdists);
+        }
+    } import_{*this};
 
     struct {
         cli_repo&     parent;
@@ -453,6 +512,8 @@ struct cli_repo {
             return ls.run();
         } else if (init.cmd) {
             return init.run();
+        } else if (import_.cmd) {
+            return import_.run();
         } else {
             assert(false);
             std::terminate();
@@ -484,11 +545,7 @@ struct cli_sdist {
 
         common_project_flags project{cmd};
 
-        path_flag out{cmd,
-                      "out",
-                      "The destination of the source distribution",
-                      {"out"},
-                      dds::fs::current_path() / "project.dsd"};
+        path_flag out{cmd, "out", "The destination of the source distribution", {"out"}};
 
         args::Flag force{cmd,
                          "replace-if-exists",
@@ -497,10 +554,23 @@ struct cli_sdist {
 
         int run() {
             dds::sdist_params params;
-            params.project_dir = project.root.Get();
-            params.dest_path   = out.Get();
-            params.force       = force.Get();
-            dds::create_sdist(params);
+            params.project_dir   = project.root.Get();
+            params.dest_path     = out.Get();
+            params.force         = force.Get();
+            params.include_apps  = true;
+            params.include_tests = true;
+            auto pkg_man         = dds::package_manifest::load_from_directory(project.root.Get());
+            if (!pkg_man) {
+                dds::throw_user_error<dds::errc::invalid_pkg_manifest>(
+                    "Creating a source distribution requires a package manifest");
+            }
+            std::string default_filename = fmt::format("{}@{}.tar.gz",
+                                                       pkg_man->pkg_id.name,
+                                                       pkg_man->pkg_id.version.to_string());
+            auto        default_filepath = dds::fs::current_path() / default_filename;
+            auto        out_path         = out.Matched() ? out.Get() : default_filepath;
+            dds::create_sdist_targz(out_path, params);
+            dds_log(info, "Generate source distribution at [{}]", out_path.string());
             return 0;
         }
     } create{*this};
@@ -555,6 +625,113 @@ struct cli_sdist {
     }
 };
 
+void load_project_deps(dds::builder&                bd,
+                       const dds::package_manifest& man,
+                       dds::path_ref                cat_path,
+                       dds::path_ref                repo_path) {
+    auto cat = dds::catalog::open(cat_path);
+    // Build the dependencies
+    dds::repository::with_repository(  //
+        repo_path,
+        dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
+        [&](dds::repository repo) {
+            // Download dependencies
+            auto deps = repo.solve(man.dependencies, cat);
+            dds::get_all(deps, repo, cat);
+            for (const dds::package_id& pk : deps) {
+                auto sdist_ptr = repo.find(pk);
+                assert(sdist_ptr);
+                dds::sdist_build_params deps_params;
+                deps_params.subdir
+                    = dds::fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
+                bd.add(*sdist_ptr, deps_params);
+            }
+        });
+}
+
+dds::builder create_project_builder(dds::path_ref                  pr_dir,
+                                    dds::path_ref                  cat_path,
+                                    dds::path_ref                  repo_path,
+                                    bool                           load_deps,
+                                    const dds::sdist_build_params& project_params) {
+    auto man = dds::package_manifest::load_from_directory(pr_dir).value_or(dds::package_manifest{});
+
+    dds::builder builder;
+    if (load_deps) {
+        load_project_deps(builder, man, cat_path, repo_path);
+    }
+    builder.add(dds::sdist{std::move(man), pr_dir}, project_params);
+    return builder;
+}
+
+/*
+ ######   #######  ##     ## ########  #### ##       ########
+##    ## ##     ## ###   ### ##     ##  ##  ##       ##
+##       ##     ## #### #### ##     ##  ##  ##       ##
+##       ##     ## ## ### ## ########   ##  ##       ######
+##       ##     ## ##     ## ##         ##  ##       ##
+##    ## ##     ## ##     ## ##         ##  ##       ##
+ ######   #######  ##     ## ##        #### ######## ########
+*/
+
+struct cli_compile_file {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "compile-file", "Compile a single file"};
+
+    common_flags _flags{cmd};
+
+    common_project_flags project{cmd};
+
+    catalog_path_flag cat_path{cmd};
+    repo_path_flag    repo_path{cmd};
+
+    args::Flag     no_warnings{cmd, "no-warnings", "Disable compiler warnings", {"no-warnings"}};
+    toolchain_flag tc_filepath{cmd};
+
+    path_flag
+        lm_index{cmd,
+                 "lm_index",
+                 "Path to an existing libman index from which to load deps (usually INDEX.lmi)",
+                 {"lm-index", 'I'}};
+
+    num_jobs_flag n_jobs{cmd};
+
+    path_flag out{cmd,
+                  "out",
+                  "The root build directory",
+                  {"out"},
+                  dds::fs::current_path() / "_build"};
+
+    args::PositionalList<dds::fs::path> source_files{cmd,
+                                                     "source-files",
+                                                     "One or more source files to compile"};
+
+    int run() {
+        dds::sdist_build_params main_params = {
+            .subdir          = "",
+            .build_tests     = true,
+            .build_apps      = true,
+            .enable_warnings = !no_warnings.Get(),
+        };
+        auto bd = create_project_builder(project.root.Get(),
+                                         cat_path.Get(),
+                                         repo_path.Get(),
+                                         /* load_deps = */ !lm_index,
+                                         main_params);
+
+        bd.compile_files(source_files.Get(),
+                         {
+                             .out_root = out.Get(),
+                             .existing_lm_index
+                             = lm_index ? std::make_optional(lm_index.Get()) : std::nullopt,
+                             .emit_lmi      = {},
+                             .toolchain     = tc_filepath.get_toolchain(),
+                             .parallel_jobs = n_jobs.Get(),
+                         });
+        return 0;
+    }
+};
+
 /*
 ########  ##     ## #### ##       ########
 ##     ## ##     ##  ##  ##       ##     ##
@@ -596,45 +773,26 @@ struct cli_build {
                   dds::fs::current_path() / "_build"};
 
     int run() {
-        dds::build_params params;
-        params.out_root      = out.Get();
-        params.toolchain     = tc_filepath.get_toolchain();
-        params.parallel_jobs = n_jobs.Get();
+        dds::sdist_build_params main_params = {
+            .subdir          = "",
+            .build_tests     = !no_tests.Get(),
+            .run_tests       = !no_tests.Get(),
+            .build_apps      = !no_apps.Get(),
+            .enable_warnings = !no_warnings.Get(),
+        };
+        auto bd = create_project_builder(project.root.Get(),
+                                         cat_path.Get(),
+                                         repo_path.Get(),
+                                         /* load_deps = */ !lm_index,
+                                         main_params);
 
-        auto man = dds::package_manifest::load_from_directory(project.root.Get())
-                       .value_or(dds::package_manifest{});
-
-        dds::builder            bd;
-        dds::sdist_build_params main_params;
-        main_params.build_apps      = !no_apps.Get();
-        main_params.enable_warnings = !no_warnings.Get();
-        main_params.run_tests = main_params.build_tests = !no_tests.Get();
-
-        bd.add(dds::sdist{man, project.root.Get()}, main_params);
-        if (lm_index) {
-            params.existing_lm_index = lm_index.Get();
-        } else {
-            // Download and build dependencies
-            // Build the dependencies
-            auto cat = cat_path.open();
-            dds::repository::with_repository(  //
-                this->repo_path.Get(),
-                dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
-                [&](dds::repository repo) {
-                    // Download dependencies
-                    auto deps = repo.solve(man.dependencies, cat);
-                    dds::get_all(deps, repo, cat);
-                    for (const dds::package_id& pk : deps) {
-                        auto sdist_ptr = repo.find(pk);
-                        assert(sdist_ptr);
-                        dds::sdist_build_params deps_params;
-                        deps_params.subdir
-                            = dds::fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
-                        bd.add(*sdist_ptr, deps_params);
-                    }
-                });
-        }
-        bd.build(params);
+        bd.build({
+            .out_root          = out.Get(),
+            .existing_lm_index = lm_index ? std::make_optional(lm_index.Get()) : std::nullopt,
+            .emit_lmi          = {},
+            .toolchain         = tc_filepath.get_toolchain(),
+            .parallel_jobs     = n_jobs.Get(),
+        });
         return 0;
     }
 };
@@ -691,7 +849,7 @@ struct cli_build_deps {
 
         auto all_file_deps = deps_files.Get()  //
             | ranges::views::transform([&](auto dep_fpath) {
-                                 spdlog::info("Reading deps from {}", dep_fpath.string());
+                                 dds_log(info, "Reading deps from {}", dep_fpath.string());
                                  return dds::dependency_manifest::from_file(dep_fpath).dependencies;
                              })
             | ranges::actions::join;
@@ -708,7 +866,7 @@ struct cli_build_deps {
             dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
             [&](dds::repository repo) {
                 // Download dependencies
-                spdlog::info("Loading {} dependencies", all_deps.size());
+                dds_log(info, "Loading {} dependencies", all_deps.size());
                 auto deps = repo.solve(all_deps, cat);
                 dds::get_all(deps, repo, cat);
                 for (const dds::package_id& pk : deps) {
@@ -716,7 +874,7 @@ struct cli_build_deps {
                     assert(sdist_ptr);
                     dds::sdist_build_params deps_params;
                     deps_params.subdir = sdist_ptr->manifest.pkg_id.to_string();
-                    spdlog::info("Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
+                    dds_log(info, "Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
                     bd.add(*sdist_ptr, deps_params);
                 }
             });
@@ -739,18 +897,17 @@ struct cli_build_deps {
 */
 
 int main(int argc, char** argv) {
-#if DDS_DEBUG
-    spdlog::set_level(spdlog::level::debug);
-#endif
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
-    cli_base       cli{parser};
-    cli_build      build{cli};
-    cli_sdist      sdist{cli};
-    cli_repo       repo{cli};
-    cli_catalog    catalog{cli};
-    cli_build_deps build_deps{cli};
+    cli_base         cli{parser};
+    cli_compile_file compile_file{cli};
+    cli_build        build{cli};
+    cli_sdist        sdist{cli};
+    cli_repo         repo{cli};
+    cli_catalog      catalog{cli};
+    cli_build_deps   build_deps{cli};
+
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help&) {
@@ -763,11 +920,14 @@ int main(int argc, char** argv) {
     }
 
     dds::install_signal_handlers();
+    dds::log::current_log_level = cli.log_level.Get();
 
     try {
         if (cli._verify_ident) {
             std::cout << "yes\n";
             return 0;
+        } else if (compile_file.cmd) {
+            return compile_file.run();
         } else if (build.cmd) {
             return build.run();
         } else if (sdist.cmd) {
@@ -783,15 +943,15 @@ int main(int argc, char** argv) {
             std::terminate();
         }
     } catch (const dds::user_cancelled&) {
-        spdlog::critical("Operation cancelled by user");
+        dds_log(critical, "Operation cancelled by user");
         return 2;
     } catch (const dds::error_base& e) {
-        spdlog::error("{}", e.what());
-        spdlog::error("{}", e.explanation());
-        spdlog::error("Refer: {}", e.error_reference());
+        dds_log(error, "{}", e.what());
+        dds_log(error, "{}", e.explanation());
+        dds_log(error, "Refer: {}", e.error_reference());
         return 1;
     } catch (const std::exception& e) {
-        spdlog::critical(e.what());
+        dds_log(critical, e.what());
         return 2;
     }
 }

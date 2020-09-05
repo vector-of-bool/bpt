@@ -4,10 +4,11 @@
 #include <dds/error/errors.hpp>
 #include <dds/source/root.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
+#include <dds/util/ranges.hpp>
 
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -28,8 +29,9 @@ auto collect_pf_sources(path_ref path) {
         // Drop any source files we found within `include/`
         erase_if(sources, [&](auto& info) {
             if (info.kind != source_kind::header) {
-                spdlog::warn("Source file in `include` will not be compiled: {}",
-                             info.path.string());
+                dds_log(warn,
+                        "Source file in `include` will not be compiled: {}",
+                        info.path.string());
                 return true;
             }
             return false;
@@ -103,8 +105,8 @@ std::vector<library_root> dds::collect_libraries(path_ref root) {
 
     if (fs::is_directory(pf_libs_dir)) {
         extend(ret,
-               fs::directory_iterator(pf_libs_dir)            //
-                   | ranges::views::filter(has_library_dirs)  //
+               view_safe(fs::directory_iterator(pf_libs_dir))  //
+                   | ranges::views::filter(has_library_dirs)   //
                    | ranges::views::transform(
                        [&](auto p) { return library_root::from_directory(fs::canonical(p)); }));
     }

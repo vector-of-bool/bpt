@@ -3,16 +3,17 @@
 #include <dds/build/iter_compilations.hpp>
 #include <dds/build/plan/compile_exec.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 
+#include <range/v3/algorithm/any_of.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/join.hpp>
 #include <range/v3/view/repeat.hpp>
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include <mutex>
 #include <thread>
@@ -23,18 +24,19 @@ namespace {
 
 template <typename T, typename Range>
 decltype(auto) pair_up(T& left, Range& right) {
-    auto rep = ranges::view::repeat(left);
-    return ranges::view::zip(rep, right);
+    auto rep = ranges::views::repeat(left);
+    return ranges::views::zip(rep, right);
 }
 
 }  // namespace
 
 void build_plan::render_all(build_env_ref env) const {
-    auto templates = _packages                                                                    //
-        | ranges::view::transform(&package_plan::libraries)                                       //
-        | ranges::view::join                                                                      //
-        | ranges::view::transform([](const auto& lib) { return pair_up(lib, lib.templates()); })  //
-        | ranges::view::join;
+    auto templates = _packages                                //
+        | ranges::views::transform(&package_plan::libraries)  //
+        | ranges::views::join                                 //
+        | ranges::views::transform(
+                         [](const auto& lib) { return pair_up(lib, lib.templates()); })  //
+        | ranges::views::join;
     for (const auto& [lib, tmpl] : templates) {
         tmpl.render(env, lib.library_());
     }
@@ -42,6 +44,52 @@ void build_plan::render_all(build_env_ref env) const {
 
 void build_plan::compile_all(const build_env& env, int njobs) const {
     auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
+    if (!okay) {
+        throw_user_error<errc::compile_failure>();
+    }
+}
+
+void build_plan::compile_files(const build_env&             env,
+                               int                          njobs,
+                               const std::vector<fs::path>& filepaths) const {
+    struct pending_file {
+        bool     marked = false;
+        fs::path filepath;
+    };
+
+    auto as_pending =                  //
+        ranges::views::all(filepaths)  //
+        | ranges::views::transform([](auto&& path) {
+              return pending_file{false, fs::weakly_canonical(path)};
+          })
+        | ranges::to_vector;
+
+    auto check_compilation = [&](const compile_file_plan& comp) {
+        return ranges::any_of(as_pending, [&](pending_file& f) {
+            bool same_file = f.filepath == fs::weakly_canonical(comp.source_path());
+            if (same_file) {
+                f.marked = true;
+            }
+            return same_file;
+        });
+    };
+
+    auto comps
+        = iter_compilations(*this) | ranges::views::filter(check_compilation) | ranges::to_vector;
+
+    bool any_unmarked = false;
+    auto unmarked     = ranges::views::filter(as_pending, ranges::not_fn(&pending_file::marked));
+    for (auto&& um : unmarked) {
+        dds_log(error, "Source file [{}] is not compiled by this project", um.filepath.string());
+        any_unmarked = true;
+    }
+
+    if (any_unmarked) {
+        throw_user_error<errc::compile_failure>(
+            "One or more requested files is not part of this project (See above)");
+    }
+
+    auto okay = dds::compile_all(comps, env, njobs);
     if (!okay) {
         throw_user_error<errc::compile_failure>();
     }

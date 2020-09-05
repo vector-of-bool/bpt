@@ -1,6 +1,7 @@
 #include "./database.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
@@ -10,7 +11,6 @@
 #include <nlohmann/json.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace dds;
 
@@ -87,7 +87,8 @@ database database::open(const std::string& db_path) {
     try {
         ensure_migrated(db);
     } catch (const sqlite3::sqlite3_error& e) {
-        spdlog::error(
+        dds_log(
+            error,
             "Failed to load the databsae. It appears to be invalid/corrupted. We'll delete it and "
             "create a new one. The exception message is: {}",
             e.what());
@@ -96,10 +97,10 @@ database database::open(const std::string& db_path) {
         try {
             ensure_migrated(db);
         } catch (const sqlite3::sqlite3_error& e) {
-            spdlog::critical(
-                "Failed to apply database migrations to recovery database. This is a critical "
-                "error. The exception message is: {}",
-                e.what());
+            dds_log(critical,
+                    "Failed to apply database migrations to recovery database. This is a critical "
+                    "error. The exception message is: {}",
+                    e.what());
             std::terminate();
         }
     }

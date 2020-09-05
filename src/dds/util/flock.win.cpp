@@ -4,8 +4,10 @@
 
 #include <dds/util/signal.hpp>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/core.h>
 #include <wil/resource.h>
+
+#include <cassert>
 
 using namespace dds;
 
