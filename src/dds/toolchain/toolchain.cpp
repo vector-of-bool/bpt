@@ -129,7 +129,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                {"-MD"sv,
                 "-MF"sv,
                 std::string_view(gnu_depfile_path->string()),
-                "-MT"sv,
+                "-MQ"sv,
                 std::string_view(spec.out_path.string())});
     } else if (_deps_mode == file_deps_mode::msvc) {
         flags.push_back("/showIncludes");

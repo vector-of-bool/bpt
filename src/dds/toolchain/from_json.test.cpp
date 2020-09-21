@@ -48,32 +48,32 @@ void check_tc_compile(std::string_view tc_content,
 
 TEST_CASE("Generating toolchain commands") {
     check_tc_compile("{compiler_id: 'gnu'}",
-                     "g++ -fPIC -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+                     "g++ -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
                      "g++ -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+                     "-MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
 
     check_tc_compile("{compiler_id: 'gnu', debug: true}",
-                     "g++ -g -fPIC -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+                     "g++ -g -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
                      "g++ -g -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+                     "-MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC foo.o bar.a -pthread -omeow.exe -g");
 
     check_tc_compile("{compiler_id: 'gnu', debug: true, optimize: true}",
-                     "g++ -O2 -g -fPIC -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp "
+                     "g++ -O2 -g -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp "
                      "-ofoo.o",
                      "g++ -O2 -g -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+                     "-MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC foo.o bar.a -pthread -omeow.exe -O2 -g");
 
     check_tc_compile(
         "{compiler_id: 'gnu', debug: 'split', optimize: true}",
-        "g++ -O2 -g -gsplit-dwarf -fPIC -pthread -MD -MF foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+        "g++ -O2 -g -gsplit-dwarf -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
         "g++ -O2 -g -gsplit-dwarf -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion -MD -MF "
-        "foo.o.d -MT foo.o -c foo.cpp -ofoo.o",
+        "foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC foo.o bar.a -pthread -omeow.exe -O2 -g -gsplit-dwarf");
 
@@ -145,7 +145,7 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "-MD",
                                       "-MF",
                                       "foo.o.d",
-                                      "-MT",
+                                      "-MQ",
                                       "foo.o",
                                       "-c",
                                       "foo.cpp",
@@ -165,7 +165,7 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "-MD",
                                       "-MF",
                                       "foo.o.d",
-                                      "-MT",
+                                      "-MQ",
                                       "foo.o",
                                       "-c",
                                       "foo.cpp",
@@ -184,7 +184,7 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "-MD",
                                       "-MF",
                                       "foo.o.d",
-                                      "-MT",
+                                      "-MQ",
                                       "foo.o",
                                       "-c",
                                       "foo.cpp",

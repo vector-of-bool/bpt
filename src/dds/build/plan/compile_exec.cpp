@@ -8,6 +8,7 @@
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
 
+#include <neo/assert.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
@@ -91,7 +92,12 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
         } else {
             dds_log(trace, "Loading compilation dependencies from {}", df_path.string());
             auto dep_info = dds::parse_mkfile_deps_file(df_path);
-            assert(dep_info.output == cf.object_file_path);
+            neo_assert(invariant,
+                       dep_info.output == cf.object_file_path,
+                       "Generated mkfile deps output path does not match the object file path that "
+                       "we gave it to compile into.",
+                       dep_info.output.string(),
+                       cf.object_file_path.string());
             dep_info.command        = quote_command(cf.cmd_info.command);
             dep_info.command_output = compiler_output;
             ret_deps_info           = std::move(dep_info);
