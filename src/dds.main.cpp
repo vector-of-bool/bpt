@@ -11,6 +11,7 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/signal.hpp>
 
+#include <neo/assert.hpp>
 #include <range/v3/action/join.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
@@ -22,6 +23,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <locale.h>
 #include <sstream>
 
 namespace {
@@ -896,7 +898,7 @@ struct cli_build_deps {
 ##     ## ##     ## #### ##    ##
 */
 
-int main(int argc, char** argv) {
+int main_fn(const std::vector<std::string>& argv) {
     spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
@@ -909,7 +911,7 @@ int main(int argc, char** argv) {
     cli_build_deps   build_deps{cli};
 
     try {
-        parser.ParseCLI(argc, argv);
+        parser.ParseCLI(argv);
     } catch (const args::Help&) {
         std::cout << parser;
         return 0;
@@ -955,3 +957,47 @@ int main(int argc, char** argv) {
         return 2;
     }
 }
+
+#if NEO_OS_IS_WINDOWS
+std::string wstr_to_u8str(std::wstring_view in) {
+    if (in.empty()) {
+        return "";
+    }
+    auto req_size = ::WideCharToMultiByte(CP_UTF8,
+                                          0,
+                                          in.data(),
+                                          static_cast<int>(in.size()),
+                                          nullptr,
+                                          0,
+                                          nullptr,
+                                          nullptr);
+    neo_assert(invariant,
+               req_size > 0,
+               "Failed to convert given unicode string for main() argv",
+               req_size,
+               std::system_category().message(::GetLastError()),
+               ::GetLastError());
+    std::string ret;
+    ret.resize(req_size);
+    ::WideCharToMultiByte(CP_UTF8,
+                          0,
+                          in.data(),
+                          static_cast<int>(in.size()),
+                          ret.data(),
+                          static_cast<int>(ret.size()),
+                          nullptr,
+                          nullptr);
+    return ret;
+}
+
+int wmain(int argc, wchar_t** argv) {
+    std::vector<std::string> u8_argv;
+    ::setlocale(LC_ALL, ".utf8");
+    for (int i = 1; i < argc; ++i) {
+        u8_argv.emplace_back(wstr_to_u8str(argv[i]));
+    }
+    return main_fn(u8_argv);
+}
+#else
+int main(int argc, char** argv) { return main_fn({argv + 1, argv + argc}); }
+#endif

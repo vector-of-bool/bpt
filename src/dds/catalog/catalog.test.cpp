@@ -9,6 +9,17 @@ TEST_CASE("Create a simple database") {
     auto repo = dds::catalog::open(":memory:"s);
 }
 
+TEST_CASE("Open a catalog in a non-ascii path") {
+    ::setlocale(LC_ALL, ".utf8");
+    auto THIS_DIR = dds::fs::canonical(__FILE__).parent_path();
+    auto BUILD_DIR
+        = (THIS_DIR.parent_path().parent_path().parent_path() / "_build").lexically_normal();
+    auto subdir = BUILD_DIR / "Ю́рий Алексе́евич Гага́рин";
+    dds::fs::remove_all(subdir);
+    dds::catalog::open(subdir / "test.db");
+    dds::fs::remove_all(subdir);
+}
+
 class catalog_test_case {
 public:
     dds::catalog db = dds::catalog::open(":memory:"s);

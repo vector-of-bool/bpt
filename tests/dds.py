@@ -19,7 +19,7 @@ class DDS:
         self.dds_exe = dds_exe
         self.test_dir = test_dir
         self.source_root = project_dir
-        self.scratch_dir = project_dir / '_test_scratch'
+        self.scratch_dir = project_dir / '_test_scratch/Ю́рий Алексе́евич Гага́рин'
         self.scope = scope
         self.scope.callback(self.cleanup)
 

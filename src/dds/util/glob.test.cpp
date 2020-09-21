@@ -5,6 +5,7 @@
 TEST_CASE("Simple glob") {
     auto this_dir = dds::fs::path(__FILE__).parent_path();
     auto glob     = dds::glob::compile("*.test.cpp");
+    ::setlocale(LC_ALL, ".utf8");
 
     auto it = glob.scan_from(this_dir);
     for (; it != glob.end(); ++it) {
