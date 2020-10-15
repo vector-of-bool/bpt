@@ -1,7 +1,6 @@
 #include "./root.hpp"
 
-#include <dds/util/ranges.hpp>
-
+#include <neo/ref.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
@@ -12,7 +11,8 @@ std::vector<source_file> source_root::collect_sources() const {
     using namespace ranges::views;
     // Collect all source files from the directory
     return                                                                              //
-        view_safe(fs::recursive_directory_iterator(path))                               //
+        fs::recursive_directory_iterator(path)                                          //
+        | neo::lref                                                                     //
         | filter([](auto&& entry) { return entry.is_regular_file(); })                  //
         | transform([&](auto&& entry) { return source_file::from_path(entry, path); })  //
         // source_file::from_path returns an optional. Drop nulls

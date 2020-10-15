@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
+#include <neo/url.hpp>
 #include <semester/walk.hpp>
 
 #include <optional>
@@ -45,58 +46,59 @@ template <typename... Args>
     throw_user_error<dds::errc::invalid_catalog_json>(NEO_FWD(args)...);
 }
 
-git_remote_listing parse_git_remote(const json5::data& data) {
-    git_remote_listing git;
-
+auto make_dep = [](std::string const& str) {
     using namespace semester::walk_ops;
+    try {
+        return dependency::parse_depends_string(str);
+    } catch (std::runtime_error const& e) {
+        import_error(std::string(walk.path()) + e.what());
+    }
+};
 
-    walk(data,
-         require_obj{"Git remote should be an object"},
-         mapping{required_key{"url",
-                              "A git 'url' string is required",
-                              require_str("Git URL should be a string"),
-                              put_into(git.url)},
-                 required_key{"ref",
-                              "A git 'ref' is required, and must be a tag or branch name",
-                              require_str("Git ref should be a string"),
-                              put_into(git.ref)},
-                 if_key{"auto-lib",
-                        require_str("'auto-lib' should be a string"),
-                        put_into(git.auto_lib,
-                                 [](std::string const& str) {
-                                     try {
-                                         return lm::split_usage_string(str);
-                                     } catch (const std::runtime_error& e) {
-                                         import_error("{}: {}", walk.path(), e.what());
-                                     }
-                                 })},
-                 if_key{"transform",
-                        require_array{"Expect an array of transforms"},
-                        for_each{put_into(std::back_inserter(git.transforms), [](auto&& dat) {
-                            try {
-                                return fs_transformation::from_json(dat);
-                            } catch (const semester::walk_error& e) {
-                                import_error(e.what());
-                            }
-                        })}}});
+auto convert_version_str = [](std::string_view str) {
+    using namespace semester::walk_ops;
+    try {
+        return semver::version::parse(str);
+    } catch (const semver::invalid_version& e) {
+        import_error("{}: version string '{}' is invalid: {}", walk.path(), str, e.what());
+    }
+};
 
-    return git;
-}
+auto parse_remote = [](const std::string& str) {
+    using namespace semester::walk_ops;
+    try {
+        return parse_remote_url(str);
+    } catch (const neo::url_validation_error& e) {
+        import_error("{}: Invalid URL: {}", walk.path(), str);
+    } catch (const user_error<errc::invalid_remote_url>& e) {
+        import_error("{}: Invalid URL: {}", walk.path(), e.what());
+    }
+};
+
+auto parse_fs_transforms = [](auto&& tr_vec) {
+    using namespace semester::walk_ops;
+    return walk_seq{
+        require_array{"Expect an array of transforms"},
+        for_each{
+            put_into(std::back_inserter(tr_vec),
+                     [&](auto&& dat) {
+                         try {
+                             return fs_transformation::from_json(dat);
+                         } catch (const semester::walk_error& e) {
+                             import_error(e.what());
+                         }
+                     }),
+        },
+    };
+};
 
 package_info
-parse_pkg_json_v1(std::string_view name, semver::version version, const json5::data& data) {
+parse_pkg_json_v2(std::string_view name, semver::version version, const json5::data& data) {
     package_info ret;
     ret.ident = package_id{std::string{name}, version};
+    std::vector<fs_transformation> fs_trs;
 
     using namespace semester::walk_ops;
-
-    auto make_dep = [&](std::string const& str) {
-        try {
-            return dependency::parse_depends_string(str);
-        } catch (std::runtime_error const& e) {
-            import_error(std::string(walk.path()) + e.what());
-        }
-    };
 
     auto check_one_remote = [&](auto&&) {
         if (!semester::holds_alternative<std::monostate>(ret.remote)) {
@@ -114,10 +116,12 @@ parse_pkg_json_v1(std::string_view name, semver::version version, const json5::d
                         for_each{require_str{"Each dependency should be a string"},
                                  put_into{std::back_inserter(ret.deps), make_dep}}},
                  if_key{
-                     "git",
+                     "url",
+                     require_str{"Remote URL should be a string"},
                      check_one_remote,
-                     put_into(ret.remote, parse_git_remote),
-                 }});
+                     put_into(ret.remote, parse_remote),
+                 },
+                 if_key{"transform", parse_fs_transforms(fs_trs)}});
 
     if (semester::holds_alternative<std::monostate>(ret.remote)) {
         import_error("{}: Package listing for {} does not have any remote information",
@@ -125,10 +129,19 @@ parse_pkg_json_v1(std::string_view name, semver::version version, const json5::d
                      ret.ident.to_string());
     }
 
+    if (semester::holds_alternative<git_remote_listing>(ret.remote)) {
+        semester::get<git_remote_listing>(ret.remote).transforms = std::move(fs_trs);
+    } else {
+        if (!fs_trs.empty()) {
+            throw_user_error<errc::invalid_catalog_json>(
+                "{}: Filesystem transforms are not supported for this remote type", walk.path());
+        }
+    }
+
     return ret;
 }
 
-std::vector<package_info> parse_json_v1(const json5::data& data) {
+std::vector<package_info> parse_json_v2(const json5::data& data) {
     std::vector<package_info> acc_pkgs;
 
     std::string     pkg_name;
@@ -138,19 +151,7 @@ std::vector<package_info> parse_json_v1(const json5::data& data) {
     using namespace semester::walk_ops;
 
     auto convert_pkg_obj
-        = [&](auto&& dat) { return parse_pkg_json_v1(pkg_name, pkg_version, dat); };
-
-    auto convert_version_str = [&](std::string_view str) {
-        try {
-            return semver::version::parse(str);
-        } catch (const semver::invalid_version& e) {
-            throw_user_error<errc::invalid_catalog_json>("{}: version string '{}' is invalid: {}",
-                                                         walk.path(),
-                                                         pkg_name,
-                                                         str,
-                                                         e.what());
-        }
-    };
+        = [&](auto&& dat) { return parse_pkg_json_v2(pkg_name, pkg_version, dat); };
 
     auto import_pkg_versions
         = walk_seq{require_obj{"Package entries must be JSON objects"},
@@ -196,8 +197,11 @@ std::vector<package_info> dds::parse_packages_json(std::string_view content) {
 
     try {
         if (version == 1.0) {
-            dds_log(trace, "Processing JSON data as v1 data");
-            return parse_json_v1(data);
+            throw_user_error<errc::invalid_catalog_json>(
+                "Support for catalog JSON v1 has been removed");
+        } else if (version == 2.0) {
+            dds_log(trace, "Processing JSON data as v2 data");
+            return parse_json_v2(data);
         } else {
             throw_user_error<errc::invalid_catalog_json>("Unknown catalog JSON version '{}'",
                                                          version);

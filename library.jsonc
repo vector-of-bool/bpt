@@ -6,14 +6,15 @@
         "microsoft/wil",
         "range-v3/range-v3",
         "nlohmann/json",
-        "neo/sqlite3",
         "neo/fun",
+        "neo/sqlite3",
         "vob/semver",
         "vob/pubgrub",
         "vob/json5",
         "vob/semester",
         "hanickadot/ctre",
         // "neo/io",
+        "neo/url",
         // Explicit zlib link is required due to linker input order bug.
         // Can be removed after alpha.5
         "zlib/zlib",

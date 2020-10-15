@@ -14,12 +14,16 @@
 
 namespace dds {
 
+using remote_listing_var = std::variant<std::monostate, git_remote_listing>;
+
+remote_listing_var parse_remote_url(std::string_view url);
+
 struct package_info {
     package_id              ident;
     std::vector<dependency> deps;
     std::string             description;
 
-    std::variant<std::monostate, git_remote_listing> remote;
+    remote_listing_var remote;
 };
 
 }  // namespace dds

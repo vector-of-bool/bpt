@@ -24,6 +24,7 @@ enum class errc {
     no_catalog_remote_info,
 
     git_clone_failure,
+    invalid_remote_url,
     invalid_repo_transform,
     sdist_ident_mismatch,
     sdist_exists,

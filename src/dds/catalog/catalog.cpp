@@ -7,7 +7,6 @@
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/log.hpp>
-#include <dds/util/ranges.hpp>
 
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
@@ -22,12 +21,12 @@
 
 using namespace dds;
 
-namespace sqlite3 = neo::sqlite3;
-using namespace sqlite3::literals;
+namespace nsql = neo::sqlite3;
+using namespace neo::sqlite3::literals;
 
 namespace {
 
-void migrate_repodb_1(sqlite3::database& db) {
+void migrate_repodb_1(nsql::database& db) {
     db.exec(R"(
         CREATE TABLE dds_cat_pkgs (
             pkg_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,10 +70,67 @@ void migrate_repodb_1(sqlite3::database& db) {
     )");
 }
 
-void migrate_repodb_2(sqlite3::database& db) {
+void migrate_repodb_2(nsql::database& db) {
     db.exec(R"(
         ALTER TABLE dds_cat_pkgs
             ADD COLUMN repo_transform TEXT NOT NULL DEFAULT '[]'
+    )");
+}
+
+void migrate_repodb_3(nsql::database& db) {
+    db.exec(R"(
+        CREATE TABLE dds_cat_remotes (
+            remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ident TEXT NOT NULL UNIQUE,
+            gen_ident TEXT NOT NULL,
+            remote_url TEXT NOT NULL
+        );
+
+        CREATE TABLE dds_cat_pkgs_new (
+            pkg_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            version TEXT NOT NULL,
+            description TEXT NOT NULL,
+            remote_url TEXT NOT NULL,
+            remote_id INTEGER REFERENCES dds_cat_remotes DEFAULT NULL,
+            repo_transform TEXT NOT NULL DEFAULT '[]',
+            UNIQUE (name, version)
+        );
+
+        INSERT INTO dds_cat_pkgs_new(pkg_id,
+                                     name,
+                                     version,
+                                     description,
+                                     remote_url,
+                                     repo_transform)
+            SELECT pkg_id,
+                   name,
+                   version,
+                   description,
+                   'git+' || git_url || (
+                       CASE
+                         WHEN lm_name ISNULL THEN ''
+                         ELSE ('?lm=' || lm_namespace || '/' || lm_name)
+                       END
+                   ) || '#' || git_ref,
+                   repo_transform
+            FROM dds_cat_pkgs;
+
+        CREATE TABLE dds_cat_pkg_deps_new (
+            dep_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pkg_id INTEGER NOT NULL REFERENCES dds_cat_pkgs_new(pkg_id),
+            dep_name TEXT NOT NULL,
+            low TEXT NOT NULL,
+            high TEXT NOT NULL,
+            UNIQUE(pkg_id, dep_name)
+        );
+
+        INSERT INTO dds_cat_pkg_deps_new SELECT * FROM dds_cat_pkg_deps;
+
+        DROP TABLE dds_cat_pkg_deps;
+        DROP TABLE dds_cat_pkgs;
+        ALTER TABLE dds_cat_pkgs_new RENAME TO dds_cat_pkgs;
+        ALTER TABLE dds_cat_pkg_deps_new RENAME TO dds_cat_pkg_deps;
     )");
 }
 
@@ -104,16 +160,22 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
                        const package_info&            pkg,
                        const git_remote_listing&      git) {
     auto lm_usage = git.auto_lib.value_or(lm::usage{});
-    sqlite3::exec(  //
-        stmts,
-        R"(
+
+    std::string url = git.url;
+    if (url.starts_with("https://") || url.starts_with("http://")) {
+        url = "git+" + url;
+    }
+    if (git.auto_lib.has_value()) {
+        url += "?lm=" + git.auto_lib->namespace_ + "/" + git.auto_lib->name;
+    }
+    url += "#" + git.ref;
+
+    nsql::exec(  //
+        stmts(R"(
             INSERT OR REPLACE INTO dds_cat_pkgs (
                 name,
                 version,
-                git_url,
-                git_ref,
-                lm_name,
-                lm_namespace,
+                remote_url,
                 description,
                 repo_transform
             ) VALUES (
@@ -121,21 +183,14 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
                 ?2,
                 ?3,
                 ?4,
-                CASE WHEN ?5 = '' THEN NULL ELSE ?5 END,
-                CASE WHEN ?6 = '' THEN NULL ELSE ?6 END,
-                ?7,
-                ?8
+                ?5
             )
-        )"_sql,
-        std::forward_as_tuple(  //
-            pkg.ident.name,
-            pkg.ident.version.to_string(),
-            git.url,
-            git.ref,
-            lm_usage.name,
-            lm_usage.namespace_,
-            pkg.description,
-            transforms_to_json(git.transforms)));
+        )"_sql),
+        pkg.ident.name,
+        pkg.ident.version.to_string(),
+        url,
+        pkg.description,
+        transforms_to_json(git.transforms));
 }
 
 void do_store_pkg(neo::sqlite3::database&        db,
@@ -162,23 +217,19 @@ void do_store_pkg(neo::sqlite3::database&        db,
         assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
         dds_log(trace, "  Depends on: {}", dep.to_string());
-        sqlite3::exec(new_dep_st,
-                      std::forward_as_tuple(db_pkg_id,
-                                            dep.name,
-                                            iv_1.low.to_string(),
-                                            iv_1.high.to_string()));
+        nsql::exec(new_dep_st, db_pkg_id, dep.name, iv_1.low.to_string(), iv_1.high.to_string());
     }
 }
 
-void store_init_packages(sqlite3::database& db, sqlite3::statement_cache& st_cache) {
+void store_init_packages(nsql::database& db, nsql::statement_cache& st_cache) {
     dds_log(debug, "Restoring initial package data");
     for (auto& pkg : init_catalog_packages()) {
         do_store_pkg(db, st_cache, pkg);
     }
 }
 
-void ensure_migrated(sqlite3::database& db) {
-    sqlite3::transaction_guard tr{db};
+void ensure_migrated(nsql::database& db) {
+    nsql::transaction_guard tr{db};
     db.exec(R"(
         PRAGMA foreign_keys = 1;
         CREATE TABLE IF NOT EXISTS dds_cat_meta AS
@@ -186,7 +237,7 @@ void ensure_migrated(sqlite3::database& db) {
             SELECT * FROM init;
     )");
     auto meta_st     = db.prepare("SELECT meta FROM dds_cat_meta");
-    auto [meta_json] = sqlite3::unpack_single<std::string>(meta_st);
+    auto [meta_json] = nsql::unpack_single<std::string>(meta_st);
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
@@ -201,7 +252,7 @@ void ensure_migrated(sqlite3::database& db) {
             "The catalog database metadata is invalid [bad dds_meta.version]");
     }
 
-    constexpr int current_database_version = 2;
+    constexpr int current_database_version = 3;
 
     int version = version_;
 
@@ -225,8 +276,12 @@ void ensure_migrated(sqlite3::database& db) {
         dds_log(debug, "Applying catalog migration 2");
         migrate_repodb_2(db);
     }
-    meta["version"] = 2;
-    exec(db, "UPDATE dds_cat_meta SET meta=?", std::forward_as_tuple(meta.dump()));
+    if (version < 3) {
+        dds_log(debug, "Applying catalog migration 3");
+        migrate_repodb_3(db);
+    }
+    meta["version"] = current_database_version;
+    exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), meta.dump());
 
     if (import_init_packages) {
         dds_log(
@@ -253,10 +308,10 @@ catalog catalog::open(const std::string& db_path) {
         fs::create_directories(pardir);
     }
     dds_log(debug, "Opening package catalog [{}]", db_path);
-    auto db = sqlite3::database::open(db_path);
+    auto db = nsql::database::open(db_path);
     try {
         ensure_migrated(db);
-    } catch (const sqlite3::sqlite3_error& e) {
+    } catch (const nsql::sqlite3_error& e) {
         dds_log(critical,
                 "Failed to load the repository database. It appears to be invalid/corrupted. The "
                 "exception message is: {}",
@@ -267,11 +322,11 @@ catalog catalog::open(const std::string& db_path) {
     return catalog(std::move(db));
 }
 
-catalog::catalog(sqlite3::database db)
+catalog::catalog(nsql::database db)
     : _db(std::move(db)) {}
 
 void catalog::store(const package_info& pkg) {
-    sqlite3::transaction_guard tr{_db};
+    nsql::transaction_guard tr{_db};
     do_store_pkg(_db, _stmt_cache, pkg);
 }
 
@@ -283,26 +338,20 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             pkg_id,
             name,
             version,
-            git_url,
-            git_ref,
-            lm_name,
-            lm_namespace,
+            remote_url,
             description,
             repo_transform
         FROM dds_cat_pkgs
         WHERE name = ? AND version = ?
     )"_sql);
     st.reset();
-    st.bindings  = std::forward_as_tuple(pk_id.name, ver_str);
-    auto opt_tup = sqlite3::unpack_single_opt<std::int64_t,
-                                              std::string,
-                                              std::string,
-                                              std::optional<std::string>,
-                                              std::optional<std::string>,
-                                              std::optional<std::string>,
-                                              std::optional<std::string>,
-                                              std::string,
-                                              std::string>(st);
+    st.bindings() = std::forward_as_tuple(pk_id.name, ver_str);
+    auto opt_tup  = nsql::unpack_single_opt<std::int64_t,
+                                           std::string,
+                                           std::string,
+                                           std::string,
+                                           std::string,
+                                           std::string>(st);
     if (!opt_tup) {
         dym_target::fill([&] {
             auto all_ids = this->all();
@@ -312,20 +361,9 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         });
         return std::nullopt;
     }
-    const auto& [pkg_id,
-                 name,
-                 version,
-                 git_url,
-                 git_ref,
-                 lm_name,
-                 lm_namespace,
-                 description,
-                 repo_transform]
-        = *opt_tup;
+    const auto& [pkg_id, name, version, remote_url, description, repo_transform] = *opt_tup;
     assert(pk_id.name == name);
     assert(pk_id.version == semver::version::parse(version));
-    assert(git_url);
-    assert(git_ref);
 
     auto deps = dependencies_of(pk_id);
 
@@ -333,12 +371,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         pk_id,
         std::move(deps),
         std::move(description),
-        git_remote_listing{
-            *git_url,
-            *git_ref,
-            lm_name ? std::make_optional(lm::usage{*lm_namespace, *lm_name}) : std::nullopt,
-            {},
-        },
+        parse_remote_url(remote_url),
     };
 
     if (!repo_transform.empty()) {
@@ -373,33 +406,34 @@ auto pair_to_pkg_id = [](auto&& pair) {
 };
 
 std::vector<package_id> catalog::all() const noexcept {
-    return view_safe(sqlite3::exec_iter<std::string, std::string>(  //
-               _stmt_cache,
-               "SELECT name, version FROM dds_cat_pkgs"_sql))
+    return nsql::exec_tuples<std::string, std::string>(
+               _stmt_cache("SELECT name, version FROM dds_cat_pkgs"_sql))
+        | neo::lref                                 //
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
 std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
-    return view_safe(sqlite3::exec_iter<std::string, std::string>(  //
-               _stmt_cache,
-               R"(
+    return nsql::exec_tuples<std::string, std::string>(  //
+               _stmt_cache(
+                   R"(
                 SELECT name, version
                   FROM dds_cat_pkgs
                  WHERE name = ?
-                )"_sql,
-               std::tie(sv)))                       //
+                )"_sql),
+               sv)                                  //
+        | neo::lref                                 //
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
 std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const noexcept {
     dds_log(trace, "Lookup dependencies of {}@{}", pkg.name, pkg.version.to_string());
-    return view_safe(sqlite3::exec_iter<std::string,
-                                        std::string,
-                                        std::string>(  //
-               _stmt_cache,
-               R"(
+    return nsql::exec_tuples<std::string,
+                             std::string,
+                             std::string>(  //
+               _stmt_cache(
+                   R"(
                 WITH this_pkg_id AS (
                     SELECT pkg_id
                       FROM dds_cat_pkgs
@@ -409,8 +443,10 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                   FROM dds_cat_pkg_deps
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
-                )"_sql,
-               std::forward_as_tuple(pkg.name, pkg.version.to_string())))  //
+                )"_sql),
+               pkg.name,
+               pkg.version.to_string())  //
+        | neo::lref                      //
         | ranges::views::transform([](auto&& pair) {
                auto& [name, low, high] = pair;
                auto dep
@@ -425,14 +461,14 @@ void catalog::import_json_str(std::string_view content) {
     dds_log(trace, "Importing JSON string into catalog");
     auto pkgs = parse_packages_json(content);
 
-    sqlite3::transaction_guard tr{_db};
+    nsql::transaction_guard tr{_db};
     for (const auto& pkg : pkgs) {
-        store(pkg);
+        do_store_pkg(_db, _stmt_cache, pkg);
     }
 }
 
 void catalog::import_initial() {
-    sqlite3::transaction_guard tr{_db};
+    nsql::transaction_guard tr{_db};
     dds_log(info, "Restoring built-in initial catalog contents");
     store_init_packages(_db, _stmt_cache);
 }

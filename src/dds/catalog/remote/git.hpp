@@ -19,6 +19,8 @@ struct git_remote_listing {
     std::vector<fs_transformation> transforms;
 
     void pull_to(const package_id& pid, path_ref path) const;
+
+    static git_remote_listing from_url(std::string_view sv);
 };
 
 }  // namespace dds

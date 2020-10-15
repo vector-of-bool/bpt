@@ -10,21 +10,15 @@ def test_import_json(dds: DDS):
 
     json_fpath = dds.build_dir / 'data.json'
     import_data = {
-        'version': 1,
+        'version': 2,
         'packages': {
             'foo': {
                 '1.2.4': {
-                    'git': {
-                        'url': 'http://example.com',
-                        'ref': 'master',
-                    },
+                    'url': 'git+http://example.com#master',
                     'depends': [],
                 },
                 '1.2.5': {
-                    'git': {
-                        'url': 'http://example.com',
-                        'ref': 'master',
-                    },
+                    'url': 'git+http://example.com#master',
                 },
             },
         },

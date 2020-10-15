@@ -14,13 +14,13 @@
 
 using namespace dds;
 
-namespace sqlite3 = neo::sqlite3;
-using sqlite3::exec;
-using namespace sqlite3::literals;
+namespace nsql = neo::sqlite3;
+using nsql::exec;
+using namespace nsql::literals;
 
 namespace {
 
-void migrate_1(sqlite3::database& db) {
+void migrate_1(nsql::database& db) {
     db.exec(R"(
         CREATE TABLE dds_files (
             file_id INTEGER PRIMARY KEY,
@@ -51,8 +51,8 @@ void migrate_1(sqlite3::database& db) {
     )");
 }
 
-void ensure_migrated(sqlite3::database& db) {
-    sqlite3::transaction_guard tr{db};
+void ensure_migrated(nsql::database& db) {
+    nsql::transaction_guard tr{db};
     db.exec(R"(
         PRAGMA foreign_keys = 1;
         CREATE TABLE IF NOT EXISTS dds_meta AS
@@ -60,7 +60,7 @@ void ensure_migrated(sqlite3::database& db) {
             SELECT * FROM init;
         )");
     auto meta_st     = db.prepare("SELECT meta FROM dds_meta");
-    auto [meta_json] = sqlite3::unpack_single<std::string>(meta_st);
+    auto [meta_json] = nsql::unpack_single<std::string>(meta_st);
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
@@ -77,26 +77,26 @@ void ensure_migrated(sqlite3::database& db) {
         migrate_1(db);
     }
     meta["version"] = 1;
-    exec(db, "UPDATE dds_meta SET meta=?", std::forward_as_tuple(meta.dump()));
+    exec(db.prepare("UPDATE dds_meta SET meta=?"), meta.dump());
 }
 
 }  // namespace
 
 database database::open(const std::string& db_path) {
-    auto db = sqlite3::database::open(db_path);
+    auto db = nsql::database::open(db_path);
     try {
         ensure_migrated(db);
-    } catch (const sqlite3::sqlite3_error& e) {
+    } catch (const nsql::sqlite3_error& e) {
         dds_log(
             error,
             "Failed to load the databsae. It appears to be invalid/corrupted. We'll delete it and "
             "create a new one. The exception message is: {}",
             e.what());
         fs::remove(db_path);
-        db = sqlite3::database::open(db_path);
+        db = nsql::database::open(db_path);
         try {
             ensure_migrated(db);
-        } catch (const sqlite3::sqlite3_error& e) {
+        } catch (const nsql::sqlite3_error& e) {
             dds_log(critical,
                     "Failed to apply database migrations to recovery database. This is a critical "
                     "error. The exception message is: {}",
@@ -107,25 +107,25 @@ database database::open(const std::string& db_path) {
     return database(std::move(db));
 }
 
-database::database(sqlite3::database db)
+database::database(nsql::database db)
     : _db(std::move(db)) {}
 
 std::int64_t database::_record_file(path_ref path_) {
     auto path = fs::weakly_canonical(path_);
-    sqlite3::exec(_stmt_cache(R"(
+    nsql::exec(_stmt_cache(R"(
                     INSERT OR IGNORE INTO dds_files (path)
                     VALUES (?)
                   )"_sql),
-                  std::forward_as_tuple(path.generic_string()));
+               path.generic_string());
     auto& st = _stmt_cache(R"(
         SELECT file_id
           FROM dds_files
          WHERE path = ?1
     )"_sql);
     st.reset();
-    auto str       = path.generic_string();
-    st.bindings[1] = str;
-    auto [rowid]   = sqlite3::unpack_single<std::int64_t>(st);
+    auto str         = path.generic_string();
+    st.bindings()[1] = str;
+    auto [rowid]     = nsql::unpack_single<std::int64_t>(st);
     return rowid;
 }
 
@@ -136,7 +136,7 @@ void database::record_dep(path_ref input, path_ref output, fs::file_time_type in
         INSERT OR REPLACE INTO dds_deps (input_file_id, output_file_id, input_mtime)
         VALUES (?, ?, ?)
     )"_sql);
-    sqlite3::exec(st, std::forward_as_tuple(in_id, out_id, input_mtime.time_since_epoch().count()));
+    nsql::exec(st, in_id, out_id, input_mtime.time_since_epoch().count());
 }
 
 void database::store_file_command(path_ref file, const command_info& cmd) {
@@ -147,10 +147,7 @@ void database::store_file_command(path_ref file, const command_info& cmd) {
           INTO dds_file_commands(file_id, command, output)
         VALUES (?1, ?2, ?3)
     )"_sql);
-    sqlite3::exec(st,
-                  std::forward_as_tuple(file_id,
-                                        std::string_view(cmd.command),
-                                        std::string_view(cmd.output)));
+    nsql::exec(st, file_id, std::string_view(cmd.command), std::string_view(cmd.output));
 }
 
 void database::forget_inputs_of(path_ref file) {
@@ -163,7 +160,7 @@ void database::forget_inputs_of(path_ref file) {
         DELETE FROM dds_deps
          WHERE output_file_id IN id_to_delete
     )"_sql);
-    sqlite3::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).generic_string()));
+    nsql::exec(st, fs::weakly_canonical(file).generic_string());
 }
 
 std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) const {
@@ -180,11 +177,11 @@ std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) 
          WHERE output_file_id IN file
     )"_sql);
     st.reset();
-    st.bindings[1] = file.generic_string();
-    auto tup_iter  = sqlite3::iter_tuples<std::string, std::int64_t>(st);
+    st.bindings()[1] = file.generic_string();
+    auto tup_iter    = nsql::iter_tuples<std::string, std::int64_t>(st);
 
     std::vector<input_file_info> ret;
-    for (auto& [path, mtime] : tup_iter) {
+    for (auto [path, mtime] : tup_iter) {
         ret.emplace_back(
             input_file_info{path, fs::file_time_type(fs::file_time_type::duration(mtime))});
     }
@@ -208,8 +205,8 @@ std::optional<command_info> database::command_of(path_ref file_) const {
          WHERE file_id IN file
     )"_sql);
     st.reset();
-    st.bindings[1] = file.generic_string();
-    auto opt_res   = sqlite3::unpack_single_opt<std::string, std::string>(st);
+    st.bindings()[1] = file.generic_string();
+    auto opt_res     = nsql::unpack_single_opt<std::string, std::string>(st);
     if (!opt_res) {
         return std::nullopt;
     }

@@ -12,16 +12,12 @@ def test_get(dds: DDS):
 
     json_path = dds.build_dir / 'catalog.json'
     import_data = {
-        'version': 1,
+        'version': 2,
         'packages': {
             'neo-sqlite3': {
                 '0.3.0': {
-                    'git': {
-                        'url':
-                        'https://github.com/vector-of-bool/neo-sqlite3.git',
-                        'ref':
-                        '0.3.0',
-                    },
+                    'url':
+                    'git+https://github.com/vector-of-bool/neo-sqlite3.git#0.3.0',
                 },
             },
         },

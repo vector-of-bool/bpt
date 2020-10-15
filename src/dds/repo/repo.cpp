@@ -6,9 +6,9 @@
 #include <dds/source/dist.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
-#include <dds/util/ranges.hpp>
 #include <dds/util/string.hpp>
 
+#include <neo/ref.hpp>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/action/unique.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -47,10 +47,11 @@ repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
 
     auto entries =
         // Get the top-level `name-version` dirs
-        view_safe(fs::directory_iterator(dirpath))  //
-        // // Convert each dir into an `sdist` object
+        fs::directory_iterator(dirpath)  //
+        | neo::lref                      //
+        //  Convert each dir into an `sdist` object
         | ranges::views::transform(try_read_sdist)  //
-        // // Drop items that failed to load
+        //  Drop items that failed to load
         | ranges::views::filter([](auto&& opt) { return opt.has_value(); })  //
         | ranges::views::transform([](auto&& opt) { return *opt; })          //
         | to<sdist_set>();

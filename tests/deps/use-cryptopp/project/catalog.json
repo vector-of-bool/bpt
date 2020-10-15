@@ -1,26 +1,22 @@
 {
-    "version": 1,
+    "version": 2,
     "packages": {
         "cryptopp": {
             "8.2.0": {
-                "git": {
-                    "url": "https://github.com/weidai11/cryptopp.git",
-                    "ref": "CRYPTOPP_8_2_0",
-                    "auto-lib": "cryptopp/cryptopp",
-                    "transform": [
-                        {
-                            "move": {
-                                "from": ".",
-                                "to": "src/cryptopp",
-                                "include": [
-                                    "*.c",
-                                    "*.cpp",
-                                    "*.h"
-                                ]
-                            }
+                "url": "git+https://github.com/weidai11/cryptopp.git?lm=cryptopp/cryptopp#CRYPTOPP_8_2_0",
+                "transform": [
+                    {
+                        "move": {
+                            "from": ".",
+                            "to": "src/cryptopp",
+                            "include": [
+                                "*.c",
+                                "*.cpp",
+                                "*.h"
+                            ]
                         }
-                    ]
-                }
+                    }
+                ]
             }
         }
     }

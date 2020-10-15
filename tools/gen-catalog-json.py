@@ -117,6 +117,13 @@ class Git(NamedTuple):
             d['auto-lib'] = self.auto_lib
         return d
 
+    def to_dict_2(self) -> str:
+        url = f'git+{self.url}'
+        if self.auto_lib:
+            url += f'?lm={self.auto_lib}'
+        url += f'#{self.ref}'
+        return url
+
 
 RemoteInfo = Union[Git]
 
@@ -134,6 +141,15 @@ class Version(NamedTuple):
         }
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
+        return ret
+
+    def to_dict_2(self) -> dict:
+        ret: dict = {
+            'description': self.description,
+            'depends': list(self.depends),
+            'transform': [f.to_dict() for f in self.remote.transforms],
+        }
+        ret['url'] = self.remote.to_dict_2()
         return ret
 
 
@@ -274,12 +290,14 @@ def many_versions(name: str,
 # yapf: disable
 PACKAGES = [
     github_package('neo-buffer', 'vector-of-bool/neo-buffer',
-                   ['0.2.1', '0.3.0', '0.4.0', '0.4.1']),
+                   ['0.2.1', '0.3.0', '0.4.0', '0.4.1', '0.4.2']),
     github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0']),
+    github_package('neo-url', 'vector-of-bool/neo-url', ['0.1.0', '0.1.1', '0.1.2']),
     github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3',
-                   ['0.2.3', '0.3.0']),
+                   ['0.2.3', '0.3.0', '0.4.0', '0.4.1']),
     github_package('neo-fun', 'vector-of-bool/neo-fun', [
-        '0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0', '0.4.1'
+        '0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0', '0.4.1',
+        '0.4.2', '0.5.0', '0.5.1', '0.5.2', '0.5.3',
     ]),
     github_package('neo-concepts', 'vector-of-bool/neo-concepts', (
         '0.2.2',
@@ -934,6 +952,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data = {
+        'version': 2,
+        'packages': {
+            pkg.name: {ver.version: ver.to_dict_2()
+                       for ver in pkg.versions}
+            for pkg in PACKAGES
+        }
+    }
+    old_data = {
         'version': 1,
         'packages': {
             pkg.name: {ver.version: ver.to_dict()
@@ -943,6 +969,8 @@ if __name__ == "__main__":
     }
     json_str = json.dumps(data, indent=2, sort_keys=True)
     Path('catalog.json').write_text(json_str)
+    Path('catalog.old.json').write_text(
+        json.dumps(old_data, indent=2, sort_keys=True))
 
     cpp_template = textwrap.dedent(r'''
         #include <dds/catalog/package_info.hpp>
