@@ -25,6 +25,7 @@ enum class errc {
 
     git_clone_failure,
     invalid_remote_url,
+    http_download_failure,
     invalid_repo_transform,
     sdist_ident_mismatch,
     sdist_exists,

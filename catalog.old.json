@@ -2228,6 +2228,19 @@
           "transform": [],
           "url": "https://github.com/vector-of-bool/neo-compress.git"
         }
+      },
+      "0.1.1": {
+        "depends": [
+          "neo-buffer^0.4.1",
+          "neo-fun^0.5.0",
+          "zlib^1.2.9"
+        ],
+        "description": "Compression, archiving, etc. for C++20",
+        "git": {
+          "ref": "0.1.1",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-compress.git"
+        }
       }
     },
     "neo-concepts": {
@@ -2393,6 +2406,43 @@
           "ref": "0.5.3",
           "transform": [],
           "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      },
+      "0.5.4": {
+        "depends": [],
+        "description": "Some library components that didn't quite fit anywhere else...",
+        "git": {
+          "ref": "0.5.4",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
+      }
+    },
+    "neo-http": {
+      "0.1.0": {
+        "depends": [
+          "neo-buffer^0.4.2",
+          "neo-fun^0.5.4"
+        ],
+        "description": "A modern HTTP library",
+        "git": {
+          "ref": "0.1.0",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-http.git"
+        }
+      }
+    },
+    "neo-io": {
+      "0.1.0": {
+        "depends": [
+          "neo-fun~0.5.4",
+          "neo-buffer~0.4.2"
+        ],
+        "description": "A modern IO library",
+        "git": {
+          "ref": "0.1.0",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-io.git"
         }
       }
     },

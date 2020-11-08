@@ -291,14 +291,16 @@ def many_versions(name: str,
 PACKAGES = [
     github_package('neo-buffer', 'vector-of-bool/neo-buffer',
                    ['0.2.1', '0.3.0', '0.4.0', '0.4.1', '0.4.2']),
-    github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0']),
+    github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0', '0.1.1']),
     github_package('neo-url', 'vector-of-bool/neo-url', ['0.1.0', '0.1.1', '0.1.2']),
     github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3',
                    ['0.2.3', '0.3.0', '0.4.0', '0.4.1']),
     github_package('neo-fun', 'vector-of-bool/neo-fun', [
         '0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0', '0.4.1',
-        '0.4.2', '0.5.0', '0.5.1', '0.5.2', '0.5.3',
+        '0.4.2', '0.5.0', '0.5.1', '0.5.2', '0.5.3', '0.5.4',
     ]),
+    github_package('neo-io', 'vector-of-bool/neo-io', ['0.1.0']),
+    github_package('neo-http', 'vector-of-bool/neo-http', ['0.1.0']),
     github_package('neo-concepts', 'vector-of-bool/neo-concepts', (
         '0.2.2',
         '0.3.0',

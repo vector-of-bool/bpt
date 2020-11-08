@@ -39,6 +39,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "git-clone-failure.html";
     case errc::invalid_remote_url:
         return "invalid-remote-url.html";
+    case errc::http_download_failure:
+        return "http-failure.html";
     case errc::invalid_repo_transform:
         return "invalid-repo-transform.html";
     case errc::sdist_ident_mismatch:
@@ -176,6 +178,12 @@ Git in diagnosing this failure.
 )";
     case errc::invalid_remote_url:
         return R"(The given package/remote URL is invalid)";
+    case errc::http_download_failure:
+        return R"(
+There was a problem when trying to download data from an HTTP server. HTTP 40x
+errors indicate problems on the client-side, and HTTP 50x errors indicate that
+the server itself encountered an error.
+)";
     case errc::invalid_repo_transform:
         return R"(
 A 'transform' property in a catalog entry contains an invalid transformation.
@@ -290,6 +298,8 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "A git-clone operation failed.";
     case errc::invalid_remote_url:
         return "The given package/remote URL is not valid";
+    case errc::http_download_failure:
+        return "There was an error downloading data from an HTTP server.";
     case errc::invalid_repo_transform:
         return "A repository filesystem transformation is invalid";
     case errc::sdist_ident_mismatch:

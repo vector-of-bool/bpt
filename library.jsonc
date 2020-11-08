@@ -13,7 +13,8 @@
         "vob/json5",
         "vob/semester",
         "hanickadot/ctre",
-        // "neo/io",
+        "neo/io",
+        "neo/http",
         "neo/url",
         // Explicit zlib link is required due to linker input order bug.
         // Can be removed after alpha.5
