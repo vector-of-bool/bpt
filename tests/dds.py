@@ -49,7 +49,7 @@ class DDS:
 
     def run_unchecked(self, cmd: proc.CommandLine, *,
                       cwd: Path = None) -> subprocess.CompletedProcess:
-        full_cmd = itertools.chain([self.dds_exe], cmd)
+        full_cmd = itertools.chain([self.dds_exe, '-ltrace'], cmd)
         return proc.run(full_cmd, cwd=cwd or self.source_root)
 
     def run(self, cmd: proc.CommandLine, *, cwd: Path = None,

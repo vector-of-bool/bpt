@@ -1,5 +1,6 @@
 #include "./dist.hpp"
 
+#include <dds/catalog/remote/http.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/library/root.hpp>
 #include <dds/temp.hpp>
@@ -122,26 +123,35 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 sdist sdist::from_directory(path_ref where) {
     auto pkg_man = package_manifest::load_from_directory(where);
     // Code paths should only call here if they *know* that the sdist is valid
-    neo_assert(invariant,
-               pkg_man.has_value(),
-               "All dirs in the repo should be proper source distributions. If you see this, it "
-               "means one of the directories in the repository is not a valid sdist.",
-               where.string());
+    if (!pkg_man.has_value()) {
+        throw_user_error<errc::invalid_pkg_filesystem>(
+            "The given directory [{}] does not contain a package manifest file. All source "
+            "distribution directories are required to contain a package manifest.",
+            where.string());
+    }
     return sdist{pkg_man.value(), where};
 }
 
 temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
-    auto tempdir = temporary_dir::create();
-    dds_log(debug, "Expanding source ditsribution content into {}", tempdir.path().string());
-    fs::create_directories(tempdir.path());
-    neo::expand_directory_targz(tempdir.path(), targz_path);
-    return {tempdir, sdist::from_directory(tempdir.path())};
+    auto infile = open(targz_path, std::ios::binary | std::ios::in);
+    return expand_sdist_from_istream(infile, targz_path.string());
 }
 
 temporary_sdist dds::expand_sdist_from_istream(std::istream& is, std::string_view input_name) {
     auto tempdir = temporary_dir::create();
-    dds_log(debug, "Expanding source ditsribution content into {}", tempdir.path().string());
+    dds_log(debug,
+            "Expanding source distribution content from [{}] into [{}]",
+            input_name,
+            tempdir.path().string());
     fs::create_directories(tempdir.path());
-    neo::expand_directory_targz(tempdir.path(), is, input_name);
+    neo::expand_directory_targz({.destination_directory = tempdir.path(), .input_name = input_name},
+                                is);
+    return {tempdir, sdist::from_directory(tempdir.path())};
+}
+
+temporary_sdist dds::download_expand_sdist_targz(std::string_view url_str) {
+    auto remote  = http_remote_listing::from_url(url_str);
+    auto tempdir = temporary_dir::create();
+    remote.pull_to(tempdir.path());
     return {tempdir, sdist::from_directory(tempdir.path())};
 }

@@ -2,6 +2,8 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/log.hpp>
+#include <dds/util/result.hpp>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -45,6 +47,8 @@ void download_into(Out&& out, In&& in, http_response_info resp) {
 }  // namespace
 
 http_session http_session::connect(const std::string& host, int port) {
+    DDS_E_SCOPE(e_http_connect{host, port});
+
     auto addr = neo::address::resolve(host, std::to_string(port));
     auto sock = neo::socket::open_connected(addr, neo::socket::type::stream);
 
@@ -52,6 +56,8 @@ http_session http_session::connect(const std::string& host, int port) {
 }
 
 http_session http_session::connect_ssl(const std::string& host, int port) {
+    DDS_E_SCOPE(e_http_connect{host, port});
+
     auto addr = neo::address::resolve(host, std::to_string(port));
     auto sock = neo::socket::open_connected(addr, neo::socket::type::stream);
 
@@ -85,6 +91,8 @@ void http_session::send_head(http_request_params params) {
         .parse_tail = neo::const_buffer(),
     };
 
+    dds_log(trace, "Send: HTTP {} to {}{}", params.method, host_string(), params.path);
+
     auto cl_str = std::to_string(params.content_length);
 
     std::pair<std::string_view, std::string_view> headers[] = {
@@ -105,6 +113,7 @@ http_response_info http_session::recv_head() {
                       _state);
     auto r
         = _do_io([&](auto&& io) { return neo::http::read_response_head<http_response_info>(io); });
+    dds_log(trace, "Recv: HTTP {} {}", r.status, r.status_message);
     _state = _state_t::recvd_head;
     return r;
 }

@@ -51,5 +51,6 @@ void  create_sdist_targz(path_ref, const sdist_params&);
 
 temporary_sdist expand_sdist_targz(path_ref targz);
 temporary_sdist expand_sdist_from_istream(std::istream&, std::string_view input_name);
+temporary_sdist download_expand_sdist_targz(std::string_view);
 
 }  // namespace dds

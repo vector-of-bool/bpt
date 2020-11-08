@@ -92,7 +92,7 @@ struct solver_provider {
             dds_log(debug, "No candidate for requirement {}", req.dep.to_string());
             return std::nullopt;
         }
-        dds_log(debug, "Select candidate {}@{}", cand->to_string());
+        dds_log(debug, "Select candidate {}", cand->to_string());
         return req_type{dependency{cand->name, {cand->version, cand->version.next_after()}}};
     }
 

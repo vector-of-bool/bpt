@@ -12,6 +12,15 @@
 
 namespace dds {
 
+struct e_http_url {
+    std::string value;
+};
+
+struct e_http_connect {
+    std::string host;
+    int         port;
+};
+
 struct http_request_params {
     std::string_view method;
     std::string_view path;
