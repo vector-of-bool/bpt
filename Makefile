@@ -41,7 +41,7 @@ docs-sync-server:
 macos-ci:
 	python3 -u tools/ci.py \
 		-B download \
-		-T tools/gcc-9-rel.jsonc
+		-T tools/gcc-9-rel-macos.jsonc
 	mv _build/dds _build/dds-macos-x64
 
 linux-ci:

@@ -24,12 +24,15 @@ temporary_sdist do_pull_sdist(const package_info& listing, std::monostate) {
         listing.ident.to_string());
 }
 
-temporary_sdist do_pull_sdist(const package_info& listing, const git_remote_listing& git) {
+template <remote_listing R>
+temporary_sdist do_pull_sdist(const package_info& listing, const R& remote) {
     auto tmpdir = dds::temporary_dir::create();
 
-    git.pull_to(listing.ident, tmpdir.path());
+    remote.pull_source(tmpdir.path());
+    remote.apply_transforms(tmpdir.path());
+    remote.generate_auto_lib_files(listing.ident, tmpdir.path());
 
-    dds_log(info, "Create sdist from clone ...");
+    dds_log(info, "Create sdist ...");
     sdist_params params;
     params.project_dir = tmpdir.path();
     auto sd_tmp_dir    = dds::temporary_dir::create();

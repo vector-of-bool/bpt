@@ -39,6 +39,11 @@ def test_import_json(dds: DDS):
                     'url': 'git+http://example.com#master',
                 },
             },
+            'bar': {
+                '1.5.1': {
+                    'url': 'http://example.com/bar-1.5.2.tgz'
+                },
+            }
         },
     }
     dds.scope.enter_context(

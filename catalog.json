@@ -1969,6 +1969,12 @@
         "description": "Some library components that didn't quite fit anywhere else...",
         "transform": [],
         "url": "git+https://github.com/vector-of-bool/neo-fun.git#0.5.4"
+      },
+      "0.5.5": {
+        "depends": [],
+        "description": "Some library components that didn't quite fit anywhere else...",
+        "transform": [],
+        "url": "git+https://github.com/vector-of-bool/neo-fun.git#0.5.5"
       }
     },
     "neo-http": {
@@ -2047,6 +2053,22 @@
         "description": "URL parsing and handling library.",
         "transform": [],
         "url": "git+https://github.com/vector-of-bool/neo-url.git#0.1.2"
+      },
+      "0.2.0": {
+        "depends": [
+          "neo-fun^0.5.5"
+        ],
+        "description": "URL parsing and handling library.",
+        "transform": [],
+        "url": "git+https://github.com/vector-of-bool/neo-url.git#0.2.0"
+      },
+      "0.2.1": {
+        "depends": [
+          "neo-fun^0.5.5"
+        ],
+        "description": "URL parsing and handling library.",
+        "transform": [],
+        "url": "git+https://github.com/vector-of-bool/neo-url.git#0.2.1"
       }
     },
     "nlohmann-json": {

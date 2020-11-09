@@ -6,11 +6,10 @@
 
 #include <neo/url.hpp>
 #include <neo/url/query.hpp>
-#include <nlohmann/json.hpp>
 
 using namespace dds;
 
-void git_remote_listing::pull_to(const package_id& pid, path_ref dest) const {
+void git_remote_listing::pull_source(path_ref dest) const {
     fs::remove_all(dest);
     using namespace std::literals;
     dds_log(info, "Clone Git repository [{}] (at {}) to [{}]", url, ref, dest.string());
@@ -22,26 +21,6 @@ void git_remote_listing::pull_to(const package_id& pid, path_ref dest) const {
             quote_command(command),
             git_res.retc,
             git_res.output);
-    }
-
-    for (const auto& tr : transforms) {
-        tr.apply_to(dest);
-    }
-
-    if (auto_lib.has_value()) {
-        dds_log(info, "Generating library data automatically");
-
-        auto pkg_strm         = open(dest / "package.json5", std::ios::binary | std::ios::out);
-        auto man_json         = nlohmann::json::object();
-        man_json["name"]      = pid.name;
-        man_json["version"]   = pid.version.to_string();
-        man_json["namespace"] = auto_lib->namespace_;
-        pkg_strm << nlohmann::to_string(man_json);
-
-        auto lib_strm    = open(dest / "library.json5", std::ios::binary | std::ios::out);
-        auto lib_json    = nlohmann::json::object();
-        lib_json["name"] = auto_lib->name;
-        lib_strm << nlohmann::to_string(lib_json);
     }
 }
 
@@ -79,5 +58,9 @@ git_remote_listing git_remote_listing::from_url(std::string_view sv) {
         throw_user_error<errc::invalid_remote_url>(
             "Git URL requires a fragment specifying the Git ref to clone");
     }
-    return {.url = url.to_string(), .ref = *ref, .auto_lib = auto_lib, .transforms = {}};
+    return git_remote_listing{
+        {.auto_lib = auto_lib},
+        url.to_string(),
+        *ref,
+    };
 }

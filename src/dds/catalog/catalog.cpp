@@ -158,9 +158,27 @@ void store_with_remote(const neo::sqlite3::statement_cache&,
 
 void store_with_remote(neo::sqlite3::statement_cache& stmts,
                        const package_info&            pkg,
-                       const git_remote_listing&      git) {
-    auto lm_usage = git.auto_lib.value_or(lm::usage{});
+                       const http_remote_listing&     http) {
+    nsql::exec(  //
+        stmts(R"(
+            INSERT OR REPLACE INTO dds_cat_pkgs (
+                name,
+                version,
+                remote_url,
+                description,
+                repo_transform
+            ) VALUES (?1, ?2, ?3, ?4, ?5)
+        )"_sql),
+        pkg.ident.name,
+        pkg.ident.version.to_string(),
+        http.url,
+        pkg.description,
+        transforms_to_json(http.transforms));
+}
 
+void store_with_remote(neo::sqlite3::statement_cache& stmts,
+                       const package_info&            pkg,
+                       const git_remote_listing&      git) {
     std::string url = git.url;
     if (url.starts_with("https://") || url.starts_with("http://")) {
         url = "git+" + url;

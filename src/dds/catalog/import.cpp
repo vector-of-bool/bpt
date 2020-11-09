@@ -69,7 +69,7 @@ auto parse_remote = [](const std::string& str) {
     try {
         return parse_remote_url(str);
     } catch (const neo::url_validation_error& e) {
-        import_error("{}: Invalid URL: {}", walk.path(), str);
+        import_error("{}: Invalid URL [{}]: {}", walk.path(), str, e.what());
     } catch (const user_error<errc::invalid_remote_url>& e) {
         import_error("{}: Invalid URL: {}", walk.path(), e.what());
     }

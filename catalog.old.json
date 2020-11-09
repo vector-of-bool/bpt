@@ -2416,6 +2416,15 @@
           "transform": [],
           "url": "https://github.com/vector-of-bool/neo-fun.git"
         }
+      },
+      "0.5.5": {
+        "depends": [],
+        "description": "Some library components that didn't quite fit anywhere else...",
+        "git": {
+          "ref": "0.5.5",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-fun.git"
+        }
       }
     },
     "neo-http": {
@@ -2518,6 +2527,28 @@
         "description": "URL parsing and handling library.",
         "git": {
           "ref": "0.1.2",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-url.git"
+        }
+      },
+      "0.2.0": {
+        "depends": [
+          "neo-fun^0.5.5"
+        ],
+        "description": "URL parsing and handling library.",
+        "git": {
+          "ref": "0.2.0",
+          "transform": [],
+          "url": "https://github.com/vector-of-bool/neo-url.git"
+        }
+      },
+      "0.2.1": {
+        "depends": [
+          "neo-fun^0.5.5"
+        ],
+        "description": "URL parsing and handling library.",
+        "git": {
+          "ref": "0.2.1",
           "transform": [],
           "url": "https://github.com/vector-of-bool/neo-url.git"
         }

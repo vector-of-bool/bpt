@@ -15,7 +15,10 @@
     ],
     "link_flags": [
         "-fuse-ld=lld",
-        "-fsanitize=address,undefined"
+        "-fsanitize=address,undefined",
+        "-l:libssl.a",
+        "-l:libcrypto.a",
+        "-ldl",
     ],
     "debug": true,
     "compiler_launcher": "ccache"

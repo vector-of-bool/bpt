@@ -12,7 +12,10 @@
     ],
     "link_flags": [
         "-static-libgcc",
-        "-static-libstdc++"
+        "-static-libstdc++",
+        "-l:libssl.a",
+        "-l:libcrypto.a",
+        "-ldl",
     ],
     "optimize": true
 }

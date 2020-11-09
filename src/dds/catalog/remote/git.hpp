@@ -1,24 +1,17 @@
 #pragma once
 
-#include <dds/catalog/get.hpp>
-#include <dds/util/fs.hpp>
-#include <dds/util/fs_transform.hpp>
+#include "./base.hpp"
 
-#include <libman/package.hpp>
-
-#include <optional>
 #include <string>
+#include <string_view>
 
 namespace dds {
 
-struct git_remote_listing {
-    std::string              url;
-    std::string              ref;
-    std::optional<lm::usage> auto_lib;
+struct git_remote_listing : remote_listing_base {
+    std::string url;
+    std::string ref;
 
-    std::vector<fs_transformation> transforms;
-
-    void pull_to(const package_id& pid, path_ref path) const;
+    void pull_source(path_ref path) const;
 
     static git_remote_listing from_url(std::string_view sv);
 };

@@ -17,12 +17,15 @@ stages:
         pool:
           vmImage: windows-2019
         steps:
+          - pwsh: tools\get-win-openssl.ps1
+            displayName: Get OpenSSL for Windows
+          - script: python -m pip install pytest pytest-xdist
+            displayName: Install Python deps
           - script: |
               echo Loading VS environment
               call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
               echo Executing Build and Tests
               reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
-              python -m pip install pytest pytest-xdist || exit 1
               python -u tools/ci.py -B download -T tools\msvc.jsonc || exit 1
               move _build\dds.exe _build\dds-win-x64.exe || exit 1
             displayName: Build and Test
@@ -35,12 +38,14 @@ stages:
         pool:
           vmImage: ubuntu-18.04
         steps:
-          - script: |
-              set -eu
-              sudo apt update -y
-              sudo apt install -y python3-minimal python3-setuptools g++-9 ccache
-              python3 -m pip install pytest pytest-xdist
-            displayName: Prepare System
+          - script: sudo apt-get -y update
+            displayName: APT Update
+          - script: sudo apt-get -y install g++-9 ccache
+            displayName: Get GCC 9
+          - script: sudo apt-get -y install python3-minimal python3-setuptools
+            displayName: Get Python 3
+          - script: python3 -m pip install pytest pytest-xdist
+            displayName: Get Python Dependencies
           - script: make linux-ci
             displayName: Build and Test
           - publish: _build/dds-linux-x64
@@ -50,14 +55,15 @@ stages:
       - job: macos_gcc9
         displayName: macOS - GCC 9
         pool:
-          vmImage: macOS-10.14
+          vmImage: macOS-10.15
         steps:
           - script: brew install gcc@9 ccache
-            displayName: Prepare System
-          - script: |
-              set -eu
-              python3 -m pip install pytest pytest-xdist
-              make macos-ci
+            displayName: Get GCC 9
+          - script: brew install openssl@1.1
+            displayName: Install OpenSSL
+          - script: python3 -m pip install pytest pytest-xdist
+            displayName: Get Python Dependencies
+          - script: make macos-ci
             displayName: Build and Test
           - publish: _build/dds-macos-x64
             displayName: Publish

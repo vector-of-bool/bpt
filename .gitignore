@@ -6,3 +6,5 @@ __pycache__/
 _prebuilt/
 .pytest_cache/
 .vagrant/
+
+external/OpenSSL

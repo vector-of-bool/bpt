@@ -5,9 +5,22 @@
         "/Zc:preprocessor",
         "/std:c++latest",
         "/DNOMINMAX",
+        // OpenSSL headers:
+        "/Iexternal/OpenSSL/include",
     ],
     "link_flags": [
         "rpcrt4.lib",
+        // Networking:
+        "Ws2_32.lib",
+        // Deps for OpenSSL:
+        "AdvApi32.lib",
+        "Crypt32.lib",
+        "User32.lib",
+        // Link in our external OpenSSL:
+        "/link",
+        "/LibPath:external/OpenSSL/lib",
+        "libssl.lib",
+        "libcrypto.lib",
     ],
     // "debug": true,
     "optimize": true

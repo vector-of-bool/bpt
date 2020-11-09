@@ -262,25 +262,23 @@ struct cli_catalog {
         catalog_path_flag cat_path{cmd};
 
         args::Positional<std::string> pkg_id{cmd,
-                                             "id",
+                                             "<id>",
                                              "The name@version ID of the package to add",
                                              args::Options::Required};
 
-        string_flag auto_lib{cmd,
-                             "auto-lib",
-                             "Set the auto-library information for this package",
-                             {"auto-lib"}};
+        args::Positional<std::string> uri{cmd,
+                                          "<uri>",
+                                          "The URI of the package",
+                                          args::Options::Required};
+        // string_flag auto_lib{cmd,
+        //                      "auto-lib",
+        //                      "Set the auto-library information for this package",
+        //                      {"auto-lib"}};
 
         args::ValueFlagList<std::string> deps{cmd,
                                               "depends",
                                               "The dependencies of this package",
                                               {"depends", 'd'}};
-
-        string_flag git_url{cmd, "git-url", "The Git url for the package", {"git-url"}};
-        string_flag git_ref{cmd,
-                            "git-ref",
-                            "The Git ref to from which the source distribution should be created",
-                            {"git-ref"}};
 
         string_flag description{cmd, "description", "A description of the package", {"desc"}};
 
@@ -294,21 +292,14 @@ struct cli_catalog {
                 // deps.push_back({dep_id.name, dep_id.version});
             }
 
-            dds::package_info info{ident, std::move(deps), description.Get(), {}};
+            auto remote = dds::parse_remote_url(uri.Get());
 
-            if (git_url) {
-                if (!git_ref) {
-                    dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
-                }
-                auto git = dds::git_remote_listing{git_url.Get(), git_ref.Get(), std::nullopt, {}};
-                if (auto_lib) {
-                    git.auto_lib = lm::split_usage_string(auto_lib.Get());
-                }
-                info.remote = std::move(git);
-            } else if (git_ref) {
-                dds::throw_user_error<dds::errc::git_url_ref_mutual_req>();
-            }
+            neo_assertion_breadcrumbs("Running 'catalog add'",
+                                      uri.Get(),
+                                      description.Get(),
+                                      pkg_id.Get());
 
+            dds::package_info info{ident, std::move(deps), description.Get(), remote};
             cat_path.open().store(info);
             return 0;
         }
@@ -349,6 +340,13 @@ struct cli_catalog {
             if (git.auto_lib) {
                 std::cout << "Auto-lib: " << git.auto_lib->name << "/" << git.auto_lib->namespace_
                           << '\n';
+            }
+        }
+
+        void print_remote_info(const dds::http_remote_listing& http) {
+            fmt::print("HTTP/S URL: {}", http.url);
+            if (http.auto_lib) {
+                fmt::print("Auto-lib: {}/{}", http.auto_lib->name, http.auto_lib->namespace_);
             }
         }
 

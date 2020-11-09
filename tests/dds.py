@@ -161,6 +161,7 @@ class DDS:
             'catalog',
             'get',
             f'--catalog={self.catalog_path}',
+            f'--out-dir={self.scratch_dir}',
             req,
         ])
 

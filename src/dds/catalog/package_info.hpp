@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./remote/git.hpp"
+#include "./remote/http.hpp"
 
 #include <dds/deps.hpp>
 #include <dds/package/id.hpp>
@@ -14,7 +15,7 @@
 
 namespace dds {
 
-using remote_listing_var = std::variant<std::monostate, git_remote_listing>;
+using remote_listing_var = std::variant<std::monostate, git_remote_listing, http_remote_listing>;
 
 remote_listing_var parse_remote_url(std::string_view url);
 

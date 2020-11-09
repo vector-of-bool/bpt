@@ -60,7 +60,7 @@ void http_download_with_redir(neo::url url, path_ref dest) {
                     res_head.status_message,
                     loc->value);
             auto new_url = neo::url::try_parse(loc->value);
-            auto err     = std::get_if<neo::url_validation_error>(&new_url);
+            auto err     = std::get_if<neo::url_parse_error>(&new_url);
             if (err) {
                 throw_external_error<errc::http_download_failure>(
                     "Server returned an invalid URL for HTTP redirection [{}]", loc->value);
@@ -83,7 +83,7 @@ void http_download_with_redir(neo::url url, path_ref dest) {
 
 }  // namespace
 
-void http_remote_listing::pull_to(path_ref dest) const {
+void http_remote_listing::pull_source(path_ref dest) const {
     neo::url url;
     try {
         url = neo::url::parse(this->url);
@@ -128,26 +128,33 @@ void http_remote_listing::pull_to(path_ref dest) const {
     fs::create_directories(dest);
     dds_log(debug, "Expanding downloaded source distribution into {}", dest.string());
     std::ifstream infile{dl_path, std::ios::binary};
-    neo::expand_directory_targz(
-        neo::expand_options{
-            .destination_directory = dest,
-            .input_name            = dl_path.string(),
-            .strip_components      = this->strip_components,
-        },
-        infile);
+    try {
+        neo::expand_directory_targz(
+            neo::expand_options{
+                .destination_directory = dest,
+                .input_name            = dl_path.string(),
+                .strip_components      = this->strip_components,
+            },
+            infile);
+    } catch (const std::runtime_error& err) {
+        throw_external_error<errc::invalid_remote_url>(
+            "The file downloaded from [{}] failed to extract (Inner error: {})",
+            this->url,
+            err.what());
+    }
 }
 
 http_remote_listing http_remote_listing::from_url(std::string_view sv) {
     auto url = neo::url::parse(sv);
     dds_log(trace, "Create HTTP remote listing from URL [{}]", sv);
 
-    auto q = url.query;
-
-    unsigned                 strip_components = 0;
+    // Because archives most often have one top-level directory, the default strip-components
+    // setting is 'one'
+    unsigned int             strip_components = 1;
     std::optional<lm::usage> auto_lib;
 
-    if (q) {
-        neo::basic_query_string_view qsv{*q};
+    if (url.query) {
+        neo::basic_query_string_view qsv{*url.query};
         for (auto qstr : qsv) {
             if (qstr.key_raw() == "dds_lm") {
                 auto_lib = lm::split_usage_string(qstr.value_decoded());
@@ -160,8 +167,8 @@ http_remote_listing http_remote_listing::from_url(std::string_view sv) {
     }
 
     return http_remote_listing{
-        .url              = url.to_string(),
-        .strip_components = strip_components,
-        .auto_lib         = auto_lib,
+        {.auto_lib = auto_lib},
+        url.to_string(),
+        strip_components,
     };
 }
