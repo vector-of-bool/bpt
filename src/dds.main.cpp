@@ -3,6 +3,8 @@
 #include <dds/catalog/get.hpp>
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/http/session.hpp>
+#include <dds/remote/remote.hpp>
 #include <dds/repo/repo.hpp>
 #include <dds/repoman/repoman.hpp>
 #include <dds/source/dist.hpp>
@@ -699,6 +701,80 @@ struct cli_repo {
 
     struct {
         cli_repo&     parent;
+        args::Command cmd{parent.repo_group, "add", "Add a remote repository"};
+        common_flags  _flags{cmd};
+
+        catalog_path_flag cat_path{cmd};
+
+        args::Positional<std::string> url{cmd,
+                                          "<url>",
+                                          "URL of a repository to add",
+                                          args::Options::Required};
+
+        args::Flag update{cmd, "update", "Update catalog contents immediately", {"update", 'U'}};
+
+        int run() {
+            return boost::leaf::try_handle_all(  //
+                [&]() -> dds::result<int> {
+                    try {
+                        auto cat  = cat_path.open();
+                        auto repo = dds::remote_repository::connect(url.Get());
+                        repo.store(cat.database());
+                        if (update) {
+                            repo.update_catalog(cat.database());
+                        }
+                    } catch (...) {
+                        return dds::capture_exception();
+                    }
+                    return 0;
+                },
+                [&](neo::url_validation_error url_err, dds::e_url_string bad_url) {
+                    dds_log(error, "Invalid URL [{}]: {}", bad_url.value, url_err.what());
+                    return 1;
+                },
+                [&](const json5::parse_error& e, dds::e_http_url bad_url) {
+                    dds_log(error,
+                            "Error parsing JSON downloaded from URL [{}]: {}",
+                            bad_url.value,
+                            e.what());
+                    return 1;
+                },
+                [](dds::e_sqlite3_error_exc e, dds::e_url_string url) {
+                    dds_log(error,
+                            "Error accessing remote database (From {}): {}",
+                            url.value,
+                            e.message);
+                    return 1;
+                },
+                [](dds::e_sqlite3_error_exc e) {
+                    dds_log(error, "Unexpected database error: {}", e.message);
+                    return 1;
+                },
+                [&](dds::e_system_error_exc e, dds::e_http_connect conn) {
+                    dds_log(error,
+                            "Error opening connection to [{}:{}]: {}",
+                            conn.host,
+                            conn.port,
+                            e.message);
+                    return 1;
+                },
+                [](const std::exception& e) {
+                    dds_log(error, "An unknown unhandled exception occurred: {}", e.what());
+                    return 1;
+                },
+                [](dds::e_system_error_exc e) {
+                    dds_log(error, "An unknown system_error occurred: {}", e.message);
+                    return 42;
+                },
+                [](boost::leaf::diagnostic_info const& info) {
+                    dds_log(error, "An unnknown error occurred? {}", info);
+                    return 42;
+                });
+        }
+    } add{*this};
+
+    struct {
+        cli_repo&     parent;
         args::Command cmd{parent.repo_group, "init", "Initialize a directory as a repository"};
         common_flags  _common{cmd};
 
@@ -720,6 +796,8 @@ struct cli_repo {
             return init.run();
         } else if (import_.cmd) {
             return import_.run();
+        } else if (add.cmd) {
+            return add.run();
         } else {
             assert(false);
             std::terminate();

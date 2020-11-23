@@ -81,7 +81,7 @@ void migrate_repodb_3(nsql::database& db) {
     db.exec(R"(
         CREATE TABLE dds_cat_remotes (
             remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ident TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL UNIQUE,
             gen_ident TEXT NOT NULL,
             remote_url TEXT NOT NULL
         );

@@ -30,6 +30,10 @@ struct e_sqlite3_error_exc {
     std::error_code code;
 };
 
+struct e_url_string {
+    std::string value;
+};
+
 /**
  * @brief Capture currently in-flight special exceptions as new error object. Works around a bug in
  * Boost.LEAF when catching std::system error.

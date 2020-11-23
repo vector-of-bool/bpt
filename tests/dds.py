@@ -69,13 +69,17 @@ class DDS:
     def project_dir_arg(self) -> str:
         return f'--project-dir={self.source_root}'
 
+    @property
+    def catalog_path_arg(self) -> str:
+        return f'--catalog={self.catalog_path}'
+
     def build_deps(self, args: proc.CommandLine, *,
                    toolchain: str = None) -> subprocess.CompletedProcess:
         return self.run([
             'build-deps',
             f'--toolchain={toolchain or self.default_builtin_toolchain}',
-            f'--catalog={self.catalog_path}',
-            f'--repo-dir={self.repo_dir}',
+            self.catalog_path_arg,
+            self.repo_dir_arg,
             f'--out={self.deps_build_dir}',
             f'--lmi-path={self.lmi_path}',
             args,
