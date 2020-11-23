@@ -11,7 +11,7 @@
         "neo-sqlite3@0.4.1",
         "neo-fun~0.5.4",
         "neo-compress~0.1.1",
-        "neo-url~0.2.1",
+        "neo-url~0.2.2",
         "semver@0.2.2",
         "pubgrub@0.2.1",
         "vob-json5@0.1.5",

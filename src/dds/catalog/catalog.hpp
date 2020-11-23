@@ -45,6 +45,9 @@ public:
         auto content = dds::slurp_file(json_path);
         import_json_str(content);
     }
+
+    auto& database() noexcept { return _db; }
+    auto& database() const noexcept { return _db; }
 };
 
 }  // namespace dds

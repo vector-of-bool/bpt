@@ -292,7 +292,8 @@ PACKAGES = [
     github_package('neo-buffer', 'vector-of-bool/neo-buffer',
                    ['0.2.1', '0.3.0', '0.4.0', '0.4.1', '0.4.2']),
     github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0', '0.1.1']),
-    github_package('neo-url', 'vector-of-bool/neo-url', ['0.1.0', '0.1.1', '0.1.2', '0.2.0', '0.2.1']),
+    github_package('neo-url', 'vector-of-bool/neo-url',
+                   ['0.1.0', '0.1.1', '0.1.2', '0.2.0', '0.2.1', '0.2.2']),
     github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3',
                    ['0.2.3', '0.3.0', '0.4.0', '0.4.1']),
     github_package('neo-fun', 'vector-of-bool/neo-fun', [

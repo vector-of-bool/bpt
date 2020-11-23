@@ -19,7 +19,7 @@ void http_download_with_redir(neo::url url, path_ref dest) {
             ? http_session::connect_ssl(*url.host, url.port_or_default_port_or(443))
             : http_session::connect(*url.host, url.port_or_default_port_or(80));
 
-        sess.send_head({.method = "GET", .path = url.path_string()});
+        sess.send_head({.method = "GET", .path = url.path});
 
         auto res_head = sess.recv_head();
         if (res_head.is_error()) {
@@ -109,7 +109,7 @@ void http_remote_listing::pull_source(path_ref dest) const {
                this->url);
 
     auto tdir     = dds::temporary_dir::create();
-    auto url_path = fs::path(url.path_string());
+    auto url_path = fs::path(url.path);
     auto fname    = url_path.filename();
     if (fname.empty()) {
         fname = "dds-download.tmp";

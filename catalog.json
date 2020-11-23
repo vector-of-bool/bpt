@@ -2069,6 +2069,14 @@
         "description": "URL parsing and handling library.",
         "transform": [],
         "url": "git+https://github.com/vector-of-bool/neo-url.git#0.2.1"
+      },
+      "0.2.2": {
+        "depends": [
+          "neo-fun^0.5.5"
+        ],
+        "description": "URL parsing and handling library.",
+        "transform": [],
+        "url": "git+https://github.com/vector-of-bool/neo-url.git#0.2.2"
       }
     },
     "nlohmann-json": {
