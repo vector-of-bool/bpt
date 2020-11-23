@@ -247,13 +247,14 @@ void store_init_packages(nsql::database& db, nsql::statement_cache& st_cache) {
 }
 
 void ensure_migrated(nsql::database& db) {
-    nsql::transaction_guard tr{db};
     db.exec(R"(
         PRAGMA foreign_keys = 1;
         CREATE TABLE IF NOT EXISTS dds_cat_meta AS
             WITH init(meta) AS (VALUES ('{"version": 0}'))
             SELECT * FROM init;
     )");
+    nsql::transaction_guard tr{db};
+
     auto meta_st     = db.prepare("SELECT meta FROM dds_cat_meta");
     auto [meta_json] = nsql::unpack_single<std::string>(meta_st);
 
