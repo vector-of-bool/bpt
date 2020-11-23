@@ -16,6 +16,7 @@
         "neo/io",
         "neo/http",
         "neo/url",
+        "boost/leaf",
         // Explicit zlib link is required due to linker input order bug.
         // Can be removed after alpha.5
         "zlib/zlib",

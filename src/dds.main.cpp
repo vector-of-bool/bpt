@@ -4,14 +4,22 @@
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/repo/repo.hpp>
+#include <dds/repoman/repoman.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
+#include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
 
+#include <boost/leaf/handle_error.hpp>
+#include <boost/leaf/handle_exception.hpp>
+#include <fmt/ostream.h>
+#include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
+#include <neo/sqlite3/error.hpp>
+#include <nlohmann/json.hpp>
 #include <range/v3/action/join.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
@@ -393,6 +401,199 @@ struct cli_catalog {
             assert(false);
             std::terminate();
         }
+    }
+};
+
+/*
+########  ######## ########   #######  ##     ##    ###    ##    ##
+##     ## ##       ##     ## ##     ## ###   ###   ## ##   ###   ##
+##     ## ##       ##     ## ##     ## #### ####  ##   ##  ####  ##
+########  ######   ########  ##     ## ## ### ## ##     ## ## ## ##
+##   ##   ##       ##        ##     ## ##     ## ######### ##  ####
+##    ##  ##       ##        ##     ## ##     ## ##     ## ##   ###
+##     ## ######## ##         #######  ##     ## ##     ## ##    ##
+*/
+
+struct cli_repoman {
+    cli_base&     base;
+    args::Command cmd{base.cmd_group, "repoman", "Manage a package package repository"};
+    common_flags  _common{cmd};
+
+    args::Group repoman_group{cmd, "Repoman subcommand"};
+
+    struct {
+        cli_repoman&  parent;
+        args::Command cmd{parent.repoman_group, "init", "Initialize a new repository directory"};
+        common_flags  _common{cmd};
+
+        args::Positional<dds::fs::path> where{cmd,
+                                              "<repo-path>",
+                                              "Directory where the repository will be created",
+                                              args::Options::Required};
+
+        string_flag name{cmd,
+                         "<name>",
+                         "Give the repository a name (should be GLOBALLY unique). If not provided, "
+                         "a new random one will be generated.",
+                         {"name"}};
+
+        int run() {
+            auto repo
+                = dds::repo_manager::create(where.Get(),
+                                            name ? std::make_optional(name.Get()) : std::nullopt);
+            dds_log(info, "Created new repository '{}' in {}", repo.root(), repo.name());
+            return 0;
+        }
+    } init{*this};
+
+    struct {
+        cli_repoman&  parent;
+        args::Command cmd{parent.repoman_group, "import", "Import packages into a repository"};
+        common_flags  _common{cmd};
+
+        args::Positional<dds::fs::path> where{cmd,
+                                              "<repo-path>",
+                                              "Directory of the repository to import",
+                                              args::Options::Required};
+
+        args::PositionalList<dds::fs::path> files{cmd,
+                                                  "<targz-path>",
+                                                  "Path to one or more sdist archives to import"};
+
+        int run() {
+            auto repo = dds::repo_manager::open(where.Get());
+            for (auto pkg : files.Get()) {
+                repo.import_targz(pkg);
+            }
+            return 0;
+        }
+    } import{*this};
+
+    struct {
+        cli_repoman&  parent;
+        args::Command cmd{parent.repoman_group, "remove", "Remove packages from the repository"};
+        common_flags  _common{cmd};
+
+        args::Positional<dds::fs::path> where{cmd,
+                                              "<repo-path>",
+                                              "Directory of the repository to import",
+                                              args::Options::Required};
+
+        args::PositionalList<std::string> packages{cmd,
+                                                   "<package-id>",
+                                                   "One or more identifiers of packages to remove"};
+
+        int run() {
+            auto repo = dds::repo_manager::open(where.Get());
+            for (auto& str : packages) {
+                auto pkg_id = dds::package_id::parse(str);
+                repo.delete_package(pkg_id);
+            }
+            return 0;
+        }
+    } remove{*this};
+
+    struct {
+        cli_repoman&  parent;
+        args::Command cmd{parent.repoman_group, "ls", "List packages in the repository"};
+        common_flags  _common{cmd};
+
+        args::Positional<dds::fs::path> where{cmd,
+                                              "<repo-path>",
+                                              "Directory of the repository to inspect",
+                                              args::Options::Required};
+
+        int run() {
+            auto repo = dds::repo_manager::open(where.Get());
+            for (auto pkg_id : repo.all_packages()) {
+                std::cout << pkg_id.to_string() << '\n';
+            }
+            return 0;
+        }
+    } ls{*this};
+
+    dds::result<int> _run() {
+        if (init.cmd) {
+            return init.run();
+        } else if (import.cmd) {
+            return import.run();
+        } else if (remove.cmd) {
+            return remove.run();
+        } else if (ls.cmd) {
+            return ls.run();
+        }
+        return 66;
+    }
+
+    int run() {
+        return boost::leaf::try_handle_all(  //
+            [&]() -> dds::result<int> {
+                try {
+                    return _run();
+                } catch (...) {
+                    return dds::capture_exception();
+                }
+            },
+            [](dds::e_sqlite3_error_exc,
+               boost::leaf::match<neo::sqlite3::errc, neo::sqlite3::errc::constraint_unique>,
+               dds::e_repo_import_targz tgz,
+               dds::package_id          pkg_id) {
+                dds_log(error,
+                        "Package {} (from {}) is already present in the repository",
+                        pkg_id.to_string(),
+                        tgz.path);
+                return 1;
+            },
+            [](dds::e_sqlite3_error_exc e, dds::e_repo_import_targz tgz) {
+                dds_log(error,
+                        "Database error while importing tar file {}: {}",
+                        tgz.path,
+                        e.message);
+                return 1;
+            },
+            [](dds::e_sqlite3_error_exc e, dds::e_init_repo init, dds::e_init_repo_db init_db) {
+                dds_log(
+                    error,
+                    "SQLite error while initializing repository in [{}] (SQlite database {}): {}",
+                    init.path,
+                    init_db.path,
+                    e.message);
+                return 1;
+            },
+            [](dds::e_system_error_exc e, dds::e_repo_import_targz tgz) {
+                dds_log(error, "Failed to import package archive {}: {}", tgz.path, e.message);
+                return 1;
+            },
+            [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
+                dds_log(error,
+                        "Error while opening repository database {}: {}",
+                        db.path,
+                        e.message);
+                return 1;
+            },
+            [](dds::e_sqlite3_error_exc e, dds::e_init_repo init) {
+                dds_log(error,
+                        "SQLite error while initializing repository in [{}]: {}",
+                        init.path,
+                        e.message);
+                return 1;
+            },
+            [](dds::e_system_error_exc e, dds::e_repo_delete_targz tgz, dds::package_id pkg_id) {
+                dds_log(error,
+                        "Cannot delete requested package '{}' from repository (Archive {}): {}",
+                        pkg_id.to_string(),
+                        tgz.path,
+                        e.message);
+                return 1;
+            },
+            [](dds::e_system_error_exc e) {
+                dds_log(error, "Unhandled system_error: {}", e.message);
+                return 1;
+            },
+            [](boost::leaf::diagnostic_info const& info) {
+                dds_log(error, "Unknown error: {}", info);
+                return 42;
+            });
     }
 };
 
@@ -910,6 +1111,7 @@ int main_fn(const std::vector<std::string>& argv) {
     cli_build        build{cli};
     cli_sdist        sdist{cli};
     cli_repo         repo{cli};
+    cli_repoman      repoman{cli};
     cli_catalog      catalog{cli};
     cli_build_deps   build_deps{cli};
 
@@ -939,6 +1141,8 @@ int main_fn(const std::vector<std::string>& argv) {
             return sdist.run();
         } else if (repo.cmd) {
             return repo.run();
+        } else if (repoman.cmd) {
+            return repoman.run();
         } else if (catalog.cmd) {
             return catalog.run();
         } else if (build_deps.cmd) {

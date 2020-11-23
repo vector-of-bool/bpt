@@ -35,6 +35,10 @@ struct package_manifest {
      * Load a package manifest from a file on disk.
      */
     static package_manifest load_from_file(path_ref);
+    /**
+     * @brief Load a package manifest from an in-memory string
+     */
+    static package_manifest load_from_json5_str(std::string_view, std::string_view input_name);
 
     /**
      * Find a package manifest contained within a directory. This will search

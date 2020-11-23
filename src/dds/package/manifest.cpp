@@ -103,9 +103,14 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
 
 package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     auto content = slurp_file(fpath);
-    auto data    = json5::parse_data(content);
+    return load_from_json5_str(content, fpath.string());
+}
+
+package_manifest package_manifest::load_from_json5_str(std::string_view content,
+                                                       std::string_view input_name) {
+    auto data = json5::parse_data(content);
     try {
-        return parse_json(data, fpath.string());
+        return parse_json(data, input_name);
     } catch (const semester::walk_error& e) {
         throw_user_error<errc::invalid_pkg_manifest>(e.what());
     }
