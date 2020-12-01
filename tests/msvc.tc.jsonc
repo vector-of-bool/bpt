@@ -1,0 +1,4 @@
+{
+    "$schema": "../res/toolchain-schema.json",
+    "compiler_id": "msvc"
+}

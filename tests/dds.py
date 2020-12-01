@@ -14,8 +14,7 @@ from . import fileutil
 
 
 class DDS:
-    def __init__(self, dds_exe: Path, test_dir: Path, project_dir: Path,
-                 scope: ExitStack) -> None:
+    def __init__(self, dds_exe: Path, test_dir: Path, project_dir: Path, scope: ExitStack) -> None:
         self.dds_exe = dds_exe
         self.test_dir = test_dir
         self.source_root = project_dir
@@ -47,18 +46,15 @@ class DDS:
         if self.scratch_dir.exists():
             shutil.rmtree(self.scratch_dir)
 
-    def run_unchecked(self, cmd: proc.CommandLine, *,
-                      cwd: Path = None) -> subprocess.CompletedProcess:
+    def run_unchecked(self, cmd: proc.CommandLine, *, cwd: Path = None) -> subprocess.CompletedProcess:
         full_cmd = itertools.chain([self.dds_exe, '-ltrace'], cmd)
         return proc.run(full_cmd, cwd=cwd or self.source_root)
 
-    def run(self, cmd: proc.CommandLine, *, cwd: Path = None,
-            check=True) -> subprocess.CompletedProcess:
+    def run(self, cmd: proc.CommandLine, *, cwd: Path = None, check=True) -> subprocess.CompletedProcess:
         cmdline = list(proc.flatten_cmd(cmd))
         res = self.run_unchecked(cmd, cwd=cwd)
         if res.returncode != 0 and check:
-            raise subprocess.CalledProcessError(
-                res.returncode, [self.dds_exe] + cmdline, res.stdout)
+            raise subprocess.CalledProcessError(res.returncode, [self.dds_exe] + cmdline, res.stdout)
         return res
 
     @property
@@ -73,8 +69,7 @@ class DDS:
     def catalog_path_arg(self) -> str:
         return f'--catalog={self.catalog_path}'
 
-    def build_deps(self, args: proc.CommandLine, *,
-                   toolchain: str = None) -> subprocess.CompletedProcess:
+    def build_deps(self, args: proc.CommandLine, *, toolchain: str = None) -> subprocess.CompletedProcess:
         return self.run([
             'build-deps',
             f'--toolchain={toolchain or self.default_builtin_toolchain}',
@@ -109,8 +104,7 @@ class DDS:
 
     def sdist_create(self) -> subprocess.CompletedProcess:
         self.build_dir.mkdir(exist_ok=True, parents=True)
-        return self.run(['sdist', 'create', self.project_dir_arg],
-                        cwd=self.build_dir)
+        return self.run(['sdist', 'create', self.project_dir_arg], cwd=self.build_dir)
 
     def sdist_export(self) -> subprocess.CompletedProcess:
         return self.run([
@@ -126,13 +120,11 @@ class DDS:
     @property
     def default_builtin_toolchain(self) -> str:
         if os.name == 'posix':
-            return ':c++17:gcc-9'
+            return str(Path(__file__).parent.joinpath('gcc-9.tc.jsonc'))
         elif os.name == 'nt':
-            return ':c++17:msvc'
+            return str(Path(__file__).parent.joinpath('msvc.tc.jsonc'))
         else:
-            raise RuntimeError(
-                f'No default builtin toolchain defined for tests on platform "{os.name}"'
-            )
+            raise RuntimeError(f'No default builtin toolchain defined for tests on platform "{os.name}"')
 
     @property
     def exe_suffix(self) -> str:
@@ -141,15 +133,11 @@ class DDS:
         elif os.name == 'nt':
             return '.exe'
         else:
-            raise RuntimeError(
-                f'We don\'t know the executable suffix for the platform "{os.name}"'
-            )
+            raise RuntimeError(f'We don\'t know the executable suffix for the platform "{os.name}"')
 
     def catalog_create(self) -> subprocess.CompletedProcess:
         self.scratch_dir.mkdir(parents=True, exist_ok=True)
-        return self.run(
-            ['catalog', 'create', f'--catalog={self.catalog_path}'],
-            cwd=self.test_dir)
+        return self.run(['catalog', 'create', f'--catalog={self.catalog_path}'], cwd=self.test_dir)
 
     def catalog_import(self, json_path: Path) -> subprocess.CompletedProcess:
         self.scratch_dir.mkdir(parents=True, exist_ok=True)
@@ -169,8 +157,7 @@ class DDS:
             req,
         ])
 
-    def set_contents(self, path: Union[str, Path],
-                     content: bytes) -> ContextManager[Path]:
+    def set_contents(self, path: Union[str, Path], content: bytes) -> ContextManager[Path]:
         return fileutil.set_contents(self.source_root / path, content)
 
 
@@ -190,8 +177,7 @@ class DDSFixtureParams(NamedTuple):
 
 def dds_fixture_conf(*argsets: DDSFixtureParams):
     args = list(argsets)
-    return pytest.mark.parametrize(
-        'dds', args, indirect=True, ids=[p.ident for p in args])
+    return pytest.mark.parametrize('dds', args, indirect=True, ids=[p.ident for p in args])
 
 
 def dds_fixture_conf_1(subdir: Union[Path, str]):

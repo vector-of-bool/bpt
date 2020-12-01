@@ -46,17 +46,13 @@ def test_import_json(dds: DDS):
             }
         },
     }
-    dds.scope.enter_context(
-        dds.set_contents(json_fpath,
-                         json.dumps(import_data).encode()))
+    dds.scope.enter_context(dds.set_contents(json_fpath, json.dumps(import_data).encode()))
     dds.catalog_import(json_fpath)
 
 
 @pytest.yield_fixture
 def http_import_server():
-    handler = partial(
-        DirectoryServingHTTPRequestHandler,
-        dir=Path.cwd() / 'data/http-test-1')
+    handler = partial(DirectoryServingHTTPRequestHandler, dir=Path.cwd() / 'data/http-test-1')
     addr = ('0.0.0.0', 8000)
     pool = ThreadPoolExecutor()
     with HTTPServer(addr, handler) as httpd:
@@ -69,31 +65,15 @@ def http_import_server():
 
 @pytest.yield_fixture
 def http_repo_server():
-    handler = partial(
-        DirectoryServingHTTPRequestHandler,
-        dir=Path.cwd() / 'data/test-repo-1')
+    handler = partial(DirectoryServingHTTPRequestHandler, dir=Path.cwd() / 'data/test-repo-1')
     addr = ('0.0.0.0', 4646)
     pool = ThreadPoolExecutor()
     with HTTPServer(addr, handler) as httpd:
         pool.submit(lambda: httpd.serve_forever(poll_interval=0.1))
         try:
-            yield
+            yield 'http://localhost:4646'
         finally:
             httpd.shutdown()
-
-
-def test_import_http(dds: DDS, http_import_server):
-    dds.repo_dir.mkdir(parents=True, exist_ok=True)
-    dds.run(
-        [
-            'repo',
-            dds.repo_dir_arg,
-            'import',
-            'http://localhost:8000/neo-buffer-0.4.2.tar.gz',
-        ],
-        cwd=dds.repo_dir,
-    )
-    assert dds.repo_dir.joinpath('neo-buffer@0.4.2').is_dir()
 
 
 def test_repo_add(dds: DDS, http_repo_server):
@@ -103,7 +83,7 @@ def test_repo_add(dds: DDS, http_repo_server):
         dds.repo_dir_arg,
         'add',
         dds.catalog_path_arg,
-        'http://localhost:4646',
+        http_repo_server,
         '--update',
     ])
-    # dds.build_deps(['neo-url@0.2.1'])
+    dds.build_deps(['neo-fun@0.6.0'])

@@ -225,8 +225,10 @@ def _version_for_github_tag(pkg_name: str, desc: str, clone_url: str,
             f'Unknown "depends" object from json file: {depends!r}')
 
     remote = Git(url=clone_url, ref=tag['name'])
-    return Version(
-        version, description=desc, depends=list(pairs), remote=remote)
+    return Version(version,
+                   description=desc,
+                   depends=list(pairs),
+                   remote=remote)
 
 
 def github_package(name: str, repo: str, want_tags: Iterable[str]) -> Package:
@@ -244,8 +246,8 @@ def github_package(name: str, repo: str, want_tags: Iterable[str]) -> Package:
     tag_items = (t for t in avail_tags if t['name'] in want_tags)
 
     versions = HTTP_POOL.map(
-        lambda tag: _version_for_github_tag(name, desc, repo_data['clone_url'], tag),
-        tag_items)
+        lambda tag: _version_for_github_tag(name, desc, repo_data['clone_url'],
+                                            tag), tag_items)
 
     return Package(name, list(versions))
 
@@ -258,12 +260,11 @@ def simple_packages(name: str,
                     *,
                     tag_fmt: str = '{}') -> Package:
     return Package(name, [
-        Version(
-            ver.version,
-            description=description,
-            remote=Git(
-                git_url, tag_fmt.format(ver.version), auto_lib=auto_lib),
-            depends=ver.depends) for ver in versions
+        Version(ver.version,
+                description=description,
+                remote=Git(
+                    git_url, tag_fmt.format(ver.version), auto_lib=auto_lib),
+                depends=ver.depends) for ver in versions
     ])
 
 
@@ -276,14 +277,12 @@ def many_versions(name: str,
                   transforms: Sequence[FSTransform] = (),
                   description='(No description was provided)') -> Package:
     return Package(name, [
-        Version(
-            ver,
-            description='\n'.join(textwrap.wrap(description)),
-            remote=Git(
-                url=git_url,
-                ref=tag_fmt.format(ver),
-                auto_lib=auto_lib,
-                transforms=transforms)) for ver in versions
+        Version(ver,
+                description='\n'.join(textwrap.wrap(description)),
+                remote=Git(url=git_url,
+                           ref=tag_fmt.format(ver),
+                           auto_lib=auto_lib,
+                           transforms=transforms)) for ver in versions
     ])
 
 
@@ -298,9 +297,9 @@ PACKAGES = [
                    ['0.2.3', '0.3.0', '0.4.0', '0.4.1']),
     github_package('neo-fun', 'vector-of-bool/neo-fun', [
         '0.1.1', '0.2.0', '0.2.1', '0.3.0', '0.3.1', '0.3.2', '0.4.0', '0.4.1',
-        '0.4.2', '0.5.0', '0.5.1', '0.5.2', '0.5.3', '0.5.4', '0.5.5',
+        '0.4.2', '0.5.0', '0.5.1', '0.5.2', '0.5.3', '0.5.4', '0.5.5', '0.6.0',
     ]),
-    github_package('neo-io', 'vector-of-bool/neo-io', ['0.1.0']),
+    github_package('neo-io', 'vector-of-bool/neo-io', ['0.1.0', '0.1.1']),
     github_package('neo-http', 'vector-of-bool/neo-http', ['0.1.0']),
     github_package('neo-concepts', 'vector-of-bool/neo-concepts', (
         '0.2.2',
@@ -974,47 +973,3 @@ if __name__ == "__main__":
     Path('catalog.json').write_text(json_str)
     Path('catalog.old.json').write_text(
         json.dumps(old_data, indent=2, sort_keys=True))
-
-    cpp_template = textwrap.dedent(r'''
-        #include <dds/catalog/package_info.hpp>
-        #include <dds/catalog/init_catalog.hpp>
-        #include <dds/catalog/import.hpp>
-
-        #include <neo/gzip.hpp>
-        #include <neo/transform_io.hpp>
-        #include <neo/string_io.hpp>
-        #include <neo/inflate.hpp>
-
-        /**
-         * The following array of integers is generated and contains gzip-compressed
-         * JSON  encoded initial catalog. MSVC can't handle string literals over
-         * 64k large, so we have to resort to using a regular char array:
-         */
-        static constexpr const unsigned char INIT_PACKAGES_CONTENT[] = {
-        @JSON@
-        };
-
-        const std::vector<dds::package_info>&
-        dds::init_catalog_packages() noexcept {
-            using std::nullopt;
-            static auto pkgs = []{
-                using namespace neo;
-                string_dynbuf_io str_out;
-                buffer_copy(str_out,
-                            buffer_transform_source{
-                                buffers_consumer(as_buffer(INIT_PACKAGES_CONTENT)),
-                                gzip_decompressor{inflate_decompressor{}}},
-                            @JSON_LEN@);
-                return dds::parse_packages_json(str_out.read_area_view());
-            }();
-            return pkgs;
-        }
-        ''')
-
-    json_small = json.dumps(data, sort_keys=True)
-    json_compr = gzip.compress(json_small.encode('utf-8'), compresslevel=9)
-    json_small_arr = ','.join(str(c) for c in json_compr)
-
-    cpp_content = cpp_template.replace('@JSON@', json_small_arr).replace(
-        '@JSON_LEN@', str(len(json_small)))
-    Path('src/dds/catalog/init_catalog.cpp').write_text(cpp_content)
