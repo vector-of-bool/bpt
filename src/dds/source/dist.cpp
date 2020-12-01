@@ -133,6 +133,7 @@ sdist sdist::from_directory(path_ref where) {
 }
 
 temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
+    neo_assertion_breadcrumbs("Expanding sdist targz file", targz_path.string());
     auto infile = open(targz_path, std::ios::binary | std::ios::in);
     return expand_sdist_from_istream(infile, targz_path.string());
 }

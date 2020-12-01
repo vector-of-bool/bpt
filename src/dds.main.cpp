@@ -680,10 +680,13 @@ struct cli_repo {
                 auto if_exists_action
                     = force.Get() ? dds::if_exists::replace : dds::if_exists::throw_exc;
                 for (std::string_view tgz_where : sdist_paths.Get()) {
+                    neo_assertion_breadcrumbs("Importing sdist", tgz_where);
                     auto tmp_sd
                         = (tgz_where.starts_with("http://") || tgz_where.starts_with("https://"))
                         ? dds::download_expand_sdist_targz(tgz_where)
                         : dds::expand_sdist_targz(tgz_where);
+                    neo_assertion_breadcrumbs("Importing from temporary directory",
+                                              tmp_sd.tmpdir.path());
                     repo.add_sdist(tmp_sd.sdist, if_exists_action);
                 }
                 if (import_stdin) {

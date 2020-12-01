@@ -60,6 +60,7 @@ repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
 }
 
 void repository::add_sdist(const sdist& sd, if_exists ife_action) {
+    neo_assertion_breadcrumbs("Importing sdist archive", sd.manifest.pkg_id.to_string());
     if (!_write_enabled) {
         dds_log(
             critical,
@@ -117,8 +118,8 @@ std::vector<package_id> repository::solve(const std::vector<dependency>& deps,
                 | ranges::views::transform([](const sdist& sd) { return sd.manifest.pkg_id; });
             auto avail = ctlg.by_name(name);
             auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
-            ranges::sort(all, std::less<>{});
-            ranges::unique(all, std::less<>{});
+            ranges::sort(all, std::less{});
+            ranges::unique(all, std::less{});
             return all;
         },
         [&](const package_id& pkg_id) {
