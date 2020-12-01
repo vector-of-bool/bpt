@@ -200,7 +200,6 @@ struct cli_catalog {
         catalog_path_flag cat_path{cmd};
 
         args::Flag import_stdin{cmd, "stdin", "Import JSON from stdin", {"stdin"}};
-        args::Flag init{cmd, "initial", "Re-import the initial catalog contents", {"initial"}};
         args::ValueFlagList<std::string>
             json_paths{cmd,
                        "json",
@@ -209,9 +208,6 @@ struct cli_catalog {
 
         int run() {
             auto cat = cat_path.open();
-            if (init.Get()) {
-                cat.import_initial();
-            }
             for (const auto& json_fpath : json_paths.Get()) {
                 cat.import_json_file(json_fpath);
             }
@@ -443,7 +439,7 @@ struct cli_repoman {
             auto repo
                 = dds::repo_manager::create(where.Get(),
                                             name ? std::make_optional(name.Get()) : std::nullopt);
-            dds_log(info, "Created new repository '{}' in {}", repo.root(), repo.name());
+            dds_log(info, "Created new repository '{}' in {}", repo.name(), repo.root());
             return 0;
         }
     } init{*this};
@@ -717,64 +713,29 @@ struct cli_repo {
         args::Flag update{cmd, "update", "Update catalog contents immediately", {"update", 'U'}};
 
         int run() {
-            return boost::leaf::try_handle_all(  //
-                [&]() -> dds::result<int> {
-                    try {
-                        auto cat  = cat_path.open();
-                        auto repo = dds::remote_repository::connect(url.Get());
-                        repo.store(cat.database());
-                        if (update) {
-                            repo.update_catalog(cat.database());
-                        }
-                    } catch (...) {
-                        return dds::capture_exception();
-                    }
-                    return 0;
-                },
-                [&](neo::url_validation_error url_err, dds::e_url_string bad_url) {
-                    dds_log(error, "Invalid URL [{}]: {}", bad_url.value, url_err.what());
-                    return 1;
-                },
-                [&](const json5::parse_error& e, dds::e_http_url bad_url) {
-                    dds_log(error,
-                            "Error parsing JSON downloaded from URL [{}]: {}",
-                            bad_url.value,
-                            e.what());
-                    return 1;
-                },
-                [](dds::e_sqlite3_error_exc e, dds::e_url_string url) {
-                    dds_log(error,
-                            "Error accessing remote database (From {}): {}",
-                            url.value,
-                            e.message);
-                    return 1;
-                },
-                [](dds::e_sqlite3_error_exc e) {
-                    dds_log(error, "Unexpected database error: {}", e.message);
-                    return 1;
-                },
-                [&](dds::e_system_error_exc e, dds::e_http_connect conn) {
-                    dds_log(error,
-                            "Error opening connection to [{}:{}]: {}",
-                            conn.host,
-                            conn.port,
-                            e.message);
-                    return 1;
-                },
-                [](const std::exception& e) {
-                    dds_log(error, "An unknown unhandled exception occurred: {}", e.what());
-                    return 1;
-                },
-                [](dds::e_system_error_exc e) {
-                    dds_log(error, "An unknown system_error occurred: {}", e.message);
-                    return 42;
-                },
-                [](boost::leaf::diagnostic_info const& info) {
-                    dds_log(error, "An unnknown error occurred? {}", info);
-                    return 42;
-                });
+            auto cat  = cat_path.open();
+            auto repo = dds::remote_repository::connect(url.Get());
+            repo.store(cat.database());
+            if (update) {
+                repo.update_catalog(cat.database());
+            }
+            return 0;
         }
     } add{*this};
+
+    struct {
+        cli_repo&     parent;
+        args::Command cmd{parent.repo_group, "update", "Update remote package information"};
+        common_flags  _flags{cmd};
+
+        catalog_path_flag cat_path{cmd};
+
+        int run() {
+            auto cat = cat_path.open();
+            dds::update_all_remotes(cat.database());
+            return 0;
+        }
+    } update{*this};
 
     struct {
         cli_repo&     parent;
@@ -792,7 +753,7 @@ struct cli_repo {
         }
     } init{*this};
 
-    int run() {
+    int _run() {
         if (ls.cmd) {
             return ls.run();
         } else if (init.cmd) {
@@ -801,10 +762,66 @@ struct cli_repo {
             return import_.run();
         } else if (add.cmd) {
             return add.run();
+        } else if (update.cmd) {
+            return update.run();
         } else {
             assert(false);
             std::terminate();
         }
+    }
+
+    int run() {
+        return boost::leaf::try_handle_all(  //
+            [&]() -> dds::result<int> {
+                try {
+                    return _run();
+                } catch (...) {
+                    return dds::capture_exception();
+                }
+                return 0;
+            },
+            [&](neo::url_validation_error url_err, dds::e_url_string bad_url) {
+                dds_log(error, "Invalid URL [{}]: {}", bad_url.value, url_err.what());
+                return 1;
+            },
+            [&](const json5::parse_error& e, dds::e_http_url bad_url) {
+                dds_log(error,
+                        "Error parsing JSON downloaded from URL [{}]: {}",
+                        bad_url.value,
+                        e.what());
+                return 1;
+            },
+            [](dds::e_sqlite3_error_exc e, dds::e_url_string url) {
+                dds_log(error,
+                        "Error accessing remote database (From {}): {}",
+                        url.value,
+                        e.message);
+                return 1;
+            },
+            [](dds::e_sqlite3_error_exc e) {
+                dds_log(error, "Unexpected database error: {}", e.message);
+                return 1;
+            },
+            [&](dds::e_system_error_exc e, dds::e_http_connect conn) {
+                dds_log(error,
+                        "Error opening connection to [{}:{}]: {}",
+                        conn.host,
+                        conn.port,
+                        e.message);
+                return 1;
+            },
+            [](const std::exception& e) {
+                dds_log(error, "An unknown unhandled exception occurred: {}", e.what());
+                return 1;
+            },
+            [](dds::e_system_error_exc e) {
+                dds_log(error, "An unknown system_error occurred: {}", e.message);
+                return 42;
+            },
+            [](boost::leaf::diagnostic_info const& info) {
+                dds_log(error, "An unnknown error occurred? {}", info);
+                return 42;
+            });
     }
 };
 

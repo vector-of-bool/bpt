@@ -1,15 +1,9 @@
 {
     "version": 2,
     "packages": {
-        "neo-sqlite3": {
-            "0.1.0": {
-                "url": "git+https://github.com/vector-of-bool/neo-sqlite3.git#0.1.0"
-            },
-            "0.2.2": {
-                "url": "git+https://github.com/vector-of-bool/neo-sqlite3.git#0.2.2"
-            },
+        "neo-fun": {
             "0.3.0": {
-                "url": "git+https://github.com/vector-of-bool/neo-sqlite3.git#0.3.0"
+                "url": "git+https://github.com/vector-of-bool/neo-fun.git#0.3.0"
             }
         }
     }

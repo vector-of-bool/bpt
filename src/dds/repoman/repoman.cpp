@@ -1,5 +1,6 @@
 #include "./repoman.hpp"
 
+#include <dds/catalog/import.hpp>
 #include <dds/package/manifest.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -30,6 +31,7 @@ void migrate_db_1(nsql::database_ref db) {
             name TEXT NOT NULL,
             version TEXT NOT NULL,
             description TEXT NOT NULL,
+            url TEXT NOT NULL,
             UNIQUE (name, version)
         );
 
@@ -48,6 +50,7 @@ void migrate_db_1(nsql::database_ref db) {
 
 void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name) {
     db.exec(R"(
+        PRAGMA busy_timeout = 6000;
         PRAGMA foreign_keys = 1;
         CREATE TABLE IF NOT EXISTS dds_repo_meta (
             meta_version INTEGER DEFAULT 1,
@@ -87,7 +90,7 @@ repo_manager repo_manager::create(path_ref directory, std::optional<std::string_
         DDS_E_SCOPE(e_init_repo_db{db_path});
         DDS_E_SCOPE(e_open_repo_db{db_path});
         ensure_migrated(db, name);
-        fs::create_directories(directory / "data");
+        fs::create_directories(directory / "pkg");
     }
     return open(directory);
 }
@@ -148,8 +151,13 @@ void repo_manager::import_targz(path_ref tgz_file) {
     dds_log(debug, "Recording package {}@{}", man->pkg_id.name, man->pkg_id.version.to_string());
     nsql::exec(  //
         _stmts(R"(
-            INSERT INTO dds_repo_packages (name, version, description)
-                VALUES (?, ?, 'No description')
+            INSERT INTO dds_repo_packages (name, version, description, url)
+                VALUES (
+                    ?1,
+                    ?2,
+                    'No description',
+                    printf('dds:%s@%s', ?1, ?2)
+                )
         )"_sql),
         man->pkg_id.name,
         man->pkg_id.version.to_string());
@@ -171,9 +179,9 @@ void repo_manager::import_targz(path_ref tgz_file) {
                    iv_1.high.to_string());
     }
 
-    auto dest_dir  = data_dir() / man->pkg_id.name;
-    auto dest_path = dest_dir / fmt::format("{}.tar.gz", man->pkg_id.version.to_string());
-    fs::create_directories(dest_dir);
+    auto dest_path
+        = pkg_dir() / man->pkg_id.name / man->pkg_id.version.to_string() / "sdist.tar.gz";
+    fs::create_directories(dest_path.parent_path());
     fs::copy(tgz_file, dest_path);
 
     tr.commit();
@@ -194,17 +202,17 @@ void repo_manager::delete_package(package_id pkg_id) {
         pkg_id.version.to_string());
     /// XXX: Verify with _db.changes() that we actually deleted one row
 
-    auto name_dir = data_dir() / pkg_id.name;
-    auto ver_file = name_dir / fmt::format("{}.tar.gz", pkg_id.version.to_string());
+    auto name_dir = pkg_dir() / pkg_id.name;
+    auto ver_dir  = name_dir / pkg_id.version.to_string();
 
-    DDS_E_SCOPE(e_repo_delete_targz{ver_file});
+    DDS_E_SCOPE(e_repo_delete_targz{ver_dir});
 
-    if (!fs::is_regular_file(ver_file)) {
+    if (!fs::is_directory(ver_dir)) {
         throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory),
                                 "No source archive for the requested package");
     }
 
-    fs::remove(ver_file);
+    fs::remove_all(ver_dir);
 
     tr.commit();
 

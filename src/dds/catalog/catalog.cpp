@@ -2,7 +2,6 @@
 
 #include "./import.hpp"
 
-#include <dds/catalog/init_catalog.hpp>
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
@@ -92,9 +91,11 @@ void migrate_repodb_3(nsql::database& db) {
             version TEXT NOT NULL,
             description TEXT NOT NULL,
             remote_url TEXT NOT NULL,
-            remote_id INTEGER REFERENCES dds_cat_remotes DEFAULT NULL,
+            remote_id INTEGER
+                REFERENCES dds_cat_remotes
+                ON DELETE CASCADE,
             repo_transform TEXT NOT NULL DEFAULT '[]',
-            UNIQUE (name, version)
+            UNIQUE (name, version, remote_id)
         );
 
         INSERT INTO dds_cat_pkgs_new(pkg_id,
@@ -118,7 +119,10 @@ void migrate_repodb_3(nsql::database& db) {
 
         CREATE TABLE dds_cat_pkg_deps_new (
             dep_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pkg_id INTEGER NOT NULL REFERENCES dds_cat_pkgs_new(pkg_id),
+            pkg_id INTEGER
+                NOT NULL
+                REFERENCES dds_cat_pkgs_new(pkg_id)
+                ON DELETE CASCADE,
             dep_name TEXT NOT NULL,
             low TEXT NOT NULL,
             high TEXT NOT NULL,
@@ -239,13 +243,6 @@ void do_store_pkg(neo::sqlite3::database&        db,
     }
 }
 
-void store_init_packages(nsql::database& db, nsql::statement_cache& st_cache) {
-    dds_log(debug, "Restoring initial package data");
-    for (auto& pkg : init_catalog_packages()) {
-        do_store_pkg(db, st_cache, pkg);
-    }
-}
-
 void ensure_migrated(nsql::database& db) {
     db.exec(R"(
         PRAGMA foreign_keys = 1;
@@ -275,10 +272,6 @@ void ensure_migrated(nsql::database& db) {
 
     int version = version_;
 
-    // If this is the first time we're working here, import the initial
-    // catalog with some useful tidbits.
-    bool import_init_packages = version == 0;
-
     if (version > current_database_version) {
         dds_log(critical,
                 "Catalog version is {}, but we only support up to {}",
@@ -301,15 +294,6 @@ void ensure_migrated(nsql::database& db) {
     }
     meta["version"] = current_database_version;
     exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), meta.dump());
-
-    if (import_init_packages) {
-        dds_log(
-            info,
-            "A new catalog database case been created, and has been populated with some initial "
-            "contents.");
-        neo::sqlite3::statement_cache stmts{db};
-        store_init_packages(db, stmts);
-    }
 }
 
 void check_json(bool b, std::string_view what) {
@@ -361,17 +345,13 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             description,
             repo_transform
         FROM dds_cat_pkgs
-        WHERE name = ? AND version = ?
+        WHERE name = ?1 AND version = ?2
+        ORDER BY pkg_id DESC
     )"_sql);
     st.reset();
     st.bindings() = std::forward_as_tuple(pk_id.name, ver_str);
-    auto opt_tup  = nsql::unpack_single_opt<std::int64_t,
-                                           std::string,
-                                           std::string,
-                                           std::string,
-                                           std::string,
-                                           std::string>(st);
-    if (!opt_tup) {
+    auto ec       = st.step(std::nothrow);
+    if (ec == nsql::errc::done) {
         dym_target::fill([&] {
             auto all_ids = this->all();
             auto id_strings
@@ -380,9 +360,36 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         });
         return std::nullopt;
     }
-    const auto& [pkg_id, name, version, remote_url, description, repo_transform] = *opt_tup;
-    assert(pk_id.name == name);
-    assert(pk_id.version == semver::version::parse(version));
+    neo_assert_always(invariant,
+                      ec == nsql::errc::row,
+                      "Failed to pull a package from the catalog database",
+                      ec,
+                      pk_id.to_string(),
+                      nsql::error_category().message(int(ec)));
+
+    const auto& [pkg_id, name, version, remote_url, description, repo_transform]
+        = st.row()
+              .unpack<std::int64_t,
+                      std::string,
+                      std::string,
+                      std::string,
+                      std::string,
+                      std::string>();
+
+    ec = st.step(std::nothrow);
+    if (ec == nsql::errc::row) {
+        dds_log(warn,
+                "There is more than one entry for package {} in the catalog database. One will be "
+                "chosen arbitrarily.",
+                pk_id.to_string());
+    }
+
+    neo_assert(invariant,
+               pk_id.name == name && pk_id.version == semver::version::parse(version),
+               "Package metadata does not match",
+               pk_id.to_string(),
+               name,
+               version);
 
     auto deps = dependencies_of(pk_id);
 
@@ -439,6 +446,7 @@ std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
                 SELECT name, version
                   FROM dds_cat_pkgs
                  WHERE name = ?
+                 ORDER BY pkg_id DESC
                 )"_sql),
                sv)                                  //
         | neo::lref                                 //
@@ -484,10 +492,4 @@ void catalog::import_json_str(std::string_view content) {
     for (const auto& pkg : pkgs) {
         do_store_pkg(_db, _stmt_cache, pkg);
     }
-}
-
-void catalog::import_initial() {
-    nsql::transaction_guard tr{_db};
-    dds_log(info, "Restoring built-in initial catalog contents");
-    store_init_packages(_db, _stmt_cache);
 }

@@ -151,6 +151,18 @@ http_remote_listing http_remote_listing::from_url(std::string_view sv) {
     unsigned int             strip_components = 1;
     std::optional<lm::usage> auto_lib;
 
+    // IF we are a dds+ URL, strip_components should be zero, and give the url a plain
+    // HTTP/HTTPS scheme
+    if (url.scheme.starts_with("dds+")) {
+        url.scheme       = url.scheme.substr(4);
+        strip_components = 0;
+    } else if (url.scheme.ends_with("+dds")) {
+        url.scheme.erase(url.scheme.end() - 3);
+        strip_components = 0;
+    } else {
+        // Leave the URL as-is
+    }
+
     if (url.query) {
         neo::basic_query_string_view qsv{*url.query};
         for (auto qstr : qsv) {

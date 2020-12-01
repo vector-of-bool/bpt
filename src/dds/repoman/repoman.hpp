@@ -49,7 +49,7 @@ public:
     static repo_manager create(path_ref directory, std::optional<std::string_view> name);
     static repo_manager open(path_ref directory);
 
-    auto        data_dir() const noexcept { return _root / "data"; }
+    auto        pkg_dir() const noexcept { return _root / "pkg"; }
     path_ref    root() const noexcept { return _root; }
     std::string name() const noexcept;
 
