@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <neo/event.hpp>
 #include <neo/http/parse/chunked.hpp>
 #include <neo/http/request.hpp>
 #include <neo/http/response.hpp>
@@ -46,6 +47,34 @@ void download_into(Out&& out, In&& in, http_response_info resp) {
 
 }  // namespace
 
+http_session http_session::connect_for(const neo::url& url) {
+    if (!url.host) {
+        throw_user_error<
+            errc::invalid_remote_url>("URL is invalid for network connection [{}]: No host segment",
+                                      url.to_string());
+    }
+    auto sub = neo::subscribe(
+        [&](neo::address::ev_resolve ev) {
+            dds_log(trace, "Resolving '{}:{}'", ev.host, ev.service);
+            neo::bubble_event(ev);
+        },
+        [&](neo::socket::ev_connect ev) {
+            dds_log(trace, "Connecting {}", *url.host);
+            neo::bubble_event(ev);
+        },
+        [&](neo::ssl::ev_handshake ev) {
+            dds_log(trace, "TLS handshake...");
+            neo::bubble_event(ev);
+        });
+    if (url.scheme == "http") {
+        return connect(*url.host, url.port_or_default_port_or(80));
+    } else if (url.scheme == "https") {
+        return connect_ssl(*url.host, url.port_or_default_port_or(443));
+    } else {
+        throw_user_error<errc::invalid_remote_url>("URL is invalid [{}]", url.to_string());
+    }
+}
+
 http_session http_session::connect(const std::string& host, int port) {
     DDS_E_SCOPE(e_http_connect{host, port});
 
@@ -79,6 +108,7 @@ void http_session::send_head(http_request_params params) {
                       params.method,
                       params.path,
                       params.query);
+    neo::emit(ev_http_request{params});
     neo::http::request_line start_line{
         .method_view = params.method,
         .target = neo::http::origin_form_target{
@@ -95,6 +125,7 @@ void http_session::send_head(http_request_params params) {
 
     auto cl_str = std::to_string(params.content_length);
 
+    // TODO: GZip downloads
     std::pair<std::string_view, std::string_view> headers[] = {
         {"Host", host_string()},
         {"Accept", "*/*"},
@@ -115,6 +146,7 @@ http_response_info http_session::recv_head() {
         = _do_io([&](auto&& io) { return neo::http::read_response_head<http_response_info>(io); });
     dds_log(trace, "Recv: HTTP {} {}", r.status, r.status_message);
     _state = _state_t::recvd_head;
+    neo::emit(ev_http_response_begin{r});
     return r;
 }
 
@@ -125,9 +157,11 @@ std::string http_session::request(http_request_params params) {
 
     neo::string_dynbuf_io resp_body;
     _do_io([&](auto&& io) { download_into(resp_body, io, resp_head); });
+    neo::emit(ev_http_response_end{resp_head});
     auto body_size = resp_body.available();
     auto str       = std::move(resp_body.string());
     str.resize(body_size);
+    _state = _state_t::ready;
     return str;
 }
 
@@ -141,6 +175,7 @@ void http_session::recv_body_to_file(http_response_info const&    resp_head,
     auto ofile = neo::file_stream::open(dest, neo::open_mode::write | neo::open_mode::create);
     neo::stream_io_buffers file_out{ofile};
     _do_io([&](auto&& io) { download_into(file_out, io, resp_head); });
+    neo::emit(ev_http_response_end{resp_head});
     _state = _state_t::ready;
 }
 

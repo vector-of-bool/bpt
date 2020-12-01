@@ -15,9 +15,7 @@ namespace {
 
 void http_download_with_redir(neo::url url, path_ref dest) {
     for (auto redir_count = 0;; ++redir_count) {
-        auto sess = url.scheme == "https"
-            ? http_session::connect_ssl(*url.host, url.port_or_default_port_or(443))
-            : http_session::connect(*url.host, url.port_or_default_port_or(80));
+        auto sess = http_session::connect_for(url);
 
         sess.send_head({.method = "GET", .path = url.path});
 

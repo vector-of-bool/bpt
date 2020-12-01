@@ -6,6 +6,7 @@
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/socket.hpp>
 #include <neo/string_io.hpp>
+#include <neo/url.hpp>
 
 #include <filesystem>
 #include <string>
@@ -28,6 +29,10 @@ struct http_request_params {
     std::size_t      content_length = 0;
 };
 
+struct ev_http_request {
+    const http_request_params& request;
+};
+
 struct http_response_info {
     int                status;
     std::string        status_message;
@@ -42,6 +47,14 @@ struct http_response_info {
     bool is_server_error() const noexcept { return status >= 500 && status < 600; }
     bool is_error() const noexcept { return is_client_error() || is_server_error(); }
     bool is_redirect() const noexcept { return status >= 300 && status < 400; }
+};
+
+struct ev_http_response_begin {
+    const http_response_info& response;
+};
+
+struct ev_http_response_end {
+    const http_response_info& response;
 };
 
 enum class http_kind {
@@ -117,6 +130,8 @@ public:
 
     static http_session connect(const std::string& host, int port);
     static http_session connect_ssl(const std::string& host, int port);
+
+    static http_session connect_for(const neo::url& url);
 
     std::string request(http_request_params);
 
