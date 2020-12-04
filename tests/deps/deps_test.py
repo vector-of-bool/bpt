@@ -23,23 +23,19 @@ class DepsCase(NamedTuple):
                     'depends': [self.dep],
                 }).encode()))
         dds.scope.enter_context(
-            fileutil.set_contents(
-                dds.source_root / 'library.json',
-                json.dumps({
-                    'name': 'test',
-                    'uses': [self.usage],
-                }).encode()))
-        dds.scope.enter_context(
-            fileutil.set_contents(dds.source_root / 'src/test.test.cpp',
-                                  self.source.encode()))
+            fileutil.set_contents(dds.source_root / 'library.json',
+                                  json.dumps({
+                                      'name': 'test',
+                                      'uses': [self.usage],
+                                  }).encode()))
+        dds.scope.enter_context(fileutil.set_contents(dds.source_root / 'src/test.test.cpp', self.source.encode()))
 
 
 CASES: List[DepsCase] = []
 
 
 def get_default_pkg_versions(pkg: str) -> Sequence[str]:
-    catalog_json = Path(
-        __file__).resolve().parent.parent.parent / 'catalog.json'
+    catalog_json = Path(__file__).resolve().parent.parent.parent / 'catalog.json'
     catalog_dict = json.loads(catalog_json.read_text())
     return list(catalog_dict['packages'][pkg].keys())
 
@@ -158,8 +154,7 @@ add_cases(
 ##       ##     ##    ##
 ##       ##     ##    ##
 """
-add_cases(
-    'fmt', 'fmt/fmt', ['auto'], r'''
+add_cases('fmt', 'fmt/fmt', ['auto'], r'''
     #include <fmt/core.h>
 
     int main() {
@@ -546,8 +541,7 @@ add_cases(
 ##    ## ##        ##     ## ##       ##     ## ##    ##
  ######  ##        ########  ########  #######   ######
 """
-add_cases(
-    'spdlog', 'spdlog/spdlog', ['auto'], r'''
+add_cases('spdlog', 'spdlog/spdlog', ['auto'], r'''
     #include <spdlog/spdlog.h>
 
     int main() {
@@ -582,6 +576,6 @@ add_cases(
 
 @pytest.mark.deps_test
 @pytest.mark.parametrize('case', CASES, ids=[c.dep for c in CASES])
-def test_dep(case: DepsCase, dds: DDS) -> None:
+def test_dep(case: DepsCase, dds_pizza_catalog: Path, dds: DDS) -> None:
     case.setup_root(dds)
-    dds.build()
+    dds.build(catalog_path=dds_pizza_catalog)

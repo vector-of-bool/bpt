@@ -9,7 +9,7 @@ import subprocess
 import urllib.request
 import shutil
 
-from self_build import self_build
+from self_build import self_build, dds_build
 from dds_ci import paths, proc
 
 
@@ -35,8 +35,7 @@ def _do_bootstrap_download() -> None:
         'freebsd12': 'dds-freebsd-x64',
     }.get(sys.platform)
     if filename is None:
-        raise RuntimeError(f'We do not have a prebuilt DDS binary for '
-                           f'the "{sys.platform}" platform')
+        raise RuntimeError(f'We do not have a prebuilt DDS binary for the "{sys.platform}" platform')
     url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.4/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
@@ -72,9 +71,7 @@ def main(argv: Sequence[str]) -> int:
         required=True,
     )
     parser.add_argument(
-        '--build-only',
-        action='store_true',
-        help='Only build the `dds` executable. Skip second-phase and tests.')
+        '--build-only', action='store_true', help='Only build the `dds` executable. Skip second-phase and tests.')
     parser.add_argument(
         '--no-clean',
         action='store_false',
@@ -106,25 +103,30 @@ def main(argv: Sequence[str]) -> int:
         paths.PREBUILT_DDS,
         toolchain=opts.toolchain,
         cat_path=old_cat_path,
-        cat_json_path=Path('catalog.old.json'),
+        cat_json_path=Path('catalog.json'),
         dds_flags=[('--repo-dir', ci_repo_dir)])
     print('Main build PASSED!')
     print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
 
     if args.build_only:
-        print(
-            f'`--build-only` was given, so second phase and tests will not execute'
-        )
+        print('`--build-only` was given, so second phase and tests will not execute')
         return 0
 
     print('Bootstrapping myself:')
     new_cat_path = paths.BUILD_DIR / 'catalog.db'
-    new_repo_dir = paths.BUILD_DIR / 'ci-repo'
-    self_build(
+    new_repo_dir = paths.BUILD_DIR / 'ci-repo-2'
+    if new_cat_path.is_file():
+        new_cat_path.unlink()
+    if new_repo_dir.is_dir():
+        shutil.rmtree(new_repo_dir)
+    dds_build(
         paths.CUR_BUILT_DDS,
         toolchain=opts.toolchain,
-        cat_path=new_cat_path,
-        dds_flags=[f'--repo-dir={new_repo_dir}'])
+        more_flags=[
+            f'--repo-dir={new_repo_dir}',
+            f'--catalog={new_cat_path}',
+            '--add-repo=https://dds.pizza/repo',
+        ])
     print('Bootstrap test PASSED!')
 
     return pytest.main([

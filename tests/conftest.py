@@ -2,14 +2,28 @@ from contextlib import ExitStack
 from typing import Optional
 from pathlib import Path
 import shutil
+from subprocess import check_call
 
 import pytest
 
 from tests import scoped_dds, DDSFixtureParams
 
 
+@pytest.fixture(scope='session')
+def dds_exe() -> Path:
+    return Path(__file__).absolute().parent.parent / '_build/dds'
+
+
+@pytest.yield_fixture(scope='session')
+def dds_pizza_catalog(dds_exe: Path, tmp_path_factory) -> Path:
+    tmpdir: Path = tmp_path_factory.mktemp(basename='dds-catalog')
+    cat_path = tmpdir / 'catalog.db'
+    check_call([str(dds_exe), 'repo', 'add', 'https://dds.pizza/repo', '--update', f'--catalog={cat_path}'])
+    yield cat_path
+
+
 @pytest.yield_fixture
-def dds(request, tmp_path: Path, worker_id: str, scope: ExitStack):
+def dds(request, dds_exe: Path, tmp_path: Path, worker_id: str, scope: ExitStack):
     test_source_dir = Path(request.fspath).absolute().parent
     test_root = test_source_dir
 
@@ -29,8 +43,7 @@ def dds(request, tmp_path: Path, worker_id: str, scope: ExitStack):
         project_dir = test_root / params.subdir
 
     # Create the instance. Auto-clean when we're done
-    yield scope.enter_context(
-        scoped_dds(test_root, project_dir, request.function.__name__))
+    yield scope.enter_context(scoped_dds(dds_exe, test_root, project_dir, request.function.__name__))
 
 
 @pytest.fixture
@@ -41,15 +54,11 @@ def scope():
 
 def pytest_addoption(parser):
     parser.addoption(
-        '--test-deps',
-        action='store_true',
-        default=False,
-        help='Run the exhaustive and intensive dds-deps tests')
+        '--test-deps', action='store_true', default=False, help='Run the exhaustive and intensive dds-deps tests')
 
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        'markers', 'deps_test: Deps tests are slow. Enable with --test-deps')
+    config.addinivalue_line('markers', 'deps_test: Deps tests are slow. Enable with --test-deps')
 
 
 def pytest_collection_modifyitems(config, items):
@@ -60,6 +69,4 @@ def pytest_collection_modifyitems(config, items):
             continue
         item.add_marker(
             pytest.mark.skip(
-                reason=
-                'Exhaustive deps tests are slow and perform many Git clones. Use --test-deps to run them.'
-            ))
+                reason='Exhaustive deps tests are slow and perform many Git clones. Use --test-deps to run them.'))

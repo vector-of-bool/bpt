@@ -11,6 +11,15 @@ from dds_ci import cli, proc
 ROOT = Path(__file__).parent.parent.absolute()
 
 
+def dds_build(exe: Path, *, toolchain: str, more_flags: proc.CommandLine = ()):
+    new_exe = ROOT / '_dds.bootstrap-test.exe'
+    shutil.copy2(exe, new_exe)
+    try:
+        proc.check_run(new_exe, 'build', (f'--toolchain={toolchain}'), more_flags)
+    finally:
+        new_exe.unlink()
+
+
 def self_build(exe: Path,
                *,
                toolchain: str,
@@ -20,27 +29,23 @@ def self_build(exe: Path,
                dds_flags: proc.CommandLine = ()):
     # Copy the exe to another location, as windows refuses to let a binary be
     # replaced while it is executing
-    new_exe = ROOT / '_dds.bootstrap-test.exe'
-    shutil.copy2(exe, new_exe)
-    try:
-        proc.check_run(
-            new_exe,
-            'catalog',
-            'import',
-            f'--catalog={cat_path}',
-            f'--json={cat_json_path}',
-        )
-        proc.check_run(
-            new_exe,
-            'build',
-            f'--catalog={cat_path}',
-            f'--repo-dir={ROOT}/_build/ci-repo',
-            dds_flags,
-            ('--toolchain', toolchain),
+    proc.check_run(
+        exe,
+        'catalog',
+        'import',
+        f'--catalog={cat_path}',
+        f'--json={cat_json_path}',
+    )
+    dds_build(
+        exe,
+        toolchain=toolchain,
+        more_flags=[
             ('-I', lmi_path) if lmi_path else (),
-        )
-    finally:
-        new_exe.unlink()
+            f'--repo-dir={ROOT}/_build/ci-repo',
+            f'--catalog={cat_path}',
+            *dds_flags,
+        ],
+    )
 
 
 def main(argv: List[str]) -> int:

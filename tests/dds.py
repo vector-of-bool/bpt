@@ -2,7 +2,7 @@ import os
 import itertools
 from contextlib import contextmanager, ExitStack
 from pathlib import Path
-from typing import Iterable, Union, Any, Dict, NamedTuple, ContextManager
+from typing import Iterable, Union, Any, Dict, NamedTuple, ContextManager, Optional
 import subprocess
 import shutil
 
@@ -80,24 +80,31 @@ class DDS:
             args,
         ])
 
+    def repo_add(self, url: str) -> None:
+        return self.run(['repo', 'add', url, '--update', self.catalog_path_arg])
+
     def build(self,
               *,
               toolchain: str = None,
               apps: bool = True,
               warnings: bool = True,
+              catalog_path: Optional[Path] = None,
               tests: bool = True,
+              more_args: proc.CommandLine = [],
               check: bool = True) -> subprocess.CompletedProcess:
+        catalog_path = catalog_path or self.catalog_path.relative_to(self.source_root)
         return self.run(
             [
                 'build',
                 f'--out={self.build_dir}',
                 f'--toolchain={toolchain or self.default_builtin_toolchain}',
-                f'--catalog={self.catalog_path.relative_to(self.source_root)}',
+                f'--catalog={catalog_path}',
                 f'--repo-dir={self.repo_dir.relative_to(self.source_root)}',
                 ['--no-tests'] if not tests else [],
                 ['--no-apps'] if not apps else [],
                 ['--no-warnings'] if not warnings else [],
                 self.project_dir_arg,
+                more_args,
             ],
             check=check,
         )
@@ -162,8 +169,7 @@ class DDS:
 
 
 @contextmanager
-def scoped_dds(test_dir: Path, project_dir: Path, name: str):
-    dds_exe = Path(__file__).absolute().parent.parent / '_build/dds'
+def scoped_dds(dds_exe: Path, test_dir: Path, project_dir: Path, name: str):
     if os.name == 'nt':
         dds_exe = dds_exe.with_suffix('.exe')
     with ExitStack() as scope:

@@ -117,13 +117,6 @@ class Git(NamedTuple):
             d['auto-lib'] = self.auto_lib
         return d
 
-    def to_dict_2(self) -> str:
-        url = f'git+{self.url}'
-        if self.auto_lib:
-            url += f'?lm={self.auto_lib}'
-        url += f'#{self.ref}'
-        return url
-
 
 RemoteInfo = Union[Git]
 
@@ -141,15 +134,6 @@ class Version(NamedTuple):
         }
         if isinstance(self.remote, Git):
             ret['git'] = self.remote.to_dict()
-        return ret
-
-    def to_dict_2(self) -> dict:
-        ret: dict = {
-            'description': self.description,
-            'depends': list(self.depends),
-            'transform': [f.to_dict() for f in self.remote.transforms],
-        }
-        ret['url'] = self.remote.to_dict_2()
         return ret
 
 
@@ -175,8 +159,7 @@ def github_http_get(url: str):
         raise RuntimeError(f'Request is outside of api.github.com [{url}]')
     resp = request.urlopen(req)
     if resp.status != 200:
-        raise RuntimeError(
-            f'Request to [{url}] failed [{resp.status} {resp.reason}]')
+        raise RuntimeError(f'Request to [{url}] failed [{resp.status} {resp.reason}]')
     return json5.loads(resp.read())
 
 
@@ -188,8 +171,7 @@ def _get_github_tree_file_content(url: str) -> bytes:
     return content
 
 
-def _version_for_github_tag(pkg_name: str, desc: str, clone_url: str,
-                            tag) -> Version:
+def _version_for_github_tag(pkg_name: str, desc: str, clone_url: str, tag) -> Version:
     print(f'Loading tag {tag["name"]}')
     commit = github_http_get(tag['commit']['url'])
     tree = github_http_get(commit['commit']['tree']['url'])
@@ -201,12 +183,9 @@ def _version_for_github_tag(pkg_name: str, desc: str, clone_url: str,
             package_json_fname = cand
             break
     else:
-        raise RuntimeError(
-            f'No package JSON5 file in tag {tag["name"]} for {pkg_name} (One of {tree_content.keys()})'
-        )
+        raise RuntimeError(f'No package JSON5 file in tag {tag["name"]} for {pkg_name} (One of {tree_content.keys()})')
 
-    package_json = json5.loads(
-        _get_github_tree_file_content(tree_content[package_json_fname]['url']))
+    package_json = json5.loads(_get_github_tree_file_content(tree_content[package_json_fname]['url']))
     version = package_json['version']
     if pkg_name != package_json['name']:
         raise RuntimeError(f'package name in repo "{package_json["name"]}" '
@@ -221,14 +200,10 @@ def _version_for_github_tag(pkg_name: str, desc: str, clone_url: str,
     elif depends is None:
         pairs = []
     else:
-        raise RuntimeError(
-            f'Unknown "depends" object from json file: {depends!r}')
+        raise RuntimeError(f'Unknown "depends" object from json file: {depends!r}')
 
     remote = Git(url=clone_url, ref=tag['name'])
-    return Version(version,
-                   description=desc,
-                   depends=list(pairs),
-                   remote=remote)
+    return Version(version, description=desc, depends=list(pairs), remote=remote)
 
 
 def github_package(name: str, repo: str, want_tags: Iterable[str]) -> Package:
@@ -239,15 +214,12 @@ def github_package(name: str, repo: str, want_tags: Iterable[str]) -> Package:
 
     missing_tags = set(want_tags) - set(t['name'] for t in avail_tags)
     if missing_tags:
-        raise RuntimeError(
-            'One or more wanted tags do not exist in '
-            f'the repository "{repo}" (Missing: {missing_tags})')
+        raise RuntimeError('One or more wanted tags do not exist in '
+                           f'the repository "{repo}" (Missing: {missing_tags})')
 
     tag_items = (t for t in avail_tags if t['name'] in want_tags)
 
-    versions = HTTP_POOL.map(
-        lambda tag: _version_for_github_tag(name, desc, repo_data['clone_url'],
-                                            tag), tag_items)
+    versions = HTTP_POOL.map(lambda tag: _version_for_github_tag(name, desc, repo_data['clone_url'], tag), tag_items)
 
     return Package(name, list(versions))
 
@@ -260,11 +232,11 @@ def simple_packages(name: str,
                     *,
                     tag_fmt: str = '{}') -> Package:
     return Package(name, [
-        Version(ver.version,
-                description=description,
-                remote=Git(
-                    git_url, tag_fmt.format(ver.version), auto_lib=auto_lib),
-                depends=ver.depends) for ver in versions
+        Version(
+            ver.version,
+            description=description,
+            remote=Git(git_url, tag_fmt.format(ver.version), auto_lib=auto_lib),
+            depends=ver.depends) for ver in versions
     ])
 
 
@@ -277,12 +249,11 @@ def many_versions(name: str,
                   transforms: Sequence[FSTransform] = (),
                   description='(No description was provided)') -> Package:
     return Package(name, [
-        Version(ver,
-                description='\n'.join(textwrap.wrap(description)),
-                remote=Git(url=git_url,
-                           ref=tag_fmt.format(ver),
-                           auto_lib=auto_lib,
-                           transforms=transforms)) for ver in versions
+        Version(
+            ver,
+            description='\n'.join(textwrap.wrap(description)),
+            remote=Git(url=git_url, ref=tag_fmt.format(ver), auto_lib=auto_lib, transforms=transforms))
+        for ver in versions
     ])
 
 
@@ -290,7 +261,7 @@ def many_versions(name: str,
 PACKAGES = [
     github_package('neo-buffer', 'vector-of-bool/neo-buffer',
                    ['0.2.1', '0.3.0', '0.4.0', '0.4.1', '0.4.2']),
-    github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0', '0.1.1']),
+    github_package('neo-compress', 'vector-of-bool/neo-compress', ['0.1.0', '0.1.1', '0.2.0']),
     github_package('neo-url', 'vector-of-bool/neo-url',
                    ['0.1.0', '0.1.1', '0.1.2', '0.2.0', '0.2.1', '0.2.2']),
     github_package('neo-sqlite3', 'vector-of-bool/neo-sqlite3',
@@ -954,22 +925,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data = {
-        'version': 2,
-        'packages': {
-            pkg.name: {ver.version: ver.to_dict_2()
-                       for ver in pkg.versions}
-            for pkg in PACKAGES
-        }
-    }
-    old_data = {
         'version': 1,
-        'packages': {
-            pkg.name: {ver.version: ver.to_dict()
-                       for ver in pkg.versions}
-            for pkg in PACKAGES
-        }
+        'packages': {pkg.name: {ver.version: ver.to_dict()
+                                for ver in pkg.versions}
+                     for pkg in PACKAGES}
     }
-    json_str = json.dumps(data, indent=2, sort_keys=True)
-    Path('catalog.json').write_text(json_str)
-    Path('catalog.old.json').write_text(
-        json.dumps(old_data, indent=2, sort_keys=True))
+    Path('catalog.json').write_text(json.dumps(data, indent=2, sort_keys=True))

@@ -1076,7 +1076,31 @@ struct cli_build {
                   {"out"},
                   dds::fs::current_path() / "_build"};
 
+    args::ValueFlagList<std::string> add_repos{
+        cmd,
+        "<repo-url>",
+        "Add the given repositories to the catalog before executing (Implies '--update-repos')",
+        {"add-repo"}};
+
+    args::Flag update_repos{cmd,
+                            "update-repos",
+                            "Update repositories before building",
+                            {"update-repos", 'U'}};
+
     int run() {
+        if (!add_repos.Get().empty()) {
+            auto cat = cat_path.open();
+            for (auto& str : add_repos.Get()) {
+                auto repo = dds::remote_repository::connect(str);
+                repo.store(cat.database());
+            }
+        }
+
+        if (update_repos.Get() || !add_repos.Get().empty()) {
+            auto cat = cat_path.open();
+            dds::update_all_remotes(cat.database());
+        }
+
         dds::sdist_build_params main_params = {
             .subdir          = "",
             .build_tests     = !no_tests.Get(),
