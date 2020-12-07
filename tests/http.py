@@ -25,7 +25,7 @@ class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
         # Convert the given URL path to a path relative to the directory we are serving
         abspath = Path(super().translate_path(path))
         relpath = abspath.relative_to(Path.cwd())
-        return self.dir / relpath
+        return str(self.dir / relpath)
 
 
 class ServerInfo(NamedTuple):
