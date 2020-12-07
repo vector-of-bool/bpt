@@ -18,6 +18,11 @@ static void set_utf8_output() {
 }
 #endif
 
+void dds::log::init_logger() noexcept {
+    // spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
+    spdlog::set_pattern("[%^%-5l%$] %v");
+}
+
 void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
     static auto logger_inst = [] {
         auto logger = spdlog::default_logger_raw();
@@ -40,6 +45,8 @@ void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
             return spdlog::level::err;
         case level::critical:
             return spdlog::level::critical;
+        case level::_silent:
+            return spdlog::level::off;
         }
         neo_assert_always(invariant, false, "Invalid log level", msg, int(l));
     }();

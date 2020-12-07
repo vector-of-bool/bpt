@@ -13,11 +13,14 @@ enum class level : int {
     warn,
     error,
     critical,
+    _silent,
 };
 
 inline level current_log_level = level::info;
 
 void log_print(level l, std::string_view s) noexcept;
+
+void init_logger() noexcept;
 
 template <typename T>
 concept formattable = requires(const T item) {

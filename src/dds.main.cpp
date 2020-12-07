@@ -27,7 +27,6 @@
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>
-#include <spdlog/spdlog.h>
 
 #include <dds/3rd/args.hxx>
 
@@ -73,7 +72,6 @@ struct toolchain_flag : string_flag {
             return std::move(*tc);
         } else {
             return dds::parse_toolchain_json5(dds::slurp_file(tc_path));
-            // return dds::parse_toolchain_dds(dds::slurp_file(tc_path));
         }
     }
 };
@@ -1195,7 +1193,7 @@ struct cli_build_deps {
 */
 
 int main_fn(const std::vector<std::string>& argv) {
-    spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
+    dds::log::init_logger();
     args::ArgumentParser parser("DDS - The drop-dead-simple library manager");
 
     cli_base         cli{parser};
