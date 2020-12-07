@@ -7,12 +7,6 @@
 
 using namespace dds;
 
-void remote_listing_base::apply_transforms(path_ref root) const {
-    for (const auto& tr : transforms) {
-        tr.apply_to(root);
-    }
-}
-
 void remote_listing_base::generate_auto_lib_files(const package_id& pid, path_ref root) const {
     if (auto_lib.has_value()) {
         dds_log(info, "Generating library data automatically");

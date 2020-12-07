@@ -3,8 +3,13 @@
     "packages": {
         "spdlog": {
             "1.4.2": {
-                "url": "git+https://github.com/gabime/spdlog.git?lm=spdlog/spdlog#v1.4.2",
-                "depends": []
+                "remote": {
+                    "git": {
+                        "url": "https://github.com/gabime/spdlog.git",
+                        "ref": "v1.4.2"
+                    },
+                    "auto-lib": "spdlog/spdlog"
+                }
             }
         }
     }

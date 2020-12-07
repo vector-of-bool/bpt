@@ -81,7 +81,7 @@ class DDS:
         ])
 
     def repo_add(self, url: str) -> None:
-        return self.run(['repo', 'add', url, '--update', self.catalog_path_arg])
+        self.run(['repo', 'add', url, '--update', self.catalog_path_arg])
 
     def build(self,
               *,
@@ -145,15 +145,6 @@ class DDS:
     def catalog_create(self) -> subprocess.CompletedProcess:
         self.scratch_dir.mkdir(parents=True, exist_ok=True)
         return self.run(['catalog', 'create', f'--catalog={self.catalog_path}'], cwd=self.test_dir)
-
-    def catalog_import(self, json_path: Path) -> subprocess.CompletedProcess:
-        self.scratch_dir.mkdir(parents=True, exist_ok=True)
-        return self.run([
-            'catalog',
-            'import',
-            f'--catalog={self.catalog_path}',
-            f'--json={json_path}',
-        ])
 
     def catalog_get(self, req: str) -> subprocess.CompletedProcess:
         return self.run([

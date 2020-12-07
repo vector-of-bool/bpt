@@ -7,6 +7,7 @@ from subprocess import check_call
 import pytest
 
 from tests import scoped_dds, DDSFixtureParams
+from .http import *  # Exposes the HTTP fixtures
 
 
 @pytest.fixture(scope='session')

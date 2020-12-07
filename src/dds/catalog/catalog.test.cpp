@@ -30,7 +30,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
         dds::package_id("foo", semver::version::parse("1.2.3")),
         {},
         "example",
-        dds::git_remote_listing{std::nullopt, {}, "git+http://example.com", "master"},
+        dds::git_remote_listing{std::nullopt, "git+http://example.com", "master"},
     });
 
     auto pkgs = db.by_name("foo");
@@ -49,7 +49,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
         dds::package_id("foo", semver::version::parse("1.2.3")),
         {},
         "example",
-        dds::git_remote_listing{std::nullopt, {}, "git+http://example.com", "develop"},
+        dds::git_remote_listing{std::nullopt, "git+http://example.com", "develop"},
     }));
     // The previous pkg_id is still a valid lookup key
     info = db.get(pkgs[0]);
@@ -65,7 +65,7 @@ TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
             {"baz", {semver::version::parse("5.3.0"), semver::version::parse("6.0.0")}},
         },
         "example",
-        dds::git_remote_listing{std::nullopt, {}, "git+http://example.com", "master"},
+        dds::git_remote_listing{std::nullopt, "git+http://example.com", "master"},
     });
     auto pkgs = db.by_name("foo");
     REQUIRE(pkgs.size() == 1);
@@ -74,30 +74,4 @@ TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
     CHECK(deps.size() == 2);
     CHECK(deps[0].name == "bar");
     CHECK(deps[1].name == "baz");
-}
-
-TEST_CASE_METHOD(catalog_test_case, "Parse JSON repo") {
-    db.import_json_str(R"({
-        "version": 2,
-        "packages": {
-            "foo": {
-                "1.2.3": {
-                    "depends": [
-                        "bar~4.2.1"
-                    ],
-                    url: "git+http://example.com#master"
-                }
-            }
-        }
-    })");
-    auto pkgs = db.by_name("foo");
-    REQUIRE(pkgs.size() == 1);
-    CHECK(pkgs[0].name == "foo");
-    CHECK(pkgs[0].version == semver::version::parse("1.2.3"));
-    auto deps = db.dependencies_of(pkgs[0]);
-    REQUIRE(deps.size() == 1);
-    CHECK(deps[0].name == "bar");
-    CHECK(deps[0].versions
-          == dds::version_range_set{semver::version::parse("4.2.1"),
-                                    semver::version::parse("4.3.0")});
 }

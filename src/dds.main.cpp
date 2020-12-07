@@ -194,34 +194,6 @@ struct cli_catalog {
 
     struct {
         cli_catalog&  parent;
-        args::Command cmd{parent.cat_group, "import", "Import entries into a catalog"};
-        common_flags  _common{cmd};
-
-        catalog_path_flag cat_path{cmd};
-
-        args::Flag import_stdin{cmd, "stdin", "Import JSON from stdin", {"stdin"}};
-        args::ValueFlagList<std::string>
-            json_paths{cmd,
-                       "json",
-                       "Import catalog entries from the given JSON files",
-                       {"json", 'j'}};
-
-        int run() {
-            auto cat = cat_path.open();
-            for (const auto& json_fpath : json_paths.Get()) {
-                cat.import_json_file(json_fpath);
-            }
-            if (import_stdin.Get()) {
-                std::ostringstream strm;
-                strm << std::cin.rdbuf();
-                cat.import_json_str(strm.str());
-            }
-            return 0;
-        }
-    } import{*this};
-
-    struct {
-        cli_catalog&  parent;
         args::Command cmd{parent.cat_group, "get", "Obtain an sdist from a catalog listing"};
         common_flags  _common{cmd};
 
@@ -385,8 +357,6 @@ struct cli_catalog {
     int run() {
         if (create.cmd) {
             return create.run();
-        } else if (import.cmd) {
-            return import.run();
         } else if (get.cmd) {
             return get.run();
         } else if (add.cmd) {

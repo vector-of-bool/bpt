@@ -94,7 +94,6 @@ void migrate_repodb_3(nsql::database& db) {
             remote_id INTEGER
                 REFERENCES dds_cat_remotes
                 ON DELETE CASCADE,
-            repo_transform TEXT NOT NULL DEFAULT '[]',
             UNIQUE (name, version, remote_id)
         );
 
@@ -102,8 +101,7 @@ void migrate_repodb_3(nsql::database& db) {
                                      name,
                                      version,
                                      description,
-                                     remote_url,
-                                     repo_transform)
+                                     remote_url)
             SELECT pkg_id,
                    name,
                    version,
@@ -113,8 +111,7 @@ void migrate_repodb_3(nsql::database& db) {
                          WHEN lm_name ISNULL THEN ''
                          ELSE ('?lm=' || lm_namespace || '/' || lm_name)
                        END
-                   ) || '#' || git_ref,
-                   repo_transform
+                   ) || '#' || git_ref
             FROM dds_cat_pkgs;
 
         CREATE TABLE dds_cat_pkg_deps_new (
@@ -138,17 +135,6 @@ void migrate_repodb_3(nsql::database& db) {
     )");
 }
 
-std::string transforms_to_json(const std::vector<fs_transformation>& trs) {
-    std::string acc = "[";
-    for (auto it = trs.begin(); it != trs.end(); ++it) {
-        acc += it->as_json();
-        if (std::next(it) != trs.end()) {
-            acc += ", ";
-        }
-    }
-    return acc + "]";
-}
-
 void store_with_remote(const neo::sqlite3::statement_cache&,
                        const package_info& pkg,
                        std::monostate) {
@@ -169,15 +155,13 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
                 name,
                 version,
                 remote_url,
-                description,
-                repo_transform
-            ) VALUES (?1, ?2, ?3, ?4, ?5)
+                description
+            ) VALUES (?1, ?2, ?3, ?4)
         )"_sql),
         pkg.ident.name,
         pkg.ident.version.to_string(),
         http.url,
-        pkg.description,
-        transforms_to_json(http.transforms));
+        pkg.description);
 }
 
 void store_with_remote(neo::sqlite3::statement_cache& stmts,
@@ -198,21 +182,18 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
                 name,
                 version,
                 remote_url,
-                description,
-                repo_transform
+                description
             ) VALUES (
                 ?1,
                 ?2,
                 ?3,
-                ?4,
-                ?5
+                ?4
             )
         )"_sql),
         pkg.ident.name,
         pkg.ident.version.to_string(),
         url,
-        pkg.description,
-        transforms_to_json(git.transforms));
+        pkg.description);
 }
 
 void do_store_pkg(neo::sqlite3::database&        db,
@@ -296,12 +277,6 @@ void ensure_migrated(nsql::database& db) {
     exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), meta.dump());
 }
 
-void check_json(bool b, std::string_view what) {
-    if (!b) {
-        throw_user_error<errc::invalid_catalog_json>("Catalog JSON is invalid: {}", what);
-    }
-}
-
 }  // namespace
 
 catalog catalog::open(const std::string& db_path) {
@@ -342,8 +317,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
             name,
             version,
             remote_url,
-            description,
-            repo_transform
+            description
         FROM dds_cat_pkgs
         WHERE name = ?1 AND version = ?2
         ORDER BY pkg_id DESC
@@ -367,14 +341,8 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
                       pk_id.to_string(),
                       nsql::error_category().message(int(ec)));
 
-    const auto& [pkg_id, name, version, remote_url, description, repo_transform]
-        = st.row()
-              .unpack<std::int64_t,
-                      std::string,
-                      std::string,
-                      std::string,
-                      std::string,
-                      std::string>();
+    const auto& [pkg_id, name, version, remote_url, description]
+        = st.row().unpack<std::int64_t, std::string, std::string, std::string, std::string>();
 
     ec = st.step(std::nothrow);
     if (ec == nsql::errc::row) {
@@ -400,29 +368,6 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
         parse_remote_url(remote_url),
     };
 
-    if (!repo_transform.empty()) {
-        // Transforms are stored in the DB as JSON strings. Convert them back to real objects.
-        auto tr_data = json5::parse_data(repo_transform);
-        check_json(tr_data.is_array(),
-                   fmt::format("Database record for {} has an invalid 'repo_transform' field [1]",
-                               pkg_id));
-        for (const auto& el : tr_data.as_array()) {
-            check_json(
-                el.is_object(),
-                fmt::format("Database record for {} has an invalid 'repo_transform' field [2]",
-                            pkg_id));
-            auto tr = fs_transformation::from_json(el);
-            std::visit(
-                [&](auto& remote) {
-                    if constexpr (neo::alike<decltype(remote), std::monostate>) {
-                        // Do nothing
-                    } else {
-                        remote.transforms.push_back(std::move(tr));
-                    }
-                },
-                info.remote);
-        }
-    }
     return info;
 }
 
@@ -482,14 +427,4 @@ std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const no
                return dep;
            })  //
         | ranges::to_vector;
-}
-
-void catalog::import_json_str(std::string_view content) {
-    dds_log(trace, "Importing JSON string into catalog");
-    auto pkgs = parse_packages_json(content);
-
-    nsql::transaction_guard tr{_db};
-    for (const auto& pkg : pkgs) {
-        do_store_pkg(_db, _stmt_cache, pkg);
-    }
 }

@@ -5,7 +5,6 @@
 
 #include <dds/deps.hpp>
 #include <dds/package/id.hpp>
-#include <dds/util/fs_transform.hpp>
 #include <dds/util/glob.hpp>
 
 #include <optional>

@@ -3,7 +3,12 @@
     "packages": {
         "nlohmann-json": {
             "3.7.1": {
-                "url": "git+https://github.com/vector-of-bool/json.git#dds/3.7.1",
+                "remote": {
+                    "git": {
+                        "url": "https://github.com/vector-of-bool/json.git",
+                        "ref": "dds/3.7.1"
+                    }
+                },
                 "depends": []
             }
         }

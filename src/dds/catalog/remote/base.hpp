@@ -1,7 +1,5 @@
 #pragma once
 
-#include <dds/util/fs_transform.hpp>
-
 #include <libman/package.hpp>
 #include <neo/concepts.hpp>
 
@@ -13,10 +11,8 @@ namespace dds {
 struct package_id;
 
 struct remote_listing_base {
-    std::optional<lm::usage>       auto_lib{};
-    std::vector<fs_transformation> transforms{};
+    std::optional<lm::usage> auto_lib{};
 
-    void apply_transforms(path_ref root) const;
     void generate_auto_lib_files(const package_id& pid, path_ref root) const;
 };
 

@@ -2,6 +2,7 @@ import pytest
 import subprocess
 
 from tests import DDS, DDSFixtureParams, dds_fixture_conf, dds_fixture_conf_1
+from tests.http import RepoFixture
 
 dds_conf = dds_fixture_conf(
     DDSFixtureParams(ident='git-remote', subdir='git-remote'),
@@ -10,16 +11,18 @@ dds_conf = dds_fixture_conf(
 
 
 @dds_conf
-def test_deps_build(dds: DDS):
-    dds.catalog_import(dds.source_root / 'catalog.json')
+def test_deps_build(dds: DDS, http_repo: RepoFixture):
+    http_repo.import_json_file(dds.source_root / 'catalog.json')
+    dds.repo_add(http_repo.url)
     assert not dds.repo_dir.exists()
     dds.build()
     assert dds.repo_dir.exists(), '`Building` did not generate a repo directory'
 
 
 @dds_fixture_conf_1('use-remote')
-def test_use_nlohmann_json_remote(dds: DDS):
-    dds.catalog_import(dds.source_root / 'catalog.json')
+def test_use_nlohmann_json_remote(dds: DDS, http_repo: RepoFixture):
+    http_repo.import_json_file(dds.source_root / 'catalog.json')
+    dds.repo_add(http_repo.url)
     dds.build(apps=True)
 
     app_exe = dds.build_dir / f'app{dds.exe_suffix}'

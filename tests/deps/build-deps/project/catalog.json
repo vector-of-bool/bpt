@@ -3,7 +3,12 @@
     "packages": {
         "neo-fun": {
             "0.3.0": {
-                "url": "git+https://github.com/vector-of-bool/neo-fun.git#0.3.0"
+                "remote": {
+                    "git": {
+                        "url": "https://github.com/vector-of-bool/neo-fun.git",
+                        "ref": "0.3.0"
+                    }
+                }
             }
         }
     }

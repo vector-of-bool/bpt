@@ -39,12 +39,6 @@ public:
     std::vector<package_id> by_name(std::string_view sv) const noexcept;
     std::vector<dependency> dependencies_of(const package_id& pkg) const noexcept;
 
-    void import_json_str(std::string_view json_str);
-    void import_json_file(path_ref json_path) {
-        auto content = dds::slurp_file(json_path);
-        import_json_str(content);
-    }
-
     auto& database() noexcept { return _db; }
     auto& database() const noexcept { return _db; }
 };

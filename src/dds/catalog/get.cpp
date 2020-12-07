@@ -29,7 +29,6 @@ temporary_sdist do_pull_sdist(const package_info& listing, const R& remote) {
     auto tmpdir = dds::temporary_dir::create();
 
     remote.pull_source(tmpdir.path());
-    remote.apply_transforms(tmpdir.path());
     remote.generate_auto_lib_files(listing.ident, tmpdir.path());
 
     dds_log(info, "Create sdist ...");
