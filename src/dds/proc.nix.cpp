@@ -53,13 +53,13 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
         std::cerr
             << fmt::format("[dds child executor] The requested executable ({}) could not be found.",
                            strings[0]);
-        std::quick_exit(-1);
+        std::exit(-1);
     }
 
     std::cerr << "[dds child executor] execvp returned! This is a fatal error: "
               << std::system_category().message(errno) << '\n';
 
-    std::quick_exit(-1);
+    std::exit(-1);
 }
 
 }  // namespace
