@@ -5,19 +5,20 @@ Script for populating a repository with packages declaratively.
 import argparse
 import itertools
 import json
-import tarfile
+import os
 import re
 import shutil
 import sys
+import tarfile
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import check_call
 from threading import Lock
-from urllib import request
-from typing import (Any, Dict, Iterable, Iterator, NamedTuple, NoReturn, Optional, Sequence, Tuple, TypeVar, Type,
+from typing import (Any, Dict, Iterable, Iterator, NamedTuple, NoReturn, Optional, Sequence, Tuple, Type, TypeVar,
                     Union)
+from urllib import request
 
 from semver import VersionInfo
 from typing_extensions import Protocol
@@ -26,6 +27,18 @@ T = TypeVar('T')
 
 I32_MAX = 0xffff_ffff - 1
 MAX_VERSION = VersionInfo(I32_MAX, I32_MAX, I32_MAX)
+
+REPO_ROOT = Path(__file__).resolve().absolute().parent.parent
+
+
+def dds_exe() -> Path:
+    suffix = '.exe' if os.name == 'nt' else ''
+    dirs = [REPO_ROOT / '_build', REPO_ROOT / '_prebuilt']
+    for d in dirs:
+        exe = d / ('dds' + suffix)
+        if exe.is_file():
+            return exe
+    raise RuntimeError('Unable to find a dds.exe to use')
 
 
 class Dependency(NamedTuple):
@@ -346,7 +359,7 @@ def http_dl_unpack(url: str) -> Iterator[Path]:
 def spec_as_local_tgz(spec: SpecPackage) -> Iterator[Path]:
     with spec.remote.make_local_dir(spec.name, spec.version) as clone_dir:
         out_tgz = clone_dir / 'sdist.tgz'
-        check_call(['dds', 'sdist', 'create', f'--project-dir={clone_dir}', f'--out={out_tgz}'])
+        check_call([str(dds_exe()), 'sdist', 'create', f'--project-dir={clone_dir}', f'--out={out_tgz}'])
         yield out_tgz
 
 
@@ -361,7 +374,7 @@ class Repository:
 
     @classmethod
     def create(cls, dirpath: Path, name: str) -> 'Repository':
-        check_call(['dds', 'repoman', 'init', str(dirpath), f'--name={name}'])
+        check_call([str(dds_exe()), 'repoman', 'init', str(dirpath), f'--name={name}'])
         return Repository(dirpath)
 
     @classmethod
@@ -369,10 +382,10 @@ class Repository:
         return Repository(dirpath)
 
     def import_tgz(self, path: Path) -> None:
-        check_call(['dds', 'repoman', 'import', str(self._path), str(path)])
+        check_call([str(dds_exe()), 'repoman', 'import', str(self._path), str(path)])
 
     def remove(self, name: str) -> None:
-        check_call(['dds', 'repoman', 'remove', str(self._path), name])
+        check_call([str(dds_exe()), 'repoman', 'remove', str(self._path), name])
 
     def spec_import(self, spec: Path) -> None:
         all_specs = iter_spec(spec)
