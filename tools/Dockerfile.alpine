@@ -1,0 +1,13 @@
+FROM alpine:3.12.1
+
+# Base build dependencies
+RUN apk add "gcc=9.3.0-r2" "g++=9.3.0-r2" make python3 py3-pip \
+    git openssl-libs-static openssl-dev
+
+# We use version-qualified names for compiler executables
+RUN ln -s $(type -P gcc) /usr/local/bin/gcc-9 && \
+    ln -s $(type -P g++) /usr/local/bin/g++-9
+
+# Some Python test dependencies
+RUN python3 -m pip install pytest pytest-xdist \
+    pytest-asyncio semver typing-extensions

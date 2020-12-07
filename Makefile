@@ -2,7 +2,7 @@
 
 .PHONY: \
 	docs docs-server docs-watch docs-sync-server nix-ci linux-ci macos-ci \
-	vagrant-freebsd-ci site
+	vagrant-freebsd-ci site alpine-static-ci
 
 _invalid:
 	echo "Specify a target name to execute"
@@ -54,6 +54,16 @@ nix-ci:
 	python3 -u tools/ci.py \
 		-B download \
 		-T tools/gcc-9-rel.jsonc
+
+alpine-static-ci:
+	docker build -t dds-builder -f tools/Dockerfile.alpine tools/
+	docker run \
+		-ti --rm \
+		-u $(shell id -u) \
+		-v $(PWD):/host -w /host \
+		--privileged \
+		dds-builder \
+		make linux-ci
 
 vagrant-freebsd-ci:
 	vagrant up freebsd11
