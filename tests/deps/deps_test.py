@@ -35,7 +35,7 @@ CASES: List[DepsCase] = []
 
 
 def get_default_pkg_versions(pkg: str) -> Sequence[str]:
-    catalog_json = Path(__file__).resolve().parent.parent.parent / 'catalog.json'
+    catalog_json = Path(__file__).resolve().parent.parent.parent / 'old-catalog.json'
     catalog_dict = json.loads(catalog_json.read_text())
     return list(catalog_dict['packages'][pkg].keys())
 

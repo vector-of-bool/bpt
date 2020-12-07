@@ -103,7 +103,7 @@ def main(argv: Sequence[str]) -> int:
         paths.PREBUILT_DDS,
         toolchain=opts.toolchain,
         cat_path=old_cat_path,
-        cat_json_path=Path('catalog.json'),
+        cat_json_path=Path('old-catalog.json'),
         dds_flags=[('--repo-dir', ci_repo_dir)])
     print('Main build PASSED!')
     print(f'A `dds` executable has been generated: {paths.CUR_BUILT_DDS}')
