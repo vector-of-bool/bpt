@@ -38,15 +38,7 @@ stages:
         pool:
           vmImage: ubuntu-18.04
         steps:
-          - script: sudo apt-get -y update
-            displayName: APT Update
-          - script: sudo apt-get -y install g++-9 ccache
-            displayName: Get GCC 9
-          - script: sudo apt-get -y install python3-minimal python3-setuptools
-            displayName: Get Python 3
-          - script: python3 -m pip install pytest pytest-xdist
-            displayName: Get Python Dependencies
-          - script: make linux-ci
+          - script: make alpine-static-ci
             displayName: Build and Test
           - publish: _build/dds-linux-x64
             displayName: Publish

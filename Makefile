@@ -58,7 +58,7 @@ nix-ci:
 alpine-static-ci:
 	docker build -t dds-builder -f tools/Dockerfile.alpine tools/
 	docker run \
-		-ti --rm \
+		-t --rm \
 		-u $(shell id -u) \
 		-v $(PWD):/host -w /host \
 		--privileged \
