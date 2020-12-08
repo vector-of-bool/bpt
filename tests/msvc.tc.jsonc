@@ -1,4 +1,5 @@
 {
     "$schema": "../res/toolchain-schema.json",
-    "compiler_id": "msvc"
+    "compiler_id": "msvc",
+    "cxx_flags": "/std:c++latest"
 }

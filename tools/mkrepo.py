@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sys
 import tarfile
 import tempfile
@@ -191,7 +192,7 @@ class RemoveTransform(NamedTuple):
         if not self.only_matching:
             # Remove everything
             if abspath.is_dir():
-                shutil.rmtree(abspath)
+                better_rmtree(abspath)
             else:
                 abspath.unlink()
             return
@@ -200,7 +201,7 @@ class RemoveTransform(NamedTuple):
             items = glob_if_exists(abspath, pat)
             for f in items:
                 if f.is_dir():
-                    shutil.rmtree(f)
+                    better_rmtree(f)
                 else:
                     f.unlink()
 
@@ -266,7 +267,7 @@ class GitSpec(NamedTuple):
             check_call(['git', 'clone', '--quiet', self.url, f'--depth=1', f'--branch={self.ref}', str(tdir)])
             yield tdir
         finally:
-            shutil.rmtree(tdir)
+            better_rmtree(tdir)
 
 
 class ForeignPackage(NamedTuple):
@@ -337,6 +338,19 @@ def iter_spec_packages(data: Dict[str, Any]) -> Iterable[SpecPackage]:
             yield SpecPackage.parse_data(name, version, defin)
 
 
+def _on_rm_error_win32(fn, filepath, _exc_info):
+    p = Path(filepath)
+    p.chmod(stat.S_IWRITE)
+    p.unlink()
+
+
+def better_rmtree(dir: Path) -> None:
+    if os.name == 'nt':
+        shutil.rmtree(dir, onerror=_on_rm_error_win32)
+    else:
+        shutil.rmtree(dir)
+
+
 @contextmanager
 def http_dl_unpack(url: str) -> Iterator[Path]:
     req = request.urlopen(url)
@@ -352,7 +366,7 @@ def http_dl_unpack(url: str) -> Iterator[Path]:
         subdir = next(iter(Path(tdir).iterdir()))
         yield subdir
     finally:
-        shutil.rmtree(tdir)
+        better_rmtree(tdir)
 
 
 @contextmanager

@@ -43,12 +43,13 @@ def run_http_server(dirpath: Path, port: int):
     the given TCP port.
     """
     handler = partial(DirectoryServingHTTPRequestHandler, dir=dirpath)
-    addr = ('localhost', port)
+    addr = ('127.0.0.1', port)
     pool = ThreadPoolExecutor()
     with HTTPServer(addr, handler) as httpd:
         pool.submit(lambda: httpd.serve_forever(poll_interval=0.1))
         try:
-            yield ServerInfo(f'http://localhost:{port}', dirpath)
+            print('Serving at', addr)
+            yield ServerInfo(f'http://127.0.0.1:{port}', dirpath)
         finally:
             httpd.shutdown()
 
@@ -78,10 +79,11 @@ class RepoFixture:
         Import some packages into the repo for the given JSON data. Uses
         mkrepo.py
         """
-        with tempfile.NamedTemporaryFile() as f:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
             f.write(json.dumps(data).encode())
-            f.flush()
+            f.close()
             self.import_json_file(Path(f.name))
+            Path(f.name).unlink()
 
     def import_json_file(self, fpath: Path) -> None:
         """

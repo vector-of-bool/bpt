@@ -22,6 +22,7 @@ def test_get(dds: DDS, http_repo: RepoFixture):
         }
     })
 
+    dds.scope.enter_context(ensure_dir(dds.source_root))
     dds.repo_add(http_repo.url)
     dds.catalog_get('neo-sqlite3@0.3.0')
     assert (dds.scratch_dir / 'neo-sqlite3@0.3.0').is_dir()
