@@ -3,8 +3,12 @@
     "compiler_id": "msvc",
     "flags": [
         "/Zc:preprocessor",
+        "/Zc:__cplusplus",
         "/std:c++latest",
         "/DNOMINMAX",
+        // Workaround quirks in LEAF
+        "/DBOOST_LEAF_CONSTEXPR=",
+        "/DBOOST_LEAF_STD_UNCAUGHT_EXCEPTIONS=1",
         // OpenSSL headers:
         "/Iexternal/OpenSSL/include",
     ],
