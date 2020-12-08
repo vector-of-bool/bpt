@@ -1256,6 +1256,7 @@ int main_fn(const std::vector<std::string>& argv) {
 }
 
 #if NEO_OS_IS_WINDOWS
+#include <windows.h>
 std::string wstr_to_u8str(std::wstring_view in) {
     if (in.empty()) {
         return "";
