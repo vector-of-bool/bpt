@@ -103,5 +103,5 @@ def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo):
     Fixture that creates a new empty dds repository and an HTTP server to serve
     it.
     """
-    subprocess.check_call([dds_exe, 'repoman', 'init', str(http_tmp_dir_server.root)])
+    subprocess.check_call([str(dds_exe), 'repoman', 'init', str(http_tmp_dir_server.root)])
     yield RepoFixture(dds_exe, http_tmp_dir_server)
