@@ -15,6 +15,7 @@ using namespace dds;
 namespace {
 
 auto collect_pf_sources(path_ref path) {
+    dds_log(debug, "Scanning for sources in {}", path.string());
     auto include_dir = source_root{path / "include"};
     auto src_dir     = source_root{path / "src"};
 
@@ -48,6 +49,7 @@ auto collect_pf_sources(path_ref path) {
         extend(sources, src_sources);
     }
 
+    dds_log(debug, "Found {} source files", sources.size());
     return sources;
 }
 
