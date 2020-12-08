@@ -48,7 +48,7 @@ struct remote_db {
 
     static remote_db download_and_open_for_base(neo::url url) {
         auto repo_url = url;
-        repo_url.path = fs::path(url.path).append("repo.db").string();
+        repo_url.path = fs::path(url.path).append("repo.db").generic_string();
         return download_and_open(repo_url);
     }
 
