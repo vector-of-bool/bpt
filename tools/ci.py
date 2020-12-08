@@ -135,6 +135,7 @@ def main(argv: Sequence[str]) -> int:
         f'--basetemp={paths.BUILD_DIR / "_tmp"}',
         '-n',
         str(multiprocessing.cpu_count() + 2),
+        '--basetemp=/tmp',  # Force to use a top-level /tmp dir. On Windows this prevents paths from begin too long
         'tests/',
     ])
 
