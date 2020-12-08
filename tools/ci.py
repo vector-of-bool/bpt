@@ -119,23 +119,23 @@ def main(argv: Sequence[str]) -> int:
         new_cat_path.unlink()
     if new_repo_dir.is_dir():
         shutil.rmtree(new_repo_dir)
-    dds_build(
-        paths.CUR_BUILT_DDS,
-        toolchain=opts.toolchain,
-        more_flags=[
-            f'--repo-dir={new_repo_dir}',
-            f'--catalog={new_cat_path}',
-            '--add-repo=https://dds.pizza/repo',
-        ])
+    dds_build(paths.CUR_BUILT_DDS,
+              toolchain=opts.toolchain,
+              more_flags=[
+                  f'--repo-dir={new_repo_dir}',
+                  f'--catalog={new_cat_path}',
+                  '--add-repo=https://dds.pizza/repo',
+              ])
     print('Bootstrap test PASSED!')
 
+    basetemp = Path('/tmp/dds-ci')
+    basetemp.mkdir(exist_ok=True, parents=True)
     return pytest.main([
         '-v',
         '--durations=10',
-        f'--basetemp={paths.BUILD_DIR / "_tmp"}',
         '-n',
         str(multiprocessing.cpu_count() + 2),
-        '--basetemp=/tmp',  # Force to use a top-level /tmp dir. On Windows this prevents paths from begin too long
+        f'--basetemp={basetemp}',  # Force to use a top-level /tmp dir. On Windows this prevents paths from begin too long
         'tests/',
     ])
 

@@ -20,6 +20,7 @@ stages:
           - pwsh: tools\get-win-openssl.ps1
             displayName: Get OpenSSL for Windows
           - script: python -m pip install pytest pytest-xdist
+                    pytest-asyncio semver typing-extensions
             displayName: Install Python deps
           - script: |
               echo Loading VS environment
@@ -53,7 +54,7 @@ stages:
             displayName: Get GCC 9
           - script: brew install openssl@1.1
             displayName: Install OpenSSL
-          - script: python3 -m pip install pytest pytest-xdist
+          - script: python3 -m pip install pytest pytest-xdist pytest-asyncio semver typing-extensions
             displayName: Get Python Dependencies
           - script: make macos-ci
             displayName: Build and Test
