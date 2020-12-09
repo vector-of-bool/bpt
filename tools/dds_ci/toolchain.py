@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+import distro
 import json5
 
 from . import paths
@@ -38,6 +39,10 @@ def get_default_test_toolchain() -> Path:
     Get the default toolchain that should be used for dev and test based on the
     host platform.
     """
+    if distro.id() == 'alpine':
+        # Alpine Linux cannot use the full audit mode, as asan and ubsan do not
+        # work with musl
+        return paths.TOOLS_DIR / 'gcc-9-test.jsonc'
     if sys.platform == 'win32':
         return paths.TOOLS_DIR / 'msvc-audit.jsonc'
     if sys.platform in 'linux':
