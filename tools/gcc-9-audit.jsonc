@@ -7,19 +7,17 @@
         "-Werror",
     ],
     "flags": [
-        "-fsanitize=address,undefined"
+        "-fsanitize=address,undefined",
     ],
     "cxx_flags": [
         "-fconcepts",
         "-std=c++2a",
     ],
     "link_flags": [
-        "-fuse-ld=lld",
         "-fsanitize=address,undefined",
         "-l:libssl.a",
         "-l:libcrypto.a",
         "-ldl",
     ],
-    "debug": true,
-    "compiler_launcher": "ccache"
+    "debug": true
 }

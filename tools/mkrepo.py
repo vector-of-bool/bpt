@@ -32,7 +32,7 @@ MAX_VERSION = VersionInfo(I32_MAX, I32_MAX, I32_MAX)
 REPO_ROOT = Path(__file__).resolve().absolute().parent.parent
 
 
-def dds_exe() -> Path:
+def _get_dds_exe() -> Path:
     suffix = '.exe' if os.name == 'nt' else ''
     dirs = [REPO_ROOT / '_build', REPO_ROOT / '_prebuilt']
     for d in dirs:
@@ -79,12 +79,11 @@ class MoveTransform(NamedTuple):
 
     @classmethod
     def parse_data(cls: Type[T], data: Any) -> T:
-        return cls(
-            frm=data.pop('from'),
-            to=data.pop('to'),
-            include=data.pop('include', []),
-            strip_components=data.pop('strip-components', 0),
-            exclude=data.pop('exclude', []))
+        return cls(frm=data.pop('from'),
+                   to=data.pop('to'),
+                   include=data.pop('include', []),
+                   strip_components=data.pop('strip-components', 0),
+                   exclude=data.pop('exclude', []))
 
     def apply_to(self, p: Path) -> None:
         src = p / self.frm
@@ -318,12 +317,11 @@ class SpecPackage(NamedTuple):
         deps = data.pop('depends', [])
         desc = data.pop('description', '[No description]')
         remote = ForeignPackage.parse_data(data.pop('remote'))
-        return SpecPackage(
-            name,
-            VersionInfo.parse(version),
-            description=desc,
-            depends=[Dependency.parse(d) for d in deps],
-            remote=remote)
+        return SpecPackage(name,
+                           VersionInfo.parse(version),
+                           description=desc,
+                           depends=[Dependency.parse(d) for d in deps],
+                           remote=remote)
 
 
 def iter_spec(path: Path) -> Iterable[SpecPackage]:
@@ -370,16 +368,17 @@ def http_dl_unpack(url: str) -> Iterator[Path]:
 
 
 @contextmanager
-def spec_as_local_tgz(spec: SpecPackage) -> Iterator[Path]:
+def spec_as_local_tgz(dds_exe: Path, spec: SpecPackage) -> Iterator[Path]:
     with spec.remote.make_local_dir(spec.name, spec.version) as clone_dir:
         out_tgz = clone_dir / 'sdist.tgz'
-        check_call([str(dds_exe()), 'sdist', 'create', f'--project-dir={clone_dir}', f'--out={out_tgz}'])
+        check_call([str(dds_exe), 'sdist', 'create', f'--project-dir={clone_dir}', f'--out={out_tgz}'])
         yield out_tgz
 
 
 class Repository:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, dds_exe: Path, path: Path) -> None:
         self._path = path
+        self._dds_exe = dds_exe
         self._import_lock = Lock()
 
     @property
@@ -387,19 +386,19 @@ class Repository:
         return self._path / 'pkg'
 
     @classmethod
-    def create(cls, dirpath: Path, name: str) -> 'Repository':
-        check_call([str(dds_exe()), 'repoman', 'init', str(dirpath), f'--name={name}'])
-        return Repository(dirpath)
+    def create(cls, dds_exe: Path, dirpath: Path, name: str) -> 'Repository':
+        check_call([str(dds_exe), 'repoman', 'init', str(dirpath), f'--name={name}'])
+        return Repository(dds_exe, dirpath)
 
     @classmethod
-    def open(cls, dirpath: Path) -> 'Repository':
-        return Repository(dirpath)
+    def open(cls, dds_exe: Path, dirpath: Path) -> 'Repository':
+        return Repository(dds_exe, dirpath)
 
     def import_tgz(self, path: Path) -> None:
-        check_call([str(dds_exe()), 'repoman', 'import', str(self._path), str(path)])
+        check_call([str(self._dds_exe), 'repoman', 'import', str(self._path), str(path)])
 
     def remove(self, name: str) -> None:
-        check_call([str(dds_exe()), 'repoman', 'remove', str(self._path), name])
+        check_call([str(self._dds_exe), 'repoman', 'remove', str(self._path), name])
 
     def spec_import(self, spec: Path) -> None:
         all_specs = iter_spec(spec)
@@ -415,7 +414,7 @@ class Repository:
 
     def _get_and_import(self, spec: SpecPackage) -> None:
         print(f'Import: {spec.name}@{spec.version}')
-        with spec_as_local_tgz(spec) as tgz:
+        with spec_as_local_tgz(self._dds_exe, spec) as tgz:
             with self._import_lock:
                 self.import_tgz(tgz)
 
@@ -423,19 +422,20 @@ class Repository:
 class Arguments(Protocol):
     dir: Path
     spec: Path
+    dds_exe: Path
 
 
 def main(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument('--dds-exe', type=Path, help='Path to the dds executable to use', default=_get_dds_exe())
     parser.add_argument('--dir', '-d', help='Path to a repository to manage', required=True, type=Path)
-    parser.add_argument(
-        '--spec',
-        metavar='<spec-path>',
-        type=Path,
-        required=True,
-        help='Provide a JSON document specifying how to obtain an import some packages')
+    parser.add_argument('--spec',
+                        metavar='<spec-path>',
+                        type=Path,
+                        required=True,
+                        help='Provide a JSON document specifying how to obtain an import some packages')
     args: Arguments = parser.parse_args(argv)
-    repo = Repository.open(args.dir)
+    repo = Repository.open(args.dds_exe, args.dir)
     repo.spec_import(args.spec)
 
     return 0

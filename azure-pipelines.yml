@@ -19,15 +19,14 @@ stages:
         steps:
           - pwsh: tools\get-win-openssl.ps1
             displayName: Get OpenSSL for Windows
-          - script: python -m pip install pytest pytest-xdist
-                    pytest-asyncio semver typing-extensions
+          - script: python -m pip install poetry && poetry install --no-dev
             displayName: Install Python deps
           - script: |
               echo Loading VS environment
               call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
               echo Executing Build and Tests
               reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
-              python -u tools/ci.py -B download -T tools\msvc.jsonc || exit 1
+              poetry run dds-ci || exit 1
               move _build\dds.exe _build\dds-win-x64.exe || exit 1
             displayName: Build and Test
           - publish: _build\dds-win-x64.exe
@@ -54,7 +53,7 @@ stages:
             displayName: Get GCC 9
           - script: brew install openssl@1.1
             displayName: Install OpenSSL
-          - script: python3 -m pip install pytest pytest-xdist pytest-asyncio semver typing-extensions
+          - script: python3 -m pip install poetry
             displayName: Get Python Dependencies
           - script: make macos-ci
             displayName: Build and Test

@@ -2,12 +2,20 @@ FROM alpine:3.12.1
 
 # Base build dependencies
 RUN apk add "gcc=9.3.0-r2" "g++=9.3.0-r2" make python3 py3-pip \
-    git openssl-libs-static openssl-dev
+    git openssl-libs-static openssl-dev ccache lld curl python3-dev
 
 # We use version-qualified names for compiler executables
 RUN ln -s $(type -P gcc) /usr/local/bin/gcc-9 && \
     ln -s $(type -P g++) /usr/local/bin/g++-9
 
-# Some Python test dependencies
-RUN python3 -m pip install pytest pytest-xdist \
-    pytest-asyncio semver typing-extensions
+# We want the UID in the container to match the UID on the outside, for minimal
+# fuss with file permissions
+ARG DDS_USER_UID=1000
+
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py \
+    | env POETRY_HOME=/opt/poetry python3 -u - --no-modify-path && \
+    ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry && \
+    chmod a+x /opt/poetry/bin/poetry && \
+    adduser --disabled-password --uid=${DDS_USER_UID} dds
+
+USER dds

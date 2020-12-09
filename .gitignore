@@ -7,4 +7,10 @@ _prebuilt/
 .pytest_cache/
 .vagrant/
 
+## Generate by CI scripts:
+# A copy of OpenSSL for Windows:
 external/OpenSSL
+.docker-ccache/
+
+*.egg-info
+*.stamp

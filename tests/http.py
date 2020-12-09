@@ -16,7 +16,6 @@ class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
     """
     A simple HTTP request handler that simply serves files from a directory given to the constructor.
     """
-
     def __init__(self, *args, **kwargs) -> None:
         self.dir = kwargs.pop('dir')
         super().__init__(*args, **kwargs)
@@ -68,7 +67,6 @@ class RepoFixture:
     """
     A fixture handle to a dds HTTP repository, including a path and URL.
     """
-
     def __init__(self, dds_exe: Path, info: ServerInfo) -> None:
         self.server = info
         self.url = info.base_url

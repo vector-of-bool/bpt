@@ -26,6 +26,5 @@
         "libssl.lib",
         "libcrypto.lib",
     ],
-    // "debug": true,
     "optimize": true
 }
