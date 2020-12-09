@@ -29,6 +29,13 @@ stages:
               poetry run dds-ci || exit 1
               move _build\dds.exe _build\dds-win-x64.exe || exit 1
             displayName: Build and Test
+          - task: PublishTestResults@2
+            displayName: Publish Tests
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: '**/pytest-junit.xml'
+              failTaskOnFailedTests: true
+              testRunTitle: Windows Tests
           - publish: _build\dds-win-x64.exe
             displayName: Publish
             artifact: dds-win-x64
@@ -40,6 +47,13 @@ stages:
         steps:
           - script: make alpine-static-ci
             displayName: Build and Test
+          - task: PublishTestResults@2
+            displayName: Publish Tests
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: '**/pytest-junit.xml'
+              failTaskOnFailedTests: true
+              testRunTitle: Linux Tests
           - publish: _build/dds-linux-x64
             displayName: Publish
             artifact: dds-linux-x64
@@ -57,6 +71,13 @@ stages:
             displayName: Get Python Dependencies
           - script: make macos-ci
             displayName: Build and Test
+          - task: PublishTestResults@2
+            displayName: Publish Tests
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: '**/pytest-junit.xml'
+              failTaskOnFailedTests: true
+              testRunTitle: macOS Tests
           - publish: _build/dds-macos-x64
             displayName: Publish
             artifact: dds-macos-x64

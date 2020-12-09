@@ -99,6 +99,7 @@ def run_pytest(dds: DDSWrapper, args: CommandArguments) -> int:
         str(args.jobs),
         f'--basetemp={basetemp}',
         f'--dds-exe={dds.path}',
+        f'--junit-xml={paths.BUILD_DIR}/pytest-junit.xml',
         str(paths.PROJECT_ROOT / 'tests/'),
     ])
 
