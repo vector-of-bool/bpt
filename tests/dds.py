@@ -2,15 +2,17 @@ import os
 import itertools
 from contextlib import contextmanager, ExitStack
 from pathlib import Path
-from typing import Iterable, Union, Any, Dict, NamedTuple, ContextManager, Optional
-import subprocess
+from typing import Union, NamedTuple, ContextManager, Optional, Iterator, TypeVar
 import shutil
 
 import pytest
+import _pytest
 
-from dds_ci import proc
+from dds_ci import proc, toolchain as tc_mod
 
 from . import fileutil
+
+T = TypeVar('T')
 
 
 class DDS:
@@ -42,20 +44,17 @@ class DDS:
     def lmi_path(self) -> Path:
         return self.scratch_dir / 'INDEX.lmi'
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         if self.scratch_dir.exists():
             shutil.rmtree(self.scratch_dir)
 
-    def run_unchecked(self, cmd: proc.CommandLine, *, cwd: Path = None) -> subprocess.CompletedProcess:
+    def run_unchecked(self, cmd: proc.CommandLine, *, cwd: Optional[Path] = None) -> proc.ProcessResult:
         full_cmd = itertools.chain([self.dds_exe, '-ltrace'], cmd)
-        return proc.run(full_cmd, cwd=cwd or self.source_root)
+        return proc.run(full_cmd, cwd=cwd or self.source_root)  # type: ignore
 
-    def run(self, cmd: proc.CommandLine, *, cwd: Path = None, check=True) -> subprocess.CompletedProcess:
-        cmdline = list(proc.flatten_cmd(cmd))
-        res = self.run_unchecked(cmd, cwd=cwd)
-        if res.returncode != 0 and check:
-            raise subprocess.CalledProcessError(res.returncode, [self.dds_exe] + cmdline, res.stdout)
-        return res
+    def run(self, cmd: proc.CommandLine, *, cwd: Optional[Path] = None, check: bool = True) -> proc.ProcessResult:
+        full_cmd = itertools.chain([self.dds_exe, '-ltrace'], cmd)
+        return proc.run(full_cmd, cwd=cwd, check=check)  # type: ignore
 
     @property
     def repo_dir_arg(self) -> str:
@@ -69,10 +68,10 @@ class DDS:
     def catalog_path_arg(self) -> str:
         return f'--catalog={self.catalog_path}'
 
-    def build_deps(self, args: proc.CommandLine, *, toolchain: str = None) -> subprocess.CompletedProcess:
+    def build_deps(self, args: proc.CommandLine, *, toolchain: Optional[str] = None) -> proc.ProcessResult:
         return self.run([
             'build-deps',
-            f'--toolchain={toolchain or self.default_builtin_toolchain}',
+            f'--toolchain={toolchain or tc_mod.get_default_test_toolchain()}',
             self.catalog_path_arg,
             self.repo_dir_arg,
             f'--out={self.deps_build_dir}',
@@ -85,21 +84,21 @@ class DDS:
 
     def build(self,
               *,
-              toolchain: str = None,
+              toolchain: Optional[str] = None,
               apps: bool = True,
               warnings: bool = True,
               catalog_path: Optional[Path] = None,
               tests: bool = True,
-              more_args: proc.CommandLine = [],
-              check: bool = True) -> subprocess.CompletedProcess:
-        catalog_path = catalog_path or self.catalog_path.relative_to(self.source_root)
+              more_args: proc.CommandLine = (),
+              check: bool = True) -> proc.ProcessResult:
+        catalog_path = catalog_path or self.catalog_path
         return self.run(
             [
                 'build',
                 f'--out={self.build_dir}',
-                f'--toolchain={toolchain or self.default_builtin_toolchain}',
+                f'--toolchain={toolchain or tc_mod.get_default_test_toolchain()}',
                 f'--catalog={catalog_path}',
-                f'--repo-dir={self.repo_dir.relative_to(self.source_root)}',
+                f'--repo-dir={self.repo_dir}',
                 ['--no-tests'] if not tests else [],
                 ['--no-apps'] if not apps else [],
                 ['--no-warnings'] if not warnings else [],
@@ -109,11 +108,11 @@ class DDS:
             check=check,
         )
 
-    def sdist_create(self) -> subprocess.CompletedProcess:
+    def sdist_create(self) -> proc.ProcessResult:
         self.build_dir.mkdir(exist_ok=True, parents=True)
         return self.run(['sdist', 'create', self.project_dir_arg], cwd=self.build_dir)
 
-    def sdist_export(self) -> subprocess.CompletedProcess:
+    def sdist_export(self) -> proc.ProcessResult:
         return self.run([
             'sdist',
             'export',
@@ -121,32 +120,14 @@ class DDS:
             self.repo_dir_arg,
         ])
 
-    def repo_import(self, sdist: Path) -> subprocess.CompletedProcess:
+    def repo_import(self, sdist: Path) -> proc.ProcessResult:
         return self.run(['repo', self.repo_dir_arg, 'import', sdist])
 
-    @property
-    def default_builtin_toolchain(self) -> str:
-        if os.name == 'posix':
-            return str(Path(__file__).parent.joinpath('gcc-9.tc.jsonc'))
-        elif os.name == 'nt':
-            return str(Path(__file__).parent.joinpath('msvc.tc.jsonc'))
-        else:
-            raise RuntimeError(f'No default builtin toolchain defined for tests on platform "{os.name}"')
-
-    @property
-    def exe_suffix(self) -> str:
-        if os.name == 'posix':
-            return ''
-        elif os.name == 'nt':
-            return '.exe'
-        else:
-            raise RuntimeError(f'We don\'t know the executable suffix for the platform "{os.name}"')
-
-    def catalog_create(self) -> subprocess.CompletedProcess:
+    def catalog_create(self) -> proc.ProcessResult:
         self.scratch_dir.mkdir(parents=True, exist_ok=True)
         return self.run(['catalog', 'create', f'--catalog={self.catalog_path}'], cwd=self.test_dir)
 
-    def catalog_get(self, req: str) -> subprocess.CompletedProcess:
+    def catalog_get(self, req: str) -> proc.ProcessResult:
         return self.run([
             'catalog',
             'get',
@@ -160,7 +141,7 @@ class DDS:
 
 
 @contextmanager
-def scoped_dds(dds_exe: Path, test_dir: Path, project_dir: Path, name: str):
+def scoped_dds(dds_exe: Path, test_dir: Path, project_dir: Path) -> Iterator[DDS]:
     if os.name == 'nt':
         dds_exe = dds_exe.with_suffix('.exe')
     with ExitStack() as scope:
@@ -172,11 +153,11 @@ class DDSFixtureParams(NamedTuple):
     subdir: Union[Path, str]
 
 
-def dds_fixture_conf(*argsets: DDSFixtureParams):
+def dds_fixture_conf(*argsets: DDSFixtureParams) -> _pytest.mark.MarkDecorator:
     args = list(argsets)
     return pytest.mark.parametrize('dds', args, indirect=True, ids=[p.ident for p in args])
 
 
-def dds_fixture_conf_1(subdir: Union[Path, str]):
+def dds_fixture_conf_1(subdir: Union[Path, str]) -> _pytest.mark.MarkDecorator:
     params = DDSFixtureParams(ident='only', subdir=subdir)
     return pytest.mark.parametrize('dds', [params], indirect=True, ids=['.'])

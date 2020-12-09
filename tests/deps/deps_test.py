@@ -12,7 +12,7 @@ class DepsCase(NamedTuple):
     usage: str
     source: str
 
-    def setup_root(self, dds: DDS):
+    def setup_root(self, dds: DDS) -> None:
         dds.scope.enter_context(
             fileutil.set_contents(
                 dds.source_root / 'package.json',
@@ -40,12 +40,14 @@ def get_default_pkg_versions(pkg: str) -> Sequence[str]:
     return list(catalog_dict['packages'][pkg].keys())
 
 
-def add_cases(pkg: str, uses: str, versions: Sequence[str], source: str):
+def add_cases(pkg: str, uses: str, versions: Sequence[str], source: str) -> None:
     if versions == ['auto']:
         versions = get_default_pkg_versions(pkg)
     for ver in versions:
         CASES.append(DepsCase(f'{pkg}@{ver}', uses, source))
 
+
+# pylint: disable=pointless-string-statement
 
 # magic_enum tests
 """

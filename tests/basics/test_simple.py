@@ -1,22 +1,19 @@
 from contextlib import ExitStack
 from tests import DDS
-from tests.fileutil import set_contents
 
 
-def test_simple_lib(dds: DDS, scope: ExitStack):
-    scope.enter_context(
-        dds.set_contents(
-            'src/foo.cpp',
-            b'int the_answer() { return 42; }',
-        ))
+def test_simple_lib(dds: DDS, scope: ExitStack) -> None:
+    scope.enter_context(dds.set_contents(
+        'src/foo.cpp',
+        b'int the_answer() { return 42; }',
+    ))
 
-    scope.enter_context(
-        dds.set_contents(
-            'library.json5',
-            b'''{
+    scope.enter_context(dds.set_contents(
+        'library.json5',
+        b'''{
                 name: 'TestLibrary',
             }''',
-        ))
+    ))
 
     scope.enter_context(
         dds.set_contents(

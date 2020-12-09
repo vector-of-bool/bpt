@@ -1,11 +1,10 @@
 import enum
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Iterator, ContextManager
+from typing import Iterator
 import sys
 import urllib.request
 import shutil
-import tempfile
 
 from . import paths
 from .dds import DDSWrapper
@@ -78,7 +77,7 @@ def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[DDSWrapper]:
     elif mode is BootstrapMode.Download:
         f = _do_bootstrap_download()
     elif mode is BootstrapMode.Build:
-        f = _do_bootstrap_build()
+        f = _do_bootstrap_build()  # type: ignore  # TODO
     elif mode is BootstrapMode.Skip:
         f = paths.PREBUILT_DDS
 

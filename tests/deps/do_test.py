@@ -1,6 +1,6 @@
-import pytest
 import subprocess
 
+from dds_ci import paths
 from tests import DDS, DDSFixtureParams, dds_fixture_conf, dds_fixture_conf_1
 from tests.http import RepoFixture
 
@@ -11,7 +11,7 @@ dds_conf = dds_fixture_conf(
 
 
 @dds_conf
-def test_deps_build(dds: DDS, http_repo: RepoFixture):
+def test_deps_build(dds: DDS, http_repo: RepoFixture) -> None:
     http_repo.import_json_file(dds.source_root / 'catalog.json')
     dds.repo_add(http_repo.url)
     assert not dds.repo_dir.exists()
@@ -20,11 +20,11 @@ def test_deps_build(dds: DDS, http_repo: RepoFixture):
 
 
 @dds_fixture_conf_1('use-remote')
-def test_use_nlohmann_json_remote(dds: DDS, http_repo: RepoFixture):
+def test_use_nlohmann_json_remote(dds: DDS, http_repo: RepoFixture) -> None:
     http_repo.import_json_file(dds.source_root / 'catalog.json')
     dds.repo_add(http_repo.url)
     dds.build(apps=True)
 
-    app_exe = dds.build_dir / f'app{dds.exe_suffix}'
+    app_exe = dds.build_dir / f'app{paths.EXE_SUFFIX}'
     assert app_exe.is_file()
     subprocess.check_call([str(app_exe)])

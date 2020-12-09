@@ -1,5 +1,6 @@
 from pathlib import PurePath, Path
-from typing import Iterable, Union
+from typing import Iterable, Union, Optional, Iterator
+from typing_extensions import Protocol
 import subprocess
 
 CommandLineArg = Union[str, PurePath, int, float]
@@ -7,7 +8,19 @@ CommandLineArg1 = Union[CommandLineArg, Iterable[CommandLineArg]]
 CommandLineArg2 = Union[CommandLineArg1, Iterable[CommandLineArg1]]
 CommandLineArg3 = Union[CommandLineArg2, Iterable[CommandLineArg2]]
 CommandLineArg4 = Union[CommandLineArg3, Iterable[CommandLineArg3]]
-CommandLine = Union[CommandLineArg4, Iterable[CommandLineArg4]]
+
+
+class CommandLine(Protocol):
+    def __iter__(self) -> Iterator[Union['CommandLine', CommandLineArg]]:
+        pass
+
+
+# CommandLine = Union[CommandLineArg4, Iterable[CommandLineArg4]]
+
+
+class ProcessResult(Protocol):
+    returncode: int
+    stdout: bytes
 
 
 def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
@@ -23,17 +36,17 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
         assert False, f'Invalid command line element: {repr(cmd)}'
 
 
-def run(*cmd: CommandLine, cwd: Path = None) -> subprocess.CompletedProcess:
+def run(*cmd: CommandLine, cwd: Optional[Path] = None, check: bool = False) -> ProcessResult:
     return subprocess.run(
-        list(flatten_cmd(cmd)),  # type: ignore
+        list(flatten_cmd(cmd)),
         cwd=cwd,
+        check=check,
     )
 
 
-def check_run(*cmd: CommandLine,
-              cwd: Path = None) -> subprocess.CompletedProcess:
-    flat_cmd = list(flatten_cmd(cmd))  # type: ignore
-    res = run(flat_cmd, cwd=cwd)
-    if res.returncode != 0:
-        raise subprocess.CalledProcessError(res.returncode, flat_cmd)
-    return res
+def check_run(*cmd: CommandLine, cwd: Optional[Path] = None) -> ProcessResult:
+    return subprocess.run(
+        list(flatten_cmd(cmd)),
+        cwd=cwd,
+        check=True,
+    )

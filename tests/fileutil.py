@@ -1,8 +1,9 @@
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Union, Optional
+from typing import Iterator, Optional
 
 import shutil
+
 
 @contextmanager
 def ensure_dir(dirpath: Path) -> Iterator[Path]:

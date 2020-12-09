@@ -1,11 +1,10 @@
-import pytest
 from time import sleep
 
 from tests import DDS, dds_fixture_conf_1
 
 
 @dds_fixture_conf_1('copy_only')
-def test_config_template(dds: DDS):
+def test_config_template(dds: DDS) -> None:
     generated_fpath = dds.build_dir / '__dds/gen/info.hpp'
     assert not generated_fpath.is_file()
     dds.build()
@@ -22,5 +21,5 @@ def test_config_template(dds: DDS):
 
 
 @dds_fixture_conf_1('simple')
-def test_simple_substitution(dds: DDS):
+def test_simple_substitution(dds: DDS) -> None:
     dds.build()

@@ -1,11 +1,9 @@
-import json
-
 from tests.fileutil import ensure_dir
-from tests import dds, DDS
+from tests import DDS
 from tests.http import RepoFixture
 
 
-def test_get(dds: DDS, http_repo: RepoFixture):
+def test_get(dds: DDS, http_repo: RepoFixture) -> None:
     http_repo.import_json_data({
         'version': 2,
         'packages': {
@@ -29,7 +27,7 @@ def test_get(dds: DDS, http_repo: RepoFixture):
     assert (dds.scratch_dir / 'neo-sqlite3@0.3.0/package.jsonc').is_file()
 
 
-def test_get_http(dds: DDS, http_repo: RepoFixture):
+def test_get_http(dds: DDS, http_repo: RepoFixture) -> None:
     http_repo.import_json_data({
         'packages': {
             'cmcstl2': {

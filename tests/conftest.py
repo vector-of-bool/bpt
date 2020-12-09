@@ -1,30 +1,53 @@
 from contextlib import ExitStack
-from typing import Optional
+from typing import Any, Callable, Iterator
+from typing_extensions import Protocol
 from pathlib import Path
 import shutil
 from subprocess import check_call
 
 import pytest
 
-from tests import scoped_dds, DDSFixtureParams
-from .http import *  # Exposes the HTTP fixtures
+from dds_ci import paths
+from tests import scoped_dds, DDSFixtureParams, DDS
+# Exposes the HTTP fixtures:
+from .http import http_repo, http_tmp_dir_server  # pylint: disable=unused-import
+
+
+class TempPathFactory(Protocol):
+    def mktemp(self, basename: str, numbered: bool = True) -> Path:
+        ...
+
+
+class PyTestConfig(Protocol):
+    def getoption(self, name: str) -> Any:
+        ...
+
+
+class TestRequest(Protocol):
+    fixturename: str
+    scope: str
+    config: PyTestConfig
+    fspath: str
+    function: Callable[..., Any]
+    param: DDSFixtureParams
 
 
 @pytest.fixture(scope='session')
-def dds_exe(pytestconfig) -> Path:
-    return Path(pytestconfig.getoption('--dds-exe'))
+def dds_exe(pytestconfig: PyTestConfig) -> Path:
+    opt = pytestconfig.getoption('--dds-exe') or paths.CUR_BUILT_DDS
+    return Path(opt)
 
 
-@pytest.yield_fixture(scope='session')
-def dds_pizza_catalog(dds_exe: Path, tmp_path_factory) -> Path:
+@pytest.yield_fixture(scope='session')  # type: ignore
+def dds_pizza_catalog(dds_exe: Path, tmp_path_factory: TempPathFactory) -> Path:
     tmpdir: Path = tmp_path_factory.mktemp(basename='dds-catalog')
     cat_path = tmpdir / 'catalog.db'
     check_call([str(dds_exe), 'repo', 'add', 'https://dds.pizza/repo', '--update', f'--catalog={cat_path}'])
     yield cat_path
 
 
-@pytest.yield_fixture
-def dds(request, dds_exe: Path, tmp_path: Path, worker_id: str, scope: ExitStack):
+@pytest.yield_fixture  # type: ignore
+def dds(request: TestRequest, dds_exe: Path, tmp_path: Path, worker_id: str, scope: ExitStack) -> Iterator[DDS]:
     test_source_dir = Path(request.fspath).absolute().parent
     test_root = test_source_dir
 
@@ -44,28 +67,28 @@ def dds(request, dds_exe: Path, tmp_path: Path, worker_id: str, scope: ExitStack
         project_dir = test_root / params.subdir
 
     # Create the instance. Auto-clean when we're done
-    yield scope.enter_context(scoped_dds(dds_exe, test_root, project_dir, request.function.__name__))
+    yield scope.enter_context(scoped_dds(dds_exe, test_root, project_dir))
 
 
-@pytest.fixture
-def scope():
+@pytest.yield_fixture  # type: ignore
+def scope() -> Iterator[ExitStack]:
     with ExitStack() as scope:
         yield scope
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: Any) -> None:
     parser.addoption('--test-deps',
                      action='store_true',
                      default=False,
                      help='Run the exhaustive and intensive dds-deps tests')
-    parser.addoption('--dds-exe', help='Path to the dds executable under test', required=True, type=Path)
+    parser.addoption('--dds-exe', help='Path to the dds executable under test', type=Path)
 
 
-def pytest_configure(config):
+def pytest_configure(config: Any) -> None:
     config.addinivalue_line('markers', 'deps_test: Deps tests are slow. Enable with --test-deps')
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config: PyTestConfig, items: Any) -> None:
     if config.getoption('--test-deps'):
         return
     for item in items:

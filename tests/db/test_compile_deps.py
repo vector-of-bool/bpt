@@ -1,10 +1,9 @@
 import subprocess
-import time
 
 import pytest
 
-from tests import dds, DDS, dds_fixture_conf_1
-from dds_ci import proc
+from tests import DDS
+from dds_ci import proc, paths
 
 ## #############################################################################
 ## #############################################################################
@@ -21,11 +20,11 @@ from dds_ci import proc
 
 def build_and_get_rc(dds: DDS) -> int:
     dds.build()
-    app = dds.build_dir / ('app' + dds.exe_suffix)
-    return proc.run(app).returncode
+    app = dds.build_dir / ('app' + paths.EXE_SUFFIX)
+    return proc.run([app]).returncode
 
 
-def test_simple_rebuild(dds: DDS):
+def test_simple_rebuild(dds: DDS) -> None:
     """
     Check that changing a source file will update the resulting application.
     """
@@ -41,7 +40,7 @@ def test_simple_rebuild(dds: DDS):
     assert build_and_get_rc(dds) == 1
 
 
-def test_rebuild_header_change(dds: DDS):
+def test_rebuild_header_change(dds: DDS) -> None:
     """Change the content of the header which defines the values"""
     assert build_and_get_rc(dds) == 0
     dds.scope.enter_context(
@@ -55,7 +54,7 @@ def test_rebuild_header_change(dds: DDS):
     assert build_and_get_rc(dds) == (88 - 63)
 
 
-def test_partial_build_rebuild(dds: DDS):
+def test_partial_build_rebuild(dds: DDS) -> None:
     """
     Change the content of a header, but cause one user of that header to fail
     compilation. The fact that compilation fails means it is still `out-of-date`,

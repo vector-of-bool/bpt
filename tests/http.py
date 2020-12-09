@@ -2,7 +2,7 @@ from pathlib import Path
 from contextlib import contextmanager
 import json
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-from typing import NamedTuple
+from typing import NamedTuple, Any, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import tempfile
@@ -16,13 +16,13 @@ class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
     """
     A simple HTTP request handler that simply serves files from a directory given to the constructor.
     """
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.dir = kwargs.pop('dir')
         super().__init__(*args, **kwargs)
 
-    def translate_path(self, path) -> str:
+    def translate_path(self, path: str) -> str:
         # Convert the given URL path to a path relative to the directory we are serving
-        abspath = Path(super().translate_path(path))
+        abspath = Path(super().translate_path(path))  # type: ignore
         relpath = abspath.relative_to(Path.cwd())
         return str(self.dir / relpath)
 
@@ -36,7 +36,7 @@ class ServerInfo(NamedTuple):
 
 
 @contextmanager
-def run_http_server(dirpath: Path, port: int):
+def run_http_server(dirpath: Path, port: int) -> Iterator[ServerInfo]:
     """
     Context manager that spawns an HTTP server that serves thegiven directory on
     the given TCP port.
@@ -53,8 +53,8 @@ def run_http_server(dirpath: Path, port: int):
             httpd.shutdown()
 
 
-@pytest.yield_fixture()
-def http_tmp_dir_server(tmp_path: Path, unused_tcp_port: int):
+@pytest.yield_fixture()  # type: ignore
+def http_tmp_dir_server(tmp_path: Path, unused_tcp_port: int) -> Iterator[ServerInfo]:
     """
     Creates an HTTP server that serves the contents of a new
     temporary directory.
@@ -72,7 +72,7 @@ class RepoFixture:
         self.url = info.base_url
         self.dds_exe = dds_exe
 
-    def import_json_data(self, data) -> None:
+    def import_json_data(self, data: Any) -> None:
         """
         Import some packages into the repo for the given JSON data. Uses
         mkrepo.py
@@ -96,8 +96,8 @@ class RepoFixture:
         ])
 
 
-@pytest.yield_fixture()
-def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo):
+@pytest.yield_fixture()  # type: ignore
+def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo) -> Iterator[RepoFixture]:
     """
     Fixture that creates a new empty dds repository and an HTTP server to serve
     it.
