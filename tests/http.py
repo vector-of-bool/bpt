@@ -92,6 +92,7 @@ class RepoFixture:
         subprocess.check_call([
             sys.executable,
             str(Path.cwd() / 'tools/mkrepo.py'),
+            f'--dds-exe={self.dds_exe}',
             f'--dir={self.server.root}',
             f'--spec={fpath}',
         ])

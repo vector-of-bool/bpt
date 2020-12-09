@@ -11,8 +11,8 @@ from .http import *  # Exposes the HTTP fixtures
 
 
 @pytest.fixture(scope='session')
-def dds_exe() -> Path:
-    return Path(__file__).absolute().parent.parent / '_build/dds'
+def dds_exe(pytestconfig) -> Path:
+    return Path(pytestconfig.getoption('--dds-exe'))
 
 
 @pytest.yield_fixture(scope='session')
@@ -54,8 +54,11 @@ def scope():
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        '--test-deps', action='store_true', default=False, help='Run the exhaustive and intensive dds-deps tests')
+    parser.addoption('--test-deps',
+                     action='store_true',
+                     default=False,
+                     help='Run the exhaustive and intensive dds-deps tests')
+    parser.addoption('--dds-exe', help='Path to the dds executable under test', required=True, type=Path)
 
 
 def pytest_configure(config):
