@@ -1,6 +1,7 @@
 #ifndef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/fs.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/signal.hpp>
 
@@ -25,16 +26,17 @@ void check_rc(bool b, std::string_view s) {
     }
 }
 
-::pid_t
-spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_me) noexcept {
+::pid_t spawn_child(const proc_options& opts, int stdout_pipe, int close_me) noexcept {
     // We must allocate BEFORE fork(), since the CRT might stumble with malloc()-related locks that
     // are held during the fork().
     std::vector<const char*> strings;
-    strings.reserve(command.size() + 1);
-    for (auto& s : command) {
+    strings.reserve(opts.command.size() + 1);
+    for (auto& s : opts.command) {
         strings.push_back(s.data());
     }
     strings.push_back(nullptr);
+
+    std::string workdir = opts.cwd.value_or(fs::current_path()).string();
 
     auto child_pid = ::fork();
     if (child_pid != 0) {
@@ -46,6 +48,8 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
     check_rc(rc != -1, "Failed to dup2 stdout");
     rc = dup2(stdout_pipe, STDERR_FILENO);
     check_rc(rc != -1, "Failed to dup2 stderr");
+    rc = ::chdir(workdir.data());
+    check_rc(rc != -1, "Failed to chdir() for subprocess");
 
     ::execvp(strings[0], (char* const*)strings.data());
 
@@ -73,7 +77,7 @@ proc_result dds::run_proc(const proc_options& opts) {
     int read_pipe  = stdio_pipe[0];
     int write_pipe = stdio_pipe[1];
 
-    auto child = spawn_child(opts.command, write_pipe, read_pipe);
+    auto child = spawn_child(opts, write_pipe, read_pipe);
 
     ::close(write_pipe);
 

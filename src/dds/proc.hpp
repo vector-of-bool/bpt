@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -25,8 +26,8 @@ std::string quote_command(const Container& c) {
 }
 
 struct proc_result {
-    int         signal = 0;
-    int         retc   = 0;
+    int         signal    = 0;
+    int         retc      = 0;
     bool        timed_out = false;
     std::string output;
 
@@ -35,6 +36,8 @@ struct proc_result {
 
 struct proc_options {
     std::vector<std::string> command;
+
+    std::optional<std::filesystem::path> cwd = std::nullopt;
 
     /**
      * Timeout for the subprocess, in milliseconds. If zero, will wait forever

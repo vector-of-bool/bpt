@@ -23,9 +23,11 @@ void create_archive_plan::archive(const build_env& env) const {
         ;
     // Build up the archive command
     archive_spec ar;
+
+    auto ar_cwd    = env.output_root;
     ar.input_files = std::move(objects);
     ar.out_path    = env.output_root / calc_archive_file_path(env.toolchain);
-    auto ar_cmd    = env.toolchain.create_archive_command(ar, fs::current_path(), env.knobs);
+    auto ar_cmd    = env.toolchain.create_archive_command(ar, ar_cwd, env.knobs);
 
     // `out_relpath` is purely for the benefit of the user to have a short name
     // in the logs
@@ -43,7 +45,8 @@ void create_archive_plan::archive(const build_env& env) const {
 
     // Do it!
     dds_log(info, "[{}] Archive: {}", _qual_name, out_relpath);
-    auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
+    auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>(
+        [&] { return run_proc(proc_options{.command = ar_cmd, .cwd = ar_cwd}); });
     dds_log(info, "[{}] Archive: {} - {:L}ms", _qual_name, out_relpath, dur_ms.count());
 
     // Check, log, and throw
