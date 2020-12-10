@@ -6,9 +6,14 @@
     "warning_flags": [
         "-Werror",
     ],
+    "flags": [
+        "-fdata-sections",
+        "-ffunction-sections",
+        "-Os"
+    ],
     "cxx_flags": [
         "-fconcepts",
-        "-std=c++2a",
+        "-std=c++2a"
     ],
     "link_flags": [
         "-static",
@@ -17,6 +22,7 @@
         "-ldl",
         // WORKAROUND: https://sourceware.org/legacy-ml/glibc-bugs/2018-09/msg00009.html
         "-Wl,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_self",
+        "-Wl,--gc-sections,--strip-all"
     ],
     "optimize": true
 }
