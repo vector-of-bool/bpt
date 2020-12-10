@@ -22,12 +22,13 @@ distro = "^1.5.0"
 [tool.poetry.dev-dependencies]
 # Only needed for development
 pylint = "^2.6.0"
-yapf = "^0.30.0"
 mypy = "^0.790"
 rope = "^0.18.0"
+yapf = "^0.30.0"
 
 [tool.poetry.scripts]
 dds-ci = "dds_ci.main:start"
+dds-format = "dds_ci.format:start"
 
 [build-system]
 requires = ["poetry>=0.12"]

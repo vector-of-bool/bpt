@@ -39,7 +39,6 @@ def make_argparser() -> argparse.ArgumentParser:
                         type=int,
                         help='Number of parallel jobs to use when building and testing',
                         default=multiprocessing.cpu_count() + 2)
-    parser.add_argument('--build-only', action='store_true', help='Only build the dds executable, do not run tests')
     parser.add_argument('--clean', action='store_true', help="Don't remove prior build/deps results")
     parser.add_argument('--no-test',
                         action='store_false',
