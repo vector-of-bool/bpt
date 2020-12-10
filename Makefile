@@ -99,3 +99,10 @@ site: docs
 	cp site/index.html _site/
 	cp -r _build/docs _site/
 	echo "Site generated at _site/"
+
+py-check:
+	poetry run mypy tools/dds_ci
+	poetry run pylint tools/dds_ci
+
+format:
+	poetry run dds-format
