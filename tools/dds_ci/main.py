@@ -78,7 +78,7 @@ def test_build(dds: DDSWrapper, args: CommandArguments) -> DDSWrapper:
     to build the new dds. Returns a DDSWrapper around the generated test executable.
     """
     test_tc = args.test_toolchain or toolchain.get_default_test_toolchain()
-    build_dir = paths.BUILD_DIR / '_ci-test'
+    build_dir = paths.BUILD_DIR
     with toolchain.fixup_toolchain(test_tc) as new_tc:
         dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=build_dir, jobs=args.jobs)
     return DDSWrapper(build_dir / ('dds' + paths.EXE_SUFFIX))
@@ -129,10 +129,19 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
 
     dds.catalog_json_import(paths.PROJECT_ROOT / 'old-catalog.json')
 
+    if args.rapid:
+        return main_build(dds, args)
+
     pool = futures.ThreadPoolExecutor()
     test_fut = pool.submit(lambda: 0)
-    if args.do_test and not args.rapid:
+    if args.do_test:
+        # Build the test executable:
         test_dds = test_build(dds, args)
+        # Move the generated exe and start tests. We'll start building the main
+        # EXE and don't want to overwrite the test one while the tests are running
+        dds_cp = paths.BUILD_DIR / ('dds.test' + paths.EXE_SUFFIX)
+        test_dds.path.rename(dds_cp)
+        test_dds.path = dds_cp
         test_fut = pool.submit(lambda: run_pytest(test_dds, args))
 
     main_fut = pool.submit(lambda: main_build(dds, args))
