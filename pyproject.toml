@@ -29,6 +29,7 @@ yapf = "^0.30.0"
 [tool.poetry.scripts]
 dds-ci = "dds_ci.main:start"
 dds-format = "dds_ci.format:start"
+gen-msvs-vsc-task = "dds_ci.msvs:generate_vsc_task"
 
 [build-system]
 requires = ["poetry>=0.12"]
