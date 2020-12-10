@@ -3,6 +3,7 @@ import multiprocessing
 import pytest
 from pathlib import Path
 from concurrent import futures
+import shutil
 import sys
 from typing import NoReturn, Sequence, Optional
 from typing_extensions import Protocol
@@ -142,6 +143,8 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
         dds_cp = paths.BUILD_DIR / ('dds.test' + paths.EXE_SUFFIX)
         test_dds.path.rename(dds_cp)
         test_dds.path = dds_cp
+        # Workaround: dds doesn't rebuild the test-driver on toolchain changes:
+        shutil.rmtree(paths.BUILD_DIR / '_test-driver')
         test_fut = pool.submit(lambda: run_pytest(test_dds, args))
 
     main_fut = pool.submit(lambda: main_build(dds, args))
