@@ -101,8 +101,8 @@ site: docs
 	echo "Site generated at _site/"
 
 py-check:
-	poetry run mypy tools/dds_ci
-	poetry run pylint tools/dds_ci
+	poetry run mypy tools/dds_ci $(shell find tests/ -name *.py)
+	poetry run pylint tools/dds_ci $(shell find tests/ -name *.py)
 
 format:
 	poetry run dds-format

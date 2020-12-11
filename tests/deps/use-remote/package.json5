@@ -1,8 +1,0 @@
-{
-    "name": "json-test",
-    "version": "0.0.0",
-    "namespace": "test",
-    "depends": [
-        "nlohmann-json@3.7.1"
-    ]
-}

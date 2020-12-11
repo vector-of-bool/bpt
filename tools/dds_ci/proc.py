@@ -1,7 +1,9 @@
-from pathlib import PurePath, Path
+from pathlib import PurePath
 from typing import Iterable, Union, Optional, Iterator
 from typing_extensions import Protocol
 import subprocess
+
+from .util import Pathish
 
 CommandLineArg = Union[str, PurePath, int, float]
 CommandLineArg1 = Union[CommandLineArg, Iterable[CommandLineArg]]
@@ -36,7 +38,7 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
         assert False, f'Invalid command line element: {repr(cmd)}'
 
 
-def run(*cmd: CommandLine, cwd: Optional[Path] = None, check: bool = False) -> ProcessResult:
+def run(*cmd: CommandLine, cwd: Optional[Pathish] = None, check: bool = False) -> ProcessResult:
     return subprocess.run(
         list(flatten_cmd(cmd)),
         cwd=cwd,
@@ -44,7 +46,7 @@ def run(*cmd: CommandLine, cwd: Optional[Path] = None, check: bool = False) -> P
     )
 
 
-def check_run(*cmd: CommandLine, cwd: Optional[Path] = None) -> ProcessResult:
+def check_run(*cmd: CommandLine, cwd: Optional[Pathish] = None) -> ProcessResult:
     return subprocess.run(
         list(flatten_cmd(cmd)),
         cwd=cwd,

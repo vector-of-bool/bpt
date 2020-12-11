@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from typing_extensions import Protocol
 
 from . import paths
@@ -12,7 +12,7 @@ class Arguments(Protocol):
     out: Optional[Path]
 
 
-def gen_task_json_data() -> Dict:
+def gen_task_json_data() -> Dict[str, Any]:
     dds_ci_exe = paths.find_exe('dds-ci')
     assert dds_ci_exe, 'Unable to find the dds-ci executable. This command should be run in a Poetry'
     envs = {key: os.environ[key]
@@ -40,7 +40,7 @@ def gen_task_json_data() -> Dict:
     return task
 
 
-def generate_vsc_task():
+def generate_vsc_task() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', '-o', help='File to write into', type=Path)
     args: Arguments = parser.parse_args()

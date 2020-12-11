@@ -8,19 +8,21 @@ import distro
 import json5
 
 from . import paths
+from .util import Pathish
 
 
 @contextmanager
-def fixup_toolchain(json_file: Path) -> Iterator[Path]:
+def fixup_toolchain(json_file: Pathish) -> Iterator[Path]:
     """
     Augment the toolchain at the given path by adding 'ccache' or -fuse-ld=lld,
     if those tools are available on the system. Yields a new toolchain file
     based on 'json_file'
     """
+    json_file = Path(json_file)
     data = json5.loads(json_file.read_text())
     # Check if we can add ccache
     ccache = paths.find_exe('ccache')
-    if ccache:
+    if ccache and data.get('compiler_id') in ('gnu', 'clang'):
         print('Found ccache:', ccache)
         data['compiler_launcher'] = [str(ccache)]
     # Check for lld for use with GCC/Clang

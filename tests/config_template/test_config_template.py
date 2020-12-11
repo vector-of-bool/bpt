@@ -1,13 +1,13 @@
 from time import sleep
 
-from tests import DDS, dds_fixture_conf_1
+from dds_ci.testing import ProjectOpener
 
 
-@dds_fixture_conf_1('copy_only')
-def test_config_template(dds: DDS) -> None:
-    generated_fpath = dds.build_dir / '__dds/gen/info.hpp'
+def test_config_template(project_opener: ProjectOpener) -> None:
+    proj = project_opener.open('copy_only')
+    generated_fpath = proj.build_root / '__dds/gen/info.hpp'
     assert not generated_fpath.is_file()
-    dds.build()
+    proj.build()
     assert generated_fpath.is_file()
 
     # Check that re-running the build will not update the generated file (the
@@ -15,11 +15,11 @@ def test_config_template(dds: DDS) -> None:
     # cache and force a false-rebuild.)
     start_time = generated_fpath.stat().st_mtime
     sleep(0.1)  # Wait just long enough to register a new stamp time
-    dds.build()
+    proj.build()
     new_time = generated_fpath.stat().st_mtime
     assert new_time == start_time
 
 
-@dds_fixture_conf_1('simple')
-def test_simple_substitution(dds: DDS) -> None:
-    dds.build()
+def test_simple_substitution(project_opener: ProjectOpener) -> None:
+    simple = project_opener.open('simple')
+    simple.build()

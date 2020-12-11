@@ -1,79 +1,12 @@
-from contextlib import ExitStack
-from typing import Any, Callable, Iterator
-from typing_extensions import Protocol
+from typing import Any
 from pathlib import Path
-import shutil
-from subprocess import check_call
 
 import pytest
+from _pytest.config import Config as PyTestConfig
 
-from dds_ci import paths
-from tests import scoped_dds, DDSFixtureParams, DDS
-# Exposes the HTTP fixtures:
-from .http import http_repo, http_tmp_dir_server  # pylint: disable=unused-import
-
-
-class TempPathFactory(Protocol):
-    def mktemp(self, basename: str, numbered: bool = True) -> Path:
-        ...
-
-
-class PyTestConfig(Protocol):
-    def getoption(self, name: str) -> Any:
-        ...
-
-
-class TestRequest(Protocol):
-    fixturename: str
-    scope: str
-    config: PyTestConfig
-    fspath: str
-    function: Callable[..., Any]
-    param: DDSFixtureParams
-
-
-@pytest.fixture(scope='session')
-def dds_exe(pytestconfig: PyTestConfig) -> Path:
-    opt = pytestconfig.getoption('--dds-exe') or paths.CUR_BUILT_DDS
-    return Path(opt)
-
-
-@pytest.yield_fixture(scope='session')  # type: ignore
-def dds_pizza_catalog(dds_exe: Path, tmp_path_factory: TempPathFactory) -> Path:
-    tmpdir: Path = tmp_path_factory.mktemp(basename='dds-catalog')
-    cat_path = tmpdir / 'catalog.db'
-    check_call([str(dds_exe), 'repo', 'add', 'https://dds.pizza/repo', '--update', f'--catalog={cat_path}'])
-    yield cat_path
-
-
-@pytest.yield_fixture  # type: ignore
-def dds(request: TestRequest, dds_exe: Path, tmp_path: Path, worker_id: str, scope: ExitStack) -> Iterator[DDS]:
-    test_source_dir = Path(request.fspath).absolute().parent
-    test_root = test_source_dir
-
-    # If we are running in parallel, use a unique directory as scratch
-    # space so that we aren't stomping on anyone else
-    if worker_id != 'master':
-        test_root = tmp_path / request.function.__name__
-        shutil.copytree(test_source_dir, test_root)
-
-    project_dir = test_root / 'project'
-    # Check if we have a special configuration
-    if hasattr(request, 'param'):
-        assert isinstance(request.param, DDSFixtureParams), \
-            ('Using the `dds` fixture requires passing in indirect '
-            'params. Use @dds_fixture_conf to configure the fixture')
-        params: DDSFixtureParams = request.param
-        project_dir = test_root / params.subdir
-
-    # Create the instance. Auto-clean when we're done
-    yield scope.enter_context(scoped_dds(dds_exe, test_root, project_dir))
-
-
-@pytest.yield_fixture  # type: ignore
-def scope() -> Iterator[ExitStack]:
-    with ExitStack() as scope:
-        yield scope
+# Ensure the fixtures are registered with PyTest:
+from dds_ci.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from dds_ci.testing.http import *  # pylint: disable=wildcard-import,unused-wildcard-import
 
 
 def pytest_addoption(parser: Any) -> None:

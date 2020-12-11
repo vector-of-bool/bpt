@@ -53,7 +53,7 @@ def run_http_server(dirpath: Path, port: int) -> Iterator[ServerInfo]:
             httpd.shutdown()
 
 
-@pytest.yield_fixture()  # type: ignore
+@pytest.fixture()
 def http_tmp_dir_server(tmp_path: Path, unused_tcp_port: int) -> Iterator[ServerInfo]:
     """
     Creates an HTTP server that serves the contents of a new
@@ -96,7 +96,7 @@ class RepoFixture:
         ])
 
 
-@pytest.yield_fixture()  # type: ignore
+@pytest.fixture()
 def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo) -> Iterator[RepoFixture]:
     """
     Fixture that creates a new empty dds repository and an HTTP server to serve
