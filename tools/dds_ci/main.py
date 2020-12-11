@@ -78,7 +78,7 @@ def test_build(dds: DDSWrapper, args: CommandArguments) -> DDSWrapper:
     Execute the build that generates the test-mode executable. Uses the given 'dds'
     to build the new dds. Returns a DDSWrapper around the generated test executable.
     """
-    test_tc = args.test_toolchain or toolchain.get_default_test_toolchain()
+    test_tc = args.test_toolchain or toolchain.get_default_audit_toolchain()
     build_dir = paths.BUILD_DIR
     with toolchain.fixup_toolchain(test_tc) as new_tc:
         dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=build_dir, jobs=args.jobs)
@@ -110,7 +110,7 @@ def main_build(dds: DDSWrapper, args: CommandArguments) -> int:
     """
     main_tc = args.toolchain or (
         # If we are in rapid-dev mode, use the test toolchain, which had audit/debug enabled
-        toolchain.get_default_toolchain() if not args.rapid else toolchain.get_default_test_toolchain())
+        toolchain.get_default_toolchain() if not args.rapid else toolchain.get_default_audit_toolchain())
     with toolchain.fixup_toolchain(main_tc) as new_tc:
         try:
             dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=paths.BUILD_DIR, jobs=args.jobs)

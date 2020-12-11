@@ -1,5 +1,7 @@
-import pytest
 from subprocess import CalledProcessError
+import time
+
+import pytest
 
 from dds_ci import paths
 from dds_ci.testing import Project, PackageJSON
@@ -29,6 +31,7 @@ def test_build_simple(tmp_project: Project) -> None:
     tmp_project.write('src/f.cpp', r'void f() {}')
     tmp_project.build()
     # Writing again will build again:
+    time.sleep(0.2)  # Sleep long enough to register a file change
     tmp_project.write('src/f.cpp', r'bad again')
     with pytest.raises(CalledProcessError):
         tmp_project.build()

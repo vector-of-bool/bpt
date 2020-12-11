@@ -79,6 +79,7 @@ def test_partial_build_rebuild(test_project: Project) -> None:
     with pytest.raises(subprocess.CalledProcessError):
         test_project.build()
 
+    # Pause long enough for timestamps to change
     test_project.write('src/2.cpp', '''
         #include "./values.hpp"
 

@@ -10,6 +10,8 @@ from typing import Iterator, Optional
 PROJECT_ROOT = Path(__file__).absolute().parent.parent.parent
 #: The <repo>/tools directory
 TOOLS_DIR = PROJECT_ROOT / 'tools'
+#: The <repo>/tests directory
+TESTS_DIR = PROJECT_ROOT / 'tests'
 #: The default build directory
 BUILD_DIR = PROJECT_ROOT / '_build'
 #: The directory were w prebuild/bootstrapped results will go, and scratch space for the build

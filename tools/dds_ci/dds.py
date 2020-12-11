@@ -86,7 +86,7 @@ class DDSWrapper:
         :param build_root: The root directory where the output will be written.
         :param jobs: The number of jobs to use. Default is CPU-count + 2
         """
-        toolchain = toolchain or tc_mod.get_default_test_toolchain()
+        toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         jobs = jobs or multiprocessing.cpu_count() + 2
         self.run([
             'build',
@@ -99,7 +99,7 @@ class DDSWrapper:
         ])
 
     def build_deps(self, args: proc.CommandLine, *, toolchain: Optional[Path] = None) -> None:
-        toolchain = toolchain or tc_mod.get_default_test_toolchain()
+        toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         self.run([
             'build-deps',
             f'--toolchain={toolchain}',
