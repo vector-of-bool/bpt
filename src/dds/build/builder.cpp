@@ -195,7 +195,7 @@ void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
 }
 
 void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, path_ref lmi_path) {
-    fs::create_directories(lmi_path.parent_path());
+    fs::create_directories(fs::absolute(lmi_path).parent_path());
     auto out = open(lmi_path, std::ios::binary | std::ios::out);
     out << "Type: Index\n";
     for (const auto& pkg : plan.packages()) {
