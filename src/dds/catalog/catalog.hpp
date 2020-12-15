@@ -32,6 +32,8 @@ public:
     static catalog open(const std::string& db_path);
     static catalog open(path_ref db_path) { return open(db_path.string()); }
 
+    static fs::path default_path() noexcept;
+
     void                        store(const package_info& info);
     std::optional<package_info> get(const package_id& id) const noexcept;
 

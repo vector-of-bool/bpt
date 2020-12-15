@@ -6,6 +6,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/paths.hpp>
 
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
@@ -278,6 +279,8 @@ void ensure_migrated(nsql::database& db) {
 }
 
 }  // namespace
+
+fs::path catalog::default_path() noexcept { return dds_data_dir() / "catalog.db"; }
 
 catalog catalog::open(const std::string& db_path) {
     if (db_path != ":memory:") {
