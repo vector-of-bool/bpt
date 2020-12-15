@@ -37,6 +37,9 @@ void check_rc(bool b, std::string_view s) {
     strings.push_back(nullptr);
 
     std::string workdir = opts.cwd.value_or(fs::current_path()).string();
+    auto        not_found_err
+        = fmt::format("[dds child executor] The requested executable [{}] could not be found.",
+                      strings[0]);
 
     auto child_pid = ::fork();
     if (child_pid != 0) {
@@ -54,16 +57,14 @@ void check_rc(bool b, std::string_view s) {
     ::execvp(strings[0], (char* const*)strings.data());
 
     if (errno == ENOENT) {
-        std::cerr
-            << fmt::format("[dds child executor] The requested executable ({}) could not be found.",
-                           strings[0]);
-        std::exit(-1);
+        std::fputs(not_found_err.c_str(), stderr);
+        std::_Exit(-1);
     }
 
-    std::cerr << "[dds child executor] execvp returned! This is a fatal error: "
-              << std::system_category().message(errno) << '\n';
-
-    std::exit(-1);
+    std::fputs("[dds child executor] execvp returned! This is a fatal error: ", stderr);
+    std::fputs(std::strerror(errno), stderr);
+    std::fputs("\n", stderr);
+    std::_Exit(-1);
 }
 
 }  // namespace
