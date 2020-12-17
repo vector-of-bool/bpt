@@ -1,6 +1,6 @@
 #include "./repoman.hpp"
 
-#include <dds/package/manifest.hpp>
+#include <dds/sdist/package.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
@@ -178,8 +178,7 @@ void repo_manager::import_targz(path_ref tgz_file) {
                    iv_1.high.to_string());
     }
 
-    auto dest_path
-        = pkg_dir() / man->id.name / man->id.version.to_string() / "sdist.tar.gz";
+    auto dest_path = pkg_dir() / man->id.name / man->id.version.to_string() / "sdist.tar.gz";
     fs::create_directories(dest_path.parent_path());
     fs::copy(tgz_file, dest_path);
 

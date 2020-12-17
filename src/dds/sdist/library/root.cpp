@@ -1,8 +1,8 @@
-#include <dds/library/root.hpp>
+#include <dds/sdist/library/root.hpp>
 
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/source/root.hpp>
+#include <dds/sdist/root.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 

@@ -3,7 +3,7 @@
 #include <dds/build/plan/archive.hpp>
 #include <dds/build/plan/exe.hpp>
 #include <dds/build/plan/template.hpp>
-#include <dds/library/root.hpp>
+#include <dds/sdist/library/root.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs.hpp>
 

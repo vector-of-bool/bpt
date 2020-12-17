@@ -1,6 +1,6 @@
 #include "../options.hpp"
 
-#include <dds/source/dist.hpp>
+#include <dds/sdist/dist.hpp>
 
 #include <fmt/core.h>
 

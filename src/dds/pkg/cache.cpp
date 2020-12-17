@@ -2,8 +2,8 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/pkg/db.hpp>
+#include <dds/sdist/dist.hpp>
 #include <dds/solve/solve.hpp>
-#include <dds/source/dist.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>

@@ -1,4 +1,4 @@
-#include "./manifest.hpp"
+#include "./package.hpp"
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>

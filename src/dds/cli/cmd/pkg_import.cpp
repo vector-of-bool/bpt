@@ -2,7 +2,7 @@
 
 #include <dds/http/session.hpp>
 #include <dds/pkg/cache.hpp>
-#include <dds/source/dist.hpp>
+#include <dds/sdist/dist.hpp>
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/handle_exception.hpp>

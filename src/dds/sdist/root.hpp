@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/source/file.hpp>
+#include <dds/sdist/file.hpp>
 #include <dds/util/fs.hpp>
 
 #include <vector>

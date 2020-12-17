@@ -2,7 +2,7 @@
 
 #include <tuple>
 
-#include <dds/package/manifest.hpp>
+#include <dds/sdist/package.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 

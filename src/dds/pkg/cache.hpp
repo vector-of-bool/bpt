@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/pkg/db.hpp>
-#include <dds/source/dist.hpp>
+#include <dds/sdist/dist.hpp>
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
 

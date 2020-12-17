@@ -1,4 +1,4 @@
-#include <dds/source/file.hpp>
+#include <dds/sdist/file.hpp>
 
 #include <catch2/catch.hpp>
 

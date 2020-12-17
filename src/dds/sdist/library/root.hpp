@@ -1,9 +1,10 @@
 #pragma once
 
+#include "./manifest.hpp"
+
+#include "../file.hpp"
+#include "../root.hpp"
 #include <dds/build/plan/compile_file.hpp>
-#include <dds/library/manifest.hpp>
-#include <dds/source/file.hpp>
-#include <dds/source/root.hpp>
 
 #include <string>
 

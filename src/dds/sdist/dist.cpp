@@ -1,8 +1,8 @@
 #include "./dist.hpp"
 
 #include <dds/error/errors.hpp>
-#include <dds/library/root.hpp>
 #include <dds/pkg/get/http.hpp>
+#include <dds/sdist/library/root.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/log.hpp>
