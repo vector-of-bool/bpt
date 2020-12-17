@@ -2,7 +2,7 @@
 
 #include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/repo/repo.hpp>
+#include <dds/pkg/cache.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 
@@ -55,7 +55,7 @@ temporary_sdist dds::get_package_sdist(const package_info& pkg) {
     return tsd;
 }
 
-void dds::get_all(const std::vector<package_id>& pkgs, repository& repo, const catalog& cat) {
+void dds::get_all(const std::vector<package_id>& pkgs, pkg_cache& repo, const catalog& cat) {
     std::mutex repo_mut;
 
     auto absent_pkg_infos = pkgs  //

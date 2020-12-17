@@ -3,7 +3,7 @@
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
 #include <dds/catalog/get.hpp>
-#include <dds/repo/repo.hpp>
+#include <dds/pkg/cache.hpp>
 
 #include <range/v3/action/join.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -38,10 +38,10 @@ int build_deps(const options& opts) {
     auto all_deps = ranges::views::concat(all_file_deps, cmd_deps) | ranges::to_vector;
 
     auto cat = opts.open_catalog();
-    dds::repository::with_repository(  //
-        opts.pkg_cache_dir.value_or(repository::default_local_path()),
-        dds::repo_flags::write_lock | dds::repo_flags::create_if_absent,
-        [&](dds::repository repo) {
+    dds::pkg_cache::with_cache(  //
+        opts.pkg_cache_dir.value_or(pkg_cache::default_local_path()),
+        dds::pkg_cache_flags::write_lock | dds::pkg_cache_flags::create_if_absent,
+        [&](dds::pkg_cache repo) {
             // Download dependencies
             dds_log(info, "Loading {} dependencies", all_deps.size());
             auto deps = repo.solve(all_deps, cat);

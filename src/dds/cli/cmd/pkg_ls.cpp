@@ -1,6 +1,6 @@
 #include "../options.hpp"
 
-#include <dds/repo/repo.hpp>
+#include <dds/pkg/cache.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/util/result.hpp>
 
@@ -15,7 +15,7 @@
 
 namespace dds::cli::cmd {
 static int _pkg_ls(const options& opts) {
-    auto list_contents = [&](repository repo) {
+    auto list_contents = [&](pkg_cache repo) {
         auto same_name
             = [](auto&& a, auto&& b) { return a.manifest.pkg_id.name == b.manifest.pkg_id.name; };
 
@@ -38,10 +38,10 @@ static int _pkg_ls(const options& opts) {
         return 0;
     };
 
-    return dds::repository::with_repository(opts.pkg_cache_dir.value_or(
-                                                repository::default_local_path()),
-                                            dds::repo_flags::read,
-                                            list_contents);
+    return dds::pkg_cache::with_cache(opts.pkg_cache_dir.value_or(
+                                               pkg_cache::default_local_path()),
+                                           dds::pkg_cache_flags::read,
+                                           list_contents);
 }
 
 int pkg_ls(const options& opts) {

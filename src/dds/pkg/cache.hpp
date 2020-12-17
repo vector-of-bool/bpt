@@ -15,7 +15,7 @@
 
 namespace dds {
 
-enum repo_flags {
+enum pkg_cache_flags {
     none             = 0b00,
     read             = none,
     create_if_absent = 0b01,
@@ -28,40 +28,40 @@ enum class if_exists {
     ignore,
 };
 
-inline repo_flags operator|(repo_flags a, repo_flags b) {
-    return static_cast<repo_flags>(int(a) | int(b));
+inline pkg_cache_flags operator|(pkg_cache_flags a, pkg_cache_flags b) {
+    return static_cast<pkg_cache_flags>(int(a) | int(b));
 }
 
-class repository {
+class pkg_cache {
     using sdist_set = std::set<sdist, sdist_compare_t>;
 
     bool      _write_enabled = false;
     fs::path  _root;
     sdist_set _sdists;
 
-    repository(bool writeable, path_ref p, sdist_set sds)
+    pkg_cache(bool writeable, path_ref p, sdist_set sds)
         : _write_enabled(writeable)
         , _root(p)
         , _sdists(std::move(sds)) {}
 
-    static void       _log_blocking(path_ref dir) noexcept;
-    static void       _init_repo_dir(path_ref dir) noexcept;
-    static repository _open_for_directory(bool writeable, path_ref);
+    static void      _log_blocking(path_ref dir) noexcept;
+    static void      _init_cache_dir(path_ref dir) noexcept;
+    static pkg_cache _open_for_directory(bool writeable, path_ref);
 
 public:
     template <typename Func>
-    static decltype(auto) with_repository(path_ref dirpath, repo_flags flags, Func&& fn) {
+    static decltype(auto) with_cache(path_ref dirpath, pkg_cache_flags flags, Func&& fn) {
         if (!fs::exists(dirpath)) {
-            if (flags & repo_flags::create_if_absent) {
-                _init_repo_dir(dirpath);
+            if (flags & pkg_cache_flags::create_if_absent) {
+                _init_cache_dir(dirpath);
             }
         }
 
-        shared_file_mutex mut{dirpath / ".dds-repo-lock"};
+        shared_file_mutex mut{dirpath / ".dds-cache-lock"};
         std::shared_lock  shared_lk{mut, std::defer_lock};
         std::unique_lock  excl_lk{mut, std::defer_lock};
 
-        bool writeable = (flags & repo_flags::write_lock) != repo_flags::none;
+        bool writeable = (flags & pkg_cache_flags::write_lock) != pkg_cache_flags::none;
 
         if (writeable) {
             if (!excl_lk.try_lock()) {
@@ -75,8 +75,8 @@ public:
             }
         }
 
-        auto repo = _open_for_directory(writeable, dirpath);
-        return std::invoke(NEO_FWD(fn), std::move(repo));
+        auto cache = _open_for_directory(writeable, dirpath);
+        return std::invoke(NEO_FWD(fn), std::move(cache));
     }
 
     static fs::path default_local_path() noexcept;

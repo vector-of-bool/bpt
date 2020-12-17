@@ -294,7 +294,7 @@ catalog catalog::open(const std::string& db_path) {
         ensure_migrated(db);
     } catch (const nsql::sqlite3_error& e) {
         dds_log(critical,
-                "Failed to load the repository database. It appears to be invalid/corrupted. The "
+                "Failed to load the package database. It appears to be invalid/corrupted. The "
                 "exception message is: {}",
                 e.what());
         throw_external_error<errc::corrupted_catalog_db>();

@@ -5,12 +5,12 @@
 
 namespace dds {
 
-class repository;
+class pkg_cache;
 class catalog;
 struct package_info;
 
 temporary_sdist get_package_sdist(const package_info&);
 
-void get_all(const std::vector<package_id>& pkgs, dds::repository& repo, const catalog& cat);
+void get_all(const std::vector<package_id>& pkgs, dds::pkg_cache& repo, const catalog& cat);
 
 }  // namespace dds

@@ -1,7 +1,7 @@
 #include "../options.hpp"
 
 #include <dds/http/session.hpp>
-#include <dds/repo/repo.hpp>
+#include <dds/pkg/cache.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/util/result.hpp>
 
@@ -15,9 +15,9 @@
 
 namespace dds::cli::cmd {
 static int _pkg_import(const options& opts) {
-    return repository::with_repository(  //
-        opts.pkg_cache_dir.value_or(repository::default_local_path()),
-        repo_flags::write_lock | repo_flags::create_if_absent,
+    return pkg_cache::with_cache(  //
+        opts.pkg_cache_dir.value_or(pkg_cache::default_local_path()),
+        pkg_cache_flags::write_lock | pkg_cache_flags::create_if_absent,
         [&](auto repo) {
             for (std::string_view tgz_where : opts.pkg.import.items) {
                 neo_assertion_breadcrumbs("Importing sdist", tgz_where);

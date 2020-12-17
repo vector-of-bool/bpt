@@ -1,4 +1,4 @@
-#include "./repo.hpp"
+#include "./cache.hpp"
 
 #include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
@@ -20,16 +20,16 @@ using namespace dds;
 
 using namespace ranges;
 
-void repository::_log_blocking(path_ref dirpath) noexcept {
-    dds_log(warn, "Another process has the repository directory locked [{}]", dirpath.string());
-    dds_log(warn, "Waiting for repository to be released...");
+void pkg_cache::_log_blocking(path_ref dirpath) noexcept {
+    dds_log(warn, "Another process has the package cache directory locked [{}]", dirpath.string());
+    dds_log(warn, "Waiting for cache to be released...");
 }
 
-void repository::_init_repo_dir(path_ref dirpath) noexcept { fs::create_directories(dirpath); }
+void pkg_cache::_init_cache_dir(path_ref dirpath) noexcept { fs::create_directories(dirpath); }
 
-fs::path repository::default_local_path() noexcept { return dds_data_dir() / "repo"; }
+fs::path pkg_cache::default_local_path() noexcept { return dds_data_dir() / "pkg"; }
 
-repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
+pkg_cache pkg_cache::_open_for_directory(bool writeable, path_ref dirpath) {
     auto try_read_sdist = [](path_ref p) -> std::optional<sdist> {
         if (starts_with(p.filename().string(), ".")) {
             return std::nullopt;
@@ -59,20 +59,19 @@ repository repository::_open_for_directory(bool writeable, path_ref dirpath) {
     return {writeable, dirpath, std::move(entries)};
 }
 
-void repository::add_sdist(const sdist& sd, if_exists ife_action) {
+void pkg_cache::add_sdist(const sdist& sd, if_exists ife_action) {
     neo_assertion_breadcrumbs("Importing sdist archive", sd.manifest.pkg_id.to_string());
     if (!_write_enabled) {
-        dds_log(
-            critical,
-            "DDS attempted to write into a repository that wasn't opened with a write-lock. This "
-            "is a hard bug and should be reported. For the safety and integrity of the local "
-            "repository, we'll hard-exit immediately.");
+        dds_log(critical,
+                "DDS attempted to write into a cache that wasn't opened with a write-lock. This "
+                "is a hard bug and should be reported. For the safety and integrity of the local "
+                "cache, we'll hard-exit immediately.");
         std::terminate();
     }
     auto sd_dest = _root / sd.manifest.pkg_id.to_string();
     if (fs::exists(sd_dest)) {
         auto msg = fmt::
-            format("Package '{}' (Importing from [{}]) is already available in the local repo",
+            format("Package '{}' (Importing from [{}]) is already available in the local cache",
                    sd.manifest.pkg_id.to_string(),
                    sd.path.string());
         if (ife_action == if_exists::throw_exc) {
@@ -99,7 +98,7 @@ void repository::add_sdist(const sdist& sd, if_exists ife_action) {
     dds_log(info, "Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
 }
 
-const sdist* repository::find(const package_id& pkg) const noexcept {
+const sdist* pkg_cache::find(const package_id& pkg) const noexcept {
     auto found = _sdists.find(pkg);
     if (found == _sdists.end()) {
         return nullptr;
@@ -107,8 +106,8 @@ const sdist* repository::find(const package_id& pkg) const noexcept {
     return &*found;
 }
 
-std::vector<package_id> repository::solve(const std::vector<dependency>& deps,
-                                          const catalog&                 ctlg) const {
+std::vector<package_id> pkg_cache::solve(const std::vector<dependency>& deps,
+                                         const catalog&                 ctlg) const {
     return dds::solve(
         deps,
         [&](std::string_view name) -> std::vector<package_id> {
