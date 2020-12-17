@@ -19,11 +19,11 @@ class DDSWrapper:
                  path: Path,
                  *,
                  repo_dir: Optional[Pathish] = None,
-                 catalog_path: Optional[Pathish] = None,
+                 pkg_db_path: Optional[Pathish] = None,
                  default_cwd: Optional[Pathish] = None) -> None:
         self.path = path
         self.repo_dir = Path(repo_dir or (paths.PREBUILT_DIR / 'ci-repo'))
-        self.catalog_path = Path(catalog_path or (self.repo_dir.parent / 'ci-catalog.db'))
+        self.pkg_db_path = Path(pkg_db_path or (self.repo_dir.parent / 'ci-catalog.db'))
         self.default_cwd = default_cwd or Path.cwd()
 
     def clone(self: T) -> T:
@@ -32,7 +32,7 @@ class DDSWrapper:
     @property
     def catalog_path_arg(self) -> str:
         """The arguments for --catalog"""
-        return f'--catalog={self.catalog_path}'
+        return f'--catalog={self.pkg_db_path}'
 
     @property
     def repo_dir_arg(self) -> str:
@@ -45,19 +45,19 @@ class DDSWrapper:
 
     def set_repo_scratch(self, path: Pathish) -> None:
         self.repo_dir = Path(path) / 'data'
-        self.catalog_path = Path(path) / 'catalog.db'
+        self.pkg_db_path = Path(path) / 'pkgs.db'
 
-    def clean(self, *, build_dir: Optional[Path] = None, repo: bool = True, catalog: bool = True) -> None:
+    def clean(self, *, build_dir: Optional[Path] = None, repo: bool = True, pkg_db: bool = True) -> None:
         """
-        Clean out prior executable output, including repos, catalog, and
+        Clean out prior executable output, including repos, pkg_db, and
         the build results at 'build_dir', if given.
         """
         if build_dir and build_dir.exists():
             shutil.rmtree(build_dir)
         if repo and self.repo_dir.exists():
             shutil.rmtree(self.repo_dir)
-        if catalog and self.catalog_path.exists():
-            self.catalog_path.unlink()
+        if pkg_db and self.pkg_db_path.exists():
+            self.pkg_db_path.unlink()
 
     def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None) -> None:
         """Execute the 'dds' executable with the given arguments"""
@@ -147,7 +147,7 @@ class NewDDSWrapper(DDSWrapper):
 
     @property
     def catalog_path_arg(self) -> str:
-        return f'--pkg-db-path={self.catalog_path}'
+        return f'--pkg-db-path={self.pkg_db_path}'
 
     @property
     def project_dir_flag(self) -> str:
