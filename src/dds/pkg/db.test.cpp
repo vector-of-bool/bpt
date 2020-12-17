@@ -26,8 +26,8 @@ public:
 };
 
 TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
-    db.store(dds::package_info{
-        dds::package_id("foo", semver::version::parse("1.2.3")),
+    db.store(dds::pkg_info{
+        dds::pkg_id("foo", semver::version::parse("1.2.3")),
         {},
         "example",
         dds::git_remote_listing{std::nullopt, "git+http://example.com", "master"},
@@ -45,8 +45,8 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
     CHECK(std::get<dds::git_remote_listing>(info->remote).ref == "master");
 
     // Update the entry with a new git remote ref
-    CHECK_NOTHROW(db.store(dds::package_info{
-        dds::package_id("foo", semver::version::parse("1.2.3")),
+    CHECK_NOTHROW(db.store(dds::pkg_info{
+        dds::pkg_id("foo", semver::version::parse("1.2.3")),
         {},
         "example",
         dds::git_remote_listing{std::nullopt, "git+http://example.com", "develop"},
@@ -58,8 +58,8 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
 }
 
 TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
-    db.store(dds::package_info{
-        dds::package_id{"foo", semver::version::parse("1.2.3")},
+    db.store(dds::pkg_info{
+        dds::pkg_id{"foo", semver::version::parse("1.2.3")},
         {
             {"bar", {semver::version::parse("1.2.3"), semver::version::parse("1.4.0")}},
             {"baz", {semver::version::parse("5.3.0"), semver::version::parse("6.0.0")}},

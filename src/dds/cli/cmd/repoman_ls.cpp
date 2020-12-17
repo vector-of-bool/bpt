@@ -13,8 +13,8 @@ namespace dds::cli::cmd {
 
 static int _repoman_ls(const options& opts) {
     auto repo = repo_manager::open(opts.repoman.repo_dir);
-    for (auto pkg_id : repo.all_packages()) {
-        std::cout << pkg_id.to_string() << '\n';
+    for (auto id : repo.all_packages()) {
+        std::cout << id.to_string() << '\n';
     }
     return 0;
 }

@@ -1,10 +1,10 @@
 #include "../options.hpp"
 
-#include <dds/catalog/get.hpp>
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/http/session.hpp>
 #include <dds/pkg/db.hpp>
+#include <dds/pkg/get/get.hpp>
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
@@ -15,7 +15,7 @@ namespace dds::cli::cmd {
 static int _pkg_get(const options& opts) {
     auto cat = opts.open_catalog();
     for (const auto& item : opts.pkg.get.pkgs) {
-        auto            id = package_id::parse(item);
+        auto            id = pkg_id::parse(item);
         dds::dym_target dym;
         auto            info = cat.get(id);
         if (!info) {

@@ -2,8 +2,8 @@
 
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
-#include <dds/catalog/get.hpp>
 #include <dds/pkg/cache.hpp>
+#include <dds/pkg/get/get.hpp>
 
 #include <range/v3/action/join.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -46,12 +46,12 @@ int build_deps(const options& opts) {
             dds_log(info, "Loading {} dependencies", all_deps.size());
             auto deps = repo.solve(all_deps, cat);
             dds::get_all(deps, repo, cat);
-            for (const dds::package_id& pk : deps) {
+            for (const dds::pkg_id& pk : deps) {
                 auto sdist_ptr = repo.find(pk);
                 assert(sdist_ptr);
                 dds::sdist_build_params deps_params;
-                deps_params.subdir = sdist_ptr->manifest.pkg_id.to_string();
-                dds_log(info, "Dependency: {}", sdist_ptr->manifest.pkg_id.to_string());
+                deps_params.subdir = sdist_ptr->manifest.id.to_string();
+                dds_log(info, "Dependency: {}", sdist_ptr->manifest.id.to_string());
                 bd.add(*sdist_ptr, deps_params);
             }
         });

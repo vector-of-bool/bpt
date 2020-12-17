@@ -143,11 +143,11 @@ void repo_manager::import_targz(path_ref tgz_file) {
         throw std::runtime_error("Invalid package archive");
     }
 
-    DDS_E_SCOPE(man->pkg_id);
+    DDS_E_SCOPE(man->id);
 
     neo::sqlite3::transaction_guard tr{_db};
 
-    dds_log(debug, "Recording package {}@{}", man->pkg_id.name, man->pkg_id.version.to_string());
+    dds_log(debug, "Recording package {}@{}", man->id.name, man->id.version.to_string());
     nsql::exec(  //
         _stmts(R"(
             INSERT INTO dds_repo_packages (name, version, description, url)
@@ -158,8 +158,8 @@ void repo_manager::import_targz(path_ref tgz_file) {
                     printf('dds:%s@%s', ?1, ?2)
                 )
         )"_sql),
-        man->pkg_id.name,
-        man->pkg_id.version.to_string());
+        man->id.name,
+        man->id.version.to_string());
 
     auto package_id = _db.last_insert_rowid();
 
@@ -179,14 +179,14 @@ void repo_manager::import_targz(path_ref tgz_file) {
     }
 
     auto dest_path
-        = pkg_dir() / man->pkg_id.name / man->pkg_id.version.to_string() / "sdist.tar.gz";
+        = pkg_dir() / man->id.name / man->id.version.to_string() / "sdist.tar.gz";
     fs::create_directories(dest_path.parent_path());
     fs::copy(tgz_file, dest_path);
 
     tr.commit();
 }
 
-void repo_manager::delete_package(package_id pkg_id) {
+void repo_manager::delete_package(pkg_id pkg_id) {
     neo::sqlite3::transaction_guard tr{_db};
 
     DDS_E_SCOPE(pkg_id);

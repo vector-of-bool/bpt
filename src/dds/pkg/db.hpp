@@ -1,11 +1,11 @@
 #pragma once
 
+#include "./info.hpp"
+
 #include <dds/deps.hpp>
-#include <dds/package/id.hpp>
+#include <dds/pkg/id.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/glob.hpp>
-
-#include <dds/catalog/package_info.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
@@ -34,12 +34,12 @@ public:
 
     static fs::path default_path() noexcept;
 
-    void                        store(const package_info& info);
-    std::optional<package_info> get(const package_id& id) const noexcept;
+    void                    store(const pkg_info& info);
+    std::optional<pkg_info> get(const pkg_id& id) const noexcept;
 
-    std::vector<package_id> all() const noexcept;
-    std::vector<package_id> by_name(std::string_view sv) const noexcept;
-    std::vector<dependency> dependencies_of(const package_id& pkg) const noexcept;
+    std::vector<pkg_id>     all() const noexcept;
+    std::vector<pkg_id>     by_name(std::string_view sv) const noexcept;
+    std::vector<dependency> dependencies_of(const pkg_id& pkg) const noexcept;
 
     auto& database() noexcept { return _db; }
     auto& database() const noexcept { return _db; }

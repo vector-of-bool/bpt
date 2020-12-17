@@ -60,7 +60,7 @@ pkg_cache pkg_cache::_open_for_directory(bool writeable, path_ref dirpath) {
 }
 
 void pkg_cache::add_sdist(const sdist& sd, if_exists ife_action) {
-    neo_assertion_breadcrumbs("Importing sdist archive", sd.manifest.pkg_id.to_string());
+    neo_assertion_breadcrumbs("Importing sdist archive", sd.manifest.id.to_string());
     if (!_write_enabled) {
         dds_log(critical,
                 "DDS attempted to write into a cache that wasn't opened with a write-lock. This "
@@ -68,11 +68,11 @@ void pkg_cache::add_sdist(const sdist& sd, if_exists ife_action) {
                 "cache, we'll hard-exit immediately.");
         std::terminate();
     }
-    auto sd_dest = _root / sd.manifest.pkg_id.to_string();
+    auto sd_dest = _root / sd.manifest.id.to_string();
     if (fs::exists(sd_dest)) {
         auto msg = fmt::
             format("Package '{}' (Importing from [{}]) is already available in the local cache",
-                   sd.manifest.pkg_id.to_string(),
+                   sd.manifest.id.to_string(),
                    sd.path.string());
         if (ife_action == if_exists::throw_exc) {
             throw_user_error<errc::sdist_exists>(msg);
@@ -95,10 +95,10 @@ void pkg_cache::add_sdist(const sdist& sd, if_exists ife_action) {
     }
     fs::rename(tmp_copy, sd_dest);
     _sdists.insert(sdist::from_directory(sd_dest));
-    dds_log(info, "Source distribution '{}' successfully exported", sd.manifest.pkg_id.to_string());
+    dds_log(info, "Source distribution '{}' successfully exported", sd.manifest.id.to_string());
 }
 
-const sdist* pkg_cache::find(const package_id& pkg) const noexcept {
+const sdist* pkg_cache::find(const pkg_id& pkg) const noexcept {
     auto found = _sdists.find(pkg);
     if (found == _sdists.end()) {
         return nullptr;
@@ -106,22 +106,22 @@ const sdist* pkg_cache::find(const package_id& pkg) const noexcept {
     return &*found;
 }
 
-std::vector<package_id> pkg_cache::solve(const std::vector<dependency>& deps,
-                                         const pkg_db&                  ctlg) const {
+std::vector<pkg_id> pkg_cache::solve(const std::vector<dependency>& deps,
+                                     const pkg_db&                  ctlg) const {
     return dds::solve(
         deps,
-        [&](std::string_view name) -> std::vector<package_id> {
+        [&](std::string_view name) -> std::vector<pkg_id> {
             auto mine = ranges::views::all(_sdists)  //
                 | ranges::views::filter(
-                            [&](const sdist& sd) { return sd.manifest.pkg_id.name == name; })
-                | ranges::views::transform([](const sdist& sd) { return sd.manifest.pkg_id; });
+                            [&](const sdist& sd) { return sd.manifest.id.name == name; })
+                | ranges::views::transform([](const sdist& sd) { return sd.manifest.id; });
             auto avail = ctlg.by_name(name);
             auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
             ranges::sort(all, std::less{});
             ranges::unique(all, std::less{});
             return all;
         },
-        [&](const package_id& pkg_id) {
+        [&](const pkg_id& pkg_id) {
             auto found = find(pkg_id);
             if (found) {
                 return found->manifest.dependencies;

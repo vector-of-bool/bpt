@@ -83,7 +83,7 @@ public:
 
     void add_sdist(const sdist&, if_exists = if_exists::throw_exc);
 
-    const sdist* find(const package_id& pk) const noexcept;
+    const sdist* find(const pkg_id& pk) const noexcept;
 
     auto iter_sdists() const noexcept {
         class ret {
@@ -99,7 +99,7 @@ public:
         return r;
     }
 
-    std::vector<package_id> solve(const std::vector<dependency>& deps, const pkg_db&) const;
+    std::vector<pkg_id> solve(const std::vector<dependency>& deps, const pkg_db&) const;
 };
 
 }  // namespace dds

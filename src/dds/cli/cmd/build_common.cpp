@@ -1,8 +1,8 @@
 #include "./build_common.hpp"
 
-#include <dds/catalog/get.hpp>
 #include <dds/pkg/cache.hpp>
 #include <dds/pkg/db.hpp>
+#include <dds/pkg/get/get.hpp>
 
 using namespace dds;
 
@@ -30,11 +30,11 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
                 // Download dependencies
                 auto deps = repo.solve(man.dependencies, cat);
                 get_all(deps, repo, cat);
-                for (const package_id& pk : deps) {
+                for (const pkg_id& pk : deps) {
                     auto sdist_ptr = repo.find(pk);
                     assert(sdist_ptr);
                     sdist_build_params deps_params;
-                    deps_params.subdir = fs::path("_deps") / sdist_ptr->manifest.pkg_id.to_string();
+                    deps_params.subdir = fs::path("_deps") / sdist_ptr->manifest.id.to_string();
                     builder.add(*sdist_ptr, deps_params);
                 }
             });

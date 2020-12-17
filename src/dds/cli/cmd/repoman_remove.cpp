@@ -12,8 +12,8 @@ namespace dds::cli::cmd {
 static int _repoman_remove(const options& opts) {
     auto repo = repo_manager::open(opts.repoman.repo_dir);
     for (auto& str : opts.repoman.remove.pkgs) {
-        auto pkg_id = dds::package_id::parse(str);
-        repo.delete_package(pkg_id);
+        auto id = dds::pkg_id::parse(str);
+        repo.delete_package(id);
     }
     return 0;
 }
@@ -30,17 +30,17 @@ int repoman_remove(const options& opts) {
         [](dds::e_sqlite3_error_exc,
            boost::leaf::match<neo::sqlite3::errc, neo::sqlite3::errc::constraint_unique>,
            dds::e_repo_import_targz tgz,
-           dds::package_id          pkg_id) {
+           dds::pkg_id              pkid) {
             dds_log(error,
                     "Package {} (from {}) is already present in the repository",
-                    pkg_id.to_string(),
+                    pkid.to_string(),
                     tgz.path);
             return 1;
         },
-        [](dds::e_system_error_exc e, dds::e_repo_delete_path tgz, dds::package_id pkg_id) {
+        [](dds::e_system_error_exc e, dds::e_repo_delete_path tgz, dds::pkg_id pkid) {
             dds_log(error,
                     "Cannot delete requested package '{}' from repository (Path {}): {}",
-                    pkg_id.to_string(),
+                    pkid.to_string(),
                     tgz.path,
                     e.message);
             return 1;

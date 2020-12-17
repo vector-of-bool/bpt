@@ -1,13 +1,13 @@
 #include "./base.hpp"
 
-#include <dds/package/id.hpp>
+#include <dds/pkg/id.hpp>
 #include <dds/util/log.hpp>
 
 #include <nlohmann/json.hpp>
 
 using namespace dds;
 
-void remote_listing_base::generate_auto_lib_files(const package_id& pid, path_ref root) const {
+void remote_listing_base::generate_auto_lib_files(const pkg_id& pid, path_ref root) const {
     if (auto_lib.has_value()) {
         dds_log(info, "Generating library data automatically");
 

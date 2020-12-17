@@ -50,7 +50,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
              required_key{"name",
                           "A string 'name' is required",
                           require_str{"'name' must be a string"},
-                          put_into{ret.pkg_id.name}},
+                          put_into{ret.id.name}},
              required_key{"namespace",
                           "A string 'namespace' is a required ",
                           require_str{"'namespace' must be a string"},
@@ -58,7 +58,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
              required_key{"version",
                           "A 'version' string is requried",
                           require_str{"'version' must be a string"},
-                          put_into{ret.pkg_id.version,
+                          put_into{ret.id.version,
                                    [](std::string s) { return semver::version::parse(s); }}},
              if_key{"depends",
                     [&](auto&& dat) {

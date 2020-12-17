@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/package/id.hpp>
+#include <dds/pkg/id.hpp>
 #include <dds/util/fs.hpp>
 
 #include <neo/sqlite3/database.hpp>
@@ -54,7 +54,7 @@ public:
     std::string name() const noexcept;
 
     void import_targz(path_ref tgz_path);
-    void delete_package(package_id id);
+    void delete_package(pkg_id id);
 
     auto all_packages() const noexcept {
         using namespace neo::sqlite3::literals;
@@ -62,7 +62,7 @@ public:
         auto  tups = neo::sqlite3::iter_tuples<std::string, std::string>(st);
         return tups | ranges::views::transform([](auto&& pair) {
                    auto [name, version] = pair;
-                   return package_id{name, semver::version::parse(version)};
+                   return pkg_id{name, semver::version::parse(version)};
                });
     }
 };

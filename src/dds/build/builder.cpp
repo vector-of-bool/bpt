@@ -125,7 +125,7 @@ library_plan prepare_library(state&                  st,
 }
 
 package_plan prepare_one(state& st, const sdist_target& sd) {
-    package_plan pkg{sd.sd.manifest.pkg_id.name, sd.sd.manifest.namespace_};
+    package_plan pkg{sd.sd.manifest.id.name, sd.sd.manifest.namespace_};
     auto         libs = collect_libraries(sd.sd.path);
     for (const auto& lib : libs) {
         pkg.add_library(prepare_library(st, sd, lib, sd.sd.manifest));

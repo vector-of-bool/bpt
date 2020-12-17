@@ -34,14 +34,10 @@ struct temporary_sdist {
 
 inline constexpr struct sdist_compare_t {
     bool operator()(const sdist& lhs, const sdist& rhs) const {
-        return lhs.manifest.pkg_id < rhs.manifest.pkg_id;
+        return lhs.manifest.id < rhs.manifest.id;
     }
-    bool operator()(const sdist& lhs, const package_id& rhs) const {
-        return lhs.manifest.pkg_id < rhs;
-    }
-    bool operator()(const package_id& lhs, const sdist& rhs) const {
-        return lhs < rhs.manifest.pkg_id;
-    }
+    bool operator()(const sdist& lhs, const pkg_id& rhs) const { return lhs.manifest.id < rhs; }
+    bool operator()(const pkg_id& lhs, const sdist& rhs) const { return lhs < rhs.manifest.id; }
     using is_transparent = int;
 } sdist_compare;
 

@@ -1,4 +1,4 @@
-#include <dds/package/id.hpp>
+#include <dds/pkg/id.hpp>
 
 #include <dds/error/errors.hpp>
 
@@ -8,7 +8,7 @@
 
 using namespace dds;
 
-package_id package_id::parse(std::string_view s) {
+pkg_id pkg_id::parse(std::string_view s) {
     auto at_pos = s.find('@');
     if (at_pos == s.npos) {
         throw_user_error<errc::invalid_pkg_id>("Invalid package ID '{}'", s);
@@ -20,7 +20,7 @@ package_id package_id::parse(std::string_view s) {
     return {std::string(name), semver::version::parse(ver_str)};
 }
 
-package_id::package_id(std::string_view n, semver::version v)
+pkg_id::pkg_id(std::string_view n, semver::version v)
     : name(n)
     , version(std::move(v)) {
     if (name.find('@') != name.npos) {
@@ -29,4 +29,4 @@ package_id::package_id(std::string_view n, semver::version v)
     }
 }
 
-std::string package_id::to_string() const noexcept { return name + "@" + version.to_string(); }
+std::string pkg_id::to_string() const noexcept { return name + "@" + version.to_string(); }

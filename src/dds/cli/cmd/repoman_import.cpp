@@ -29,10 +29,10 @@ int repoman_import(const options& opts) {
         [](dds::e_sqlite3_error_exc,
            boost::leaf::match<neo::sqlite3::errc, neo::sqlite3::errc::constraint_unique>,
            dds::e_repo_import_targz tgz,
-           dds::package_id          pkg_id) {
+           dds::pkg_id              pkid) {
             dds_log(error,
                     "Package {} (from {}) is already present in the repository",
-                    pkg_id.to_string(),
+                    pkid.to_string(),
                     tgz.path);
             return 1;
         },

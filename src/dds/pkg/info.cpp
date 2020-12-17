@@ -1,4 +1,4 @@
-#include "./package_info.hpp"
+#include "./info.hpp"
 
 #include <dds/error/errors.hpp>
 #include <dds/util/string.hpp>

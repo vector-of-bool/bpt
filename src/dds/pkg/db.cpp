@@ -134,9 +134,7 @@ void migrate_repodb_3(nsql::database& db) {
     )");
 }
 
-void store_with_remote(const neo::sqlite3::statement_cache&,
-                       const package_info& pkg,
-                       std::monostate) {
+void store_with_remote(const neo::sqlite3::statement_cache&, const pkg_info& pkg, std::monostate) {
     neo_assert_always(
         invariant,
         false,
@@ -146,7 +144,7 @@ void store_with_remote(const neo::sqlite3::statement_cache&,
 }
 
 void store_with_remote(neo::sqlite3::statement_cache& stmts,
-                       const package_info&            pkg,
+                       const pkg_info&                pkg,
                        const http_remote_listing&     http) {
     nsql::exec(  //
         stmts(R"(
@@ -164,7 +162,7 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
 }
 
 void store_with_remote(neo::sqlite3::statement_cache& stmts,
-                       const package_info&            pkg,
+                       const pkg_info&                pkg,
                        const git_remote_listing&      git) {
     std::string url = git.url;
     if (url.starts_with("https://") || url.starts_with("http://")) {
@@ -197,7 +195,7 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
 
 void do_store_pkg(neo::sqlite3::database&        db,
                   neo::sqlite3::statement_cache& st_cache,
-                  const package_info&            pkg) {
+                  const pkg_info&                pkg) {
     dds_log(debug, "Recording package {}@{}", pkg.ident.name, pkg.ident.version.to_string());
     std::visit([&](auto&& remote) { store_with_remote(st_cache, pkg, remote); }, pkg.remote);
     auto  db_pkg_id  = db.last_insert_rowid();
@@ -304,12 +302,12 @@ pkg_db pkg_db::open(const std::string& db_path) {
 pkg_db::pkg_db(nsql::database db)
     : _db(std::move(db)) {}
 
-void pkg_db::store(const package_info& pkg) {
+void pkg_db::store(const pkg_info& pkg) {
     nsql::transaction_guard tr{_db};
     do_store_pkg(_db, _stmt_cache, pkg);
 }
 
-std::optional<package_info> pkg_db::get(const package_id& pk_id) const noexcept {
+std::optional<pkg_info> pkg_db::get(const pkg_id& pk_id) const noexcept {
     auto ver_str = pk_id.version.to_string();
     dds_log(trace, "Lookup package {}@{}", pk_id.name, ver_str);
     auto& st = _stmt_cache(R"(
@@ -362,7 +360,7 @@ std::optional<package_info> pkg_db::get(const package_id& pk_id) const noexcept 
 
     auto deps = dependencies_of(pk_id);
 
-    auto info = package_info{
+    auto info = pkg_info{
         pk_id,
         std::move(deps),
         std::move(description),
@@ -374,10 +372,10 @@ std::optional<package_info> pkg_db::get(const package_id& pk_id) const noexcept 
 
 auto pair_to_pkg_id = [](auto&& pair) {
     const auto& [name, ver] = pair;
-    return package_id{name, semver::version::parse(ver)};
+    return pkg_id{name, semver::version::parse(ver)};
 };
 
-std::vector<package_id> pkg_db::all() const noexcept {
+std::vector<pkg_id> pkg_db::all() const noexcept {
     return nsql::exec_tuples<std::string, std::string>(
                _stmt_cache("SELECT name, version FROM dds_cat_pkgs"_sql))
         | neo::lref                                 //
@@ -385,7 +383,7 @@ std::vector<package_id> pkg_db::all() const noexcept {
         | ranges::to_vector;
 }
 
-std::vector<package_id> pkg_db::by_name(std::string_view sv) const noexcept {
+std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
     return nsql::exec_tuples<std::string, std::string>(  //
                _stmt_cache(
                    R"(
@@ -400,7 +398,7 @@ std::vector<package_id> pkg_db::by_name(std::string_view sv) const noexcept {
         | ranges::to_vector;
 }
 
-std::vector<dependency> pkg_db::dependencies_of(const package_id& pkg) const noexcept {
+std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcept {
     dds_log(trace, "Lookup dependencies of {}@{}", pkg.name, pkg.version.to_string());
     return nsql::exec_tuples<std::string,
                              std::string,

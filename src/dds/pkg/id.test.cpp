@@ -1,4 +1,4 @@
-#include <dds/package/id.hpp>
+#include <dds/pkg/id.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -14,7 +14,7 @@ TEST_CASE("Package package ID strings") {
         {"foo@1.2.3-alpha", "foo", "1.2.3-alpha"},
     }));
 
-    auto pk_id = dds::package_id::parse(id_str);
+    auto pk_id = dds::pkg_id::parse(id_str);
     CHECK(pk_id.to_string() == id_str);
     CHECK(pk_id.name == exp_name);
     CHECK(pk_id.version.to_string() == exp_ver);
@@ -44,8 +44,8 @@ TEST_CASE("Package ordering") {
         {"foo@0.1.2-alpha", less_than, "foo@1.0.0"},
     }));
 
-    auto lhs = dds::package_id::parse(lhs_str);
-    auto rhs = dds::package_id::parse(rhs_str);
+    auto lhs = dds::pkg_id::parse(lhs_str);
+    auto rhs = dds::pkg_id::parse(rhs_str);
 
     if (ord == less_than) {
         CHECK(lhs < rhs);

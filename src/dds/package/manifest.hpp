@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/deps.hpp>
-#include <dds/package/id.hpp>
+#include <dds/pkg/id.hpp>
 #include <dds/util/fs.hpp>
 
 #include <optional>
@@ -23,7 +23,7 @@ enum class test_lib {
  */
 struct package_manifest {
     /// The package ID, as determined by `Name` and `Version` together
-    package_id pkg_id;
+    dds::pkg_id id;
     /// The declared `Namespace` of the package. This directly corresponds with the libman Namespace
     std::string namespace_;
     /// The `test_driver` that this package declares, or `nullopt` if absent.
