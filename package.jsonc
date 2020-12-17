@@ -21,6 +21,7 @@
         "neo-http^0.1.0",
         "neo-io^0.1.1",
         "boost.leaf~0.3.0",
+        "magic_enum+0.0.0",
     ],
     "test_driver": "Catch-Main"
 }
