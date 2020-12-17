@@ -15,6 +15,9 @@ namespace {
 struct setup {
     dds::cli::options& opts;
 
+    explicit setup(dds::cli::options& opts)
+        : opts(opts) {}
+
     // Util argument common to a lot of operations
     argument if_exists_arg{
         .long_spellings = {"if-exists"},
