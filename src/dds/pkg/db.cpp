@@ -1,6 +1,4 @@
-#include "./catalog.hpp"
-
-#include "./import.hpp"
+#include "./db.hpp"
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
@@ -239,7 +237,7 @@ void ensure_migrated(nsql::database& db) {
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
-        dds_log(critical, "Root of catalog dds_cat_meta cell should be a JSON object");
+        dds_log(critical, "Root of database dds_cat_meta cell should be a JSON object");
         throw_external_error<errc::corrupted_catalog_db>();
     }
 
@@ -247,7 +245,7 @@ void ensure_migrated(nsql::database& db) {
     if (!version_.is_number_integer()) {
         dds_log(critical, "'version' key in dds_cat_meta is not an integer");
         throw_external_error<errc::corrupted_catalog_db>(
-            "The catalog database metadata is invalid [bad dds_meta.version]");
+            "The database metadata is invalid [bad dds_meta.version]");
     }
 
     constexpr int current_database_version = 3;
@@ -263,15 +261,15 @@ void ensure_migrated(nsql::database& db) {
     }
 
     if (version < 1) {
-        dds_log(debug, "Applying catalog migration 1");
+        dds_log(debug, "Applying pkg_db migration 1");
         migrate_repodb_1(db);
     }
     if (version < 2) {
-        dds_log(debug, "Applying catalog migration 2");
+        dds_log(debug, "Applying pkg_db migration 2");
         migrate_repodb_2(db);
     }
     if (version < 3) {
-        dds_log(debug, "Applying catalog migration 3");
+        dds_log(debug, "Applying pkg_db migration 3");
         migrate_repodb_3(db);
     }
     meta["version"] = current_database_version;
@@ -280,15 +278,15 @@ void ensure_migrated(nsql::database& db) {
 
 }  // namespace
 
-fs::path catalog::default_path() noexcept { return dds_data_dir() / "catalog.db"; }
+fs::path pkg_db::default_path() noexcept { return dds_data_dir() / "pkgs.db"; }
 
-catalog catalog::open(const std::string& db_path) {
+pkg_db pkg_db::open(const std::string& db_path) {
     if (db_path != ":memory:") {
         auto pardir = fs::weakly_canonical(db_path).parent_path();
         dds_log(trace, "Ensuring parent directory [{}]", pardir.string());
         fs::create_directories(pardir);
     }
-    dds_log(debug, "Opening package catalog [{}]", db_path);
+    dds_log(debug, "Opening package database [{}]", db_path);
     auto db = nsql::database::open(db_path);
     try {
         ensure_migrated(db);
@@ -299,19 +297,19 @@ catalog catalog::open(const std::string& db_path) {
                 e.what());
         throw_external_error<errc::corrupted_catalog_db>();
     }
-    dds_log(trace, "Successfully opened catalog");
-    return catalog(std::move(db));
+    dds_log(trace, "Successfully opened database");
+    return pkg_db(std::move(db));
 }
 
-catalog::catalog(nsql::database db)
+pkg_db::pkg_db(nsql::database db)
     : _db(std::move(db)) {}
 
-void catalog::store(const package_info& pkg) {
+void pkg_db::store(const package_info& pkg) {
     nsql::transaction_guard tr{_db};
     do_store_pkg(_db, _stmt_cache, pkg);
 }
 
-std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept {
+std::optional<package_info> pkg_db::get(const package_id& pk_id) const noexcept {
     auto ver_str = pk_id.version.to_string();
     dds_log(trace, "Lookup package {}@{}", pk_id.name, ver_str);
     auto& st = _stmt_cache(R"(
@@ -339,7 +337,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
     }
     neo_assert_always(invariant,
                       ec == nsql::errc::row,
-                      "Failed to pull a package from the catalog database",
+                      "Failed to pull a package from the database",
                       ec,
                       pk_id.to_string(),
                       nsql::error_category().message(int(ec)));
@@ -350,7 +348,7 @@ std::optional<package_info> catalog::get(const package_id& pk_id) const noexcept
     ec = st.step(std::nothrow);
     if (ec == nsql::errc::row) {
         dds_log(warn,
-                "There is more than one entry for package {} in the catalog database. One will be "
+                "There is more than one entry for package {} in the database. One will be "
                 "chosen arbitrarily.",
                 pk_id.to_string());
     }
@@ -379,7 +377,7 @@ auto pair_to_pkg_id = [](auto&& pair) {
     return package_id{name, semver::version::parse(ver)};
 };
 
-std::vector<package_id> catalog::all() const noexcept {
+std::vector<package_id> pkg_db::all() const noexcept {
     return nsql::exec_tuples<std::string, std::string>(
                _stmt_cache("SELECT name, version FROM dds_cat_pkgs"_sql))
         | neo::lref                                 //
@@ -387,7 +385,7 @@ std::vector<package_id> catalog::all() const noexcept {
         | ranges::to_vector;
 }
 
-std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
+std::vector<package_id> pkg_db::by_name(std::string_view sv) const noexcept {
     return nsql::exec_tuples<std::string, std::string>(  //
                _stmt_cache(
                    R"(
@@ -402,7 +400,7 @@ std::vector<package_id> catalog::by_name(std::string_view sv) const noexcept {
         | ranges::to_vector;
 }
 
-std::vector<dependency> catalog::dependencies_of(const package_id& pkg) const noexcept {
+std::vector<dependency> pkg_db::dependencies_of(const package_id& pkg) const noexcept {
     dds_log(trace, "Lookup dependencies of {}@{}", pkg.name, pkg.version.to_string());
     return nsql::exec_tuples<std::string,
                              std::string,

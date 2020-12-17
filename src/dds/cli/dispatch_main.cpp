@@ -3,7 +3,7 @@
 #include "./error_handler.hpp"
 #include "./options.hpp"
 
-#include <dds/catalog/catalog.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/remote/remote.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/result.hpp>

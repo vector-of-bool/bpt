@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/catalog/catalog.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
@@ -99,7 +99,7 @@ public:
         return r;
     }
 
-    std::vector<package_id> solve(const std::vector<dependency>& deps, const catalog&) const;
+    std::vector<package_id> solve(const std::vector<dependency>& deps, const pkg_db&) const;
 };
 
 }  // namespace dds

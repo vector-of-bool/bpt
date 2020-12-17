@@ -1,7 +1,7 @@
 #include "./options.hpp"
 
-#include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/toolchain.hpp>
 
@@ -166,7 +166,7 @@ struct setup {
         build_cmd.add_argument({
             .long_spellings = {"add-repo"},
             .help           = ""
-                    "Add remote repositories to the package catalog before building\n"
+                    "Add remote repositories to the package database before building\n"
                     "(Implies --update-repos)",
             .valname    = "<repo-url>",
             .can_repeat = true,
@@ -399,8 +399,8 @@ void cli::options::setup_parser(debate::argument_parser& parser) noexcept {
     setup{*this}.do_setup(parser);
 }
 
-catalog dds::cli::options::open_catalog() const {
-    return catalog::open(this->pkg_db_dir.value_or(catalog::default_path()));
+pkg_db dds::cli::options::open_catalog() const {
+    return pkg_db::open(this->pkg_db_dir.value_or(pkg_db::default_path()));
 }
 
 toolchain dds::cli::options::load_toolchain() const {

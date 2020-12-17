@@ -1,10 +1,10 @@
 #include "../options.hpp"
 
-#include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/http/session.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
@@ -20,7 +20,7 @@ static int _pkg_get(const options& opts) {
         auto            info = cat.get(id);
         if (!info) {
             dds::throw_user_error<dds::errc::no_such_catalog_package>(
-                "No package in the catalog matched the ID '{}'.{}", item, dym.sentence_suffix());
+                "No package in the database matched the ID '{}'.{}", item, dym.sentence_suffix());
         }
         auto tsd  = get_package_sdist(*info);
         auto dest = opts.out_path.value_or(fs::current_path()) / id.to_string();

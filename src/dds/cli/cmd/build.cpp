@@ -3,8 +3,8 @@
 #include "./build_common.hpp"
 
 #include <dds/build/builder.hpp>
-#include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/remote/remote.hpp>
 #include <dds/toolchain/from_json.hpp>
 

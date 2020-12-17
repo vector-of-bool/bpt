@@ -1,4 +1,4 @@
-#include <dds/catalog/catalog.hpp>
+#include <dds/pkg/db.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -6,23 +6,23 @@ using namespace std::literals;
 
 TEST_CASE("Create a simple database") {
     // Just create and run migrations on an in-memory database
-    auto repo = dds::catalog::open(":memory:"s);
+    auto repo = dds::pkg_db::open(":memory:"s);
 }
 
-TEST_CASE("Open a catalog in a non-ascii path") {
+TEST_CASE("Open a database in a non-ascii path") {
     ::setlocale(LC_ALL, ".utf8");
     auto THIS_DIR = dds::fs::canonical(__FILE__).parent_path();
     auto BUILD_DIR
         = (THIS_DIR.parent_path().parent_path().parent_path() / "_build").lexically_normal();
     auto subdir = BUILD_DIR / "Ю́рий Алексе́евич Гага́рин";
     dds::fs::remove_all(subdir);
-    dds::catalog::open(subdir / "test.db");
+    dds::pkg_db::open(subdir / "test.db");
     dds::fs::remove_all(subdir);
 }
 
 class catalog_test_case {
 public:
-    dds::catalog db = dds::catalog::open(":memory:"s);
+    dds::pkg_db db = dds::pkg_db::open(":memory:"s);
 };
 
 TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {

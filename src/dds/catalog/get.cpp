@@ -1,8 +1,8 @@
 #include "./get.hpp"
 
-#include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/pkg/cache.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 
@@ -18,7 +18,7 @@ temporary_sdist do_pull_sdist(const package_info& listing, std::monostate) {
     neo_assert_always(
         invariant,
         false,
-        "A package listing in the catalog has no defined remote from which to pull. This "
+        "A package listing in the database has no defined remote from which to pull. This "
         "shouldn't happen in normal usage. This will occur if the database has been "
         "manually altered, or if DDS has a bug.",
         listing.ident.to_string());
@@ -55,7 +55,7 @@ temporary_sdist dds::get_package_sdist(const package_info& pkg) {
     return tsd;
 }
 
-void dds::get_all(const std::vector<package_id>& pkgs, pkg_cache& repo, const catalog& cat) {
+void dds::get_all(const std::vector<package_id>& pkgs, pkg_cache& repo, const pkg_db& cat) {
     std::mutex repo_mut;
 
     auto absent_pkg_infos = pkgs  //
@@ -67,7 +67,7 @@ void dds::get_all(const std::vector<package_id>& pkgs, pkg_cache& repo, const ca
                                 auto info = cat.get(id);
                                 neo_assert(invariant,
                                            info.has_value(),
-                                           "No catalog entry for package id?",
+                                           "No database entry for package id?",
                                            id.to_string());
                                 return *info;
                             });

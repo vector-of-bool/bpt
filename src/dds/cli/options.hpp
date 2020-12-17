@@ -11,7 +11,7 @@
 namespace dds {
 
 namespace fs = std::filesystem;
-class catalog;
+class pkg_db;
 class toolchain;
 
 namespace cli {
@@ -114,10 +114,10 @@ struct options {
     cli::if_exists if_exists = cli::if_exists::fail;
 
     /**
-     * @brief Open the package catalog based on the user-specified options.
-     * @return catalog
+     * @brief Open the package pkg_db based on the user-specified options.
+     * @return pkg_db
      */
-    catalog open_catalog() const;
+    pkg_db open_catalog() const;
     /**
      * @brief Load a dds toolchain as specified by the user, or a default.
      * @return dds::toolchain

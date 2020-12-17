@@ -2,7 +2,7 @@
 
 #include "./pkg_repo_err_handle.hpp"
 
-#include <dds/catalog/catalog.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/remote/remote.hpp>
 
 namespace dds::cli::cmd {

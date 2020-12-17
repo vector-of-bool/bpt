@@ -1,8 +1,8 @@
 #include "./build_common.hpp"
 
-#include <dds/catalog/catalog.hpp>
 #include <dds/catalog/get.hpp>
 #include <dds/pkg/cache.hpp>
+#include <dds/pkg/db.hpp>
 
 using namespace dds;
 
@@ -16,12 +16,12 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     };
 
     auto man = package_manifest::load_from_directory(opts.project_dir).value_or(package_manifest{});
-    auto cat_path  = opts.pkg_db_dir.value_or(catalog::default_path());
+    auto cat_path  = opts.pkg_db_dir.value_or(pkg_db::default_path());
     auto repo_path = opts.pkg_cache_dir.value_or(pkg_cache::default_local_path());
 
     builder builder;
     if (!opts.build.lm_index.has_value()) {
-        auto cat = catalog::open(cat_path);
+        auto cat = pkg_db::open(cat_path);
         // Build the dependencies
         pkg_cache::with_cache(  //
             repo_path,

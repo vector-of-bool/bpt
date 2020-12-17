@@ -1,7 +1,7 @@
 #include "./cache.hpp"
 
-#include <dds/catalog/catalog.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/pkg/db.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/source/dist.hpp>
 #include <dds/util/log.hpp>
@@ -107,7 +107,7 @@ const sdist* pkg_cache::find(const package_id& pkg) const noexcept {
 }
 
 std::vector<package_id> pkg_cache::solve(const std::vector<dependency>& deps,
-                                         const catalog&                 ctlg) const {
+                                         const pkg_db&                  ctlg) const {
     return dds::solve(
         deps,
         [&](std::string_view name) -> std::vector<package_id> {

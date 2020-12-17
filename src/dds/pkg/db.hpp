@@ -5,7 +5,7 @@
 #include <dds/util/fs.hpp>
 #include <dds/util/glob.hpp>
 
-#include "./package_info.hpp"
+#include <dds/catalog/package_info.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
@@ -18,19 +18,19 @@
 
 namespace dds {
 
-class catalog {
+class pkg_db {
     neo::sqlite3::database                _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
 
-    explicit catalog(neo::sqlite3::database db);
-    catalog(const catalog&) = delete;
+    explicit pkg_db(neo::sqlite3::database db);
+    pkg_db(const pkg_db&) = delete;
 
 public:
-    catalog(catalog&&) = default;
-    catalog& operator=(catalog&&) = default;
+    pkg_db(pkg_db&&) = default;
+    pkg_db& operator=(pkg_db&&) = default;
 
-    static catalog open(const std::string& db_path);
-    static catalog open(path_ref db_path) { return open(db_path.string()); }
+    static pkg_db open(const std::string& db_path);
+    static pkg_db open(path_ref db_path) { return open(db_path.string()); }
 
     static fs::path default_path() noexcept;
 

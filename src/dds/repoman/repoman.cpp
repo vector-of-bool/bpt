@@ -1,6 +1,5 @@
 #include "./repoman.hpp"
 
-#include <dds/catalog/import.hpp>
 #include <dds/package/manifest.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
