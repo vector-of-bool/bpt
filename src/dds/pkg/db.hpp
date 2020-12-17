@@ -2,21 +2,19 @@
 
 #include "./info.hpp"
 
-#include <dds/deps.hpp>
-#include <dds/pkg/id.hpp>
 #include <dds/util/fs.hpp>
-#include <dds/util/glob.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
 #include <neo/sqlite3/statement_cache.hpp>
-#include <neo/sqlite3/transaction.hpp>
 
 #include <string>
-#include <variant>
 #include <vector>
 
 namespace dds {
+
+struct dependency;
+struct pkg_id;
 
 class pkg_db {
     neo::sqlite3::database                _db;

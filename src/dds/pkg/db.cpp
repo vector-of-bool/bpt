@@ -12,6 +12,7 @@
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
+#include <neo/sqlite3/transaction.hpp>
 #include <nlohmann/json.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/join.hpp>

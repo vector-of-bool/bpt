@@ -59,7 +59,7 @@ struct remote_db {
 
 }  // namespace
 
-remote_repository remote_repository::connect(std::string_view url_str) {
+pkg_remote pkg_remote::connect(std::string_view url_str) {
     DDS_E_SCOPE(e_url_string{std::string(url_str)});
     const auto url = neo::url::parse(url_str);
 
@@ -70,7 +70,7 @@ remote_repository remote_repository::connect(std::string_view url_str) {
     return {name, url};
 }
 
-void remote_repository::store(nsql::database_ref db) {
+void pkg_remote::store(nsql::database_ref db) {
     auto st = db.prepare(R"(
         INSERT INTO dds_cat_remotes (name, gen_ident, remote_url)
             VALUES (?, ?, ?)
@@ -80,7 +80,7 @@ void remote_repository::store(nsql::database_ref db) {
     nsql::exec(st, _name, "[placeholder]", _base_url.to_string());
 }
 
-void remote_repository::update_catalog(nsql::database_ref db) {
+void pkg_remote::update_pkg_db(nsql::database_ref db) {
     dds_log(info, "Pulling repository contents for {} [{}]", _name, _base_url.to_string());
 
     auto rdb = remote_db::download_and_open_for_base(_base_url);
@@ -174,8 +174,8 @@ void dds::update_all_remotes(nsql::database_ref db) {
 
     for (const auto& [name, remote_url] : tups) {
         DDS_E_SCOPE(e_url_string{remote_url});
-        remote_repository repo{name, neo::url::parse(remote_url)};
-        repo.update_catalog(db);
+        pkg_remote repo{name, neo::url::parse(remote_url)};
+        repo.update_pkg_db(db);
     }
 
     dds_log(info, "Recompacting database...");

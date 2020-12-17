@@ -5,7 +5,7 @@
 #include <dds/build/builder.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/pkg/db.hpp>
-#include <dds/remote/remote.hpp>
+#include <dds/pkg/remote.hpp>
 #include <dds/toolchain/from_json.hpp>
 
 using namespace dds;
@@ -16,7 +16,7 @@ int build(const options& opts) {
     if (!opts.build.add_repos.empty()) {
         auto cat = opts.open_catalog();
         for (auto& str : opts.build.add_repos) {
-            auto repo = remote_repository::connect(str);
+            auto repo = pkg_remote::connect(str);
             repo.store(cat.database());
         }
     }
