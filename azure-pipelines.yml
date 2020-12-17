@@ -2,10 +2,7 @@
 
 variables:
   shouldDeploy: >-
-    ${{ or(
-      eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
-      eq(variables['Build.SourceBranch'], 'refs/heads/master')
-    ) }}
+    ${{ eq(variables['Build.SourceBranch'], 'refs/heads/master') }}
   deployDest: ${{ format('~/web/{0}/', variables['Build.SourceBranchName']) }}
 
 stages:
