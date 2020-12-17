@@ -13,7 +13,7 @@ enum class level : int {
     warn,
     error,
     critical,
-    _silent,
+    silent,
 };
 
 inline level current_log_level = level::info;

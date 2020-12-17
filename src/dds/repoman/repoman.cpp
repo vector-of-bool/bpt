@@ -205,7 +205,7 @@ void repo_manager::delete_package(package_id pkg_id) {
     auto name_dir = pkg_dir() / pkg_id.name;
     auto ver_dir  = name_dir / pkg_id.version.to_string();
 
-    DDS_E_SCOPE(e_repo_delete_targz{ver_dir});
+    DDS_E_SCOPE(e_repo_delete_path{ver_dir});
 
     if (!fs::is_directory(ver_dir)) {
         throw std::system_error(std::make_error_code(std::errc::no_such_file_or_directory),

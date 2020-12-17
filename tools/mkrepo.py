@@ -371,7 +371,7 @@ def http_dl_unpack(url: str) -> Iterator[Path]:
 def spec_as_local_tgz(dds_exe: Path, spec: SpecPackage) -> Iterator[Path]:
     with spec.remote.make_local_dir(spec.name, spec.version) as clone_dir:
         out_tgz = clone_dir / 'sdist.tgz'
-        check_call([str(dds_exe), 'sdist', 'create', f'--project-dir={clone_dir}', f'--out={out_tgz}'])
+        check_call([str(dds_exe), 'sdist', 'create', f'--project={clone_dir}', f'--out={out_tgz}'])
         yield out_tgz
 
 

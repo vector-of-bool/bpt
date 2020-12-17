@@ -5,7 +5,7 @@ import subprocess
 
 from .util import Pathish
 
-CommandLineArg = Union[str, PurePath, int, float]
+CommandLineArg = Union[str, Pathish, int, float]
 CommandLineArg1 = Union[CommandLineArg, Iterable[CommandLineArg]]
 CommandLineArg2 = Union[CommandLineArg1, Iterable[CommandLineArg1]]
 CommandLineArg3 = Union[CommandLineArg2, Iterable[CommandLineArg2]]
@@ -39,16 +39,10 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
 
 
 def run(*cmd: CommandLine, cwd: Optional[Pathish] = None, check: bool = False) -> ProcessResult:
-    return subprocess.run(
-        list(flatten_cmd(cmd)),
-        cwd=cwd,
-        check=check,
-    )
+    command = list(flatten_cmd(cmd))
+    return subprocess.run(command, cwd=cwd, check=check)
 
 
 def check_run(*cmd: CommandLine, cwd: Optional[Pathish] = None) -> ProcessResult:
-    return subprocess.run(
-        list(flatten_cmd(cmd)),
-        cwd=cwd,
-        check=True,
-    )
+    command = list(flatten_cmd(cmd))
+    return subprocess.run(command, cwd=cwd, check=True)

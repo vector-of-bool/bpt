@@ -38,7 +38,7 @@ struct e_url_string {
  * @brief Capture currently in-flight special exceptions as new error object. Works around a bug in
  * Boost.LEAF when catching std::system error.
  */
-error_id capture_exception();
+[[noreturn]] void capture_exception();
 
 /**
  * @brief Generate a leaf::on_error object that loads the given expression into the currently

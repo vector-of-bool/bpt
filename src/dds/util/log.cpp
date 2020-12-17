@@ -45,7 +45,7 @@ void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
             return spdlog::level::err;
         case level::critical:
             return spdlog::level::critical;
-        case level::_silent:
+        case level::silent:
             return spdlog::level::off;
         }
         neo_assert_always(invariant, false, "Invalid log level", msg, int(l));

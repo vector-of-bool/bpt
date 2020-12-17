@@ -14,7 +14,7 @@ from _pytest.tmpdir import TempPathFactory
 from _pytest.fixtures import FixtureRequest
 
 from dds_ci import toolchain, paths
-from ..dds import DDSWrapper
+from ..dds import DDSWrapper, NewDDSWrapper
 from ..util import Pathish
 tc_mod = toolchain
 
@@ -72,8 +72,8 @@ class Project:
 
     @property
     def project_dir_arg(self) -> str:
-        """Argument for --project-dir"""
-        return f'--project-dir={self.root}'
+        """Argument for --project"""
+        return f'--project={self.root}'
 
     def build(self, *, toolchain: Optional[Pathish] = None) -> None:
         """
@@ -82,9 +82,18 @@ class Project:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
             self.dds.build(root=self.root, build_root=self.build_root, toolchain=tc)
 
-    def sdist_create(self) -> None:
+    def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
+        with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
+            self.dds.compile_file(paths, toolchain=tc, out=self.build_root, project_dir=self.root)
+
+    def sdist_create(self, *, dest: Optional[Pathish] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
-        self.dds.run(['sdist', 'create', self.project_dir_arg], cwd=self.build_root)
+        self.dds.run([
+            'sdist',
+            'create',
+            self.project_dir_arg,
+            f'--out={dest}' if dest else (),
+        ], cwd=self.build_root)
 
     def sdist_export(self) -> None:
         self.dds.run(['sdist', 'export', self.dds.repo_dir_arg, self.project_dir_arg])
@@ -170,11 +179,12 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
 
 
 @pytest.fixture(scope='session')
-def dds_2(dds_exe: Path) -> DDSWrapper:
-    return DDSWrapper(dds_exe)
+def dds_2(dds_exe: Path) -> NewDDSWrapper:
+    wr = NewDDSWrapper(dds_exe)
+    return wr
 
 
 @pytest.fixture(scope='session')
 def dds_exe(pytestconfig: PyTestConfig) -> Path:
-    opt = pytestconfig.getoption('--dds-exe') or paths.CUR_BUILT_DDS
+    opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
     return Path(opt)

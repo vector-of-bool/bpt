@@ -31,7 +31,7 @@ def test_build_simple(tmp_project: Project) -> None:
     tmp_project.write('src/f.cpp', r'void f() {}')
     tmp_project.build()
     # Writing again will build again:
-    time.sleep(0.2)  # Sleep long enough to register a file change
+    time.sleep(0.5)  # Sleep long enough to register a file change
     tmp_project.write('src/f.cpp', r'bad again')
     with pytest.raises(CalledProcessError):
         tmp_project.build()
@@ -67,12 +67,7 @@ TEST_PACKAGE: PackageJSON = {
 }
 
 
-def test_empty_with_pkg_dds(tmp_project: Project) -> None:
-    tmp_project.package_json = TEST_PACKAGE
-    tmp_project.build()
-
-
-def test_empty_with_lib_dds(tmp_project: Project) -> None:
+def test_empty_with_pkg_json(tmp_project: Project) -> None:
     tmp_project.package_json = TEST_PACKAGE
     tmp_project.build()
 
@@ -80,8 +75,5 @@ def test_empty_with_lib_dds(tmp_project: Project) -> None:
 def test_empty_sdist_create(tmp_project: Project) -> None:
     tmp_project.package_json = TEST_PACKAGE
     tmp_project.sdist_create()
-
-
-def test_empty_sdist_export(tmp_project: Project) -> None:
-    tmp_project.package_json = TEST_PACKAGE
-    tmp_project.sdist_export()
+    assert tmp_project.build_root.joinpath('test-pkg@0.2.2.tar.gz').is_file(), \
+        'The expected sdist tarball was not generated'

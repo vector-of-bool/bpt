@@ -30,7 +30,7 @@ struct e_repo_import_targz {
     fs::path path;
 };
 
-struct e_repo_delete_targz {
+struct e_repo_delete_path {
     fs::path path;
 };
 
