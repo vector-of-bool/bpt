@@ -1,85 +1,17 @@
 #include "./http.hpp"
 
 #include <dds/error/errors.hpp>
-#include <dds/http/session.hpp>
 #include <dds/temp.hpp>
+#include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 
+#include <neo/io/stream/buffers.hpp>
+#include <neo/io/stream/file.hpp>
 #include <neo/tar/util.hpp>
 #include <neo/url.hpp>
 #include <neo/url/query.hpp>
 
 using namespace dds;
-
-namespace {
-
-void http_download_with_redir(neo::url url, path_ref dest) {
-    for (auto redir_count = 0;; ++redir_count) {
-        auto sess = http_session::connect_for(url);
-
-        sess.send_head({.method = "GET", .path = url.path});
-
-        auto res_head = sess.recv_head();
-        if (res_head.is_error()) {
-            dds_log(error,
-                    "Received an HTTP {} {} for [{}]",
-                    res_head.status,
-                    res_head.status_message,
-                    url.to_string());
-            throw_external_error<errc::http_download_failure>(
-                "HTTP error while downloading resource [{}]. Got: HTTP {} '{}'",
-                url.to_string(),
-                res_head.status,
-                res_head.status_message);
-        }
-
-        if (res_head.is_redirect()) {
-            dds_log(trace,
-                    "Received HTTP redirect for [{}]: {} {}",
-                    url.to_string(),
-                    res_head.status,
-                    res_head.status_message);
-            if (redir_count == 100) {
-                throw_external_error<errc::http_download_failure>("Too many redirects on URL");
-            }
-            auto loc = res_head.headers.find("Location");
-            if (!loc) {
-                throw_external_error<errc::http_download_failure>(
-                    "HTTP endpoint told us to redirect without sending a 'Location' header "
-                    "(Received "
-                    "HTTP {} '{}')",
-                    res_head.status,
-                    res_head.status_message);
-            }
-            dds_log(debug,
-                    "Redirect [{}]: {} {} to [{}]",
-                    url.to_string(),
-                    res_head.status,
-                    res_head.status_message,
-                    loc->value);
-            auto new_url = neo::url::try_parse(loc->value);
-            auto err     = std::get_if<neo::url_parse_error>(&new_url);
-            if (err) {
-                throw_external_error<errc::http_download_failure>(
-                    "Server returned an invalid URL for HTTP redirection [{}]", loc->value);
-            }
-            url = std::move(std::get<neo::url>(new_url));
-            continue;
-        }
-
-        // Not a redirect nor an error: Download the body
-        dds_log(trace,
-                "HTTP {} {} [{}]: Saving to [{}]",
-                res_head.status,
-                res_head.status_message,
-                url.to_string(),
-                dest.string());
-        sess.recv_body_to_file(res_head, dest);
-        break;
-    }
-}
-
-}  // namespace
 
 void http_remote_listing::pull_source(path_ref dest) const {
     neo::url url;
@@ -115,7 +47,10 @@ void http_remote_listing::pull_source(path_ref dest) const {
     auto dl_path = tdir.path() / fname;
     fs::create_directory(dl_path.parent_path());
 
-    http_download_with_redir(url, dl_path);
+    http_pool pool;
+    auto [client, resp] = pool.request_with_redirects("GET", url);
+    auto dl_file        = neo::file_stream::open(dl_path, neo::open_mode::write);
+    client.recv_body_into(resp, neo::stream_io_buffers{dl_file});
 
     neo_assert(invariant,
                fs::is_regular_file(dl_path),

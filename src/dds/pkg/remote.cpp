@@ -1,12 +1,14 @@
 #include "./remote.hpp"
 
 #include <dds/error/errors.hpp>
-#include <dds/http/session.hpp>
 #include <dds/temp.hpp>
+#include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
 #include <neo/event.hpp>
+#include <neo/io/stream/buffers.hpp>
+#include <neo/io/stream/file.hpp>
 #include <neo/scope.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
@@ -26,21 +28,14 @@ struct remote_db {
     nsql::database db;
 
     static remote_db download_and_open(neo::url const& url) {
-        neo_assert(expects,
-                   url.host.has_value(),
-                   "URL does not have a hostname??",
-                   url.to_string());
-        auto sess = http_session::connect_for(url);
+        http_pool pool;
 
-        auto tempdir    = temporary_dir::create();
-        auto repo_db_dl = tempdir.path() / "repo.db";
+        auto [client, resp] = pool.request_with_redirects("GET", url);
+        auto tempdir        = temporary_dir::create();
+        auto repo_db_dl     = tempdir.path() / "repo.db";
         fs::create_directories(tempdir.path());
-        sess.download_file(
-            {
-                .method = "GET",
-                .path   = url.path,
-            },
-            repo_db_dl);
+        auto outfile = neo::file_stream::open(repo_db_dl, neo::open_mode::write);
+        client.recv_body_into(resp, neo::stream_io_buffers(outfile));
 
         auto db = nsql::open(repo_db_dl.string());
         return {tempdir, std::move(db)};
@@ -97,15 +92,18 @@ void pkg_remote::update_pkg_db(nsql::database_ref db) {
     auto [remote_id]     = nsql::unpack_single<std::int64_t>(rid_st);
     rid_st.reset();
 
+    dds_log(trace, "Attaching downloaded database");
     nsql::exec(db.prepare("ATTACH DATABASE ? AS remote"), db_path.string());
     neo_defer { db.exec("DETACH DATABASE remote"); };
     nsql::transaction_guard tr{db};
+    dds_log(trace, "Clearing prior contents");
     nsql::exec(  //
         db.prepare(R"(
             DELETE FROM dds_cat_pkgs
             WHERE remote_id = ?
         )"),
         remote_id);
+    dds_log(trace, "Importing packages");
     nsql::exec(  //
         db.prepare(R"(
             INSERT INTO dds_cat_pkgs
@@ -128,6 +126,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref db) {
         )"),
         remote_id,
         base_url_str);
+    dds_log(trace, "Importing dependencies");
     db.exec(R"(
         INSERT OR REPLACE INTO dds_cat_pkg_deps (pkg_id, dep_name, low, high)
             SELECT
@@ -140,7 +139,8 @@ void pkg_remote::update_pkg_db(nsql::database_ref db) {
                  dds_cat_pkgs AS local_pkgs USING(name, version)
     )");
     // Validate our database
-    auto fk_check = db.prepare("PRAGMA foreign_key_check");
+    dds_log(trace, "Running integrity check");
+    auto fk_check   = db.prepare("PRAGMA foreign_key_check");
     auto rows = nsql::iter_tuples<std::string, std::int64_t, std::string, std::string>(fk_check);
     bool any_failed = false;
     for (auto [child_table, rowid, parent_table, failed_idx] : rows) {

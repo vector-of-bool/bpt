@@ -1,6 +1,5 @@
 #include "../options.hpp"
 
-#include <dds/http/session.hpp>
 #include <dds/pkg/cache.hpp>
 #include <dds/sdist/dist.hpp>
 #include <dds/util/result.hpp>

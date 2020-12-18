@@ -2,13 +2,14 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/http/session.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/pkg/get/get.hpp>
+#include <dds/util/http/pool.hpp>
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
 #include <json5/parse_data.hpp>
+#include <neo/url.hpp>
 
 namespace dds::cli::cmd {
 
@@ -47,10 +48,10 @@ int pkg_get(const options& opts) {
                     url_err.what());
             return 1;
         },
-        [&](const json5::parse_error& e, dds::e_http_url bad_url) {
+        [&](const json5::parse_error& e, neo::url bad_url) {
             dds_log(error,
                     "Error parsing JSON5 document package downloaded from [{}]: {}",
-                    bad_url.value,
+                    bad_url.to_string(),
                     e.what());
             return 1;
         },
@@ -58,10 +59,10 @@ int pkg_get(const options& opts) {
             dds_log(error, "Error accessing the package database: {}", e.message);
             return 1;
         },
-        [&](dds::e_system_error_exc e, dds::e_http_connect conn) {
+        [&](dds::e_system_error_exc e, dds::network_origin conn) {
             dds_log(error,
                     "Error opening connection to [{}:{}]: {}",
-                    conn.host,
+                    conn.hostname,
                     conn.port,
                     e.message);
             return 1;
