@@ -23,7 +23,7 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     auto relpath = fs::relative(filepath, in_root);
     dds_log(debug, "Export file {}", relpath.string());
     auto dest = out_root / relpath;
-    fs::create_directories(dest.parent_path());
+    fs::create_directories(fs::absolute(dest).parent_path());
     fs::copy(filepath, dest);
 }
 
@@ -78,7 +78,7 @@ sdist dds::create_sdist(const sdist_params& params) {
     if (fs::exists(dest) && params.force) {
         fs::remove_all(dest);
     }
-    fs::create_directories(dest.parent_path());
+    fs::create_directories(fs::absolute(dest).parent_path());
     safe_rename(tempdir.path(), dest);
     dds_log(info, "Source distribution created in {}", dest.string());
     return sdist::from_directory(dest);
@@ -95,7 +95,7 @@ void dds::create_sdist_targz(path_ref filepath, const sdist_params& params) {
     auto tempdir = temporary_dir::create();
     dds_log(debug, "Generating source distribution in {}", tempdir.path().string());
     create_sdist_in_dir(tempdir.path(), params);
-    fs::create_directories(filepath.parent_path());
+    fs::create_directories(fs::absolute(filepath).parent_path());
     neo::compress_directory_targz(tempdir.path(), filepath);
 }
 
