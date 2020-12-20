@@ -31,7 +31,7 @@ def test_build_simple(tmp_project: Project) -> None:
     tmp_project.write('src/f.cpp', r'void f() {}')
     tmp_project.build()
     # Writing again will build again:
-    time.sleep(0.5)  # Sleep long enough to register a file change
+    time.sleep(1)  # Sleep long enough to register a file change
     tmp_project.write('src/f.cpp', r'bad again')
     with pytest.raises(CalledProcessError):
         tmp_project.build()
