@@ -20,7 +20,9 @@ public:
     static pkg_remote connect(std::string_view url);
 
     void store(neo::sqlite3::database_ref);
-    void update_pkg_db(neo::sqlite3::database_ref);
+    void update_pkg_db(neo::sqlite3::database_ref,
+                       std::optional<std::string_view> etag          = {},
+                       std::optional<std::string_view> last_modified = {});
 };
 
 void update_all_remotes(neo::sqlite3::database_ref);

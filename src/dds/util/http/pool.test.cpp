@@ -12,16 +12,14 @@ TEST_CASE("Connect to a remote") {
     // auto           client = pool.access();
     auto cl = pool.client_for_origin({"https", "www.google.com", 443});
     cl.send_head({.method = "GET", .path = "/"});
-    // cl.send_head({.method = "GET", .path = "/"});
     auto resp = cl.recv_head();
     CHECK(resp.status == 200);
     CHECK(resp.status_message == "OK");
+    cl.discard_body(resp);
 }
 
 TEST_CASE("Issue a request on a pool") {
-    dds::http_pool        pool;
-    neo::string_dynbuf_io body;
-    auto                  resp = pool.request(neo::url_view::split("https://www.google.com"), body);
-    CHECK(resp.status == 200);
-    CHECK(body.read_area_view().size() > 5);
+    dds::http_pool pool;
+    auto           resp = pool.request(neo::url::parse("https://www.google.com"));
+    resp.discard_body();
 }

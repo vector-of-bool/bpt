@@ -48,7 +48,7 @@ void http_remote_listing::pull_source(path_ref dest) const {
     fs::create_directory(dl_path.parent_path());
 
     http_pool pool;
-    auto [client, resp] = pool.request_with_redirects("GET", url);
+    auto [client, resp] = pool.request(url);
     auto dl_file        = neo::file_stream::open(dl_path, neo::open_mode::write);
     client.recv_body_into(resp, neo::stream_io_buffers{dl_file});
 

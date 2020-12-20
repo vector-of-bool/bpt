@@ -81,8 +81,9 @@ void migrate_repodb_3(nsql::database& db) {
         CREATE TABLE dds_cat_remotes (
             remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            gen_ident TEXT NOT NULL,
-            remote_url TEXT NOT NULL
+            remote_url TEXT NOT NULL,
+            db_etag TEXT,
+            db_mtime TEXT
         );
 
         CREATE TABLE dds_cat_pkgs_new (

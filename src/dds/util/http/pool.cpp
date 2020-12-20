@@ -1,6 +1,7 @@
 #include "./pool.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/exception.hpp>
@@ -30,6 +31,8 @@ struct http_client_impl {
     };
 
     _state_t _state = _state_t::ready;
+
+    bool _peer_disconnected = false;
 
     neo::socket _conn;
 
@@ -94,24 +97,34 @@ struct http_client_impl {
             .parse_tail = {},
         };
 
-        auto content_len_str = std::to_string(params.content_length);
-        auto hostname_port   = fmt::format("{}:{}", origin.hostname, origin.port);
+        dds_log(trace,
+                " --> HTTP {} {}://{}:{}{}",
+                origin.protocol,
+                params.method,
+                origin.hostname,
+                origin.port,
+                params.path);
 
-        std::pair<std::string_view, std::string_view> headers[] = {
+        auto hostname_port = fmt::format("{}:{}", origin.hostname, origin.port);
+
+        std::vector<std::pair<std::string_view, std::string_view>> headers = {
             {"Host", hostname_port},
             {"Accept", "*/*"},
-            {"Content-Length", content_len_str},
+            {"Content-Length", "0"},
             {"TE", "gzip, chunked, plain"},
             {"Connection", "keep-alive"},
         };
+        if (!params.prior_etag.empty()) {
+            headers.push_back({"If-None-Match", params.prior_etag});
+        }
+        if (!params.last_modified.empty()) {
+            headers.push_back({"If-Modified-Since", params.last_modified});
+        }
 
         _do_io([&](auto&& sink) {
             neo::http::write_request(sink, start_line, headers, neo::const_buffer());
         });
-        _state = _state_t::sent_req_head;
-        if (params.content_length == 0) {
-            _state = _state_t::sent_req_body;
-        }
+        _state = _state_t::sent_req_body;
     }
 
     http_response_info recv_head() {
@@ -130,6 +143,18 @@ struct http_client_impl {
         if (clen_hdr && clen_hdr->value == "0") {
             _state = _state_t::ready;
         }
+        bool disconnect = false;
+        if (r.version == neo::http::version::v1_0) {
+            dds_log(trace, "HTTP/1.0 server will disconnect by default");
+            disconnect = true;
+        } else if (r.version == neo::http::version::v1_1) {
+            disconnect = r.header_value("Connection") == "close";
+        } else {
+            // Invalid version??
+            disconnect = true;
+        }
+        _peer_disconnected = disconnect;
+        dds_log(trace, " <-- HTTP {} {}", r.status, r.status_message);
         return r;
     }
 };
@@ -149,6 +174,8 @@ struct http_pool_impl {
 
 using namespace dds;
 
+using client_impl_ptr = std::shared_ptr<detail::http_client_impl>;
+
 http_pool::~http_pool() = default;
 
 http_pool::http_pool()
@@ -156,8 +183,23 @@ http_pool::http_pool()
 
 http_client::~http_client() {
     // When the http_client is dropped, return its impl back to the connection pool for this origin
-    auto pool = _pool.lock();
-    if (pool && _impl) {
+    if (!_impl) {
+        // We are moved-from
+        return;
+    }
+    neo_assert(expects,
+               _impl->_state == detail::http_client_impl::_state_t::ready,
+               "An http_client object was dropped while in a partial-request state. Did you read "
+               "the response header AND body?",
+               int(_impl->_state),
+               _impl->origin.protocol,
+               _impl->origin.hostname,
+               _impl->origin.port);
+    if (_impl->_peer_disconnected) {
+        // Do not return this connection to the pool. Let it destroy
+        return;
+    }
+    if (auto pool = _pool.lock()) {
         pool->_clients.emplace(_impl->origin, _impl);
     }
 }
@@ -210,24 +252,40 @@ template <typename Stream>
 struct recv_chunked_state : erased_message_body {
     Stream&                             _strm;
     neo::http::chunked_buffers<Stream&> _chunked{_strm};
+    client_impl_ptr                     _client;
 
-    explicit recv_chunked_state(Stream& s)
-        : _strm(s) {}
+    explicit recv_chunked_state(Stream& s, client_impl_ptr c)
+        : _strm(s)
+        , _client(c) {}
 
-    neo::const_buffer next(std::size_t n) override { return _chunked.next(n); }
-    void              consume(std::size_t n) override { _chunked.consume(n); }
+    neo::const_buffer next(std::size_t n) override {
+        auto part = _chunked.next(n);
+        if (neo::buffer_is_empty(part)) {
+            _client->_state = detail::http_client_impl::_state_t::ready;
+        }
+        return part;
+    }
+    void consume(std::size_t n) override { _chunked.consume(n); }
 };
 
 template <typename Stream>
 struct recv_gzip_state : erased_message_body {
     Stream&                   _strm;
     neo::gzip_source<Stream&> _gzip{_strm};
+    client_impl_ptr           _client;
 
-    explicit recv_gzip_state(Stream& s)
-        : _strm(s) {}
+    explicit recv_gzip_state(Stream& s, client_impl_ptr c)
+        : _strm(s)
+        , _client(c) {}
 
-    neo::const_buffer next(std::size_t n) override { return _gzip.next(n); }
-    void              consume(std::size_t n) override { _gzip.consume(n); }
+    neo::const_buffer next(std::size_t n) override {
+        auto part = _gzip.next(n);
+        if (neo::buffer_is_empty(part)) {
+            _client->_state = detail::http_client_impl::_state_t::ready;
+        }
+        return part;
+    }
+    void consume(std::size_t n) override { _gzip.consume(n); }
 };
 
 template <typename Stream>
@@ -236,12 +294,19 @@ struct recv_plain_state : erased_message_body {
     std::size_t     _size;
     client_impl_ptr _client;
 
-    explicit recv_plain_state(Stream& s, std::size_t size)
+    explicit recv_plain_state(Stream& s, std::size_t size, client_impl_ptr cl)
         : _strm(s)
-        , _size(size) {}
+        , _size(size)
+        , _client(cl) {}
 
-    neo::const_buffer next(std::size_t n) override { return _strm.next((std::min)(n, _size)); }
-    void              consume(std::size_t n) override {
+    neo::const_buffer next(std::size_t n) override {
+        auto part = _strm.next((std::min)(n, _size));
+        if (neo::buffer_is_empty(part)) {
+            _client->_state = detail::http_client_impl::_state_t::ready;
+        }
+        return part;
+    }
+    void consume(std::size_t n) override {
         _size -= n;
         return _strm.consume(n);
     }
@@ -264,13 +329,20 @@ std::unique_ptr<erased_message_body> http_client::_make_body_reader(const http_r
     return _impl->_do_io([&](auto&& source) -> std::unique_ptr<erased_message_body> {
         using source_type = decltype(source);
         if (res.content_length() == 0) {
+            dds_log(trace, "Empty response body");
+            _set_ready();
             return std::make_unique<recv_none_state>();
         } else if (res.transfer_encoding() == "chunked") {
-            return std::make_unique<recv_chunked_state<source_type>>(source);
+            dds_log(trace, "Chunked response body");
+            return std::make_unique<recv_chunked_state<source_type>>(source, _impl);
         } else if (res.transfer_encoding() == "gzip") {
-            return std::make_unique<recv_gzip_state<source_type>>(source);
+            dds_log(trace, "GZip encoded response body");
+            return std::make_unique<recv_gzip_state<source_type>>(source, _impl);
         } else if (!res.transfer_encoding().has_value() && res.content_length() > 0) {
-            return std::make_unique<recv_plain_state<source_type>>(source, *res.content_length());
+            dds_log(trace, "Plain response body");
+            return std::make_unique<recv_plain_state<source_type>>(source,
+                                                                   *res.content_length(),
+                                                                   _impl);
         } else {
             neo_assert(invariant,
                        false,
@@ -297,22 +369,29 @@ void http_client::_set_ready() noexcept {
     _impl->_state = detail::http_client_impl::_state_t::ready;
 }
 
-std::pair<http_client, http_response_info>
-http_pool::request_with_redirects(std::string_view method, const neo::url& url_) {
-    auto url = url_;
+request_result http_pool::request(neo::url url, http_request_params params) {
     DDS_E_SCOPE(url);
     for (auto i = 0; i <= 100; ++i) {
+        params.path  = url.path;
+        params.query = url.query.value_or("");
+
         auto origin = network_origin::for_url(url);
         auto client = client_for_origin(origin);
 
-        http_request_params params{
-            .method = method,
-            .path   = url.path,
-            .query  = url.query.value_or(""),
-        };
         client.send_head(params);
         auto resp = client.recv_head();
         DDS_E_SCOPE(resp);
+
+        if (dds::log::level_enabled(dds::log::level::trace)) {
+            for (auto hdr : resp.headers) {
+                dds_log(trace, "  -- {}: {}", hdr.key, hdr.value);
+            }
+        }
+
+        if (resp.not_modified()) {
+            // Not Modified, a cache hit
+            return {std::move(client), std::move(resp)};
+        }
 
         if (resp.is_error()) {
             client.discard_body(resp);

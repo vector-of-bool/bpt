@@ -99,6 +99,13 @@ public:
     void discard_body(const http_response_info&);
 };
 
+struct request_result {
+    http_client        client;
+    http_response_info resp;
+
+    void discard_body() { client.discard_body(resp); }
+};
+
 class http_pool {
     friend class http_client;
     std::shared_ptr<detail::http_pool_impl> _impl;
@@ -109,37 +116,20 @@ public:
     http_pool& operator=(http_pool&&) = default;
     ~http_pool();
 
+    static http_pool& thread_local_pool() {
+        thread_local http_pool inst;
+        return inst;
+    }
+
+    static http_pool& global_pool() {
+        static http_pool inst;
+        return inst;
+    }
+
     http_client client_for_origin(const network_origin&);
 
-    http_response_info request(neo::url_view url) { return request(url, neo::mutable_buffer()); }
-
-    template <neo::buffer_output Output>
-    http_response_info request(neo::url_view url, Output&& out) {
-        return request(url, neo::const_buffer(), out);
-    }
-
-    template <neo::buffer_input In, neo::buffer_output Out>
-    http_response_info request(neo::url_view url, In&& in, Out&& out) {
-        auto origin = network_origin::for_url(url);
-        auto size   = neo::buffer_size(in);
-        auto client = client_for_origin(origin);
-        client.send_head(http_request_params{
-            .method         = "GET",
-            .path           = url.path.empty() ? "/" : url.path,
-            .query          = url.query.value_or(""),
-            .content_length = size,
-        });
-        client.send_body(in);
-        auto resp = client.recv_head();
-        client.recv_body_into(resp, out);
-        return resp;
-    }
-
-    std::pair<http_client, http_response_info>
-    request_with_redirects(http_client& cl, const http_request_params& params);
-
-    std::pair<http_client, http_response_info> request_with_redirects(std::string_view method,
-                                                                      const neo::url&  url);
+    request_result request(neo::url url, http_request_params params);
+    auto           request(neo::url url) { return request(url, http_request_params{}); }
 };
 
 }  // namespace dds
