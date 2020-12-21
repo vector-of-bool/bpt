@@ -78,7 +78,7 @@ void migrate_repodb_2(nsql::database& db) {
 
 void migrate_repodb_3(nsql::database& db) {
     db.exec(R"(
-        CREATE TABLE dds_cat_remotes (
+        CREATE TABLE dds_pkg_remotes (
             remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             remote_url TEXT NOT NULL,
@@ -86,23 +86,23 @@ void migrate_repodb_3(nsql::database& db) {
             db_mtime TEXT
         );
 
-        CREATE TABLE dds_cat_pkgs_new (
+        CREATE TABLE dds_pkgs (
             pkg_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             version TEXT NOT NULL,
             description TEXT NOT NULL,
             remote_url TEXT NOT NULL,
             remote_id INTEGER
-                REFERENCES dds_cat_remotes
+                REFERENCES dds_pkg_remotes
                 ON DELETE CASCADE,
             UNIQUE (name, version, remote_id)
         );
 
-        INSERT INTO dds_cat_pkgs_new(pkg_id,
-                                     name,
-                                     version,
-                                     description,
-                                     remote_url)
+        INSERT INTO dds_pkgs(pkg_id,
+                             name,
+                             version,
+                             description,
+                             remote_url)
             SELECT pkg_id,
                    name,
                    version,
@@ -115,11 +115,11 @@ void migrate_repodb_3(nsql::database& db) {
                    ) || '#' || git_ref
             FROM dds_cat_pkgs;
 
-        CREATE TABLE dds_cat_pkg_deps_new (
+        CREATE TABLE dds_pkg_deps (
             dep_id INTEGER PRIMARY KEY AUTOINCREMENT,
             pkg_id INTEGER
                 NOT NULL
-                REFERENCES dds_cat_pkgs_new(pkg_id)
+                REFERENCES dds_pkgs(pkg_id)
                 ON DELETE CASCADE,
             dep_name TEXT NOT NULL,
             low TEXT NOT NULL,
@@ -127,12 +127,10 @@ void migrate_repodb_3(nsql::database& db) {
             UNIQUE(pkg_id, dep_name)
         );
 
-        INSERT INTO dds_cat_pkg_deps_new SELECT * FROM dds_cat_pkg_deps;
+        INSERT INTO dds_pkg_deps SELECT * FROM dds_cat_pkg_deps;
 
         DROP TABLE dds_cat_pkg_deps;
         DROP TABLE dds_cat_pkgs;
-        ALTER TABLE dds_cat_pkgs_new RENAME TO dds_cat_pkgs;
-        ALTER TABLE dds_cat_pkg_deps_new RENAME TO dds_cat_pkg_deps;
     )");
 }
 
@@ -150,7 +148,7 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
                        const http_remote_listing&     http) {
     nsql::exec(  //
         stmts(R"(
-            INSERT OR REPLACE INTO dds_cat_pkgs (
+            INSERT OR REPLACE INTO dds_pkgs (
                 name,
                 version,
                 remote_url,
@@ -177,7 +175,7 @@ void store_with_remote(neo::sqlite3::statement_cache& stmts,
 
     nsql::exec(  //
         stmts(R"(
-            INSERT OR REPLACE INTO dds_cat_pkgs (
+            INSERT OR REPLACE INTO dds_pkgs (
                 name,
                 version,
                 remote_url,
@@ -202,7 +200,7 @@ void do_store_pkg(neo::sqlite3::database&        db,
     std::visit([&](auto&& remote) { store_with_remote(st_cache, pkg, remote); }, pkg.remote);
     auto  db_pkg_id  = db.last_insert_rowid();
     auto& new_dep_st = st_cache(R"(
-        INSERT INTO dds_cat_pkg_deps (
+        INSERT INTO dds_pkg_deps (
             pkg_id,
             dep_name,
             low,
@@ -319,7 +317,7 @@ std::optional<pkg_info> pkg_db::get(const pkg_id& pk_id) const noexcept {
             version,
             remote_url,
             description
-        FROM dds_cat_pkgs
+        FROM dds_pkgs
         WHERE name = ?1 AND version = ?2
         ORDER BY pkg_id DESC
     )"_sql);
@@ -379,7 +377,7 @@ auto pair_to_pkg_id = [](auto&& pair) {
 
 std::vector<pkg_id> pkg_db::all() const noexcept {
     return nsql::exec_tuples<std::string, std::string>(
-               _stmt_cache("SELECT name, version FROM dds_cat_pkgs"_sql))
+               _stmt_cache("SELECT name, version FROM dds_pkgs"_sql))
         | neo::lref                                 //
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
@@ -390,7 +388,7 @@ std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
                _stmt_cache(
                    R"(
                 SELECT name, version
-                  FROM dds_cat_pkgs
+                  FROM dds_pkgs
                  WHERE name = ?
                  ORDER BY pkg_id DESC
                 )"_sql),
@@ -409,11 +407,11 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                    R"(
                 WITH this_pkg_id AS (
                     SELECT pkg_id
-                      FROM dds_cat_pkgs
+                      FROM dds_pkgs
                      WHERE name = ? AND version = ?
                 )
                 SELECT dep_name, low, high
-                  FROM dds_cat_pkg_deps
+                  FROM dds_pkg_deps
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
                 )"_sql),

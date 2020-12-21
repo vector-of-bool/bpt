@@ -62,7 +62,7 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
 
 void pkg_remote::store(nsql::database_ref db) {
     auto st = db.prepare(R"(
-        INSERT INTO dds_cat_remotes (name, remote_url)
+        INSERT INTO dds_pkg_remotes (name, remote_url)
             VALUES (?, ?)
         ON CONFLICT (name) DO
             UPDATE SET remote_url = ?2
@@ -103,7 +103,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
     auto db_path = rdb._tempdir.path() / "repo.db";
 
-    auto rid_st          = db.prepare("SELECT remote_id FROM dds_cat_remotes WHERE name = ?");
+    auto rid_st          = db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
     rid_st.bindings()[1] = _name;
     auto [remote_id]     = nsql::unpack_single<std::int64_t>(rid_st);
     rid_st.reset();
@@ -115,14 +115,14 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
     dds_log(trace, "Clearing prior contents");
     nsql::exec(  //
         db.prepare(R"(
-            DELETE FROM dds_cat_pkgs
+            DELETE FROM dds_pkgs
             WHERE remote_id = ?
         )"),
         remote_id);
     dds_log(trace, "Importing packages");
     nsql::exec(  //
         db.prepare(R"(
-            INSERT INTO dds_cat_pkgs
+            INSERT INTO dds_pkgs
                 (name, version, description, remote_url, remote_id)
             SELECT
                 name,
@@ -144,7 +144,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
         base_url_str);
     dds_log(trace, "Importing dependencies");
     db.exec(R"(
-        INSERT OR REPLACE INTO dds_cat_pkg_deps (pkg_id, dep_name, low, high)
+        INSERT OR REPLACE INTO dds_pkg_deps (pkg_id, dep_name, low, high)
             SELECT
                 local_pkgs.pkg_id AS pkg_id,
                 dep_name,
@@ -152,7 +152,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
                 high
             FROM remote.dds_repo_package_deps AS deps,
                  remote.dds_repo_packages AS pkgs USING(package_id),
-                 dds_cat_pkgs AS local_pkgs USING(name, version)
+                 dds_pkgs AS local_pkgs USING(name, version)
     )");
     // Validate our database
     dds_log(trace, "Running integrity check");
@@ -184,12 +184,12 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
     // Save the cache info for the remote
     if (auto new_etag = resp.etag()) {
-        nsql::exec(db.prepare("UPDATE dds_cat_remotes SET db_etag = ? WHERE name = ?"),
+        nsql::exec(db.prepare("UPDATE dds_pkg_remotes SET db_etag = ? WHERE name = ?"),
                    *new_etag,
                    _name);
     }
     if (auto mtime = resp.last_modified()) {
-        nsql::exec(db.prepare("UPDATE dds_cat_remotes SET db_mtime = ? WHERE name = ?"),
+        nsql::exec(db.prepare("UPDATE dds_pkg_remotes SET db_mtime = ? WHERE name = ?"),
                    *mtime,
                    _name);
     }
@@ -197,7 +197,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
 void dds::update_all_remotes(nsql::database_ref db) {
     dds_log(info, "Updating catalog from all remotes");
-    auto repos_st = db.prepare("SELECT name, remote_url, db_etag, db_mtime FROM dds_cat_remotes");
+    auto repos_st = db.prepare("SELECT name, remote_url, db_etag, db_mtime FROM dds_pkg_remotes");
     auto tups     = nsql::iter_tuples<std::string,
                                   std::string,
                                   std::optional<std::string>,

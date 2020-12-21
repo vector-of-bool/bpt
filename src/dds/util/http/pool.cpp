@@ -99,8 +99,8 @@ struct http_client_impl {
 
         dds_log(trace,
                 " --> HTTP {} {}://{}:{}{}",
-                origin.protocol,
                 params.method,
+                origin.protocol,
                 origin.hostname,
                 origin.port,
                 params.path);
