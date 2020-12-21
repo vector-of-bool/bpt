@@ -2,9 +2,11 @@ import pytest
 from pathlib import Path
 from typing import Tuple
 import subprocess
+import platform
 
 from dds_ci import proc
-from dds_ci.testing import ProjectOpener, Project
+from dds_ci.dds import DDSWrapper
+from dds_ci.testing import ProjectOpener, Project, error
 
 
 @pytest.fixture()
@@ -76,3 +78,20 @@ def test_import_sdist_stdin(test_sdist: Tuple[Path, Project]) -> None:
     # Excluded file will not be in the sdist:
     assert not repo_content_path.joinpath('other-file.txt').is_file(), \
         'Non-package content appeared in the package cache'
+
+
+def test_sdist_invalid_project(tmp_project: Project) -> None:
+    with error.expect_error_marker('no-package-json5'):
+        tmp_project.sdist_create()
+
+
+@pytest.mark.skipif(platform.system() != 'Linux', reason='We know this fails on Linux')
+def test_sdist_unreadable_dir(dds: DDSWrapper) -> None:
+    with error.expect_error_marker('failed-package-json5-scan'):
+        dds.run(['sdist', 'create', '--project=/root'])
+
+
+def test_sdist_invalid_json5(tmp_project: Project) -> None:
+    tmp_project.write('package.json5', 'bogus json5')
+    with error.expect_error_marker('package-json5-parse-error'):
+        tmp_project.sdist_create()

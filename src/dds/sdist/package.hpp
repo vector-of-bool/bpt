@@ -3,6 +3,7 @@
 #include <dds/deps.hpp>
 #include <dds/pkg/id.hpp>
 #include <dds/util/fs.hpp>
+#include <dds/util/result.hpp>
 
 #include <optional>
 #include <string>
@@ -45,8 +46,8 @@ struct package_manifest {
      * for a few file candidates and return the result from the first matching.
      * If none match, it will return nullopt.
      */
-    static std::optional<fs::path>         find_in_directory(path_ref);
-    static std::optional<package_manifest> load_from_directory(path_ref);
+    static result<fs::path>         find_in_directory(path_ref);
+    static result<package_manifest> load_from_directory(path_ref);
 };
 
 }  // namespace dds

@@ -44,5 +44,4 @@ def run(*cmd: CommandLine, cwd: Optional[Pathish] = None, check: bool = False) -
 
 
 def check_run(*cmd: CommandLine, cwd: Optional[Pathish] = None) -> ProcessResult:
-    command = list(flatten_cmd(cmd))
-    return subprocess.run(command, cwd=cwd, check=True)
+    return run(cmd, cwd=cwd, check=True)

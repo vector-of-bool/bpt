@@ -3,8 +3,10 @@
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
 
+#include <boost/leaf/common.hpp>
 #include <range/v3/view/split.hpp>
 #include <range/v3/view/split_when.hpp>
 #include <range/v3/view/transform.hpp>
@@ -108,34 +110,50 @@ package_manifest package_manifest::load_from_file(const fs::path& fpath) {
 
 package_manifest package_manifest::load_from_json5_str(std::string_view content,
                                                        std::string_view input_name) {
-    auto data = json5::parse_data(content);
     try {
+        auto data = json5::parse_data(content);
         return parse_json(data, input_name);
     } catch (const semester::walk_error& e) {
         throw_user_error<errc::invalid_pkg_manifest>(e.what());
+    } catch (const json5::parse_error& err) {
+        BOOST_LEAF_THROW_EXCEPTION(user_error<errc::invalid_pkg_manifest>(
+                                       "Invalid package manifest JSON5 document"),
+                                   err,
+                                   boost::leaf::e_file_name{std::string(input_name)},
+                                   DDS_ERROR_MARKER("package-json5-parse-error"));
     }
 }
 
-std::optional<fs::path> package_manifest::find_in_directory(path_ref dirpath) {
+result<fs::path> package_manifest::find_in_directory(path_ref dirpath) {
     auto cands = {
         "package.json5",
         "package.jsonc",
         "package.json",
     };
     for (auto c : cands) {
-        auto cand = dirpath / c;
-        if (fs::is_regular_file(cand)) {
+        auto            cand = dirpath / c;
+        std::error_code ec;
+        if (fs::is_regular_file(cand, ec)) {
             return cand;
+        }
+        if (ec != std::errc::no_such_file_or_directory) {
+            return boost::leaf::
+                new_error(ec,
+                          DDS_E_ARG(e_human_message{
+                              "Failed to check for package manifest in project directory"}),
+                          DDS_ERROR_MARKER("failed-package-json5-scan"),
+                          DDS_E_ARG(boost::leaf::e_file_name{cand.string()}));
         }
     }
 
-    return std::nullopt;
+    return boost::leaf::new_error(std::errc::no_such_file_or_directory,
+                                  DDS_E_ARG(
+                                      e_human_message{"Expected to find a package manifest file"}),
+                                  DDS_E_ARG(e_missing_file{dirpath / "package.json5"}),
+                                  DDS_ERROR_MARKER("no-package-json5"));
 }
 
-std::optional<package_manifest> package_manifest::load_from_directory(path_ref dirpath) {
-    auto found = find_in_directory(dirpath);
-    if (!found.has_value()) {
-        return std::nullopt;
-    }
-    return load_from_file(*found);
+result<package_manifest> package_manifest::load_from_directory(path_ref dirpath) {
+    BOOST_LEAF_AUTO(found, find_in_directory(dirpath));
+    return load_from_file(found);
 }

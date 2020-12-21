@@ -157,9 +157,9 @@ class ProjectOpener():
 
 
 @pytest.fixture()
-def project_opener(request: FixtureRequest, worker_id: str, dds_2: DDSWrapper,
+def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper,
                    tmp_path_factory: TempPathFactory) -> ProjectOpener:
-    opener = ProjectOpener(dds_2, request, worker_id, tmp_path_factory)
+    opener = ProjectOpener(dds, request, worker_id, tmp_path_factory)
     return opener
 
 
@@ -179,7 +179,7 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
 
 
 @pytest.fixture(scope='session')
-def dds_2(dds_exe: Path) -> NewDDSWrapper:
+def dds(dds_exe: Path) -> NewDDSWrapper:
     wr = NewDDSWrapper(dds_exe)
     return wr
 
