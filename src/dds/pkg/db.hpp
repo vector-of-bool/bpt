@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./info.hpp"
+#include "./listing.hpp"
 
 #include <dds/util/fs.hpp>
 
@@ -32,8 +32,8 @@ public:
 
     static fs::path default_path() noexcept;
 
-    void                    store(const pkg_info& info);
-    std::optional<pkg_info> get(const pkg_id& id) const noexcept;
+    void                       store(const pkg_listing& info);
+    std::optional<pkg_listing> get(const pkg_id& id) const noexcept;
 
     std::vector<pkg_id>     all() const noexcept;
     std::vector<pkg_id>     by_name(std::string_view sv) const noexcept;

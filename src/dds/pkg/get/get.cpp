@@ -14,7 +14,7 @@ using namespace dds;
 
 namespace {
 
-temporary_sdist do_pull_sdist(const pkg_info& listing, std::monostate) {
+temporary_sdist do_pull_sdist(const pkg_listing& listing, std::monostate) {
     neo_assert_always(
         invariant,
         false,
@@ -25,7 +25,7 @@ temporary_sdist do_pull_sdist(const pkg_info& listing, std::monostate) {
 }
 
 template <remote_listing R>
-temporary_sdist do_pull_sdist(const pkg_info& listing, const R& remote) {
+temporary_sdist do_pull_sdist(const pkg_listing& listing, const R& remote) {
     auto tmpdir = dds::temporary_dir::create();
 
     remote.pull_source(tmpdir.path());
@@ -43,7 +43,7 @@ temporary_sdist do_pull_sdist(const pkg_info& listing, const R& remote) {
 
 }  // namespace
 
-temporary_sdist dds::get_package_sdist(const pkg_info& pkg) {
+temporary_sdist dds::get_package_sdist(const pkg_listing& pkg) {
     auto tsd = std::visit([&](auto&& remote) { return do_pull_sdist(pkg, remote); }, pkg.remote);
     if (!(tsd.sdist.manifest.id == pkg.ident)) {
         throw_external_error<errc::sdist_ident_mismatch>(
@@ -72,7 +72,7 @@ void dds::get_all(const std::vector<pkg_id>& pkgs, pkg_cache& repo, const pkg_db
                                 return *info;
                             });
 
-    auto okay = parallel_run(absent_pkg_infos, 8, [&](pkg_info inf) {
+    auto okay = parallel_run(absent_pkg_infos, 8, [&](pkg_listing inf) {
         dds_log(info, "Download package: {}", inf.ident.to_string());
         auto             tsd = get_package_sdist(inf);
         std::scoped_lock lk{repo_mut};

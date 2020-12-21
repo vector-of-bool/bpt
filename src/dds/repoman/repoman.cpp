@@ -1,6 +1,6 @@
 #include "./repoman.hpp"
 
-#include <dds/pkg/info.hpp>
+#include <dds/pkg/listing.hpp>
 #include <dds/sdist/package.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -151,11 +151,11 @@ void repo_manager::import_targz(path_ref tgz_file) {
     neo::sqlite3::transaction_guard tr{_db};
 
     dds_log(debug, "Recording package {}@{}", man->id.name, man->id.version.to_string());
-    dds::pkg_info info{.ident       = man->id,
-                       .deps        = man->dependencies,
-                       .description = "[No description]",
-                       .remote      = {}};
-    auto          rel_url = fmt::format("dds:{}", man->id.to_string());
+    dds::pkg_listing info{.ident       = man->id,
+                          .deps        = man->dependencies,
+                          .description = "[No description]",
+                          .remote      = {}};
+    auto             rel_url = fmt::format("dds:{}", man->id.to_string());
     add_pkg(info, rel_url);
 
     auto dest_path = pkg_dir() / man->id.name / man->id.version.to_string() / "sdist.tar.gz";
@@ -201,7 +201,7 @@ void repo_manager::delete_package(pkg_id pkg_id) {
     }
 }
 
-void repo_manager::add_pkg(const pkg_info& info, std::string_view url) {
+void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
     dds_log(info, "Directly add an entry for {}", info.ident.to_string());
     DDS_E_SCOPE(info.ident);
     nsql::recursive_transaction_guard tr{_db};

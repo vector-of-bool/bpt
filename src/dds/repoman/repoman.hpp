@@ -10,7 +10,7 @@
 
 namespace dds {
 
-struct pkg_info;
+struct pkg_listing;
 
 struct e_init_repo {
     fs::path path;
@@ -57,7 +57,7 @@ public:
 
     void import_targz(path_ref tgz_path);
     void delete_package(pkg_id id);
-    void add_pkg(const pkg_info& info, std::string_view url);
+    void add_pkg(const pkg_listing& info, std::string_view url);
 
     auto all_packages() const noexcept {
         using namespace neo::sqlite3::literals;

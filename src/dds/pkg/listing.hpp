@@ -18,7 +18,7 @@ using remote_listing_var = std::variant<std::monostate, git_remote_listing, http
 
 remote_listing_var parse_remote_url(std::string_view url);
 
-struct pkg_info {
+struct pkg_listing {
     pkg_id                  ident;
     std::vector<dependency> deps;
     std::string             description;

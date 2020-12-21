@@ -1,6 +1,6 @@
 #include <dds/repoman/repoman.hpp>
 
-#include <dds/pkg/info.hpp>
+#include <dds/pkg/listing.hpp>
 #include <dds/temp.hpp>
 
 #include <neo/sqlite3/error.hpp>
@@ -35,7 +35,7 @@ TEST_CASE_METHOD(tmp_repo, "Open and import into a repository") {
 }
 
 TEST_CASE_METHOD(tmp_repo, "Add a package directly") {
-    dds::pkg_info info{
+    dds::pkg_listing info{
         .ident       = dds::pkg_id::parse("foo@1.2.3"),
         .deps        = {},
         .description = "Something",

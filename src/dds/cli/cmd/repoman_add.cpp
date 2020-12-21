@@ -2,7 +2,7 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/pkg/get/get.hpp>
-#include <dds/pkg/info.hpp>
+#include <dds/pkg/listing.hpp>
 #include <dds/repoman/repoman.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/result.hpp>
@@ -14,9 +14,9 @@
 namespace dds::cli::cmd {
 
 static int _repoman_add(const options& opts) {
-    auto          pkg_id  = dds::pkg_id::parse(opts.repoman.add.pkg_id_str);
-    auto          listing = parse_remote_url(opts.repoman.add.url_str);
-    dds::pkg_info add_info{
+    auto             pkg_id  = dds::pkg_id::parse(opts.repoman.add.pkg_id_str);
+    auto             listing = parse_remote_url(opts.repoman.add.url_str);
+    dds::pkg_listing add_info{
         .ident       = pkg_id,
         .deps        = {},
         .description = opts.repoman.add.description,
