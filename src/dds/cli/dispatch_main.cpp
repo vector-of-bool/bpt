@@ -21,6 +21,7 @@ command pkg_import;
 command pkg_ls;
 command pkg_repo_add;
 command pkg_repo_update;
+command repoman_add;
 command repoman_import;
 command repoman_init;
 command repoman_ls;
@@ -66,6 +67,8 @@ int dispatch_main(const options& opts) noexcept {
             switch (opts.repoman.subcommand) {
             case repoman_subcommand::import:
                 return cmd::repoman_import(opts);
+            case repoman_subcommand::add:
+                return cmd::repoman_add(opts);
             case repoman_subcommand::init:
                 return cmd::repoman_init(opts);
             case repoman_subcommand::remove:

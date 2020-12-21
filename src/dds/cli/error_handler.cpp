@@ -55,25 +55,5 @@ auto handlers = std::tuple(  //
 }  // namespace
 
 int dds::handle_cli_errors(std::function<int()> fn) noexcept {
-    return boost::leaf::try_catch(
-        [&] {
-            boost::leaf::context<dds::e_error_marker> marker_ctx;
-            marker_ctx.activate();
-            neo_defer {
-                marker_ctx.deactivate();
-                marker_ctx.handle_error<void>(
-                    boost::leaf::current_error(),
-                    [](dds::e_error_marker mark) {
-                        dds_log(trace, "[error marker {}]", mark.value);
-                        auto efile_path = std::getenv("DDS_WRITE_ERROR_MARKER");
-                        if (efile_path) {
-                            std::ofstream outfile{efile_path, std::ios::binary};
-                            fmt::print(outfile, "{}", mark.value);
-                        }
-                    },
-                    [] {});
-            };
-            return fn();
-        },
-        handlers);
+    return boost::leaf::try_catch(fn, handlers);
 }

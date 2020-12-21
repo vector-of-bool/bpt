@@ -8,6 +8,10 @@
 
 namespace dds {
 
+struct e_invalid_pkg_id_str {
+    std::string value;
+};
+
 /**
  * Represents a unique package ID. We store this as a simple name-version pair.
  *

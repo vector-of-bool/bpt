@@ -344,15 +344,19 @@ struct setup {
             .name = "init",
             .help = "Initialize a directory as a new repository",
         }));
-        setup_repoman_import_cmd(grp.add_parser({
-            .name = "import",
-            .help = "Import a source distribution into the repository",
-        }));
         auto& ls_cmd = grp.add_parser({
             .name = "ls",
             .help = "List the contents of a package repository directory",
         });
         ls_cmd.add_argument(repoman_repo_dir_arg.dup());
+        setup_repoman_add_cmd(grp.add_parser({
+            .name = "add",
+            .help = "Add a package listing to the repository by URL",
+        }));
+        setup_repoman_import_cmd(grp.add_parser({
+            .name = "import",
+            .help = "Import a source distribution into the repository",
+        }));
         setup_repoman_remove_cmd(grp.add_parser({
             .name = "remove",
             .help = "Remove packages from a package repository",
@@ -379,6 +383,27 @@ struct setup {
             .valname    = "<sdist-file-path>",
             .can_repeat = true,
             .action     = push_back_onto(opts.repoman.import.files),
+        });
+    }
+
+    void setup_repoman_add_cmd(argument_parser& repoman_add_cmd) {
+        repoman_add_cmd.add_argument(repoman_repo_dir_arg.dup());
+        repoman_add_cmd.add_argument({
+            .help     = "The package ID of the package to add",
+            .valname  = "<pkg-id>",
+            .required = true,
+            .action   = put_into(opts.repoman.add.pkg_id_str),
+        });
+        repoman_add_cmd.add_argument({
+            .help     = "URL to add to the repository",
+            .valname  = "<url>",
+            .required = true,
+            .action   = put_into(opts.repoman.add.url_str),
+        });
+        repoman_add_cmd.add_argument({
+            .long_spellings  = {"description"},
+            .short_spellings = {"d"},
+            .action          = put_into(opts.repoman.add.description),
         });
     }
 

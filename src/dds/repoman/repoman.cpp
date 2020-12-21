@@ -1,5 +1,6 @@
 #include "./repoman.hpp"
 
+#include <dds/pkg/info.hpp>
 #include <dds/sdist/package.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -15,6 +16,8 @@
 #include <neo/transform_io.hpp>
 #include <neo/utility.hpp>
 #include <nlohmann/json.hpp>
+
+#include <fstream>
 
 using namespace dds;
 
@@ -148,35 +151,12 @@ void repo_manager::import_targz(path_ref tgz_file) {
     neo::sqlite3::transaction_guard tr{_db};
 
     dds_log(debug, "Recording package {}@{}", man->id.name, man->id.version.to_string());
-    nsql::exec(  //
-        _stmts(R"(
-            INSERT INTO dds_repo_packages (name, version, description, url)
-                VALUES (
-                    ?1,
-                    ?2,
-                    'No description',
-                    printf('dds:%s@%s', ?1, ?2)
-                )
-        )"_sql),
-        man->id.name,
-        man->id.version.to_string());
-
-    auto package_id = _db.last_insert_rowid();
-
-    auto& insert_dep_st = _stmts(R"(
-        INSERT INTO dds_repo_package_deps(package_id, dep_name, low, high)
-            VALUES (?, ?, ?, ?)
-    )"_sql);
-    for (auto& dep : man->dependencies) {
-        assert(dep.versions.num_intervals() == 1);
-        auto iv_1 = *dep.versions.iter_intervals().begin();
-        dds_log(trace, "  Depends on: {}", dep.to_string());
-        nsql::exec(insert_dep_st,
-                   package_id,
-                   dep.name,
-                   iv_1.low.to_string(),
-                   iv_1.high.to_string());
-    }
+    dds::pkg_info info{.ident       = man->id,
+                       .deps        = man->dependencies,
+                       .description = "[No description]",
+                       .remote      = {}};
+    auto          rel_url = fmt::format("dds:{}", man->id.to_string());
+    add_pkg(info, rel_url);
 
     auto dest_path = pkg_dir() / man->id.name / man->id.version.to_string() / "sdist.tar.gz";
     fs::create_directories(dest_path.parent_path());
@@ -219,4 +199,42 @@ void repo_manager::delete_package(pkg_id pkg_id) {
     if (ec && ec != std::errc::directory_not_empty) {
         throw std::system_error(ec, "Failed to delete package name directory");
     }
+}
+
+void repo_manager::add_pkg(const pkg_info& info, std::string_view url) {
+    dds_log(info, "Directly add an entry for {}", info.ident.to_string());
+    DDS_E_SCOPE(info.ident);
+    nsql::recursive_transaction_guard tr{_db};
+    nsql::exec(  //
+        _stmts(R"(
+            INSERT INTO dds_repo_packages (name, version, description, url)
+            VALUES (?, ?, ?, ?)
+        )"_sql),
+        info.ident.name,
+        info.ident.version.to_string(),
+        info.description,
+        url);
+
+    auto package_rowid = _db.last_insert_rowid();
+
+    auto& insert_dep_st = _stmts(R"(
+        INSERT INTO dds_repo_package_deps(package_id, dep_name, low, high)
+        VALUES (?, ?, ?, ?)
+    )"_sql);
+    for (auto& dep : info.deps) {
+        assert(dep.versions.num_intervals() == 1);
+        auto iv_1 = *dep.versions.iter_intervals().begin();
+        dds_log(trace, "  Depends on: {}", dep.to_string());
+        nsql::exec(insert_dep_st,
+                   package_rowid,
+                   dep.name,
+                   iv_1.low.to_string(),
+                   iv_1.high.to_string());
+    }
+
+    auto dest_dir   = pkg_dir() / info.ident.name / info.ident.version.to_string();
+    auto stamp_path = dest_dir / "url.txt";
+    fs::create_directories(dest_dir);
+    std::ofstream stamp_file{stamp_path, std::ios::binary};
+    stamp_file << url;
 }

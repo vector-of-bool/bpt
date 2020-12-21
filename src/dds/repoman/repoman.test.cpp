@@ -1,6 +1,8 @@
 #include <dds/repoman/repoman.hpp>
 
+#include <dds/pkg/info.hpp>
 #include <dds/temp.hpp>
+
 #include <neo/sqlite3/error.hpp>
 
 #include <catch2/catch.hpp>
@@ -12,11 +14,14 @@ const auto THIS_DIR  = THIS_FILE.parent_path();
 const auto REPO_ROOT = (THIS_DIR / "../../../").lexically_normal();
 const auto DATA_DIR  = REPO_ROOT / "data";
 
+struct tmp_repo {
+    dds::temporary_dir tempdir = dds::temporary_dir::create();
+    dds::repo_manager  repo    = dds::repo_manager::create(tempdir.path(), "test-repo");
+};
+
 }  // namespace
 
-TEST_CASE("Open and import into a repository") {
-    auto tdir        = dds::temporary_dir::create();
-    auto repo        = dds::repo_manager::create(tdir.path(), "test-repo");
+TEST_CASE_METHOD(tmp_repo, "Open and import into a repository") {
     auto neo_url_tgz = DATA_DIR / "neo-url@0.2.1.tar.gz";
     repo.import_targz(neo_url_tgz);
     CHECK(dds::fs::is_directory(repo.pkg_dir() / "neo-url/"));
@@ -27,4 +32,17 @@ TEST_CASE("Open and import into a repository") {
     CHECK_FALSE(dds::fs::is_directory(repo.pkg_dir() / "neo-url"));
     CHECK_THROWS_AS(repo.delete_package(dds::pkg_id::parse("neo-url@0.2.1")), std::system_error);
     CHECK_NOTHROW(repo.import_targz(neo_url_tgz));
+}
+
+TEST_CASE_METHOD(tmp_repo, "Add a package directly") {
+    dds::pkg_info info{
+        .ident       = dds::pkg_id::parse("foo@1.2.3"),
+        .deps        = {},
+        .description = "Something",
+        .remote      = {},
+    };
+    repo.add_pkg(info, "http://example.com");
+    CHECK_THROWS_AS(repo.add_pkg(info, "https://example.com"),
+                    neo::sqlite3::constraint_unique_error);
+    repo.delete_package(dds::pkg_id::parse("foo@1.2.3"));
 }

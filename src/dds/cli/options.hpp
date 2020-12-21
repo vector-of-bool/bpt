@@ -65,6 +65,7 @@ enum class repoman_subcommand {
     _none_,
     init,
     import,
+    add,
     remove,
     ls,
 };
@@ -223,6 +224,13 @@ struct options {
             /// sdist tarball file paths to import into the repository
             std::vector<fs::path> files;
         } import;
+
+        /// Options for 'dds repoman add'
+        struct {
+            std::string pkg_id_str;
+            std::string url_str;
+            std::string description;
+        } add;
 
         /// Options for 'dds repoman remove'
         struct {
