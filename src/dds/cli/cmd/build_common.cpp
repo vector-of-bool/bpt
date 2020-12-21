@@ -15,7 +15,8 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
         .enable_warnings = !opts.disable_warnings,
     };
 
-    auto man = package_manifest::load_from_directory(opts.project_dir).value_or(package_manifest{});
+    auto man
+        = value_or(package_manifest::load_from_directory(opts.project_dir), package_manifest{});
     auto cat_path  = opts.pkg_db_dir.value_or(pkg_db::default_path());
     auto repo_path = opts.pkg_cache_dir.value_or(pkg_cache::default_local_path());
 

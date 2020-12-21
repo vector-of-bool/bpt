@@ -123,7 +123,7 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 sdist sdist::from_directory(path_ref where) {
     auto pkg_man = package_manifest::load_from_directory(where);
     // Code paths should only call here if they *know* that the sdist is valid
-    if (!pkg_man.has_value()) {
+    if (!pkg_man) {
         throw_user_error<errc::invalid_pkg_filesystem>(
             "The given directory [{}] does not contain a package manifest file. All source "
             "distribution directories are required to contain a package manifest.",

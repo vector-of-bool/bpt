@@ -15,28 +15,12 @@ namespace dds {
 using boost::leaf::current_error;
 using boost::leaf::error_id;
 using boost::leaf::new_error;
+using boost::leaf::result;
 
-template <typename T>
-class result : public boost::leaf::result<T> {
-public:
-    using result_base = boost::leaf::result<T>;
-
-    using result_base::result;
-
-    template <neo::convertible_to<result_base> Other>
-    result(Other&& oth) noexcept
-        : result_base(static_cast<result_base>(NEO_FWD(oth))) {}
-
-    constexpr bool has_value() const noexcept { return !!*this; }
-    template <typename U>
-    constexpr T value_or(U&& u) const noexcept {
-        if (has_value()) {
-            return **this;
-        } else {
-            return T(NEO_FWD(u));
-        }
-    }
-};
+template <typename T, neo::convertible_to<T> U>
+constexpr T value_or(const result<T>& res, U&& arg) {
+    return res ? res.value() : static_cast<T>(arg);
+}
 
 /**
  * @brief Error object representing a captured system_error exception
@@ -92,6 +76,3 @@ struct e_parse_error {
     auto NEO_CONCAT(_err_info_, __LINE__) = boost::leaf::on_error(DDS_E_ARG(__VA_ARGS__))
 
 }  // namespace dds
-
-template <typename T>
-struct boost::leaf::is_result_type<dds::result<T>> : std::true_type {};
