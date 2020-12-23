@@ -1,29 +1,42 @@
 #pragma once
 
-#include "./get/git.hpp"
-#include "./get/http.hpp"
-
 #include <dds/deps.hpp>
 #include <dds/pkg/id.hpp>
-#include <dds/util/glob.hpp>
 
-#include <optional>
+#include <neo/url.hpp>
+
+#include <memory>
 #include <string>
-#include <variant>
+#include <string_view>
 #include <vector>
 
 namespace dds {
 
-using remote_listing_var = std::variant<std::monostate, git_remote_listing, http_remote_listing>;
+class remote_pkg_base;
 
-remote_listing_var parse_remote_url(std::string_view url);
+class any_remote_pkg {
+    std::shared_ptr<const remote_pkg_base> _impl;
+
+    explicit any_remote_pkg(std::shared_ptr<const remote_pkg_base> p)
+        : _impl(p) {}
+
+public:
+    any_remote_pkg();
+    ~any_remote_pkg();
+
+    static any_remote_pkg from_url(const neo::url& url);
+
+    neo::url    to_url() const;
+    std::string to_url_string() const;
+    void        get_sdist(path_ref dest) const;
+};
 
 struct pkg_listing {
     pkg_id                  ident;
-    std::vector<dependency> deps;
-    std::string             description;
+    std::vector<dependency> deps{};
+    std::string             description{};
 
-    remote_listing_var remote;
+    any_remote_pkg remote_pkg{};
 };
 
 }  // namespace dds

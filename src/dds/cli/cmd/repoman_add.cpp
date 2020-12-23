@@ -14,13 +14,12 @@
 namespace dds::cli::cmd {
 
 static int _repoman_add(const options& opts) {
-    auto             pkg_id  = dds::pkg_id::parse(opts.repoman.add.pkg_id_str);
-    auto             listing = parse_remote_url(opts.repoman.add.url_str);
+    auto             pkg_id = dds::pkg_id::parse(opts.repoman.add.pkg_id_str);
+    auto             rpkg   = any_remote_pkg::from_url(neo::url::parse(opts.repoman.add.url_str));
     dds::pkg_listing add_info{
         .ident       = pkg_id,
-        .deps        = {},
         .description = opts.repoman.add.description,
-        .remote      = listing,
+        .remote_pkg  = rpkg,
     };
     auto temp_sdist = get_package_sdist(add_info);
 
@@ -70,6 +69,11 @@ int repoman_add(const options& opts) {
                     resp.status,
                     resp.status_message);
             return 1;
+        },
+        [](dds::user_error<errc::invalid_remote_url> e, neo::url url) -> int {
+            dds_log(error, "Invalid URL '{}': {}", url.to_string(), e.what());
+            write_error_marker("repoman-add-invalid-pkg-url");
+            throw;
         },
         [](dds::e_sqlite3_error_exc e, dds::e_repo_import_targz tgz) {
             dds_log(error, "Database error while importing tar file {}: {}", tgz.path, e.message);

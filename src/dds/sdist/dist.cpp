@@ -151,8 +151,8 @@ temporary_sdist dds::expand_sdist_from_istream(std::istream& is, std::string_vie
 }
 
 temporary_sdist dds::download_expand_sdist_targz(std::string_view url_str) {
-    auto remote  = http_remote_listing::from_url(url_str);
+    auto remote  = http_remote_pkg::from_url(neo::url::parse(url_str));
     auto tempdir = temporary_dir::create();
-    remote.pull_source(tempdir.path());
+    remote.get_raw_directory(tempdir.path());
     return {tempdir, sdist::from_directory(tempdir.path())};
 }

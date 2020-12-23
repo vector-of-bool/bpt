@@ -27,22 +27,13 @@ int repoman_remove(const options& opts) {
                 dds::capture_exception();
             }
         },
-        [](dds::e_sqlite3_error_exc,
-           boost::leaf::match<neo::sqlite3::errc, neo::sqlite3::errc::constraint_unique>,
-           dds::e_repo_import_targz tgz,
-           dds::pkg_id              pkid) {
-            dds_log(error,
-                    "Package {} (from {}) is already present in the repository",
-                    pkid.to_string(),
-                    tgz.path);
-            return 1;
-        },
         [](dds::e_system_error_exc e, dds::e_repo_delete_path tgz, dds::pkg_id pkid) {
             dds_log(error,
-                    "Cannot delete requested package '{}' from repository (Path {}): {}",
+                    "Cannot delete requested package '{}' from repository {}: {}",
                     pkid.to_string(),
                     tgz.path,
                     e.message);
+            write_error_marker("repoman-rm-no-such-package");
             return 1;
         },
         [](dds::e_system_error_exc e, dds::e_open_repo_db db) {

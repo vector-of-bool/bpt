@@ -119,8 +119,7 @@ package_manifest package_manifest::load_from_json5_str(std::string_view content,
         BOOST_LEAF_THROW_EXCEPTION(user_error<errc::invalid_pkg_manifest>(
                                        "Invalid package manifest JSON5 document"),
                                    err,
-                                   boost::leaf::e_file_name{std::string(input_name)},
-                                   DDS_ERROR_MARKER("package-json5-parse-error"));
+                                   boost::leaf::e_file_name{std::string(input_name)});
     }
 }
 
@@ -141,7 +140,6 @@ result<fs::path> package_manifest::find_in_directory(path_ref dirpath) {
                 new_error(ec,
                           DDS_E_ARG(e_human_message{
                               "Failed to check for package manifest in project directory"}),
-                          DDS_ERROR_MARKER("failed-package-json5-scan"),
                           DDS_E_ARG(boost::leaf::e_file_name{cand.string()}));
         }
     }
@@ -149,8 +147,7 @@ result<fs::path> package_manifest::find_in_directory(path_ref dirpath) {
     return boost::leaf::new_error(std::errc::no_such_file_or_directory,
                                   DDS_E_ARG(
                                       e_human_message{"Expected to find a package manifest file"}),
-                                  DDS_E_ARG(e_missing_file{dirpath / "package.json5"}),
-                                  DDS_ERROR_MARKER("no-package-json5"));
+                                  DDS_E_ARG(e_missing_file{dirpath / "package.json5"}));
 }
 
 result<package_manifest> package_manifest::load_from_directory(path_ref dirpath) {

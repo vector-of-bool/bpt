@@ -134,72 +134,22 @@ void migrate_repodb_3(nsql::database& db) {
     )");
 }
 
-void store_with_remote(const neo::sqlite3::statement_cache&,
-                       const pkg_listing& pkg,
-                       std::monostate) {
-    neo_assert_always(
-        invariant,
-        false,
-        "There was an attempt to insert a package listing into the database where that package "
-        "listing does not have a remote listing. If you see this message, it is a dds bug.",
-        pkg.ident.to_string());
-}
-
-void store_with_remote(neo::sqlite3::statement_cache& stmts,
-                       const pkg_listing&             pkg,
-                       const http_remote_listing&     http) {
-    nsql::exec(  //
-        stmts(R"(
-            INSERT OR REPLACE INTO dds_pkgs (
-                name,
-                version,
-                remote_url,
-                description
-            ) VALUES (?1, ?2, ?3, ?4)
-        )"_sql),
-        pkg.ident.name,
-        pkg.ident.version.to_string(),
-        http.url,
-        pkg.description);
-}
-
-void store_with_remote(neo::sqlite3::statement_cache& stmts,
-                       const pkg_listing&             pkg,
-                       const git_remote_listing&      git) {
-    std::string url = git.url;
-    if (url.starts_with("https://") || url.starts_with("http://")) {
-        url = "git+" + url;
-    }
-    if (git.auto_lib.has_value()) {
-        url += "?lm=" + git.auto_lib->namespace_ + "/" + git.auto_lib->name;
-    }
-    url += "#" + git.ref;
-
-    nsql::exec(  //
-        stmts(R"(
-            INSERT OR REPLACE INTO dds_pkgs (
-                name,
-                version,
-                remote_url,
-                description
-            ) VALUES (
-                ?1,
-                ?2,
-                ?3,
-                ?4
-            )
-        )"_sql),
-        pkg.ident.name,
-        pkg.ident.version.to_string(),
-        url,
-        pkg.description);
-}
-
 void do_store_pkg(neo::sqlite3::database&        db,
                   neo::sqlite3::statement_cache& st_cache,
                   const pkg_listing&             pkg) {
     dds_log(debug, "Recording package {}@{}", pkg.ident.name, pkg.ident.version.to_string());
-    std::visit([&](auto&& remote) { store_with_remote(st_cache, pkg, remote); }, pkg.remote);
+    auto& store_pkg_st = st_cache(R"(
+        INSERT OR REPLACE INTO dds_pkgs
+            (name, version, remote_url, description)
+        VALUES
+            (?, ?, ?, ?)
+    )"_sql);
+    nsql::exec(store_pkg_st,
+               pkg.ident.name,
+               pkg.ident.version.to_string(),
+               pkg.remote_pkg.to_url_string(),
+               pkg.description);
+
     auto  db_pkg_id  = db.last_insert_rowid();
     auto& new_dep_st = st_cache(R"(
         INSERT INTO dds_pkg_deps (
@@ -283,7 +233,6 @@ fs::path pkg_db::default_path() noexcept { return dds_data_dir() / "pkgs.db"; }
 pkg_db pkg_db::open(const std::string& db_path) {
     if (db_path != ":memory:") {
         auto pardir = fs::weakly_canonical(db_path).parent_path();
-        dds_log(trace, "Ensuring parent directory [{}]", pardir.string());
         fs::create_directories(pardir);
     }
     dds_log(debug, "Opening package database [{}]", db_path);
@@ -363,10 +312,10 @@ std::optional<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
     auto deps = dependencies_of(pk_id);
 
     auto info = pkg_listing{
-        pk_id,
-        std::move(deps),
-        std::move(description),
-        parse_remote_url(remote_url),
+        .ident       = pk_id,
+        .deps        = std::move(deps),
+        .description = std::move(description),
+        .remote_pkg  = any_remote_pkg::from_url(neo::url::parse(remote_url)),
     };
 
     return info;

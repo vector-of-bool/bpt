@@ -31,22 +31,13 @@ int sdist_create(const options& opts) {
                     params.project_dir.string());
             dds_log(error, "Error: {}", msg.value);
             dds_log(error, "Missing file: {}", missing.path.string());
+            write_error_marker("no-package-json5");
             return 1;
         },
         [&](std::error_code ec, e_human_message msg, boost::leaf::e_file_name file) {
             dds_log(error, "Error: {}", msg.value);
             dds_log(error, "Failed to access file [{}]: {}", file.value, ec.message());
-            return 1;
-        },
-        [&](std::error_code ec, e_human_message msg) {
-            dds_log(error, "Unexpected error: {}: {}", msg.value, ec.message());
-            return 1;
-        },
-        [&](boost::leaf::bad_result, std::errc ec) {
-            dds_log(error,
-                    "Failed to create source distribution from directory [{}]: {}",
-                    params.project_dir.string(),
-                    std::generic_category().message(int(ec)));
+            write_error_marker("failed-package-json5-scan");
             return 1;
         });
 }

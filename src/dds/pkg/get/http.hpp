@@ -2,18 +2,28 @@
 
 #include "./base.hpp"
 
+#include <neo/url.hpp>
+
 #include <string>
 #include <string_view>
 
 namespace dds {
 
-struct http_remote_listing : remote_listing_base {
-    std::string url;
-    unsigned    strip_components = 0;
+class http_remote_pkg : public remote_pkg_base {
+    void     do_get_raw(path_ref) const override;
+    neo::url do_to_url() const override;
 
-    void pull_source(path_ref path) const;
+public:
+    neo::url url;
+    unsigned strip_n_components = 0;
 
-    static http_remote_listing from_url(std::string_view sv);
+    http_remote_pkg() = default;
+
+    http_remote_pkg(neo::url u, unsigned strpcmp)
+        : url(u)
+        , strip_n_components(strpcmp) {}
+
+    static http_remote_pkg from_url(const neo::url& url);
 };
 
 }  // namespace dds

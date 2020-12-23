@@ -87,6 +87,16 @@ struct external_error : external_error_base {
 using error_invalid_default_toolchain = user_error<errc::invalid_builtin_toolchain>;
 
 template <errc ErrorCode, typename... Args>
+auto make_user_error(std::string_view fmt_str, Args&&... args) {
+    return user_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
+}
+
+template <errc ErrorCode>
+auto make_user_error() {
+    return user_error<ErrorCode>(std::string(default_error_string(ErrorCode)));
+}
+
+template <errc ErrorCode, typename... Args>
 [[noreturn]] void throw_user_error(std::string_view fmt_str, Args&&... args) {
     throw user_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
 }
@@ -97,13 +107,23 @@ template <errc ErrorCode>
 }
 
 template <errc ErrorCode, typename... Args>
+auto make_external_error(std::string_view fmt_str, Args&&... args) {
+    return external_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
+}
+
+template <errc ErrorCode>
+auto make_external_error() {
+    return external_error<ErrorCode>(std::string(default_error_string(ErrorCode)));
+}
+
+template <errc ErrorCode, typename... Args>
 [[noreturn]] void throw_external_error(std::string_view fmt_str, Args&&... args) {
-    throw external_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
+    throw make_external_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
 }
 
 template <errc ErrorCode>
 [[noreturn]] void throw_external_error() {
-    throw external_error<ErrorCode>(std::string(default_error_string(ErrorCode)));
+    throw make_external_error<ErrorCode>(std::string(default_error_string(ErrorCode)));
 }
 
 }  // namespace dds

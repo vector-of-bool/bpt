@@ -154,7 +154,7 @@ void repo_manager::import_targz(path_ref tgz_file) {
     dds::pkg_listing info{.ident       = man->id,
                           .deps        = man->dependencies,
                           .description = "[No description]",
-                          .remote      = {}};
+                          .remote_pkg  = {}};
     auto             rel_url = fmt::format("dds:{}", man->id.to_string());
     add_pkg(info, rel_url);
 

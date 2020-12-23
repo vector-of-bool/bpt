@@ -67,8 +67,6 @@ struct e_parse_error {
 
 #define DDS_E_ARG(...) ([&] { return __VA_ARGS__; })
 
-#define DDS_ERROR_MARKER(Value) DDS_E_ARG(::dds::e_error_marker{Value})
-
 void write_error_marker(std::string_view error) noexcept;
 
 /**

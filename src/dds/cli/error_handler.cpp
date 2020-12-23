@@ -36,6 +36,7 @@ auto handlers = std::tuple(  //
             dds_log(error, "  (While reading from [{}])", maybe_fpath->value);
         }
         dds_log(error, "{}", exc.value().explanation());
+        dds::write_error_marker("package-json5-parse-error");
         return 1;
     },
     [](boost::leaf::catch_<dds::error_base> exc) {
@@ -47,6 +48,13 @@ auto handlers = std::tuple(  //
     [](dds::user_cancelled) {
         dds_log(critical, "Operation cancelled by the user");
         return 2;
+    },
+    [](dds::e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {
+        dds_log(critical,
+                "An unhandled std::system_error arose. THIS IS A DDS BUG! Info: {}",
+                diag);
+        dds_log(critical, "Exception message from std::system_error: {}", exc.message);
+        return 42;
     },
     [](boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical, "An unhandled error arose. THIS IS A DDS BUG! Info: {}", diag);

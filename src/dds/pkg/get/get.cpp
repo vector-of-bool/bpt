@@ -14,37 +14,25 @@ using namespace dds;
 
 namespace {
 
-temporary_sdist do_pull_sdist(const pkg_listing& listing, std::monostate) {
-    neo_assert_always(
-        invariant,
-        false,
-        "A package listing in the database has no defined remote from which to pull. This "
-        "shouldn't happen in normal usage. This will occur if the database has been "
-        "manually altered, or if DDS has a bug.",
-        listing.ident.to_string());
-}
-
-template <remote_listing R>
-temporary_sdist do_pull_sdist(const pkg_listing& listing, const R& remote) {
+temporary_sdist do_pull_sdist(const any_remote_pkg& rpkg) {
     auto tmpdir = dds::temporary_dir::create();
 
-    remote.pull_source(tmpdir.path());
-    remote.generate_auto_lib_files(listing.ident, tmpdir.path());
+    rpkg.get_sdist(tmpdir.path());
 
-    dds_log(info, "Create sdist ...");
-    sdist_params params;
-    params.project_dir = tmpdir.path();
-    auto sd_tmp_dir    = dds::temporary_dir::create();
-    params.dest_path   = sd_tmp_dir.path();
-    params.force       = true;
-    auto sd            = create_sdist(params);
+    auto         sd_tmp_dir = dds::temporary_dir::create();
+    sdist_params params{
+        .project_dir = tmpdir.path(),
+        .dest_path   = sd_tmp_dir.path(),
+        .force       = true,
+    };
+    auto sd = create_sdist(params);
     return {sd_tmp_dir, sd};
 }
 
 }  // namespace
 
 temporary_sdist dds::get_package_sdist(const pkg_listing& pkg) {
-    auto tsd = std::visit([&](auto&& remote) { return do_pull_sdist(pkg, remote); }, pkg.remote);
+    auto tsd = do_pull_sdist(pkg.remote_pkg);
     if (!(tsd.sdist.manifest.id == pkg.ident)) {
         throw_external_error<errc::sdist_ident_mismatch>(
             "The package name@version in the generated source distribution does not match the name "

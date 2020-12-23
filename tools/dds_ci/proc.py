@@ -1,5 +1,5 @@
 from pathlib import PurePath
-from typing import Iterable, Union, Optional, Iterator
+from typing import Iterable, Union, Optional, Iterator, NoReturn, Sequence
 from typing_extensions import Protocol
 import subprocess
 
@@ -21,8 +21,10 @@ class CommandLine(Protocol):
 
 
 class ProcessResult(Protocol):
+    args: Sequence[str]
     returncode: int
     stdout: bytes
+    stderr: bytes
 
 
 def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
@@ -40,7 +42,14 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
 
 def run(*cmd: CommandLine, cwd: Optional[Pathish] = None, check: bool = False) -> ProcessResult:
     command = list(flatten_cmd(cmd))
-    return subprocess.run(command, cwd=cwd, check=check)
+    res = subprocess.run(command, cwd=cwd, check=False)
+    if res.returncode and check:
+        raise_error(res)
+    return res
+
+
+def raise_error(proc: ProcessResult) -> NoReturn:
+    raise subprocess.CalledProcessError(proc.returncode, proc.args, output=proc.stdout, stderr=proc.stderr)
 
 
 def check_run(*cmd: CommandLine, cwd: Optional[Pathish] = None) -> ProcessResult:

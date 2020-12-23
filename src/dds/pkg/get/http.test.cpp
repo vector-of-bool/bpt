@@ -6,7 +6,14 @@
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("Convert URL to an HTTP remote listing") {
-    auto remote = dds::http_remote_listing::from_url(
-        "http://localhost:8000/neo-buffer-0.4.2.tar.gz?dds_strpcmp=1");
+TEST_CASE("Convert from URL") {
+    auto listing = dds::http_remote_pkg::from_url(neo::url::parse("http://example.org/foo"));
+    CHECK(listing.to_url_string() == "http://example.org/foo");
+    listing.strip_n_components = 4;
+    CHECK(listing.to_url_string() == "http://example.org/foo?__dds_strpcmp=4");
+
+    listing = dds::http_remote_pkg::from_url(
+        neo::url::parse("http://example.org/foo?bar=baz;__dds_strpcmp=7;thing=foo#fragment"));
+    CHECK(listing.strip_n_components == 7);
+    CHECK(listing.to_url_string() == "http://example.org/foo?bar=baz;thing=foo;__dds_strpcmp=7");
 }

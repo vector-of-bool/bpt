@@ -51,6 +51,7 @@ class http_client {
 
     std::weak_ptr<detail::http_pool_impl>     _pool;
     std::shared_ptr<detail::http_client_impl> _impl;
+    int                                       _n_exceptions;
 
     http_client() = default;
 
@@ -62,7 +63,8 @@ class http_client {
 public:
     http_client(http_client&& o)
         : _pool(neo::take(o._pool))
-        , _impl(neo::take(o._impl)) {}
+        , _impl(neo::take(o._impl))
+        , _n_exceptions(std::uncaught_exceptions()) {}
     ~http_client();
 
     void send_head(http_request_params const& params);

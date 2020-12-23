@@ -39,7 +39,7 @@ TEST_CASE_METHOD(tmp_repo, "Add a package directly") {
         .ident       = dds::pkg_id::parse("foo@1.2.3"),
         .deps        = {},
         .description = "Something",
-        .remote      = {},
+        .remote_pkg  = {},
     };
     repo.add_pkg(info, "http://example.com");
     CHECK_THROWS_AS(repo.add_pkg(info, "https://example.com"),

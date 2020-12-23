@@ -17,9 +17,10 @@ def expect_error_marker(expect: str) -> Iterator[None]:
     try:
         os.environ['DDS_WRITE_ERROR_MARKER'] = str(err_file)
         yield
-        assert False, 'dds subprocess did not raise CallProcessError!'
+        assert False, 'dds subprocess did not raise CallProcessError'
     except subprocess.CalledProcessError:
-        assert err_file.exists(), 'No error marker file was generated, but dds exited with an error'
+        assert err_file.exists(), \
+            f'No error marker file was generated, but dds exited with an error (Expected "{expect}")'
         marker = err_file.read_text().strip()
         assert marker == expect, \
             f'dds did not produce the expected error (Expected {expect}, got {marker})'

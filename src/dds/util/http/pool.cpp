@@ -187,6 +187,11 @@ http_client::~http_client() {
         // We are moved-from
         return;
     }
+    if (_impl->_state != detail::http_client_impl::_state_t::ready
+        && _n_exceptions != std::uncaught_exceptions()) {
+        dds_log(debug, "NOTE: An http_client was dropped due to an exception");
+        return;
+    }
     neo_assert(expects,
                _impl->_state == detail::http_client_impl::_state_t::ready,
                "An http_client object was dropped while in a partial-request state. Did you read "

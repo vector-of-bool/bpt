@@ -25,11 +25,6 @@ struct pkg_id {
     /// The version of the package
     semver::version version;
 
-    /// Default-initialize a pkg_id with a blank name and a default version
-    pkg_id() = default;
-    /// Construct a package ID from a name-version pair
-    pkg_id(std::string_view s, semver::version v);
-
     /**
      * Parse the given string into a pkg_id object.
      */
