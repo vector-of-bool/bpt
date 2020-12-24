@@ -55,6 +55,7 @@ enum class cli_pkg_repo_subcommand {
     _none_,
     add,
     update,
+    ls,
 };
 
 /**

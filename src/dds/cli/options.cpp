@@ -296,6 +296,10 @@ struct setup {
             .name = "update",
             .help = "Update package repository information",
         });
+        pkg_repo_grp.add_parser({
+            .name = "ls",
+            .help = "List locally registered package repositories",
+        });
     }
 
     void setup_pkg_repo_add_cmd(argument_parser& pkg_repo_add_cmd) noexcept {

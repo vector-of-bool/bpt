@@ -1,3 +1,4 @@
+from dds_ci.dds import DDSWrapper
 from dds_ci.testing import Project, RepoFixture
 
 
@@ -20,3 +21,9 @@ def test_pkg_get(http_repo: RepoFixture, tmp_project: Project) -> None:
     tmp_project.dds.pkg_get('neo-sqlite3@0.3.0')
     assert tmp_project.root.joinpath('neo-sqlite3@0.3.0').is_dir()
     assert tmp_project.root.joinpath('neo-sqlite3@0.3.0/package.jsonc').is_file()
+
+
+def test_pkg_repo(http_repo: RepoFixture, tmp_project: Project) -> None:
+    dds = tmp_project.dds
+    dds.repo_add(http_repo.url)
+    dds.run(['pkg', 'repo', 'ls'])
