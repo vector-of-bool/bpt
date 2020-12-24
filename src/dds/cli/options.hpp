@@ -119,7 +119,7 @@ struct options {
      * @brief Open the package pkg_db based on the user-specified options.
      * @return pkg_db
      */
-    pkg_db open_catalog() const;
+    pkg_db open_pkg_db() const;
     /**
      * @brief Load a dds toolchain as specified by the user, or a default.
      * @return dds::toolchain

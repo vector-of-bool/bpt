@@ -428,7 +428,7 @@ void cli::options::setup_parser(debate::argument_parser& parser) noexcept {
     setup{*this}.do_setup(parser);
 }
 
-pkg_db dds::cli::options::open_catalog() const {
+pkg_db dds::cli::options::open_pkg_db() const {
     return pkg_db::open(this->pkg_db_dir.value_or(pkg_db::default_path()));
 }
 

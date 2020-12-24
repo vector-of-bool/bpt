@@ -14,7 +14,7 @@ namespace dds::cli::cmd {
 
 int build(const options& opts) {
     if (!opts.build.add_repos.empty()) {
-        auto cat = opts.open_catalog();
+        auto cat = opts.open_pkg_db();
         for (auto& str : opts.build.add_repos) {
             auto repo = pkg_remote::connect(str);
             repo.store(cat.database());
@@ -22,7 +22,7 @@ int build(const options& opts) {
     }
 
     if (opts.build.update_repos || !opts.build.add_repos.empty()) {
-        update_all_remotes(opts.open_catalog().database());
+        update_all_remotes(opts.open_pkg_db().database());
     }
 
     auto builder = create_project_builder(opts);

@@ -20,12 +20,11 @@ TEST_CASE("Open a database in a non-ascii path") {
     dds::fs::remove_all(subdir);
 }
 
-class catalog_test_case {
-public:
+struct pkg_db_test_case {
     dds::pkg_db db = dds::pkg_db::open(":memory:"s);
 };
 
-TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
+TEST_CASE_METHOD(pkg_db_test_case, "Store a simple package") {
     db.store(dds::pkg_listing{
         dds::pkg_id{"foo", semver::version::parse("1.2.3")},
         {},
@@ -56,7 +55,7 @@ TEST_CASE_METHOD(catalog_test_case, "Store a simple package") {
     CHECK(info->remote_pkg.to_url_string() == "git+http://example.com#develop");
 }
 
-TEST_CASE_METHOD(catalog_test_case, "Package requirements") {
+TEST_CASE_METHOD(pkg_db_test_case, "Package requirements") {
     db.store(dds::pkg_listing{
         dds::pkg_id{"foo", semver::version::parse("1.2.3")},
         {

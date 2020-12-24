@@ -37,7 +37,7 @@ int build_deps(const options& opts) {
 
     auto all_deps = ranges::views::concat(all_file_deps, cmd_deps) | ranges::to_vector;
 
-    auto cat = opts.open_catalog();
+    auto cat = opts.open_pkg_db();
     dds::pkg_cache::with_cache(  //
         opts.pkg_cache_dir.value_or(pkg_cache::default_local_path()),
         dds::pkg_cache_flags::write_lock | dds::pkg_cache_flags::create_if_absent,

@@ -8,7 +8,7 @@
 namespace dds::cli::cmd {
 
 static int _pkg_repo_update(const options& opts) {
-    update_all_remotes(opts.open_catalog().database());
+    update_all_remotes(opts.open_pkg_db().database());
     return 0;
 }
 

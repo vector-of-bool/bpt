@@ -10,7 +10,7 @@
 namespace dds::cli::cmd {
 
 static int _pkg_repo_ls(const options& opts) {
-    auto                       pkg_db = opts.open_catalog();
+    auto                       pkg_db = opts.open_pkg_db();
     neo::sqlite3::database_ref db     = pkg_db.database();
 
     auto st   = db.prepare("SELECT name, remote_url, db_mtime FROM dds_pkg_remotes");

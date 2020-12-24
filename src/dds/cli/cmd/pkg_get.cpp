@@ -14,7 +14,7 @@
 namespace dds::cli::cmd {
 
 static int _pkg_get(const options& opts) {
-    auto cat = opts.open_catalog();
+    auto cat = opts.open_pkg_db();
     for (const auto& item : opts.pkg.get.pkgs) {
         auto            id = pkg_id::parse(item);
         dds::dym_target dym;
