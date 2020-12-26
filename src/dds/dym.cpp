@@ -11,8 +11,6 @@
 
 using namespace dds;
 
-thread_local dym_target* dym_target::_tls_current = nullptr;
-
 std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexcept {
     const auto n_rows    = b.size() + 1;
     const auto n_columns = a.size() + 1;
@@ -45,10 +43,4 @@ std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexc
     }
 
     return matrix.back().back();
-}
-
-void dds::e_did_you_mean::log_as_error() const noexcept {
-    if (value) {
-        dds_log(error, "  (Did you mean \"{}\"?)", *value);
-    }
 }

@@ -2,6 +2,7 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/nonesuch.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/pkg/get/get.hpp>
 #include <dds/util/http/pool.hpp>
@@ -16,14 +17,9 @@ namespace dds::cli::cmd {
 static int _pkg_get(const options& opts) {
     auto cat = opts.open_pkg_db();
     for (const auto& item : opts.pkg.get.pkgs) {
-        auto            id = pkg_id::parse(item);
-        dds::dym_target dym;
-        auto            info = cat.get(id);
-        if (!info) {
-            dds::throw_user_error<dds::errc::no_such_catalog_package>(
-                "No package in the database matched the ID '{}'.{}", item, dym.sentence_suffix());
-        }
-        auto tsd  = get_package_sdist(*info);
+        auto id   = pkg_id::parse(item);
+        auto info = *cat.get(id);
+        auto tsd  = get_package_sdist(info);
         auto dest = opts.out_path.value_or(fs::current_path()) / id.to_string();
         dds_log(info, "Create sdist at {}", dest.string());
         fs::remove_all(dest);
@@ -57,6 +53,11 @@ int pkg_get(const options& opts) {
         },
         [](dds::e_sqlite3_error_exc e) {
             dds_log(error, "Error accessing the package database: {}", e.message);
+            return 1;
+        },
+        [](e_nonesuch nonesuch) -> int {
+            nonesuch.log_error("There is no entry in the package database for '{}'.");
+            write_error_marker("pkg-get-no-pkg-id-listing");
             return 1;
         },
         [&](dds::e_system_error_exc e, dds::network_origin conn) {

@@ -2,6 +2,7 @@
 
 #include "./listing.hpp"
 
+#include <dds/error/result.hpp>
 #include <dds/util/fs.hpp>
 
 #include <neo/sqlite3/database.hpp>
@@ -32,8 +33,8 @@ public:
 
     static fs::path default_path() noexcept;
 
-    void                       store(const pkg_listing& info);
-    std::optional<pkg_listing> get(const pkg_id& id) const noexcept;
+    void                store(const pkg_listing& info);
+    result<pkg_listing> get(const pkg_id& id) const noexcept;
 
     std::vector<pkg_id>     all() const noexcept;
     std::vector<pkg_id>     by_name(std::string_view sv) const noexcept;

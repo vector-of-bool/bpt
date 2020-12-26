@@ -46,19 +46,17 @@ temporary_sdist dds::get_package_sdist(const pkg_listing& pkg) {
 void dds::get_all(const std::vector<pkg_id>& pkgs, pkg_cache& repo, const pkg_db& cat) {
     std::mutex repo_mut;
 
-    auto absent_pkg_infos = pkgs  //
+    auto absent_pkg_infos
+        = pkgs  //
         | ranges::views::filter([&](auto pk) {
-                                std::scoped_lock lk{repo_mut};
-                                return !repo.find(pk);
-                            })
+              std::scoped_lock lk{repo_mut};
+              return !repo.find(pk);
+          })
         | ranges::views::transform([&](auto id) {
-                                auto info = cat.get(id);
-                                neo_assert(invariant,
-                                           info.has_value(),
-                                           "No database entry for package id?",
-                                           id.to_string());
-                                return *info;
-                            });
+              auto info = cat.get(id);
+              neo_assert(invariant, !!info, "No database entry for package id?", id.to_string());
+              return *info;
+          });
 
     auto okay = parallel_run(absent_pkg_infos, 8, [&](pkg_listing inf) {
         dds_log(info, "Download package: {}", inf.ident.to_string());

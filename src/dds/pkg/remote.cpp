@@ -2,6 +2,7 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/nonesuch.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/http/pool.hpp>
@@ -224,20 +225,19 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
     get_rowid_st.bindings()[1] = name;
     auto row                   = neo::sqlite3::unpack_single_opt<std::int64_t>(get_rowid_st);
     if (!row) {
-        auto calc_dym = [&] {
-            auto all_st = db.prepare("SELECT name FROM dds_pkg_remotes");
-            auto tups   = neo::sqlite3::iter_tuples<std::string>(all_st);
-            auto names  = tups | ranges::views::transform([](auto&& tup) {
-                             auto&& [n] = tup;
-                             return n;
-                         })
-                | ranges::to_vector;
-            return calc_e_did_you_mean(name, names);
-        };
-        BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::no_catalog_remote_info>(
-                                       "There is no remote with name '{}'", name),
-                                   DDS_E_ARG(e_remote_name{std::string(name)}),
-                                   calc_dym);
+        BOOST_LEAF_THROW_EXCEPTION(  //
+            make_user_error<errc::no_catalog_remote_info>("There is no remote with name '{}'",
+                                                          name),
+            [&] {
+                auto all_st = db.prepare("SELECT name FROM dds_pkg_remotes");
+                auto tups   = neo::sqlite3::iter_tuples<std::string>(all_st);
+                auto names  = tups | ranges::views::transform([](auto&& tup) {
+                                 auto&& [n] = tup;
+                                 return n;
+                             })
+                    | ranges::to_vector;
+                return e_nonesuch{name, did_you_mean(name, names)};
+            });
     }
     auto [rowid] = *row;
     neo::sqlite3::exec(db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), rowid);

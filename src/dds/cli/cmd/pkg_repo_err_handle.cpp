@@ -4,6 +4,7 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/nonesuch.hpp>
 #include <dds/pkg/remote.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
@@ -59,15 +60,10 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
                     e.message);
             return 1;
         },
-        [](matchv<pkg_repo_subcommand::remove>,
-           user_error<errc::no_catalog_remote_info>,
-           e_remote_name       reponame,
-           dds::e_did_you_mean dym) {
-            dds_log(error,
-                    "Cannot delete remote '{}', as no such remote repository is locally "
-                    "registered by that name.",
-                    reponame.value);
-            dym.log_as_error();
+        [](matchv<pkg_repo_subcommand::remove>, e_nonesuch missing) {
+            missing.log_error(
+                "Cannot delete remote '{}', as no such remote repository is locally registered by "
+                "that name.");
             write_error_marker("repo-rm-no-such-repo");
             return 1;
         });

@@ -2,6 +2,7 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/nonesuch.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
@@ -258,7 +259,7 @@ void pkg_db::store(const pkg_listing& pkg) {
     do_store_pkg(_db, _stmt_cache, pkg);
 }
 
-std::optional<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
+result<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
     auto ver_str = pk_id.version.to_string();
     dds_log(trace, "Lookup package {}@{}", pk_id.name, ver_str);
     auto& st = _stmt_cache(R"(
@@ -276,13 +277,12 @@ std::optional<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
     st.bindings() = std::forward_as_tuple(pk_id.name, ver_str);
     auto ec       = st.step(std::nothrow);
     if (ec == nsql::errc::done) {
-        dym_target::fill([&] {
+        return new_error([&] {
             auto all_ids = this->all();
             auto id_strings
                 = ranges::views::transform(all_ids, [&](auto id) { return id.to_string(); });
-            return did_you_mean(pk_id.to_string(), id_strings);
+            return e_nonesuch{pk_id.to_string(), did_you_mean(pk_id.to_string(), id_strings)};
         });
-        return std::nullopt;
     }
     neo_assert_always(invariant,
                       ec == nsql::errc::row,
