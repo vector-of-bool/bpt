@@ -1,6 +1,7 @@
 #include <dds/dym.hpp>
 
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 
 #include <range/v3/algorithm/min_element.hpp>
 #include <range/v3/view/cartesian_product.hpp>
@@ -44,4 +45,10 @@ std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexc
     }
 
     return matrix.back().back();
+}
+
+void dds::e_did_you_mean::log_as_error() const noexcept {
+    if (value) {
+        dds_log(error, "  (Did you mean \"{}\"?)", *value);
+    }
 }

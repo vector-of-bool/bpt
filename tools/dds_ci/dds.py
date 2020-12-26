@@ -76,6 +76,9 @@ class DDSWrapper:
     def repo_add(self, url: str) -> None:
         self.run(['pkg', 'repo', 'add', self.catalog_path_arg, url])
 
+    def repo_remove(self, name: str) -> None:
+        self.run(['pkg', 'repo', 'remove', self.catalog_path_arg, name])
+
     def repo_import(self, sdist: Path) -> None:
         self.run(['repo', self.repo_dir_arg, 'import', sdist])
 

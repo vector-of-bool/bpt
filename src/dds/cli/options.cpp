@@ -26,6 +26,13 @@ struct setup {
         .action         = put_into(opts.if_exists),
     };
 
+    argument if_missing_arg{
+        .long_spellings = {"if-missing"},
+        .help           = "What to do if the resource does not exist",
+        .valname        = "{fail,ignore}",
+        .action         = put_into(opts.if_missing),
+    };
+
     argument toolchain_arg{
         .long_spellings  = {"toolchain"},
         .short_spellings = {"t"},
@@ -291,6 +298,10 @@ struct setup {
             .name = "add",
             .help = "Add a package repository",
         }));
+        setup_pkg_repo_remove_cmd(pkg_repo_grp.add_parser({
+            .name = "remove",
+            .help = "Remove one or more package repositories",
+        }));
 
         pkg_repo_grp.add_parser({
             .name = "update",
@@ -315,6 +326,17 @@ struct setup {
             .nargs          = 0,
             .action         = debate::store_false(opts.pkg.repo.add.update),
         });
+    }
+
+    void setup_pkg_repo_remove_cmd(argument_parser& pkg_repo_remove_cmd) noexcept {
+        pkg_repo_remove_cmd.add_argument({
+            .help       = "Name of one or more repositories to remove",
+            .valname    = "<repo-name>",
+            .can_repeat = true,
+            .action     = push_back_onto(opts.pkg.repo.remove.names),
+        });
+        pkg_repo_remove_cmd.add_argument(if_missing_arg.dup()).help
+            = "What to do if any of the named repositories do not exist";
     }
 
     void setup_sdist_cmd(argument_parser& sdist_cmd) noexcept {

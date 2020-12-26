@@ -34,7 +34,7 @@ std::string error_url_suffix(dds::errc ec) noexcept {
     case errc::invalid_catalog_json:
         return "invalid-catalog-json.html";
     case errc::no_catalog_remote_info:
-        return "no-catalog-remote-info.html";
+        return "no-pkg-remote.html";
     case errc::git_clone_failure:
         return "git-clone-failure.html";
     case errc::invalid_remote_url:
@@ -167,8 +167,7 @@ Check the JSON schema and try your submission again.
 )";
     case errc::no_catalog_remote_info:
         return R"(
-The catalog entry requires information regarding the remote acquisition method.
-Refer to the documentation for details.
+There is no package remote with the given name
 )";
     case errc::git_clone_failure:
         return R"(
@@ -292,8 +291,7 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::invalid_catalog_json:
         return "The given catalog JSON data is not valid";
     case errc::no_catalog_remote_info:
-        return "The catalog JSON is missing remote acquisition information for one or more\n"
-               "packages";
+        return "Tne named remote does not exist." BUG_STRING_SUFFIX;
     case errc::git_clone_failure:
         return "A git-clone operation failed.";
     case errc::invalid_remote_url:

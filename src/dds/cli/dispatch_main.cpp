@@ -22,6 +22,7 @@ command pkg_ls;
 command pkg_repo_add;
 command pkg_repo_update;
 command pkg_repo_ls;
+command pkg_repo_remove;
 command repoman_add;
 command repoman_import;
 command repoman_init;
@@ -54,13 +55,15 @@ int dispatch_main(const options& opts) noexcept {
                 return cmd::pkg_import(opts);
             case pkg_subcommand::repo:
                 switch (opts.pkg.repo.subcommand) {
-                case cli_pkg_repo_subcommand::add:
+                case pkg_repo_subcommand::add:
                     return cmd::pkg_repo_add(opts);
-                case cli_pkg_repo_subcommand::update:
+                case pkg_repo_subcommand::update:
                     return cmd::pkg_repo_update(opts);
-                case cli_pkg_repo_subcommand::ls:
+                case pkg_repo_subcommand::ls:
                     return cmd::pkg_repo_ls(opts);
-                case cli_pkg_repo_subcommand::_none_:;
+                case pkg_repo_subcommand::remove:
+                    return cmd::pkg_repo_remove(opts);
+                case pkg_repo_subcommand::_none_:;
                 }
                 neo::unreachable();
             case pkg_subcommand::_none_:;

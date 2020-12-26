@@ -7,6 +7,12 @@
 
 namespace dds {
 
+class pkg_db;
+
+struct e_remote_name {
+    std::string value;
+};
+
 class pkg_remote {
     std::string _name;
     neo::url    _base_url;
@@ -26,5 +32,6 @@ public:
 };
 
 void update_all_remotes(neo::sqlite3::database_ref);
+void remove_remote(pkg_db& db, std::string_view name);
 
 }  // namespace dds

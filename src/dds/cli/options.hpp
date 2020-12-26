@@ -51,9 +51,10 @@ enum class pkg_subcommand {
 /**
  * @brief 'dds pkg repo' subcommands
  */
-enum class cli_pkg_repo_subcommand {
+enum class pkg_repo_subcommand {
     _none_,
     add,
+    remove,
     update,
     ls,
 };
@@ -76,6 +77,11 @@ enum class repoman_subcommand {
  */
 enum class if_exists {
     replace,
+    fail,
+    ignore,
+};
+
+enum class if_missing {
     fail,
     ignore,
 };
@@ -114,6 +120,8 @@ struct options {
 
     // Shared `--if-exists` argument:
     cli::if_exists if_exists = cli::if_exists::fail;
+    // Shared '--if-missing' argument:
+    cli::if_missing if_missing = cli::if_missing::fail;
 
     /**
      * @brief Open the package pkg_db based on the user-specified options.
@@ -178,7 +186,7 @@ struct options {
          */
         struct {
             /// The 'pkg repo' subcommand
-            cli_pkg_repo_subcommand subcommand;
+            pkg_repo_subcommand subcommand;
 
             /**
              * @brief Parameters of 'dds pkg repo add'
@@ -189,6 +197,14 @@ struct options {
                 /// Whether we should update repo data after adding the repository
                 bool update = true;
             } add;
+
+            /**
+             * @brief Parameters of 'dds pkg repo remove'
+             */
+            struct {
+                /// Repositories to remove (by name)
+                std::vector<string> names;
+            } remove;
         } repo;
 
         /**

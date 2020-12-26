@@ -10,6 +10,7 @@ import sys
 import subprocess
 
 import pytest
+from _pytest.fixtures import FixtureRequest
 
 
 class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -67,7 +68,8 @@ class RepoFixture:
     """
     A fixture handle to a dds HTTP repository, including a path and URL.
     """
-    def __init__(self, dds_exe: Path, info: ServerInfo) -> None:
+    def __init__(self, dds_exe: Path, info: ServerInfo, repo_name: str) -> None:
+        self.repo_name = repo_name
         self.server = info
         self.url = info.base_url
         self.dds_exe = dds_exe
@@ -97,10 +99,11 @@ class RepoFixture:
 
 
 @pytest.fixture()
-def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo) -> Iterator[RepoFixture]:
+def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo, request: FixtureRequest) -> Iterator[RepoFixture]:
     """
     Fixture that creates a new empty dds repository and an HTTP server to serve
     it.
     """
-    subprocess.check_call([str(dds_exe), 'repoman', 'init', str(http_tmp_dir_server.root)])
-    yield RepoFixture(dds_exe, http_tmp_dir_server)
+    name = f'test-repo-{request.function.__name__}'
+    subprocess.check_call([str(dds_exe), 'repoman', 'init', str(http_tmp_dir_server.root), f'--name={name}'])
+    yield RepoFixture(dds_exe, http_tmp_dir_server, repo_name=name)

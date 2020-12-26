@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/leaf/handle_error.hpp>
 #include <boost/leaf/on_error.hpp>
 #include <boost/leaf/result.hpp>
 #include <neo/concepts.hpp>
@@ -22,6 +23,9 @@ template <typename T, neo::convertible_to<T> U>
 constexpr T value_or(const result<T>& res, U&& arg) {
     return res ? res.value() : static_cast<T>(arg);
 }
+
+template <auto Val>
+using matchv = boost::leaf::match<decltype(Val), Val>;
 
 /**
  * @brief Error object representing a captured system_error exception
