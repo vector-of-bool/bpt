@@ -8,12 +8,15 @@
 
 #include <boost/leaf/handle_exception.hpp>
 #include <fmt/ostream.h>
+#include <neo/event.hpp>
 
 #include <filesystem>
 #include <iostream>
 
 int main_fn(std::string_view program_name, const std::vector<std::string>& argv) {
     dds::log::init_logger();
+    auto log_subscr = neo::subscribe(&dds::log::ev_log::print);
+
     dds::install_signal_handlers();
 
     dds::cli::options       opts;

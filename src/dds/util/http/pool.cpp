@@ -97,7 +97,7 @@ struct http_client_impl {
             .parse_tail = {},
         };
 
-        dds_log(trace,
+        dds_log(debug,
                 " --> HTTP {} {}://{}:{}{}",
                 params.method,
                 origin.protocol,
@@ -154,7 +154,7 @@ struct http_client_impl {
             disconnect = true;
         }
         _peer_disconnected = disconnect;
-        dds_log(trace, " <-- HTTP {} {}", r.status, r.status_message);
+        dds_log(debug, " <-- HTTP {} {}", r.status, r.status_message);
         return r;
     }
 };
@@ -229,10 +229,16 @@ http_client http_pool::client_for_origin(const network_origin& origin) {
     ret._pool = _impl;
     if (iter == _impl->_clients.end()) {
         // Nothing for this origin yet
+        dds_log(debug, "Opening new connection to {}://{}:{}", origin.protocol, origin.hostname, origin.port);
         auto ptr = std::make_shared<detail::http_client_impl>(origin);
         ptr->connect();
         ret._impl = ptr;
     } else {
+        dds_log(debug,
+                "Reusing existing connection to {}://{}:{}",
+                origin.protocol,
+                origin.hostname,
+                origin.port);
         ret._impl = iter->second;
         _impl->_clients.erase(iter);
     }
