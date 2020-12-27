@@ -10,10 +10,13 @@
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
+
 #include <array>
 #include <set>
 
 using namespace dds;
+using namespace fansi::literals;
 
 namespace {
 
@@ -23,12 +26,16 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    dds_log(error, "Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
+    dds_log(error,
+            "Test .br.yellow[{}] .br.red[{}] [Exited {}]"_styled,
+            fail.executable_path.string(),
+            fail.timed_out ? "TIMED OUT" : "FAILED",
+            fail.retc);
     if (fail.signal) {
         dds_log(error, "Test execution received signal {}", fail.signal);
     }
     if (trim_view(fail.output).empty()) {
-        dds_log(error, "(Test executable produced no output");
+        dds_log(error, "(Test executable produced no output)");
     } else {
         dds_log(error, "Test output:\n{}[dds - test output end]", fail.output);
     }

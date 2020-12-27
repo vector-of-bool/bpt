@@ -9,6 +9,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
+#include <fansi/styled.hpp>
 #include <neo/event.hpp>
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
@@ -23,6 +24,7 @@
 #include <range/v3/view/transform.hpp>
 
 using namespace dds;
+using namespace fansi::literals;
 namespace nsql = neo::sqlite3;
 
 namespace {
@@ -77,7 +79,10 @@ void pkg_remote::store(nsql::database_ref db) {
 void pkg_remote::update_pkg_db(nsql::database_ref              db,
                                std::optional<std::string_view> etag,
                                std::optional<std::string_view> db_mtime) {
-    dds_log(info, "Pulling repository contents for {} [{}]", _name, _base_url.to_string());
+    dds_log(info,
+            "Pulling repository contents for .cyan[{}] [{}`]"_styled,
+            _name,
+            _base_url.to_string());
 
     auto& pool = http_pool::global_pool();
     auto  url  = _base_url;

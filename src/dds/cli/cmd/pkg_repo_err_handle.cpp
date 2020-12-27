@@ -11,8 +11,11 @@
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
+#include <fansi/styled.hpp>
 #include <json5/parse_data.hpp>
 #include <neo/url.hpp>
+
+using namespace fansi::literals;
 
 int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
     return boost::leaf::try_catch(
@@ -38,13 +41,16 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
         },
         [](const json5::parse_error& e, neo::url bad_url) {
             dds_log(error,
-                    "Error parsing JSON downloaded from URL [{}]: {}",
+                    "Error parsing JSON downloaded from URL [.br.red[{}]`]: {}"_styled,
                     bad_url.to_string(),
                     e.what());
             return 1;
         },
         [](dds::e_sqlite3_error_exc e, neo::url url) {
-            dds_log(error, "Error accessing remote database [{}]: {}", url.to_string(), e.message);
+            dds_log(error,
+                    "Error accessing remote database [.br.red[{}]`]: {}"_styled,
+                    url.to_string(),
+                    e.message);
             return 1;
         },
         [](dds::e_sqlite3_error_exc e) {
@@ -53,7 +59,7 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
         },
         [](dds::e_system_error_exc e, dds::network_origin conn) {
             dds_log(error,
-                    "Error communicating with [{}://{}:{}]: {}",
+                    "Error communicating with [.br.red[{}://{}:{}]`]: {}"_styled,
                     conn.protocol,
                     conn.hostname,
                     conn.port,
@@ -62,8 +68,7 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
         },
         [](matchv<pkg_repo_subcommand::remove>, e_nonesuch missing) {
             missing.log_error(
-                "Cannot delete remote '{}', as no such remote repository is locally registered by "
-                "that name.");
+                "Cannot delete remote '.br.red[{}]', as no such remote repository is locally registered by that name."_styled);
             write_error_marker("repo-rm-no-such-repo");
             return 1;
         });

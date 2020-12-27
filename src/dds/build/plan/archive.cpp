@@ -5,10 +5,12 @@
 #include <dds/util/log.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 
 using namespace dds;
+using namespace fansi::literals;
 
 fs::path create_archive_plan::calc_archive_file_path(const toolchain& tc) const noexcept {
     return _subdir / fmt::format("{}{}{}", "lib", _name, tc.archive_suffix());
@@ -55,7 +57,10 @@ void create_archive_plan::archive(const build_env& env) const {
                 "Creating static library archive [{}] failed for '{}'",
                 out_relpath,
                 _qual_name);
-        dds_log(error, "Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
+        dds_log(error,
+                "Subcommand FAILED: .bold.yellow[{}]\n{}"_styled,
+                quote_command(ar_cmd),
+                ar_res.output);
         throw_external_error<
             errc::archive_failure>("Creating static library archive [{}] failed for '{}'",
                                    out_relpath,
