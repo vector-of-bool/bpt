@@ -33,7 +33,6 @@ command sdist_create;
 }  // namespace cmd
 
 int dispatch_main(const options& opts) noexcept {
-    dds::log::current_log_level = opts.log_level;
     return dds::handle_cli_errors([&] {
         DDS_E_SCOPE(opts.subcommand);
         switch (opts.subcommand) {

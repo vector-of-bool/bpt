@@ -12,10 +12,26 @@
 
 #include <filesystem>
 #include <iostream>
+#include <locale>
+
+static void load_locale() {
+    auto lang = std::getenv("LANG");
+    if (!lang) {
+        return;
+    }
+    try {
+        std::locale::global(std::locale(lang));
+    } catch (const std::runtime_error& e) {
+        // No locale with the given name
+        return;
+    }
+}
 
 int main_fn(std::string_view program_name, const std::vector<std::string>& argv) {
     dds::log::init_logger();
     auto log_subscr = neo::subscribe(&dds::log::ev_log::print);
+    load_locale();
+    std::setlocale(LC_CTYPE, ".utf8");
 
     dds::install_signal_handlers();
 
@@ -104,6 +120,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         // Non-null result from argument parsing, return that value immediately.
         return *result;
     }
+    dds::log::current_log_level = opts.log_level;
     return dds::cli::dispatch_main(opts);
 }
 
@@ -142,7 +159,6 @@ std::string wstr_to_u8str(std::wstring_view in) {
 
 int wmain(int argc, wchar_t** argv) {
     std::vector<std::string> u8_argv;
-    ::setlocale(LC_ALL, ".utf8");
     for (int i = 0; i < argc; ++i) {
         u8_argv.emplace_back(wstr_to_u8str(argv[i]));
     }
