@@ -1,6 +1,7 @@
 #ifdef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/fs.hpp>
 #include <dds/util/log.hpp>
 
 #include <fmt/core.h>
@@ -72,7 +73,7 @@ proc_result dds::run_proc(const proc_options& opts) {
                             true,
                             CREATE_NEW_PROCESS_GROUP,
                             nullptr,
-                            nullptr,
+                            opts.cwd.value_or(fs::current_path()).c_str(),
                             &startup_info,
                             &proc_info);
     if (!okay) {

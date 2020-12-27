@@ -1,5 +1,9 @@
 #pragma once
 
+#include <dds/util/log.hpp>
+
+#include <neo/event.hpp>
+
 #include <algorithm>
 #include <iterator>
 #include <mutex>
@@ -23,6 +27,8 @@ bool parallel_run(Range&& rng, int n_jobs, Func&& fn) {
     std::vector<std::exception_ptr> exceptions;
 
     auto run_one = [&]() mutable {
+        auto log_subscr = neo::subscribe(&log::ev_log::print);
+
         while (true) {
             std::unique_lock lk{mut};
             if (!exceptions.empty()) {

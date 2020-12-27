@@ -10,10 +10,13 @@
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
+
 #include <array>
 #include <set>
 
 using namespace dds;
+using namespace fansi::literals;
 
 namespace {
 
@@ -23,12 +26,16 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    dds_log(error, "Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
+    dds_log(error,
+            "Test .br.yellow[{}] .br.red[{}] [Exited {}]"_styled,
+            fail.executable_path.string(),
+            fail.timed_out ? "TIMED OUT" : "FAILED",
+            fail.retc);
     if (fail.signal) {
         dds_log(error, "Test execution received signal {}", fail.signal);
     }
     if (trim_view(fail.output).empty()) {
-        dds_log(error, "(Test executable produced no output");
+        dds_log(error, "(Test executable produced no output)");
     } else {
         dds_log(error, "Test output:\n{}[dds - test output end]", fail.output);
     }
@@ -125,7 +132,7 @@ library_plan prepare_library(state&                  st,
 }
 
 package_plan prepare_one(state& st, const sdist_target& sd) {
-    package_plan pkg{sd.sd.manifest.pkg_id.name, sd.sd.manifest.namespace_};
+    package_plan pkg{sd.sd.manifest.id.name, sd.sd.manifest.namespace_};
     auto         libs = collect_libraries(sd.sd.path);
     for (const auto& lib : libs) {
         pkg.add_library(prepare_library(st, sd, lib, sd.sd.manifest));
@@ -195,7 +202,7 @@ void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
 }
 
 void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, path_ref lmi_path) {
-    fs::create_directories(lmi_path.parent_path());
+    fs::create_directories(fs::absolute(lmi_path).parent_path());
     auto out = open(lmi_path, std::ios::binary | std::ios::out);
     out << "Type: Index\n";
     for (const auto& pkg : plan.packages()) {

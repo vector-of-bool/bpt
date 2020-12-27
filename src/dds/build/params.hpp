@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/source/dist.hpp>
+#include <dds/sdist/dist.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/fs.hpp>
 

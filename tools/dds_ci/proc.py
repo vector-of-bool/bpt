@@ -1,13 +1,30 @@
-from pathlib import PurePath, Path
-from typing import Iterable, Union
+from pathlib import PurePath
+from typing import Iterable, Union, Optional, Iterator, NoReturn, Sequence
+from typing_extensions import Protocol
 import subprocess
 
-CommandLineArg = Union[str, PurePath, int, float]
+from .util import Pathish
+
+CommandLineArg = Union[str, Pathish, int, float]
 CommandLineArg1 = Union[CommandLineArg, Iterable[CommandLineArg]]
 CommandLineArg2 = Union[CommandLineArg1, Iterable[CommandLineArg1]]
 CommandLineArg3 = Union[CommandLineArg2, Iterable[CommandLineArg2]]
 CommandLineArg4 = Union[CommandLineArg3, Iterable[CommandLineArg3]]
-CommandLine = Union[CommandLineArg4, Iterable[CommandLineArg4]]
+
+
+class CommandLine(Protocol):
+    def __iter__(self) -> Iterator[Union['CommandLine', CommandLineArg]]:
+        pass
+
+
+# CommandLine = Union[CommandLineArg4, Iterable[CommandLineArg4]]
+
+
+class ProcessResult(Protocol):
+    args: Sequence[str]
+    returncode: int
+    stdout: bytes
+    stderr: bytes
 
 
 def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
@@ -23,17 +40,17 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
         assert False, f'Invalid command line element: {repr(cmd)}'
 
 
-def run(*cmd: CommandLine, cwd: Path = None) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        list(flatten_cmd(cmd)),  # type: ignore
-        cwd=cwd,
-    )
-
-
-def check_run(*cmd: CommandLine,
-              cwd: Path = None) -> subprocess.CompletedProcess:
-    flat_cmd = list(flatten_cmd(cmd))  # type: ignore
-    res = run(flat_cmd, cwd=cwd)
-    if res.returncode != 0:
-        raise subprocess.CalledProcessError(res.returncode, flat_cmd)
+def run(*cmd: CommandLine, cwd: Optional[Pathish] = None, check: bool = False) -> ProcessResult:
+    command = list(flatten_cmd(cmd))
+    res = subprocess.run(command, cwd=cwd, check=False)
+    if res.returncode and check:
+        raise_error(res)
     return res
+
+
+def raise_error(proc: ProcessResult) -> NoReturn:
+    raise subprocess.CalledProcessError(proc.returncode, proc.args, output=proc.stdout, stderr=proc.stderr)
+
+
+def check_run(*cmd: CommandLine, cwd: Optional[Pathish] = None) -> ProcessResult:
+    return run(cmd, cwd=cwd, check=True)

@@ -1,0 +1,5 @@
+{
+    "compiler_id": 'gnu',
+    "cxx_version": 'c++17',
+    "cxx_compiler": 'g++-9',
+}

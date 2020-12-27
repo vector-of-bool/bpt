@@ -1,6 +1,7 @@
 #ifndef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/fs.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/signal.hpp>
 
@@ -25,8 +26,21 @@ void check_rc(bool b, std::string_view s) {
     }
 }
 
-::pid_t
-spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_me) noexcept {
+::pid_t spawn_child(const proc_options& opts, int stdout_pipe, int close_me) noexcept {
+    // We must allocate BEFORE fork(), since the CRT might stumble with malloc()-related locks that
+    // are held during the fork().
+    std::vector<const char*> strings;
+    strings.reserve(opts.command.size() + 1);
+    for (auto& s : opts.command) {
+        strings.push_back(s.data());
+    }
+    strings.push_back(nullptr);
+
+    std::string workdir = opts.cwd.value_or(fs::current_path()).string();
+    auto        not_found_err
+        = fmt::format("[dds child executor] The requested executable [{}] could not be found.",
+                      strings[0]);
+
     auto child_pid = ::fork();
     if (child_pid != 0) {
         return child_pid;
@@ -37,26 +51,20 @@ spawn_child(const std::vector<std::string>& command, int stdout_pipe, int close_
     check_rc(rc != -1, "Failed to dup2 stdout");
     rc = dup2(stdout_pipe, STDERR_FILENO);
     check_rc(rc != -1, "Failed to dup2 stderr");
+    rc = ::chdir(workdir.data());
+    check_rc(rc != -1, "Failed to chdir() for subprocess");
 
-    std::vector<const char*> strings;
-    strings.reserve(command.size() + 1);
-    for (auto& s : command) {
-        strings.push_back(s.data());
-    }
-    strings.push_back(nullptr);
     ::execvp(strings[0], (char* const*)strings.data());
 
     if (errno == ENOENT) {
-        std::cerr
-            << fmt::format("[dds child executor] The requested executable ({}) could not be found.",
-                           strings[0]);
-        std::exit(-1);
+        std::fputs(not_found_err.c_str(), stderr);
+        std::_Exit(-1);
     }
 
-    std::cerr << "[dds child executor] execvp returned! This is a fatal error: "
-              << std::system_category().message(errno) << '\n';
-
-    std::terminate();
+    std::fputs("[dds child executor] execvp returned! This is a fatal error: ", stderr);
+    std::fputs(std::strerror(errno), stderr);
+    std::fputs("\n", stderr);
+    std::_Exit(-1);
 }
 
 }  // namespace
@@ -70,7 +78,7 @@ proc_result dds::run_proc(const proc_options& opts) {
     int read_pipe  = stdio_pipe[0];
     int write_pipe = stdio_pipe[1];
 
-    auto child = spawn_child(opts.command, write_pipe, read_pipe);
+    auto child = spawn_child(opts, write_pipe, read_pipe);
 
     ::close(write_pipe);
 

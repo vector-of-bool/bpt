@@ -1,7 +1,7 @@
 #include <dds/build/plan/template.hpp>
 
 #include <dds/error/errors.hpp>
-#include <dds/library/root.hpp>
+#include <dds/sdist/library/root.hpp>
 #include <dds/util/fs.hpp>
 #include <dds/util/string.hpp>
 

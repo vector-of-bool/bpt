@@ -8,6 +8,7 @@
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
 #include <neo/assert.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -20,6 +21,7 @@
 
 using namespace dds;
 using namespace ranges;
+using namespace fansi::literals;
 
 namespace {
 
@@ -51,7 +53,8 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
 
     // Generate a log message to display to the user
     auto source_path = cf.plan.source_path();
-    auto msg         = fmt::format("[{}] Compile: {}",
+
+    auto msg = fmt::format("[{}] Compile: .br.cyan[{}]"_styled,
                            cf.plan.qualifier(),
                            fs::relative(source_path, cf.plan.source().basis_path).string());
 
@@ -141,7 +144,7 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
     if (!compiled_okay) {
         dds_log(error, "Compilation failed: {}", source_path.string());
         dds_log(error,
-                "Subcommand FAILED [Exitted {}]: {}\n{}",
+                "Subcommand .bold.red[FAILED] [Exited {}]: .bold.yellow[{}]\n{}"_styled,
                 compile_retc,
                 quote_command(cf.cmd_info.command),
                 compiler_output);

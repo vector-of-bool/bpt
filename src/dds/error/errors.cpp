@@ -34,9 +34,13 @@ std::string error_url_suffix(dds::errc ec) noexcept {
     case errc::invalid_catalog_json:
         return "invalid-catalog-json.html";
     case errc::no_catalog_remote_info:
-        return "no-catalog-remote-info.html";
+        return "no-pkg-remote.html";
     case errc::git_clone_failure:
         return "git-clone-failure.html";
+    case errc::invalid_remote_url:
+        return "invalid-remote-url.html";
+    case errc::http_download_failure:
+        return "http-failure.html";
     case errc::invalid_repo_transform:
         return "invalid-repo-transform.html";
     case errc::sdist_ident_mismatch:
@@ -163,14 +167,21 @@ Check the JSON schema and try your submission again.
 )";
     case errc::no_catalog_remote_info:
         return R"(
-The catalog entry requires information regarding the remote acquisition method.
-Refer to the documentation for details.
+There is no package remote with the given name
 )";
     case errc::git_clone_failure:
         return R"(
 dds tried to clone a repository using Git, but the clone operation failed.
 There are a variety of possible causes. It is best to check the output from
 Git in diagnosing this failure.
+)";
+    case errc::invalid_remote_url:
+        return R"(The given package/remote URL is invalid)";
+    case errc::http_download_failure:
+        return R"(
+There was a problem when trying to download data from an HTTP server. HTTP 40x
+errors indicate problems on the client-side, and HTTP 50x errors indicate that
+the server itself encountered an error.
 )";
     case errc::invalid_repo_transform:
         return R"(
@@ -280,10 +291,13 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::invalid_catalog_json:
         return "The given catalog JSON data is not valid";
     case errc::no_catalog_remote_info:
-        return "The catalog JSON is missing remote acquisition information for one or more\n"
-               "packages";
+        return "Tne named remote does not exist." BUG_STRING_SUFFIX;
     case errc::git_clone_failure:
         return "A git-clone operation failed.";
+    case errc::invalid_remote_url:
+        return "The given package/remote URL is not valid";
+    case errc::http_download_failure:
+        return "There was an error downloading data from an HTTP server.";
     case errc::invalid_repo_transform:
         return "A repository filesystem transformation is invalid";
     case errc::sdist_ident_mismatch:

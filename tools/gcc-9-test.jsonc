@@ -1,0 +1,11 @@
+{
+    "$schema": "../res/toolchain-schema.json",
+    "compiler_id": "gnu",
+    "c_compiler": "gcc-9",
+    "cxx_compiler": "g++-9",
+    "cxx_version": "c++17",
+    "warning_flags": [
+        "-Werror",
+    ],
+    "debug": true
+}
