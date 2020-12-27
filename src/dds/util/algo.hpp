@@ -35,6 +35,17 @@ void extend(Container& c, std::initializer_list<Item> il) {
     c.insert(c.end(), il.begin(), il.end());
 }
 
+template <typename Container>
+void unique_erase(Container& c) noexcept {
+    c.erase(std::unique(c.begin(), c.end()), c.end());
+}
+
+template <typename Container>
+void sort_unique_erase(Container& c) noexcept {
+    std::sort(c.begin(), c.end());
+    unique_erase(c);
+}
+
 template <typename T>
 using ref_vector = std::vector<std::reference_wrapper<T>>;
 

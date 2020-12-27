@@ -5,6 +5,9 @@
 #include <dds/util/signal.hpp>
 #include <dds/util/time.hpp>
 
+#include <range/v3/algorithm/sort.hpp>
+#include <range/v3/algorithm/unique.hpp>
+
 #include <string>
 #include <vector>
 
@@ -24,6 +27,9 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
         extend(spec.external_include_dirs, env.ureqs.include_paths(use));
     }
     extend(spec.definitions, _rules.defs());
+    // Avoid huge command lines by shrinking down the list of #include dirs
+    sort_unique_erase(spec.external_include_dirs);
+    sort_unique_erase(spec.include_dirs);
     return env.toolchain.create_compile_command(spec, dds::fs::current_path(), env.knobs);
 }
 
