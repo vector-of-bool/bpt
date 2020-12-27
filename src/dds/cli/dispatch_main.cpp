@@ -35,17 +35,21 @@ command sdist_create;
 int dispatch_main(const options& opts) noexcept {
     dds::log::current_log_level = opts.log_level;
     return dds::handle_cli_errors([&] {
+        DDS_E_SCOPE(opts.subcommand);
         switch (opts.subcommand) {
         case subcommand::build:
             return cmd::build(opts);
-        case subcommand::sdist:
+        case subcommand::sdist: {
+            DDS_E_SCOPE(opts.sdist.subcommand);
             switch (opts.sdist.subcommand) {
             case sdist_subcommand::create:
                 return cmd::sdist_create(opts);
             case sdist_subcommand::_none_:;
             }
             neo::unreachable();
-        case subcommand::pkg:
+        }
+        case subcommand::pkg: {
+            DDS_E_SCOPE(opts.pkg.subcommand);
             switch (opts.pkg.subcommand) {
             case pkg_subcommand::ls:
                 return cmd::pkg_ls(opts);
@@ -53,7 +57,8 @@ int dispatch_main(const options& opts) noexcept {
                 return cmd::pkg_get(opts);
             case pkg_subcommand::import:
                 return cmd::pkg_import(opts);
-            case pkg_subcommand::repo:
+            case pkg_subcommand::repo: {
+                DDS_E_SCOPE(opts.pkg.repo.subcommand);
                 switch (opts.pkg.repo.subcommand) {
                 case pkg_repo_subcommand::add:
                     return cmd::pkg_repo_add(opts);
@@ -66,10 +71,13 @@ int dispatch_main(const options& opts) noexcept {
                 case pkg_repo_subcommand::_none_:;
                 }
                 neo::unreachable();
+            }
             case pkg_subcommand::_none_:;
             }
             neo::unreachable();
-        case subcommand::repoman:
+        }
+        case subcommand::repoman: {
+            DDS_E_SCOPE(opts.repoman.subcommand);
             switch (opts.repoman.subcommand) {
             case repoman_subcommand::import:
                 return cmd::repoman_import(opts);
@@ -84,6 +92,7 @@ int dispatch_main(const options& opts) noexcept {
             case repoman_subcommand::_none_:;
             }
             neo::unreachable();
+        }
         case subcommand::compile_file:
             return cmd::compile_file(opts);
         case subcommand::build_deps:

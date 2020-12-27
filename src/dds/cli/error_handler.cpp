@@ -17,39 +17,45 @@
 
 #include <fstream>
 
+using namespace dds;
+
 namespace {
 
-template <dds::cli::subcommand Val>
-using subcommand = boost::leaf::match<dds::cli::subcommand, Val>;
-
 auto handlers = std::tuple(  //
-    [](neo::url_validation_error exc, dds::e_url_string bad_url) {
+    [](neo::url_validation_error exc, e_url_string bad_url) {
         dds_log(error, "Invalid URL '{}': {}", bad_url.value, exc.what());
         return 1;
     },
-    [](boost::leaf::catch_<dds::error_base> exc,
-       json5::parse_error                   parse_err,
-       boost::leaf::e_file_name*            maybe_fpath) {
+    [](boost::leaf::catch_<error_base> exc,
+       json5::parse_error              parse_err,
+       boost::leaf::e_file_name*       maybe_fpath) {
         dds_log(error, "{}", exc.value().what());
         dds_log(error, "Invalid JSON5 was found: {}", parse_err.what());
         if (maybe_fpath) {
             dds_log(error, "  (While reading from [{}])", maybe_fpath->value);
         }
         dds_log(error, "{}", exc.value().explanation());
-        dds::write_error_marker("package-json5-parse-error");
+        write_error_marker("package-json5-parse-error");
         return 1;
     },
-    [](boost::leaf::catch_<dds::error_base> exc) {
+    [](user_error<errc::test_failure> exc, matchv<cli::subcommand::build>) {
+        write_error_marker("build-failed-test-failed");
+        dds_log(error, "{}", exc.what());
+        dds_log(error, "{}", exc.explanation());
+        dds_log(error, "Refer: {}", exc.error_reference());
+        return 1;
+    },
+    [](boost::leaf::catch_<error_base> exc) {
         dds_log(error, "{}", exc.value().what());
         dds_log(error, "{}", exc.value().explanation());
         dds_log(error, "Refer: {}", exc.value().error_reference());
         return 1;
     },
-    [](dds::user_cancelled) {
+    [](user_cancelled) {
         dds_log(critical, "Operation cancelled by the user");
         return 2;
     },
-    [](dds::e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {
+    [](e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,
                 "An unhandled std::system_error arose. THIS IS A DDS BUG! Info: {}",
                 diag);

@@ -4,6 +4,7 @@ import time
 import pytest
 
 from dds_ci import paths
+from dds_ci.testing.error import expect_error_marker
 from dds_ci.testing import Project, PackageJSON
 
 
@@ -58,6 +59,12 @@ def test_lib_with_just_test(tmp_project: Project) -> None:
     tmp_project.write('src/foo.test.cpp', 'int main() {}')
     tmp_project.build()
     assert tmp_project.build_root.joinpath(f'test/foo{paths.EXE_SUFFIX}').is_file()
+
+
+def test_lib_with_failing_test(tmp_project: Project) -> None:
+    tmp_project.write('src/foo.test.cpp', 'int main() { return 2; }')
+    with expect_error_marker('build-failed-test-failed'):
+        tmp_project.build()
 
 
 TEST_PACKAGE: PackageJSON = {
