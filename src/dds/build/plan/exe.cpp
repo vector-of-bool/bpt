@@ -88,7 +88,7 @@ std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) co
         [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
 
     if (res.okay()) {
-        dds_log(info, "{} - .br.green[PASS] - {:>9L}μs", msg, dur.count());
+        dds_log(info, "{} - .br.green[PASS] - {:>9L}μs"_styled, msg, dur.count());
         return std::nullopt;
     } else {
         auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
