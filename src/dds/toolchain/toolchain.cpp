@@ -275,12 +275,6 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
         return std::nullopt;
     }
 
-    if (starts_with(tc_id, "gcc") || starts_with(tc_id, "clang")) {
-        json5::data& arr = root_map.emplace("link_flags", json5::data::array_type()).first->second;
-        arr.as_array().emplace_back("-static-libgcc");
-        arr.as_array().emplace_back("-static-libstdc++");
-    }
-
     root_map.emplace("c_compiler", opt_triple->c);
     root_map.emplace("cxx_compiler", opt_triple->cxx);
     root_map.emplace("compiler_id", opt_triple->id);
