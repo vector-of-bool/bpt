@@ -80,7 +80,7 @@ class Project:
         Execute 'dds build' on the project
         """
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
-            self.dds.build(root=self.root, build_root=self.build_root, toolchain=tc)
+            self.dds.build(root=self.root, build_root=self.build_root, toolchain=tc, more_args=['-ldebug'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:

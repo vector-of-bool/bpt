@@ -27,6 +27,7 @@
  * other languages is not difficult.
  */
 
+#include <dds/db/database.hpp>
 #include <dds/util/fs.hpp>
 
 #include <neo/out.hpp>
@@ -64,11 +65,7 @@ struct file_deps_info {
     /**
      * The command that was used to generate the output
      */
-    std::string command;
-    /**
-     * The output of the command.
-     */
-    std::string command_output;
+    completed_compilation command;
 };
 
 class database;
@@ -118,7 +115,7 @@ msvc_deps_info parse_msvc_output_for_deps(std::string_view output, std::string_v
 
 /**
  * Update the dependency information in the build database for later reference via
- * `get_rebuild_info`.
+ * `get_prior_compilation`.
  * @param db The database to update
  * @param info The dependency information to store
  */
@@ -129,16 +126,15 @@ void update_deps_info(neo::output<database> db, const file_deps_info& info);
  * that have a newer mtime than we have recorded, and the previous command and previous command
  * output that we have stored.
  */
-struct deps_rebuild_info {
+struct prior_compilation {
     std::vector<fs::path> newer_inputs;
-    std::string           previous_command;
-    std::string           previous_command_output;
+    completed_compilation          previous_command;
 };
 
 /**
  * Given the path to an output file, read all the dependency information from the database. If the
- * given output has never been recorded, then the resulting object will be empty.
+ * given output has never been recorded, then the resulting object will be null.
  */
-deps_rebuild_info get_rebuild_info(const database& db, path_ref output_path);
+std::optional<prior_compilation> get_prior_compilation(const database& db, path_ref output_path);
 
 }  // namespace dds

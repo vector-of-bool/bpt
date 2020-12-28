@@ -111,7 +111,7 @@ struct options {
     path project_dir = fs::current_path();
 
     // Compile and build commands with `--no-warnings`/`--no-warn`
-    bool disable_warnings = true;
+    bool disable_warnings = false;
     // Compile and build commands' `--jobs` parameter
     int jobs = 0;
     // Compile and build commands' `--toolchain` option:

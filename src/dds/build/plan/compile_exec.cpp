@@ -5,13 +5,14 @@
 #include <dds/proc.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
+#include <dds/util/signal.hpp>
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
 
 #include <fansi/styled.hpp>
 #include <neo/assert.hpp>
+#include <range/v3/algorithm/count_if.hpp>
 #include <range/v3/range/conversion.hpp>
-#include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
 #include <algorithm>
@@ -25,18 +26,21 @@ using namespace fansi::literals;
 
 namespace {
 
-/// The actual "real" information that we need to perform a compilation.
-struct compile_file_full {
-    const compile_file_plan& plan;
-    fs::path                 object_file_path;
-    compile_command_info     cmd_info;
-};
-
 /// Simple aggregate that stores a counter for keeping track of compile progress
 struct compile_counter {
-    std::atomic_size_t n;
+    std::atomic_size_t n{1};
     const std::size_t  max;
     const std::size_t  max_digits;
+};
+
+struct compile_ticket {
+    std::reference_wrapper<const compile_file_plan> plan;
+    // If non-null, the information required to compile the file
+    compile_command_info command;
+    fs::path             object_file_path;
+    bool                 needs_recompile;
+    // Information about the previous time a file was compiled, if any
+    std::optional<completed_compilation> prior_command;
 };
 
 /**
@@ -47,21 +51,54 @@ struct compile_counter {
  * @param counter A thread-safe counter for display progress to the user
  */
 std::optional<file_deps_info>
-do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& counter) {
+handle_compilation(const compile_ticket& compile, build_env_ref env, compile_counter& counter) {
+    if (!compile.needs_recompile) {
+        // We don't actually compile this file. Just issue any prior warning messages that were from
+        // a prior compilation.
+        neo_assert(invariant,
+                   compile.prior_command.has_value(),
+                   "Expected a prior compilation command for file",
+                   compile.plan.get().source_path(),
+                   quote_command(compile.command.command));
+        auto& prior = *compile.prior_command;
+        if (dds::trim_view(prior.output).empty()) {
+            // Nothing to show
+            return {};
+        }
+        if (!compile.plan.get().rules().enable_warnings()) {
+            // This file shouldn't show warnings. The compiler *may* have produced prior output, but
+            // this block will be hit when the source file belongs to an external dependency. Rather
+            // than continually spam the user with warnings that belong to dependencies, don't
+            // repeatedly show them.
+            dds_log(trace,
+                    "Cached compiler output suppressed for file with disabled warnings ({})",
+                    compile.plan.get().source_path().string());
+            return {};
+        }
+        dds_log(
+            warn,
+            "While compiling file .bold.cyan[{}] [.bold.yellow[{}]] (.br.blue[cached compiler output]):\n{}"_styled,
+            compile.plan.get().source_path().string(),
+            prior.quoted_command,
+            prior.output);
+        return {};
+    }
+
     // Create the parent directory
-    fs::create_directories(cf.object_file_path.parent_path());
+    fs::create_directories(compile.object_file_path.parent_path());
 
     // Generate a log message to display to the user
-    auto source_path = cf.plan.source_path();
+    auto source_path = compile.plan.get().source_path();
 
-    auto msg = fmt::format("[{}] Compile: .br.cyan[{}]"_styled,
-                           cf.plan.qualifier(),
-                           fs::relative(source_path, cf.plan.source().basis_path).string());
+    auto msg
+        = fmt::format("[{}] Compile: .br.cyan[{}]"_styled,
+                      compile.plan.get().qualifier(),
+                      fs::relative(source_path, compile.plan.get().source().basis_path).string());
 
     // Do it!
     dds_log(info, msg);
     auto&& [dur_ms, proc_res]
-        = timed<std::chrono::milliseconds>([&] { return run_proc(cf.cmd_info.command); });
+        = timed<std::chrono::milliseconds>([&] { return run_proc(compile.command.command); });
     auto nth = counter.n.fetch_add(1);
     dds_log(info,
             "{:60} - {:>7L}ms [{:{}}/{}]",
@@ -85,8 +122,8 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
          */
     } else if (env.toolchain.deps_mode() == file_deps_mode::gnu) {
         // GNU-style deps using Makefile generation
-        assert(cf.cmd_info.gnu_depfile_path.has_value());
-        auto& df_path = *cf.cmd_info.gnu_depfile_path;
+        assert(compile.command.gnu_depfile_path.has_value());
+        auto& df_path = *compile.command.gnu_depfile_path;
         if (!fs::is_regular_file(df_path)) {
             dds_log(critical,
                     "The expected Makefile deps were not generated on disk. This is a bug! "
@@ -96,14 +133,15 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
             dds_log(trace, "Loading compilation dependencies from {}", df_path.string());
             auto dep_info = dds::parse_mkfile_deps_file(df_path);
             neo_assert(invariant,
-                       dep_info.output == cf.object_file_path,
+                       dep_info.output == compile.object_file_path,
                        "Generated mkfile deps output path does not match the object file path that "
-                       "we gave it to compile into.",
+                       " we gave it to compile into.",
                        dep_info.output.string(),
-                       cf.object_file_path.string());
-            dep_info.command        = quote_command(cf.cmd_info.command);
-            dep_info.command_output = compiler_output;
-            ret_deps_info           = std::move(dep_info);
+                       compile.object_file_path.string());
+            dep_info.command.quoted_command = quote_command(compile.command.command);
+            dep_info.command.output         = compiler_output;
+            dep_info.command.duration       = dur_ms;
+            ret_deps_info                   = std::move(dep_info);
         }
     } else if (env.toolchain.deps_mode() == file_deps_mode::msvc) {
         // Uglier deps generation by parsing the output from cl.exe
@@ -117,11 +155,12 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
         // cause a miscompile
         if (!msvc_deps.deps_info.inputs.empty()) {
             // Add the main source file as an input, since it is not listed by /showIncludes
-            msvc_deps.deps_info.inputs.push_back(cf.plan.source_path());
-            msvc_deps.deps_info.output         = cf.object_file_path;
-            msvc_deps.deps_info.command        = quote_command(cf.cmd_info.command);
-            msvc_deps.deps_info.command_output = compiler_output;
-            ret_deps_info                      = std::move(msvc_deps.deps_info);
+            msvc_deps.deps_info.inputs.push_back(compile.plan.get().source_path());
+            msvc_deps.deps_info.output                 = compile.object_file_path;
+            msvc_deps.deps_info.command.quoted_command = quote_command(compile.command.command);
+            msvc_deps.deps_info.command.output         = compiler_output;
+            msvc_deps.deps_info.command.duration       = dur_ms;
+            ret_deps_info                              = std::move(msvc_deps.deps_info);
         }
     } else {
         /**
@@ -142,11 +181,11 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
 
     // Log a compiler failure
     if (!compiled_okay) {
-        dds_log(error, "Compilation failed: {}", source_path.string());
+        dds_log(error, "Compilation failed: .bold.cyan[{}]"_styled, source_path.string());
         dds_log(error,
                 "Subcommand .bold.red[FAILED] [Exited {}]: .bold.yellow[{}]\n{}"_styled,
                 compile_retc,
-                quote_command(cf.cmd_info.command),
+                quote_command(compile.command.command),
                 compiler_output);
         if (compile_signal) {
             dds_log(error, "Process exited via signal {}", compile_signal);
@@ -157,9 +196,9 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
     // Print any compiler output, sans whitespace
     if (!dds::trim_view(compiler_output).empty()) {
         dds_log(warn,
-                "While compiling file {} [{}]:\n{}",
+                "While compiling file .bold.cyan[{}] [.bold.yellow[{}]]:\n{}"_styled,
                 source_path.string(),
-                quote_command(cf.cmd_info.command),
+                quote_command(compile.command.command),
                 compiler_output);
     }
 
@@ -168,48 +207,45 @@ do_compile(const compile_file_full& cf, build_env_ref env, compile_counter& coun
     return ret_deps_info;
 }
 
-/// Generate the full compile command information from an abstract plan
-compile_file_full realize_plan(const compile_file_plan& plan, build_env_ref env) {
-    auto cmd_info = plan.generate_compile_command(env);
-    return compile_file_full{plan, plan.calc_object_file_path(env), cmd_info};
-}
-
 /**
  * Determine if the given compile command should actually be executed based on
  * the dependency information we have recorded in the database.
  */
-bool should_compile(const compile_file_full& comp, const database& db) {
-    if (!fs::exists(comp.object_file_path)) {
-        dds_log(trace, "Compile {}: Output does not exist", comp.plan.source_path().string());
+compile_ticket mk_compile_ticket(const compile_file_plan& plan, build_env_ref env) {
+    compile_ticket ret{.plan             = plan,
+                       .command          = plan.generate_compile_command(env),
+                       .object_file_path = plan.calc_object_file_path(env),
+                       .needs_recompile  = false,
+                       .prior_command    = {}};
+
+    auto rb_info = get_prior_compilation(env.db, ret.object_file_path);
+    if (!rb_info) {
+        dds_log(trace, "Compile {}: No recorded compilation info", plan.source_path().string());
+        ret.needs_recompile = true;
+    } else if (!fs::exists(ret.object_file_path)) {
+        dds_log(trace, "Compile {}: Output does not exist", plan.source_path().string());
         // The output file simply doesn't exist. We have to recompile, of course.
-        return true;
-    }
-    auto rb_info = get_rebuild_info(db, comp.object_file_path);
-    if (rb_info.previous_command.empty()) {
-        // We have no previous compile command for this file. Assume it is new.
-        dds_log(trace, "Recompile {}: No prior compilation info", comp.plan.source_path().string());
-        return true;
-    }
-    if (!rb_info.newer_inputs.empty()) {
+        ret.needs_recompile = true;
+    } else if (!rb_info->newer_inputs.empty()) {
         // Inputs to this file have changed from a prior execution.
         dds_log(trace,
                 "Recompile {}: Inputs have changed (or no input information)",
-                comp.plan.source_path().string());
-        return true;
-    }
-    auto cur_cmd_str = quote_command(comp.cmd_info.command);
-    if (cur_cmd_str != rb_info.previous_command) {
-        dds_log(trace,
-                "Recompile {}: Compile command has changed",
-                comp.plan.source_path().string());
+                plan.source_path().string());
+        ret.needs_recompile = true;
+    } else if (quote_command(ret.command.command) != rb_info->previous_command.quoted_command) {
+        dds_log(trace, "Recompile {}: Compile command has changed", plan.source_path().string());
         // The command used to generate the output is new
-        return true;
+        ret.needs_recompile = true;
+    } else {
+        // Nope. This file is up-to-date.
+        dds_log(debug,
+                "Skip compilation of {} (Result is up-to-date)",
+                plan.source_path().string());
     }
-    // Nope. This file is up-to-date.
-    dds_log(debug,
-            "Skip compilation of {} (Result is up-to-date)",
-            comp.plan.source_path().string());
-    return false;
+    if (rb_info) {
+        ret.prior_command = rb_info->previous_command;
+    }
+    return ret;
 }
 
 }  // namespace
@@ -220,24 +256,23 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     auto each_realized =  //
         compiles
         // Convert each _plan_ into a concrete object for compiler invocation.
-        | views::transform([&](auto&& plan) { return realize_plan(plan, env); })
-        // Filter out compile jobs that we don't need to run. This drops compilations where the
-        // output is "up-to-date" based on its inputs.
-        | views::filter([&](auto&& real) { return should_compile(real, env.db); })
+        | views::transform([&](auto&& plan) { return mk_compile_ticket(plan, env); })
         // Convert to to a real vector so we can ask its size.
         | ranges::to_vector;
 
+    auto n_to_compile = static_cast<std::size_t>(
+        ranges::count_if(each_realized, &compile_ticket::needs_recompile));
+
     // Keep a counter to display progress to the user.
-    const auto      total      = each_realized.size();
-    const auto      max_digits = fmt::format("{}", total).size();
-    compile_counter counter{{1}, total, max_digits};
+    const auto      max_digits = fmt::format("{}", n_to_compile).size();
+    compile_counter counter{.max = n_to_compile, .max_digits = max_digits};
 
     // Ass we execute, accumulate new dependency information from successful compilations
     std::vector<file_deps_info> all_new_deps;
     std::mutex                  mut;
     // Do it!
-    auto okay = parallel_run(each_realized, njobs, [&](const compile_file_full& full) {
-        auto new_dep = do_compile(full, env, counter);
+    auto okay = parallel_run(each_realized, njobs, [&](const compile_ticket& tkt) {
+        auto new_dep = handle_compilation(tkt, env, counter);
         if (new_dep) {
             std::unique_lock lk{mut};
             all_new_deps.push_back(std::move(*new_dep));
@@ -245,12 +280,15 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     });
 
     // Update compile dependency information
-    auto tr = env.db.transaction();
+    dds::stopwatch update_timer;
+    auto           tr = env.db.transaction();
     for (auto& info : all_new_deps) {
         dds_log(trace, "Update dependency info on {}", info.output.string());
         update_deps_info(neo::into(env.db), info);
     }
+    dds_log(debug, "Dependency update took {:L}ms", update_timer.elapsed_ms().count());
 
+    cancellation_point();
     // Return whether or not there were any failures.
     return okay;
 }
