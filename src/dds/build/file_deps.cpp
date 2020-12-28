@@ -69,7 +69,7 @@ msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::str
 
 void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps) {
     database& db = db_;
-    db.store_file_command(deps.output, {deps.command, deps.command_output});
+    db.record_compilation(deps.output, deps.command);
     db.forget_inputs_of(deps.output);
     for (auto&& inp : deps.inputs) {
         auto mtime = fs::last_write_time(inp);
@@ -77,7 +77,7 @@ void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps
     }
 }
 
-deps_rebuild_info dds::get_rebuild_info(const database& db, path_ref output_path) {
+std::optional<prior_compilation> dds::get_prior_compilation(const database& db, path_ref output_path) {
     auto cmd_ = db.command_of(output_path);
     if (!cmd_) {
         return {};
@@ -95,9 +95,8 @@ deps_rebuild_info dds::get_rebuild_info(const database& db, path_ref output_path
           })
         | ranges::views::transform([](auto& info) { return info.path; })  //
         | ranges::to_vector;
-    deps_rebuild_info ret;
-    ret.newer_inputs            = std::move(changed_files);
-    ret.previous_command        = cmd.command;
-    ret.previous_command_output = cmd.output;
+    prior_compilation ret;
+    ret.newer_inputs     = std::move(changed_files);
+    ret.previous_command = cmd;
     return ret;
 }
