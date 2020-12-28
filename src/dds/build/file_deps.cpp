@@ -77,7 +77,8 @@ void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps
     }
 }
 
-std::optional<prior_compilation> dds::get_prior_compilation(const database& db, path_ref output_path) {
+std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
+                                                            path_ref        output_path) {
     auto cmd_ = db.command_of(output_path);
     if (!cmd_) {
         return {};

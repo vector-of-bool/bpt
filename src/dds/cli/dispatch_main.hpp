@@ -6,4 +6,4 @@ struct options;
 
 int dispatch_main(const options&) noexcept;
 
-}  // namespace dds
+}  // namespace dds::cli

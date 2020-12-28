@@ -10,6 +10,7 @@
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
 
+#include <clocale>
 #include <filesystem>
 #include <iostream>
 #include <locale>

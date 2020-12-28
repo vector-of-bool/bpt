@@ -229,7 +229,11 @@ http_client http_pool::client_for_origin(const network_origin& origin) {
     ret._pool = _impl;
     if (iter == _impl->_clients.end()) {
         // Nothing for this origin yet
-        dds_log(debug, "Opening new connection to {}://{}:{}", origin.protocol, origin.hostname, origin.port);
+        dds_log(debug,
+                "Opening new connection to {}://{}:{}",
+                origin.protocol,
+                origin.hostname,
+                origin.port);
         auto ptr = std::make_shared<detail::http_client_impl>(origin);
         ptr->connect();
         ret._impl = ptr;

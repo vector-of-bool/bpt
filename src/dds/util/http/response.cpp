@@ -25,7 +25,8 @@ std::optional<int> http_response_info::content_length() const noexcept {
     return clen;
 }
 
-std::optional<std::string_view> http_response_info::header_value(std::string_view key) const noexcept {
+std::optional<std::string_view>
+http_response_info::header_value(std::string_view key) const noexcept {
     auto hdr = headers.find(key);
     if (!hdr) {
         return {};

@@ -50,8 +50,8 @@ prepare_catch2_driver(test_lib test_driver, const build_params& params, build_en
     if (!fs::exists(catch_hpp)) {
         fs::create_directories(catch_hpp.parent_path());
         auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
-        hpp_strm.write(detail::catch2_embedded_single_header_str,
-                       std::strlen(detail::catch2_embedded_single_header_str));
+        auto c2_str   = detail::catch2_embedded_single_header_str();
+        hpp_strm.write(c2_str.data(), c2_str.size());
         hpp_strm.close();
     }
     ret_lib.include_paths.push_back(test_include_root);
