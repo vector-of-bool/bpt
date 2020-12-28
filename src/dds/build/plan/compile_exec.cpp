@@ -251,6 +251,7 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
         update_deps_info(neo::into(env.db), info);
     }
 
+    cancellation_point();
     // Return whether or not there were any failures.
     return okay;
 }
