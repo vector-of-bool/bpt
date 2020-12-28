@@ -18,6 +18,11 @@ void dds::install_signal_handlers() noexcept {
     std::signal(SIGINT, handle_signal);
     std::signal(SIGTERM, handle_signal);
 
+#ifdef SIGQUIT
+    // Some systems issue SIGQUIT :shrug:
+    std::signal(SIGQUIT, handle_signal);
+#endif
+
 #ifdef SIGPIPE
     // XXX: neo-io doesn't behave nicely when EOF is hit on sockets. This Isn't
     // easily fixed portably without simply blocking SIGPIPE globally.
