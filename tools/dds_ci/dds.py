@@ -90,7 +90,8 @@ class DDSWrapper:
               root: Path,
               toolchain: Optional[Path] = None,
               build_root: Optional[Path] = None,
-              jobs: Optional[int] = None) -> None:
+              jobs: Optional[int] = None,
+              more_args: Optional[proc.CommandLine] = None) -> None:
         """
         Run 'dds build' with the given arguments.
 
@@ -109,6 +110,7 @@ class DDSWrapper:
             f'--jobs={jobs}',
             f'{self.project_dir_flag}={root}',
             f'--out={build_root}',
+            more_args or (),
         ])
 
     def compile_file(self,
