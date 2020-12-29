@@ -16,7 +16,20 @@
 #include <vector>
 
 #if NEO_OS_IS_WINDOWS
-bool fansi::detect_should_style() noexcept { return false; }
+#include <windows.h>
+
+bool fansi::detect_should_style() noexcept {
+    auto stdio_console = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    if (stdio_console == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    DWORD mode = 0;
+    if (!::GetConsoleMode(stdio_console, &mode)) {
+        // Failed to get the mode
+        return false;
+    }
+    return (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
 #else
 #include <unistd.h>
 bool fansi::detect_should_style() noexcept { return ::isatty(STDOUT_FILENO); }

@@ -21,7 +21,6 @@ void dds::enable_ansi_console() noexcept {
 }
 
 bool dds::stdout_is_a_tty() noexcept {
-    // XXX: Newer Windows consoles support ANSI color, so this should be made smarter
     auto stdio_console = ::GetStdHandle(STD_OUTPUT_HANDLE);
     if (stdio_console == INVALID_HANDLE_VALUE) {
         return false;
