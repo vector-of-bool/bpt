@@ -128,7 +128,7 @@ void update_deps_info(neo::output<database> db, const file_deps_info& info);
  */
 struct prior_compilation {
     std::vector<fs::path> newer_inputs;
-    completed_compilation          previous_command;
+    completed_compilation previous_command;
 };
 
 /**
