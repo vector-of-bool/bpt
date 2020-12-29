@@ -1,5 +1,6 @@
 #include <dds/cli/dispatch_main.hpp>
 #include <dds/cli/options.hpp>
+#include <dds/util/env.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/output.hpp>
 #include <dds/util/signal.hpp>
@@ -17,12 +18,12 @@
 #include <locale>
 
 static void load_locale() {
-    auto lang = std::getenv("LANG");
+    auto lang = dds::getenv("LANG");
     if (!lang) {
         return;
     }
     try {
-        std::locale::global(std::locale(lang));
+        std::locale::global(std::locale(*lang));
     } catch (const std::runtime_error& e) {
         // No locale with the given name
         return;

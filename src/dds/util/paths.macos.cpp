@@ -2,6 +2,7 @@
 
 #include "./paths.hpp"
 
+#include <dds/util/env.hpp>
 #include <dds/util/log.hpp>
 
 #include <cstdlib>
@@ -10,12 +11,10 @@ using namespace dds;
 
 fs::path dds::user_home_dir() {
     static auto ret = []() -> fs::path {
-        auto home_env = std::getenv("HOME");
-        if (!home_env) {
-            dds_log(warn, "No HOME environment variable set!");
+        return fs::absolute(dds::getenv("HOME", [] {
+            dds_log(error, "No HOME environment variable set!");
             return "/";
-        }
-        return fs::absolute(fs::path(home_env));
+        }));
     }();
     return ret;
 }

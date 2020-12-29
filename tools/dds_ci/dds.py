@@ -1,5 +1,6 @@
 import multiprocessing
 import shutil
+import os
 from pathlib import Path
 import copy
 from typing import Optional, TypeVar, Iterable
@@ -61,7 +62,9 @@ class DDSWrapper:
 
     def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None) -> None:
         """Execute the 'dds' executable with the given arguments"""
-        proc.check_run([self.path, args], cwd=cwd or self.default_cwd)
+        env = os.environ.copy()
+        env['DDS_NO_ADD_INITIAL_REPO'] = '1'
+        proc.check_run([self.path, args], cwd=cwd or self.default_cwd, env=env)
 
     def catalog_json_import(self, path: Path) -> None:
         """Run 'catalog import' to import the given JSON. Only applicable to older 'dds'"""

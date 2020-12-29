@@ -34,4 +34,6 @@ public:
 void update_all_remotes(neo::sqlite3::database_ref);
 void remove_remote(pkg_db& db, std::string_view name);
 
+void add_init_repo(neo::sqlite3::database_ref db) noexcept;
+
 }  // namespace dds
