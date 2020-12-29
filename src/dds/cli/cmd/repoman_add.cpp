@@ -82,6 +82,13 @@ int repoman_add(const options& opts) {
         [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
             dds_log(error, "Error while opening repository database {}: {}", db.path, e.message);
             return 1;
+        },
+        [](dds::e_system_error_exc e, neo::url url, http_response_info) {
+            dds_log(error,
+                    "An error occured while downloading [.bold.red[{}]]: {}"_styled,
+                    url.to_string(),
+                    e.message);
+            return 1;
         });
 }
 
