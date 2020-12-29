@@ -1,6 +1,7 @@
 #include <dds/cli/dispatch_main.hpp>
 #include <dds/cli/options.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/output.hpp>
 #include <dds/util/signal.hpp>
 
 #include <debate/debate.hpp>
@@ -35,6 +36,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
     std::setlocale(LC_CTYPE, ".utf8");
 
     dds::install_signal_handlers();
+    dds::enable_ansi_console();
 
     dds::cli::options       opts;
     debate::argument_parser parser;
