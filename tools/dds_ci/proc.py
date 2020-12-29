@@ -43,9 +43,11 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
 def run(*cmd: CommandLine,
         cwd: Optional[Pathish] = None,
         check: bool = False,
-        env: Optional[Mapping[str, str]] = None) -> ProcessResult:
+        env: Optional[Mapping[str, str]] = None,
+        timeout: Optional[int] = None) -> ProcessResult:
+    timeout = timeout or 60 * 5
     command = list(flatten_cmd(cmd))
-    res = subprocess.run(command, cwd=cwd, check=False, env=env)
+    res = subprocess.run(command, cwd=cwd, check=False, env=env, timeout=timeout)
     if res.returncode and check:
         raise_error(res)
     return res
@@ -57,5 +59,6 @@ def raise_error(proc: ProcessResult) -> NoReturn:
 
 def check_run(*cmd: CommandLine,
               cwd: Optional[Pathish] = None,
-              env: Optional[Mapping[str, str]] = None) -> ProcessResult:
-    return run(cmd, cwd=cwd, check=True, env=env)
+              env: Optional[Mapping[str, str]] = None,
+              timeout: Optional[int] = None) -> ProcessResult:
+    return run(cmd, cwd=cwd, check=True, env=env, timeout=timeout)

@@ -81,7 +81,7 @@ def test_build(dds: DDSWrapper, args: CommandArguments) -> DDSWrapper:
     test_tc = args.test_toolchain or toolchain.get_default_audit_toolchain()
     build_dir = paths.BUILD_DIR
     with toolchain.fixup_toolchain(test_tc) as new_tc:
-        dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=build_dir, jobs=args.jobs)
+        dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=build_dir, jobs=args.jobs, timeout=60 * 15)
     return DDSWrapper(build_dir / ('dds' + paths.EXE_SUFFIX))
 
 
@@ -113,7 +113,11 @@ def main_build(dds: DDSWrapper, args: CommandArguments) -> int:
         toolchain.get_default_toolchain() if not args.rapid else toolchain.get_default_audit_toolchain())
     with toolchain.fixup_toolchain(main_tc) as new_tc:
         try:
-            dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=paths.BUILD_DIR, jobs=args.jobs)
+            dds.build(toolchain=new_tc,
+                      root=paths.PROJECT_ROOT,
+                      build_root=paths.BUILD_DIR,
+                      jobs=args.jobs,
+                      timeout=60 * 15)
         except subprocess.CalledProcessError as e:
             if args.rapid:
                 return e.returncode

@@ -60,11 +60,11 @@ class DDSWrapper:
         if pkg_db and self.pkg_db_path.exists():
             self.pkg_db_path.unlink()
 
-    def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None) -> None:
+    def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None, timeout: Optional[int] = None) -> None:
         """Execute the 'dds' executable with the given arguments"""
         env = os.environ.copy()
         env['DDS_NO_ADD_INITIAL_REPO'] = '1'
-        proc.check_run([self.path, args], cwd=cwd or self.default_cwd, env=env)
+        proc.check_run([self.path, args], cwd=cwd or self.default_cwd, env=env, timeout=timeout)
 
     def catalog_json_import(self, path: Path) -> None:
         """Run 'catalog import' to import the given JSON. Only applicable to older 'dds'"""
@@ -94,7 +94,8 @@ class DDSWrapper:
               toolchain: Optional[Path] = None,
               build_root: Optional[Path] = None,
               jobs: Optional[int] = None,
-              more_args: Optional[proc.CommandLine] = None) -> None:
+              more_args: Optional[proc.CommandLine] = None,
+              timeout: Optional[int] = None) -> None:
         """
         Run 'dds build' with the given arguments.
 
@@ -105,16 +106,19 @@ class DDSWrapper:
         """
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         jobs = jobs or multiprocessing.cpu_count() + 2
-        self.run([
-            'build',
-            f'--toolchain={toolchain}',
-            self.repo_dir_arg,
-            self.catalog_path_arg,
-            f'--jobs={jobs}',
-            f'{self.project_dir_flag}={root}',
-            f'--out={build_root}',
-            more_args or (),
-        ])
+        self.run(
+            [
+                'build',
+                f'--toolchain={toolchain}',
+                self.repo_dir_arg,
+                self.catalog_path_arg,
+                f'--jobs={jobs}',
+                f'{self.project_dir_flag}={root}',
+                f'--out={build_root}',
+                more_args or (),
+            ],
+            timeout=timeout,
+        )
 
     def compile_file(self,
                      paths: Iterable[Pathish],
