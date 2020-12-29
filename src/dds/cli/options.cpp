@@ -6,9 +6,11 @@
 #include <dds/toolchain/toolchain.hpp>
 
 #include <debate/enum.hpp>
+#include <fansi/styled.hpp>
 
 using namespace dds;
 using namespace debate;
+using namespace fansi::literals;
 
 namespace {
 
@@ -254,6 +256,10 @@ struct setup {
             .name = "repo",
             .help = "Manage package repositories",
         }));
+        setup_pkg_search_cmd(pkg_group.add_parser({
+            .name = "search",
+            .help = "Search for packages available to download",
+        }));
     }
 
     void setup_pkg_get_cmd(argument_parser& pkg_get_cmd) {
@@ -337,6 +343,18 @@ struct setup {
         });
         pkg_repo_remove_cmd.add_argument(if_missing_arg.dup()).help
             = "What to do if any of the named repositories do not exist";
+    }
+
+    void setup_pkg_search_cmd(argument_parser& pkg_repo_search_cmd) noexcept {
+        pkg_repo_search_cmd.add_argument({
+            .help    = std::string(  //
+                "A name or glob-style pattern. Only matching packages will be returned. \n"
+                "Searching is case-insensitive. Only the .italic[name] will be matched (not the \n"
+                "version).\n\nIf this parameter is omitted, the search will return .italic[all] \n"
+                "available packages."_styled),
+            .valname = "<name-or-pattern>",
+            .action  = put_into(opts.pkg.search.pattern),
+        });
     }
 
     void setup_sdist_cmd(argument_parser& sdist_cmd) noexcept {

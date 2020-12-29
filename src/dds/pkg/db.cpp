@@ -89,7 +89,7 @@ void migrate_repodb_3(nsql::database& db) {
         CREATE TABLE dds_pkg_remotes (
             remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            remote_url TEXT NOT NULL,
+            url TEXT NOT NULL,
             db_etag TEXT,
             db_mtime TEXT
         );

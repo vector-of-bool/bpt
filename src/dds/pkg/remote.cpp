@@ -70,10 +70,10 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
 
 void pkg_remote::store(nsql::database_ref db) {
     auto st = db.prepare(R"(
-        INSERT INTO dds_pkg_remotes (name, remote_url)
+        INSERT INTO dds_pkg_remotes (name, url)
             VALUES (?, ?)
         ON CONFLICT (name) DO
-            UPDATE SET remote_url = ?2
+            UPDATE SET url = ?2
     )");
     nsql::exec(st, _name, _base_url.to_string());
 }
@@ -208,16 +208,16 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
 void dds::update_all_remotes(nsql::database_ref db) {
     dds_log(info, "Updating catalog from all remotes");
-    auto repos_st = db.prepare("SELECT name, remote_url, db_etag, db_mtime FROM dds_pkg_remotes");
+    auto repos_st = db.prepare("SELECT name, url, db_etag, db_mtime FROM dds_pkg_remotes");
     auto tups     = nsql::iter_tuples<std::string,
                                   std::string,
                                   std::optional<std::string>,
                                   std::optional<std::string>>(repos_st)
         | ranges::to_vector;
 
-    for (const auto& [name, remote_url, etag, db_mtime] : tups) {
-        DDS_E_SCOPE(e_url_string{remote_url});
-        pkg_remote repo{name, neo::url::parse(remote_url)};
+    for (const auto& [name, url, etag, db_mtime] : tups) {
+        DDS_E_SCOPE(e_url_string{url});
+        pkg_remote repo{name, neo::url::parse(url)};
         repo.update_pkg_db(db, etag, db_mtime);
     }
 

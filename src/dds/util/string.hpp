@@ -86,6 +86,21 @@ replace(std::vector<std::string> strings, std::string_view key, std::string_view
     return strings;
 }
 
+template <typename Range>
+inline std::string joinstr(std::string_view joiner, Range&& rng) {
+    auto        iter = std::begin(rng);
+    auto        end  = std::end(rng);
+    std::string ret;
+    while (iter != end) {
+        ret.append(*iter);
+        ++iter;
+        if (iter != end) {
+            ret.append(joiner);
+        }
+    }
+    return ret;
+}
+
 }  // namespace string_utils
 
 }  // namespace dds

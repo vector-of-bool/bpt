@@ -23,6 +23,7 @@ command pkg_repo_add;
 command pkg_repo_update;
 command pkg_repo_ls;
 command pkg_repo_remove;
+command pkg_search;
 command repoman_add;
 command repoman_import;
 command repoman_init;
@@ -71,6 +72,8 @@ int dispatch_main(const options& opts) noexcept {
                 }
                 neo::unreachable();
             }
+            case pkg_subcommand::search:
+                return cmd::pkg_search(opts);
             case pkg_subcommand::_none_:;
             }
             neo::unreachable();

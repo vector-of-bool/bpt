@@ -1,8 +1,9 @@
 from pathlib import Path
-from contextlib import contextmanager
+import socket
+from contextlib import contextmanager, ExitStack, closing
 import json
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-from typing import NamedTuple, Any, Iterator
+from typing import NamedTuple, Any, Iterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import tempfile
@@ -11,6 +12,16 @@ import subprocess
 
 import pytest
 from _pytest.fixtures import FixtureRequest
+from _pytest.tmpdir import TempPathFactory
+
+from dds_ci.dds import DDSWrapper
+
+
+def _unused_tcp_port() -> int:
+    """Find an unused localhost TCP port from 1024-65535 and return it."""
+    with closing(socket.socket()) as sock:
+        sock.bind(('127.0.0.1', 0))
+        return sock.getsockname()[1]
 
 
 class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -54,17 +65,24 @@ def run_http_server(dirpath: Path, port: int) -> Iterator[ServerInfo]:
             httpd.shutdown()
 
 
-@pytest.fixture()
-def http_tmp_dir_server(tmp_path: Path, unused_tcp_port: int) -> Iterator[ServerInfo]:
-    """
-    Creates an HTTP server that serves the contents of a new
-    temporary directory.
-    """
-    with run_http_server(tmp_path, unused_tcp_port) as s:
-        yield s
+HTTPServerFactory = Callable[[Path], ServerInfo]
 
 
-class RepoFixture:
+@pytest.fixture(scope='session')
+def http_server_factory(request: FixtureRequest) -> HTTPServerFactory:
+    """
+    Spawn an HTTP server that serves the content of a directory.
+    """
+    def _make(p: Path) -> ServerInfo:
+        st = ExitStack()
+        server = st.enter_context(run_http_server(p, _unused_tcp_port()))
+        request.addfinalizer(st.pop_all)
+        return server
+
+    return _make
+
+
+class RepoServer:
     """
     A fixture handle to a dds HTTP repository, including a path and URL.
     """
@@ -98,12 +116,40 @@ class RepoFixture:
         ])
 
 
+RepoFactory = Callable[[str], Path]
+
+
+@pytest.fixture(scope='session')
+def repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> RepoFactory:
+    def _make(name: str) -> Path:
+        tmpdir = tmp_path_factory.mktemp('test-repo-')
+        dds.run(['repoman', 'init', tmpdir, f'--name={name}'])
+        return tmpdir
+
+    return _make
+
+
+HTTPRepoServerFactory = Callable[[str], RepoServer]
+
+
+@pytest.fixture(scope='session')
+def http_repo_factory(dds_exe: Path, repo_factory: RepoFactory,
+                      http_server_factory: HTTPServerFactory) -> HTTPRepoServerFactory:
+    """
+    Fixture factory that creates new repositories with an HTTP server for them.
+    """
+    def _make(name: str) -> RepoServer:
+        repo_dir = repo_factory(name)
+        server = http_server_factory(repo_dir)
+        return RepoServer(dds_exe, server, name)
+
+    return _make
+
+
 @pytest.fixture()
-def http_repo(dds_exe: Path, http_tmp_dir_server: ServerInfo, request: FixtureRequest) -> Iterator[RepoFixture]:
+def http_repo(http_repo_factory: HTTPRepoServerFactory, request: FixtureRequest) -> RepoServer:
     """
     Fixture that creates a new empty dds repository and an HTTP server to serve
     it.
     """
-    name = f'test-repo-{request.function.__name__}'
-    subprocess.check_call([str(dds_exe), 'repoman', 'init', str(http_tmp_dir_server.root), f'--name={name}'])
-    yield RepoFixture(dds_exe, http_tmp_dir_server, repo_name=name)
+    return http_repo_factory(f'test-repo-{request.function.__name__}')

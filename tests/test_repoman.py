@@ -2,7 +2,7 @@ import pytest
 
 from dds_ci.dds import DDSWrapper
 from dds_ci.testing.fixtures import Project
-from dds_ci.testing.http import RepoFixture
+from dds_ci.testing.http import RepoServer
 from dds_ci.testing.error import expect_error_marker
 from pathlib import Path
 
@@ -50,7 +50,7 @@ def test_error_double_remove(tmp_repo: Path, dds: DDSWrapper) -> None:
         dds.run(['repoman', 'remove', tmp_repo, 'neo-fun@0.4.0'])
 
 
-def test_pkg_http(http_repo: RepoFixture, tmp_project: Project) -> None:
+def test_pkg_http(http_repo: RepoServer, tmp_project: Project) -> None:
     tmp_project.dds.run([
         'repoman', '-ltrace', 'add', http_repo.server.root, 'neo-fun@0.4.0',
         'https://github.com/vector-of-bool/neo-fun/archive/0.4.0.tar.gz?__dds_strpcmp=1'

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from dds_ci.testing import RepoFixture, Project
+from dds_ci.testing import RepoServer, Project
 
 SIMPLE_CATALOG = {
     "packages": {
@@ -21,13 +21,13 @@ SIMPLE_CATALOG = {
 
 
 @pytest.fixture()
-def test_repo(http_repo: RepoFixture) -> RepoFixture:
+def test_repo(http_repo: RepoServer) -> RepoServer:
     http_repo.import_json_data(SIMPLE_CATALOG)
     return http_repo
 
 
 @pytest.fixture()
-def test_project(tmp_project: Project, test_repo: RepoFixture) -> Project:
+def test_project(tmp_project: Project, test_repo: RepoServer) -> Project:
     tmp_project.dds.repo_add(test_repo.url)
     return tmp_project
 

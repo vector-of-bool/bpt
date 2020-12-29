@@ -46,6 +46,7 @@ enum class pkg_subcommand {
     get,
     import,
     repo,
+    search,
 };
 
 /**
@@ -214,6 +215,14 @@ struct options {
             /// Package IDs to download
             std::vector<string> pkgs;
         } get;
+
+        /**
+         * @brief Parameters for 'dds pkg search'
+         */
+        struct {
+            /// The search pattern, if provided
+            opt_string pattern;
+        } search;
     } pkg;
 
     struct {
