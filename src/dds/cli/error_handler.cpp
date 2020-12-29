@@ -2,6 +2,7 @@
 #include "./options.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
@@ -10,6 +11,7 @@
 #include <boost/leaf/handle_error.hpp>
 #include <boost/leaf/handle_exception.hpp>
 #include <boost/leaf/result.hpp>
+#include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <json5/parse_data.hpp>
 #include <neo/scope.hpp>
@@ -18,6 +20,7 @@
 #include <fstream>
 
 using namespace dds;
+using namespace fansi::literals;
 
 namespace {
 
@@ -54,6 +57,25 @@ auto handlers = std::tuple(  //
     [](user_cancelled) {
         dds_log(critical, "Operation cancelled by the user");
         return 2;
+    },
+    [](dds::e_system_error_exc e, neo::url url, http_response_info) {
+        dds_log(error,
+                "An error occured while downloading [.bold.red[{}]]: {}"_styled,
+                url.to_string(),
+                e.message);
+        return 1;
+    },
+    [](dds::e_system_error_exc e, network_origin origin, neo::url* url) {
+        dds_log(error,
+                "Network error communicating with .bold.red[{}://{}:{}]: {}"_styled,
+                origin.protocol,
+                origin.hostname,
+                origin.port,
+                e.message);
+        if (url) {
+            dds_log(error, "  (While accessing URL [.bold.red[{}]])"_styled, url->to_string());
+        }
+        return 1;
     },
     [](e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,

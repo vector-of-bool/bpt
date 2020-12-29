@@ -410,18 +410,18 @@ request_result http_pool::request(neo::url url, http_request_params params) {
 
         if (resp.is_error()) {
             client.discard_body(resp);
-            throw boost::leaf::exception(http_status_error("Received an error from HTTP"));
+            throw BOOST_LEAF_EXCEPTION(http_status_error("Received an error from HTTP"));
         }
 
         if (resp.is_redirect()) {
             client.discard_body(resp);
             if (i == 100) {
-                throw boost::leaf::exception(
+                throw BOOST_LEAF_EXCEPTION(
                     http_server_error("Encountered over 100 HTTP redirects. Request aborted."));
             }
             auto loc = resp.headers.find("Location");
             if (!loc) {
-                throw boost::leaf::exception(
+                throw BOOST_LEAF_EXCEPTION(
                     http_server_error("Server sent an invalid response of a 30x redirect without a "
                                       "'Location' header"));
             }
