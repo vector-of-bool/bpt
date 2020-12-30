@@ -17,6 +17,7 @@ int build_deps(const options& opts) {
         .out_root          = opts.out_path.value_or(fs::current_path() / "_deps"),
         .existing_lm_index = {},
         .emit_lmi          = opts.build.lm_index.value_or("INDEX.lmi"),
+        .emit_cmake        = opts.build_deps.cmake_file,
         .toolchain         = opts.load_toolchain(),
         .parallel_jobs     = opts.jobs,
     };

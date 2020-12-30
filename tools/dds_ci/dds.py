@@ -132,6 +132,8 @@ class DDSWrapper:
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         self.run([
             'compile-file',
+            self.catalog_path_arg,
+            self.repo_dir_arg,
             paths,
             f'--toolchain={toolchain}',
             f'{self.project_dir_flag}={project_dir}',

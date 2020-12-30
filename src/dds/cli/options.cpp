@@ -222,6 +222,13 @@ struct setup {
             .action          = debate::push_back_onto(opts.build_deps.deps_files),
         });
         build_deps_cmd.add_argument({
+            .long_spellings = {"cmake"},
+            .help = "Generate a CMake file at the given path that will create import targets for "
+                    "the dependencies",
+            .valname = "<file-path>",
+            .action  = debate::put_into(opts.build_deps.cmake_file),
+        });
+        build_deps_cmd.add_argument({
             .help       = "Dependency statement strings",
             .valname    = "<dependency>",
             .can_repeat = true,

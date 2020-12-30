@@ -154,6 +154,8 @@ struct options {
         std::vector<fs::path> deps_files;
         /// Dependency strings provided directly in the command-line
         std::vector<string> deps;
+        /// Path to a CMake import file to write
+        opt_path cmake_file;
     } build_deps;
 
     /**

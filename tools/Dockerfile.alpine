@@ -2,7 +2,7 @@ FROM alpine:3.12.1
 
 # Base build dependencies
 RUN apk add "gcc=9.3.0-r2" "g++=9.3.0-r2" make python3 py3-pip \
-    git openssl-libs-static openssl-dev ccache lld curl python3-dev
+    git openssl-libs-static openssl-dev ccache lld curl python3-dev cmake
 
 # We use version-qualified names for compiler executables
 RUN ln -s $(type -P gcc) /usr/local/bin/gcc-9 && \
