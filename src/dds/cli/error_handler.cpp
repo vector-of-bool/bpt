@@ -2,6 +2,7 @@
 #include "./options.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/error/toolchain.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -58,14 +59,14 @@ auto handlers = std::tuple(  //
         dds_log(critical, "Operation cancelled by the user");
         return 2;
     },
-    [](dds::e_system_error_exc e, neo::url url, http_response_info) {
+    [](e_system_error_exc e, neo::url url, http_response_info) {
         dds_log(error,
                 "An error occured while downloading [.bold.red[{}]]: {}"_styled,
                 url.to_string(),
                 e.message);
         return 1;
     },
-    [](dds::e_system_error_exc e, network_origin origin, neo::url* url) {
+    [](e_system_error_exc e, network_origin origin, neo::url* url) {
         dds_log(error,
                 "Network error communicating with .bold.red[{}://{}:{}]: {}"_styled,
                 origin.protocol,
@@ -74,6 +75,16 @@ auto handlers = std::tuple(  //
                 e.message);
         if (url) {
             dds_log(error, "  (While accessing URL [.bold.red[{}]])"_styled, url->to_string());
+        }
+        return 1;
+    },
+    [](e_system_error_exc err,
+       e_loading_toolchain,
+       e_toolchain_file* tc_file,
+       e_toolchain_builtin*) {
+        dds_log(error, "Failed to load toolchain: .br.yellow[{}]"_styled, err.message);
+        if (tc_file) {
+            dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
         }
         return 1;
     },
@@ -91,5 +102,13 @@ auto handlers = std::tuple(  //
 }  // namespace
 
 int dds::handle_cli_errors(std::function<int()> fn) noexcept {
-    return boost::leaf::try_catch(fn, handlers);
+    return boost::leaf::try_catch(
+        [&] {
+            try {
+                return fn();
+            } catch (...) {
+                capture_exception();
+            }
+        },
+        handlers);
 }

@@ -1,6 +1,8 @@
 #include "./options.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/error/on_error.hpp>
+#include <dds/error/toolchain.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/toolchain.hpp>
@@ -471,7 +473,10 @@ toolchain dds::cli::options::load_toolchain() const {
     }
     // Convert the given string to a toolchain
     auto& tc_str = *toolchain;
+    DDS_E_SCOPE(e_toolchain_name{tc_str});
+    DDS_E_SCOPE(e_loading_toolchain{tc_str});
     if (tc_str.starts_with(":")) {
+        DDS_E_SCOPE(e_toolchain_builtin{tc_str});
         auto default_tc = tc_str.substr(1);
         auto tc         = dds::toolchain::get_builtin(default_tc);
         if (!tc.has_value()) {
@@ -481,6 +486,7 @@ toolchain dds::cli::options::load_toolchain() const {
         }
         return std::move(*tc);
     } else {
+        DDS_E_SCOPE(e_toolchain_file{tc_str});
         return parse_toolchain_json5(slurp_file(tc_str));
     }
 }
