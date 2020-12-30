@@ -424,12 +424,6 @@ struct setup {
     void setup_repoman_add_cmd(argument_parser& repoman_add_cmd) {
         repoman_add_cmd.add_argument(repoman_repo_dir_arg.dup());
         repoman_add_cmd.add_argument({
-            .help     = "The package ID of the package to add",
-            .valname  = "<pkg-id>",
-            .required = true,
-            .action   = put_into(opts.repoman.add.pkg_id_str),
-        });
-        repoman_add_cmd.add_argument({
             .help     = "URL to add to the repository",
             .valname  = "<url>",
             .required = true,

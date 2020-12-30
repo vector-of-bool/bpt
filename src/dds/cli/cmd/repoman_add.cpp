@@ -14,16 +14,15 @@
 namespace dds::cli::cmd {
 
 static int _repoman_add(const options& opts) {
-    auto             pkg_id = dds::pkg_id::parse(opts.repoman.add.pkg_id_str);
-    auto             rpkg   = any_remote_pkg::from_url(neo::url::parse(opts.repoman.add.url_str));
+    auto rpkg       = any_remote_pkg::from_url(neo::url::parse(opts.repoman.add.url_str));
+    auto temp_sdist = get_package_sdist(rpkg);
+
     dds::pkg_listing add_info{
-        .ident       = pkg_id,
+        .ident       = temp_sdist.sdist.manifest.id,
+        .deps        = temp_sdist.sdist.manifest.dependencies,
         .description = opts.repoman.add.description,
         .remote_pkg  = rpkg,
     };
-    auto temp_sdist = get_package_sdist(add_info);
-
-    add_info.deps = temp_sdist.sdist.manifest.dependencies;
 
     auto repo = repo_manager::open(opts.repoman.repo_dir);
     repo.add_pkg(add_info, opts.repoman.add.url_str);
@@ -38,22 +37,6 @@ int repoman_add(const options& opts) {
             } catch (...) {
                 dds::capture_exception();
             }
-        },
-        [](user_error<errc::invalid_pkg_id>,
-           semver::invalid_version   err,
-           dds::e_invalid_pkg_id_str idstr) -> int {
-            dds_log(error,
-                    "Package ID string '{}' is invalid, because '{}' is not a valid semantic "
-                    "version string",
-                    idstr.value,
-                    err.string());
-            write_error_marker("invalid-pkg-id-str-version");
-            throw;
-        },
-        [](user_error<errc::invalid_pkg_id>, dds::e_invalid_pkg_id_str idstr) -> int {
-            dds_log(error, "Invalid package ID string '{}'", idstr.value);
-            write_error_marker("invalid-pkg-id-str");
-            throw;
         },
         [](dds::e_sqlite3_error_exc,
            boost::leaf::match<neo::sqlite3::errc, neo::sqlite3::errc::constraint_unique>,

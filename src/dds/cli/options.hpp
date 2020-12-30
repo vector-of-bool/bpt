@@ -241,7 +241,6 @@ struct options {
 
         /// Options for 'dds repoman add'
         struct {
-            std::string pkg_id_str;
             std::string url_str;
             std::string description;
         } add;
