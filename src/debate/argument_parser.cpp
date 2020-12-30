@@ -52,29 +52,23 @@ struct parse_engine {
     std::optional<std::string> find_nearest_arg_spelling(std::string_view given) const noexcept {
         std::vector<std::string> candidates;
         // Only match arguments of the corrent type
-        auto given_long = given.starts_with("--");
-        auto has_dash   = given.starts_with("-");
-        auto parser     = bottom_parser;
+        auto parser = bottom_parser;
         while (parser) {
             for (auto& arg : parser->arguments()) {
-                if (given_long) {
-                    for (auto& l : arg.long_spellings) {
-                        candidates.push_back("--" + l);
-                    }
+                for (auto& l : arg.long_spellings) {
+                    candidates.push_back("--" + l);
                 }
-                if (has_dash) {
-                    for (auto& s : arg.short_spellings) {
-                        candidates.push_back("-" + s);
-                    }
-                }
-                if (!has_dash && parser->subparsers() && parser == bottom_parser) {
-                    auto&& grp = *parser->subparsers();
-                    for (auto& p : grp._p_subparsers) {
-                        candidates.push_back(p.name);
-                    }
+                for (auto& s : arg.short_spellings) {
+                    candidates.push_back("-" + s);
                 }
             }
             parser = parser->parent().pointer();
+        }
+        if (bottom_parser->subparsers()) {
+            auto&& grp = *bottom_parser->subparsers();
+            for (auto& p : grp._p_subparsers) {
+                candidates.push_back(p.name);
+            }
         }
         return dds::did_you_mean(given, candidates);
     }
