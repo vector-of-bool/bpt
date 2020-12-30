@@ -25,16 +25,7 @@ enum class subcommand {
     compile_file,
     build_deps,
     pkg,
-    sdist,
     repoman,
-};
-
-/**
- * @brief 'dds sdist' subcommands
- */
-enum class sdist_subcommand {
-    _none_,
-    create,
 };
 
 /**
@@ -44,6 +35,7 @@ enum class pkg_subcommand {
     _none_,
     ls,
     get,
+    create,
     import,
     repo,
     search,
@@ -224,10 +216,6 @@ struct options {
             opt_string pattern;
         } search;
     } pkg;
-
-    struct {
-        sdist_subcommand subcommand;
-    } sdist;
 
     /**
      * @brief Parameters for 'dds repoman'

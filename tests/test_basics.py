@@ -81,6 +81,6 @@ def test_empty_with_pkg_json(tmp_project: Project) -> None:
 
 def test_empty_sdist_create(tmp_project: Project) -> None:
     tmp_project.package_json = TEST_PACKAGE
-    tmp_project.sdist_create()
+    tmp_project.pkg_create()
     assert tmp_project.build_root.joinpath('test-pkg@0.2.2.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'

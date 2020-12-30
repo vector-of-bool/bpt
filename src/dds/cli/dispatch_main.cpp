@@ -16,6 +16,7 @@ using command = int(const options&);
 command build_deps;
 command build;
 command compile_file;
+command pkg_create;
 command pkg_get;
 command pkg_import;
 command pkg_ls;
@@ -29,7 +30,6 @@ command repoman_import;
 command repoman_init;
 command repoman_ls;
 command repoman_remove;
-command sdist_create;
 
 }  // namespace cmd
 
@@ -39,20 +39,13 @@ int dispatch_main(const options& opts) noexcept {
         switch (opts.subcommand) {
         case subcommand::build:
             return cmd::build(opts);
-        case subcommand::sdist: {
-            DDS_E_SCOPE(opts.sdist.subcommand);
-            switch (opts.sdist.subcommand) {
-            case sdist_subcommand::create:
-                return cmd::sdist_create(opts);
-            case sdist_subcommand::_none_:;
-            }
-            neo::unreachable();
-        }
         case subcommand::pkg: {
             DDS_E_SCOPE(opts.pkg.subcommand);
             switch (opts.pkg.subcommand) {
             case pkg_subcommand::ls:
                 return cmd::pkg_ls(opts);
+            case pkg_subcommand::create:
+                return cmd::pkg_create(opts);
             case pkg_subcommand::get:
                 return cmd::pkg_get(opts);
             case pkg_subcommand::import:

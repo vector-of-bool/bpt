@@ -11,31 +11,31 @@ from dds_ci.testing import ProjectOpener, Project, error
 
 @pytest.fixture()
 def test_project(project_opener: ProjectOpener) -> Project:
-    return project_opener.open('projects/sdist')
+    return project_opener.open('projects/simple')
 
 
-def test_create_sdist(test_project: Project, tmp_path: Path) -> None:
+def test_create_pkg(test_project: Project, tmp_path: Path) -> None:
     # Create in the default location
-    test_project.sdist_create()
+    test_project.pkg_create()
     sd_dir = test_project.build_root / 'foo@1.2.3.tar.gz'
     assert sd_dir.is_file(), 'Did not create an sdist in the default location'
     # Create in a different location
     dest = tmp_path / 'dummy.tar.gz'
-    test_project.sdist_create(dest=dest)
+    test_project.pkg_create(dest=dest)
     assert dest.is_file(), 'Did not create an sdist in the new location'
 
 
 @pytest.fixture()
-def test_sdist(test_project: Project) -> Tuple[Path, Project]:
+def _test_pkg(test_project: Project) -> Tuple[Path, Project]:
     repo_content_path = test_project.dds.repo_dir / 'foo@1.2.3'
     assert not repo_content_path.is_dir()
-    test_project.sdist_create()
+    test_project.pkg_create()
     assert not repo_content_path.is_dir()
     return test_project.build_root / 'foo@1.2.3.tar.gz', test_project
 
 
-def test_import_sdist_archive(test_sdist: Tuple[Path, Project]) -> None:
-    sdist, project = test_sdist
+def test_import_sdist_archive(_test_pkg: Tuple[Path, Project]) -> None:
+    sdist, project = _test_pkg
     repo_content_path = project.dds.repo_dir / 'foo@1.2.3'
     project.dds.pkg_import(sdist)
     assert repo_content_path.is_dir(), \
@@ -47,8 +47,8 @@ def test_import_sdist_archive(test_sdist: Tuple[Path, Project]) -> None:
         'Non-package content appeared in the package cache'
 
 
-def test_import_sdist_stdin(test_sdist: Tuple[Path, Project]) -> None:
-    sdist, project = test_sdist
+def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
+    sdist, project = _test_pkg
     repo_content_path = project.dds.repo_dir / 'foo@1.2.3'
     pipe = subprocess.Popen(
         list(proc.flatten_cmd([
@@ -70,7 +70,6 @@ def test_import_sdist_stdin(test_sdist: Tuple[Path, Project]) -> None:
 
     rc = pipe.wait()
     assert rc == 0, 'Subprocess failed'
-    # project.dds.pkg_import(sdist)
     assert repo_content_path.is_dir(), \
         'The package did not appear in the local cache'
     assert repo_content_path.joinpath('library.jsonc').is_file(), \
@@ -82,16 +81,16 @@ def test_import_sdist_stdin(test_sdist: Tuple[Path, Project]) -> None:
 
 def test_sdist_invalid_project(tmp_project: Project) -> None:
     with error.expect_error_marker('no-package-json5'):
-        tmp_project.sdist_create()
+        tmp_project.pkg_create()
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='We know this fails on Linux')
 def test_sdist_unreadable_dir(dds: DDSWrapper) -> None:
     with error.expect_error_marker('failed-package-json5-scan'):
-        dds.run(['sdist', 'create', '--project=/root'])
+        dds.run(['pkg', 'create', '--project=/root'])
 
 
 def test_sdist_invalid_json5(tmp_project: Project) -> None:
     tmp_project.write('package.json5', 'bogus json5')
     with error.expect_error_marker('package-json5-parse-error'):
-        tmp_project.sdist_create()
+        tmp_project.pkg_create()

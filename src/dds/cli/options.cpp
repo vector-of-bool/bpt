@@ -144,10 +144,6 @@ struct setup {
             .name = "pkg",
             .help = "Manage packages and package remotes",
         }));
-        setup_sdist_cmd(group.add_parser({
-            .name = "sdist",
-            .help = "Work with source distribution packages",
-        }));
         setup_repoman_cmd(group.add_parser({
             .name = "repoman",
             .help = "Manage a dds package repository",
@@ -236,17 +232,21 @@ struct setup {
             .valname = "<pkg-subcommand>",
             .action  = put_into(opts.pkg.subcommand),
         });
+        setup_pkg_init_db_cmd(pkg_group.add_parser({
+            .name = "init-db",
+            .help = "Initialize a new package database file (Path specified with '--pkg-db-path')",
+        }));
         pkg_group.add_parser({
             .name = "ls",
             .help = "List locally available packages",
         });
+        setup_pkg_create_cmd(pkg_group.add_parser({
+            .name = "create",
+            .help = "Create a source distribution archive of a project",
+        }));
         setup_pkg_get_cmd(pkg_group.add_parser({
             .name = "get",
             .help = "Obtain a copy of a package from a remote",
-        }));
-        setup_pkg_init_db_cmd(pkg_group.add_parser({
-            .name = "init-db",
-            .help = "Initialize a new package database file (Path specified with '--pkg-db-path')",
         }));
         setup_pkg_import_cmd(pkg_group.add_parser({
             .name = "import",
@@ -260,6 +260,16 @@ struct setup {
             .name = "search",
             .help = "Search for packages available to download",
         }));
+    }
+
+    void setup_pkg_create_cmd(argument_parser& pkg_create_cmd) {
+        pkg_create_cmd.add_argument(project_arg.dup()).help
+            = "Path to the project for which to create a source distribution.\n"
+              "Default is the current working directory.";
+        pkg_create_cmd.add_argument(out_arg.dup()).help
+            = "Destination path for the source distributioon archive";
+        pkg_create_cmd.add_argument(if_exists_arg.dup()).help
+            = "What to do if the destination names an existing file";
     }
 
     void setup_pkg_get_cmd(argument_parser& pkg_get_cmd) {
@@ -355,27 +365,6 @@ struct setup {
             .valname = "<name-or-pattern>",
             .action  = put_into(opts.pkg.search.pattern),
         });
-    }
-
-    void setup_sdist_cmd(argument_parser& sdist_cmd) noexcept {
-        auto& sdist_grp = sdist_cmd.add_subparsers({
-            .valname = "<sdist-subcommand>",
-            .action  = put_into(opts.sdist.subcommand),
-        });
-        setup_sdist_create_cmd(sdist_grp.add_parser({
-            .name = "create",
-            .help = "Create a source distribution from a project tree",
-        }));
-    }
-
-    void setup_sdist_create_cmd(argument_parser& sdist_create_cmd) {
-        sdist_create_cmd.add_argument(project_arg.dup()).help
-            = "Path to the project for which to create a source distribution.\n"
-              "Default is the current working directory.";
-        sdist_create_cmd.add_argument(out_arg.dup()).help
-            = "Destination path for the source distributnion archive";
-        sdist_create_cmd.add_argument(if_exists_arg.dup()).help
-            = "What to do if the destination names an existing file";
     }
 
     void setup_repoman_cmd(argument_parser& repoman_cmd) {

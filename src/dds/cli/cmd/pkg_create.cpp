@@ -12,7 +12,7 @@ using namespace fansi::literals;
 
 namespace dds::cli::cmd {
 
-int sdist_create(const options& opts) {
+int pkg_create(const options& opts) {
     dds::sdist_params params{
         .project_dir   = opts.project_dir,
         .dest_path     = {},
