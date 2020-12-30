@@ -67,7 +67,7 @@ struct parse_engine {
                         candidates.push_back("-" + s);
                     }
                 }
-                if (!has_dash && parser->subparsers()) {
+                if (!has_dash && parser->subparsers() && parser == bottom_parser) {
                     auto&& grp = *parser->subparsers();
                     for (auto& p : grp._p_subparsers) {
                         candidates.push_back(p.name);
