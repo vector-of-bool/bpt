@@ -9,6 +9,7 @@
 #include <debate/enum.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
+#include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
 
@@ -16,6 +17,8 @@
 #include <filesystem>
 #include <iostream>
 #include <locale>
+
+using namespace fansi::literals;
 
 static void load_locale() {
     auto lang = dds::getenv("LANG");
@@ -54,12 +57,22 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         },
         [&](debate::unrecognized_argument,
             debate::e_argument_parser p,
-            debate::e_arg_spelling    arg) {
+            debate::e_arg_spelling    arg,
+            debate::e_did_you_mean*   dym) {
             std::cerr << p.parser.usage_string(program_name) << '\n';
             if (p.parser.subparsers()) {
-                fmt::print(std::cerr, "Unrecognized argument/subcommand: \"{}\"\n", arg.spelling);
+                fmt::print(std::cerr,
+                           "Unrecognized argument/subcommand: \".bold.red[{}]\"\n"_styled,
+                           arg.spelling);
             } else {
-                fmt::print(std::cerr, "Unrecognized argument: \"{}\"\n", arg.spelling);
+                fmt::print(std::cerr,
+                           "Unrecognized argument: \".bold.red[{}]\"\n"_styled,
+                           arg.spelling);
+            }
+            if (dym) {
+                fmt::print(std::cerr,
+                           "  (Did you mean '.br.yellow[{}]'?)\n"_styled,
+                           dym->candidate);
             }
             return 2;
         },
@@ -108,7 +121,8 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             return 2;
         },
         [&](debate::invalid_repitition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
-            fmt::print(std::cerr << "{}\nArgument '{}' cannot be provided more than once\n",
+            fmt::print(std::cerr,
+                       "{}\nArgument '{}' cannot be provided more than once\n",
                        p.parser.usage_string(program_name),
                        sp.spelling);
             return 2;
