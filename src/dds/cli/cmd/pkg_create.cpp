@@ -44,7 +44,7 @@ int pkg_create(const options& opts) {
         [&](std::error_code ec, e_human_message msg, boost::leaf::e_file_name file) {
             dds_log(error, "Error: .bold.red[{}]"_styled, msg.value);
             dds_log(error,
-                    "Failed to access file [.bold.red[{}]]: .br.yellow[{}]",
+                    "Failed to access file [.bold.red[{}]]: .br.yellow[{}]"_styled,
                     file.value,
                     ec.message());
             write_error_marker("failed-package-json5-scan");

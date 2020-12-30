@@ -62,7 +62,7 @@ void dds::get_all(const std::vector<pkg_id>& pkgs, pkg_cache& repo, const pkg_db
         dds_log(info, "Download package: {}", inf.ident.to_string());
         auto             tsd = get_package_sdist(inf);
         std::scoped_lock lk{repo_mut};
-        repo.add_sdist(tsd.sdist, if_exists::throw_exc);
+        repo.import_sdist(tsd.sdist, if_exists::throw_exc);
     });
 
     if (!okay) {

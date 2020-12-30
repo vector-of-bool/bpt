@@ -49,7 +49,6 @@ def test_import_sdist_archive(_test_pkg: Tuple[Path, Project]) -> None:
 
 def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
     sdist, project = _test_pkg
-    repo_content_path = project.dds.repo_dir / 'foo@1.2.3'
     pipe = subprocess.Popen(
         list(proc.flatten_cmd([
             project.dds.path,
@@ -70,6 +69,15 @@ def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
 
     rc = pipe.wait()
     assert rc == 0, 'Subprocess failed'
+    _check_import(project.dds.repo_dir / 'foo@1.2.3')
+
+
+def test_import_sdist_dir(test_project: Project) -> None:
+    test_project.dds.run(['pkg', 'import', test_project.dds.repo_dir_arg, test_project.root])
+    _check_import(test_project.dds.repo_dir / 'foo@1.2.3')
+
+
+def _check_import(repo_content_path: Path) -> None:
     assert repo_content_path.is_dir(), \
         'The package did not appear in the local cache'
     assert repo_content_path.joinpath('library.jsonc').is_file(), \
