@@ -7,13 +7,8 @@
 using namespace dds;
 
 std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode, std::error_code& ec) {
-    std::fstream ret;
-    auto         mask = ret.exceptions() | std::ios::badbit;
-    ret.exceptions(mask);
-
-    try {
-        ret.open(filepath.string(), mode);
-    } catch (const std::ios::failure&) {
+    std::fstream ret{filepath, mode};
+    if (!ret) {
         ec = std::error_code(errno, std::system_category());
     }
     return ret;
