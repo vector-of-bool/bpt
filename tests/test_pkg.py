@@ -52,7 +52,7 @@ def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
     pipe = subprocess.Popen(
         list(proc.flatten_cmd([
             project.dds.path,
-            project.dds.repo_dir_arg,
+            project.dds.cache_dir_arg,
             'pkg',
             'import',
             '--stdin',
@@ -73,7 +73,7 @@ def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
 
 
 def test_import_sdist_dir(test_project: Project) -> None:
-    test_project.dds.run(['pkg', 'import', test_project.dds.repo_dir_arg, test_project.root])
+    test_project.dds.run(['pkg', 'import', test_project.dds.cache_dir_arg, test_project.root])
     _check_import(test_project.dds.repo_dir / 'foo@1.2.3')
 
 

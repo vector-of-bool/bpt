@@ -70,7 +70,7 @@ def test_cmake_simple(project_opener: ProjectOpener) -> None:
     proj.dds.run(
         [
             'build-deps',
-            proj.dds.repo_dir_arg,
+            proj.dds.cache_dir_arg,
             'foo@1.2.3',
             ('-t', ':gcc' if 'gcc' in toolchain.get_default_toolchain().name else ':msvc'),
             f'--cmake=libraries.cmake',

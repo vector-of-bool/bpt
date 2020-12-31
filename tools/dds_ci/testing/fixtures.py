@@ -75,12 +75,16 @@ class Project:
         """Argument for --project"""
         return f'--project={self.root}'
 
-    def build(self, *, toolchain: Optional[Pathish] = None) -> None:
+    def build(self, *, toolchain: Optional[Pathish] = None, timeout: Optional[int] = None) -> None:
         """
         Execute 'dds build' on the project
         """
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
-            self.dds.build(root=self.root, build_root=self.build_root, toolchain=tc, more_args=['-ldebug'])
+            self.dds.build(root=self.root,
+                           build_root=self.build_root,
+                           toolchain=tc,
+                           timeout=timeout,
+                           more_args=['-ldebug'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
@@ -96,7 +100,7 @@ class Project:
         ], cwd=self.build_root)
 
     def sdist_export(self) -> None:
-        self.dds.run(['sdist', 'export', self.dds.repo_dir_arg, self.project_dir_arg])
+        self.dds.run(['sdist', 'export', self.dds.cache_dir_arg, self.project_dir_arg])
 
     def write(self, path: Pathish, content: str) -> Path:
         path = Path(path)
