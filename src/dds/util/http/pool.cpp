@@ -111,7 +111,7 @@ struct http_client_impl {
             {"Host", hostname_port},
             {"Accept", "*/*"},
             {"Content-Length", "0"},
-            {"TE", "gzip, chunked, plain"},
+            {"TE", "gzip, chunked"},
             {"Connection", "keep-alive"},
         };
         if (!params.prior_etag.empty()) {
@@ -385,8 +385,8 @@ void http_client::_set_ready() noexcept {
 }
 
 request_result http_pool::request(neo::url url, http_request_params params) {
-    DDS_E_SCOPE(url);
     for (auto i = 0; i <= 100; ++i) {
+        DDS_E_SCOPE(url);
         params.path  = url.path;
         params.query = url.query.value_or("");
 
