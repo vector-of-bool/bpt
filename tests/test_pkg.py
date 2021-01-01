@@ -47,6 +47,8 @@ def test_import_sdist_archive(_test_pkg: Tuple[Path, Project]) -> None:
         'Non-package content appeared in the package cache'
 
 
+@pytest.mark.skipif(platform.system() == 'Windows',
+                    reason='Windows has trouble reading packages from stdin. Need to investigate.')
 def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
     sdist, project = _test_pkg
     pipe = subprocess.Popen(
