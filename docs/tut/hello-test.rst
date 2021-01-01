@@ -98,7 +98,7 @@ leave the condition the same, though:
 Now running ``dds build`` will print more output that Catch has generated as
 part of test execution, and we can see the reason for the failing test::
 
-    [16:41:45] [error] Test <root>/_build/test/hello/strings failed! Output:
+    [error] Test <root>/_build/test/hello/strings failed! Output:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     strings is a Catch v2.10.2 host application.

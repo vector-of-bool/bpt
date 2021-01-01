@@ -19,7 +19,7 @@ write a source distribution to the named path, it would be required to delete
 whatever exists there before creating the source distribution.
 
 .. warning::
-    When using ``dds sdist create`` with the ``--out <path>`` parameter, the
+    When using ``dds pkg create`` with the ``--out <path>`` parameter, the
     ``<path>`` given **is not the directory in which to place the source
     distribution, but the filepath to the source distribution itself**!
 
@@ -27,7 +27,7 @@ whatever exists there before creating the source distribution.
     distribution in that directory, **the following command is incorrect**::
 
         # Do not do this:
-        dds sdist create --out foo/
+        dds pkg create --out foo/
 
     If you pass ``--replace`` to the above command, ``dds`` will **destroy the
     existing directory** and replace it with the source distribution!
@@ -35,4 +35,4 @@ whatever exists there before creating the source distribution.
     You **must** provide the full path to the source distribution::
 
         # Do this:
-        dds sdist create --out foo/my-project.dsd
+        dds pkg create --out foo/my-project.tar.gz
