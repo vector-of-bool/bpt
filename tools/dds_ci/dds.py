@@ -94,6 +94,7 @@ class DDSWrapper:
               toolchain: Optional[Path] = None,
               build_root: Optional[Path] = None,
               jobs: Optional[int] = None,
+              tweaks_dir: Optional[Path] = None,
               more_args: Optional[proc.CommandLine] = None,
               timeout: Optional[int] = None) -> None:
         """
@@ -115,6 +116,7 @@ class DDSWrapper:
                 f'--jobs={jobs}',
                 f'{self.project_dir_flag}={root}',
                 f'--out={build_root}',
+                f'--tweaks-dir={tweaks_dir}' if tweaks_dir else (),
                 more_args or (),
             ],
             timeout=timeout,

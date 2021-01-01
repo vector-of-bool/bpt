@@ -18,6 +18,9 @@ enum class language {
 
 struct toolchain_knobs {
     bool is_tty = false;
+    // Directory storing tweaks for the compilation
+    std::optional<fs::path>    tweaks_dir{};
+    std::optional<std::string> cache_buster{};
 };
 
 struct compile_file_spec {

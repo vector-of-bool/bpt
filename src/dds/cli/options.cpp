@@ -90,6 +90,17 @@ struct setup {
         .action   = put_into(opts.repoman.repo_dir),
     };
 
+    argument tweaks_dir_arg{
+        .long_spellings  = {"tweaks-dir"},
+        .short_spellings = {"TD"},
+        .help
+        = "Base directory of "
+          "\x1b]8;;https://vector-of-bool.github.io/2020/10/04/lib-configuration.html\x1b\\tweak "
+          "headers\x1b]8;;\x1b\\ that should be available to the build.",
+        .valname = "<dir>",
+        .action  = put_into(opts.build.tweaks_dir),
+    };
+
     void do_setup(argument_parser& parser) noexcept {
         parser.add_argument({
             .long_spellings  = {"log-level"},
@@ -189,6 +200,7 @@ struct setup {
         build_cmd.add_argument(lm_index_arg.dup()).help
             = "Path to a libman index file to use for loading project dependencies";
         build_cmd.add_argument(jobs_arg.dup());
+        build_cmd.add_argument(tweaks_dir_arg.dup());
     }
 
     void setup_compile_file_cmd(argument_parser& compile_file_cmd) noexcept {
@@ -199,6 +211,7 @@ struct setup {
             = "Set the maximum number of files to compile in parallel";
         compile_file_cmd.add_argument(lm_index_arg.dup());
         compile_file_cmd.add_argument(out_arg.dup());
+        compile_file_cmd.add_argument(tweaks_dir_arg.dup());
         compile_file_cmd.add_argument({
             .help       = "One or more source files to compile",
             .valname    = "<source-files>",
@@ -228,6 +241,7 @@ struct setup {
             .valname = "<file-path>",
             .action  = debate::put_into(opts.build_deps.cmake_file),
         });
+        build_deps_cmd.add_argument(tweaks_dir_arg.dup());
         build_deps_cmd.add_argument({
             .help       = "Dependency statement strings",
             .valname    = "<dependency>",

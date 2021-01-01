@@ -75,7 +75,11 @@ class Project:
         """Argument for --project"""
         return f'--project={self.root}'
 
-    def build(self, *, toolchain: Optional[Pathish] = None, timeout: Optional[int] = None) -> None:
+    def build(self,
+              *,
+              toolchain: Optional[Pathish] = None,
+              timeout: Optional[int] = None,
+              tweaks_dir: Optional[Path] = None) -> None:
         """
         Execute 'dds build' on the project
         """
@@ -84,7 +88,8 @@ class Project:
                            build_root=self.build_root,
                            toolchain=tc,
                            timeout=timeout,
-                           more_args=['-ldebug'])
+                           tweaks_dir=tweaks_dir,
+                           more_args=['-ltrace'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:

@@ -136,6 +136,7 @@ struct options {
         opt_path            lm_index;
         std::vector<string> add_repos;
         bool                update_repos = false;
+        opt_path            tweaks_dir;
     } build;
 
     /**

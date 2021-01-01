@@ -277,6 +277,31 @@ void write_cmake(build_env_ref env, const build_plan& plan, path_ref cmake_out) 
     }
 }
 
+/**
+ * @brief Calculate a hash of the directory layout of the given directory.
+ *
+ * Because a tweaks-dir is specifically designed to have files added/removed within it, and
+ * its contents are inspected by `__has_include`, we need to have a way to invalidate any caches
+ * when the content of that directory changes. We don't care to hash the contents of the files,
+ * since those will already break any caches.
+ */
+std::string hash_tweaks_dir(const fs::path& tweaks_dir) {
+    if (!fs::is_directory(tweaks_dir)) {
+        return "0";  // No tweaks directory, no cache to bust
+    }
+    std::vector<fs::path> children{fs::recursive_directory_iterator{tweaks_dir},
+                                   fs::recursive_directory_iterator{}};
+    std::sort(children.begin(), children.end());
+    // A really simple inline djb2 hash
+    std::uint32_t hash = 5381;
+    for (auto& p : children) {
+        for (std::uint32_t c : fs::weakly_canonical(p).string()) {
+            hash = ((hash << 5) + hash) + c;
+        }
+    }
+    return std::to_string(hash);
+}
+
 template <typename Func>
 void with_build_plan(const build_params&              params,
                      const std::vector<sdist_target>& sdists,
@@ -292,10 +317,19 @@ void with_build_plan(const build_params&              params,
         params.out_root,
         db,
         toolchain_knobs{
-            .is_tty = stdout_is_a_tty(),
+            .is_tty     = stdout_is_a_tty(),
+            .tweaks_dir = params.tweaks_dir,
         },
         ureqs,
     };
+
+    if (env.knobs.tweaks_dir) {
+        env.knobs.cache_buster = hash_tweaks_dir(*env.knobs.tweaks_dir);
+        dds_log(trace,
+                "Build cache-buster value for tweaks-dir [{}] content is '{}'",
+                *env.knobs.tweaks_dir,
+                *env.knobs.cache_buster);
+    }
 
     if (st.generate_catch2_main) {
         auto catch_lib                  = prepare_test_driver(params, test_lib::catch_main, env);
