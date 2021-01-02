@@ -25,6 +25,7 @@ pylint = "^2.6.0"
 mypy = "^0.790"
 rope = "^0.18.0"
 yapf = "^0.30.0"
+Sphinx = "^3.4.1"
 
 [tool.poetry.scripts]
 dds-ci = "dds_ci.main:start"

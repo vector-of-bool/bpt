@@ -14,13 +14,17 @@ version = ''
 release = '0.1.0-alpha.5'
 
 # -- General configuration ---------------------------------------------------
-extensions = []
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
 templates_path = []
 source_suffix = '.rst'
 master_doc = 'index'
 language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = None
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'pytest': ('https://docs.pytest.org/en/latest/', None),
+}
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'nature'

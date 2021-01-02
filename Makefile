@@ -28,7 +28,7 @@ docs-server: docs
 		python -m http.server 9794
 
 docs-watch: docs
-	+sh tools/docs-watch.sh
+	+poetry run sh tools/docs-watch.sh
 
 docs-sync-server:
 	mkdir -p _build/docs
