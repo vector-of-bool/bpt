@@ -89,7 +89,7 @@ fs::path system_binaries_dir() noexcept {
 }
 
 #if _WIN32
-void fixup_path_env(const wil::unique_hkey& env_hkey, fs::path want_path) {
+void fixup_path_env(const options& opts, const wil::unique_hkey& env_hkey, fs::path want_path) {
     DWORD len = 0;
     // Get the length
     auto err = ::RegGetValueW(env_hkey.get(),
@@ -135,6 +135,10 @@ void fixup_path_env(const wil::unique_hkey& env_hkey, fs::path want_path) {
         dds_log(info, "PATH is up-to-date");
         return;
     }
+    if (opts.dry_run) {
+        dds_log(info, "The PATH environment variable would be modified.");
+        return;
+    }
     // It's not there. Add it now.
     auto want_str = want_entry.string();
     path_elems.insert(path_elems.begin(), want_str);
@@ -161,7 +165,7 @@ void fixup_path_env(const wil::unique_hkey& env_hkey, fs::path want_path) {
 }
 #endif
 
-void fixup_system_path(const options&) {
+void fixup_system_path(const options& opts [[maybe_unused]]) {
 #if !_WIN32
 // We install into /usr/local/bin, and every nix-like system we support already has that on the
 // global PATH
@@ -177,7 +181,7 @@ void fixup_system_path(const options&) {
                                 "Failed to open user-local environment variables registry "
                                 "entry");
     }
-    fixup_path_env(env_hkey, "C:/bin");
+    fixup_path_env(opts, env_hkey, "C:/bin");
 #endif
 }
 
@@ -188,44 +192,42 @@ void fixup_user_path(const options& opts) {
     if (dds::contains(profile_content, "$HOME/.local/bin")) {
         // We'll assume that this is properly loading .local/bin for .profile
         dds_log(info, "[.br.cyan[{}]] is okay"_styled, profile_file.string());
+    } else if (opts.dry_run) {
+        dds_log(info,
+                "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
+                profile_file.string());
     } else {
         // Let's add it
         profile_content
             += ("\n# This entry was added by 'dds install-yourself' for the user-local "
                 "binaries path\nPATH=$HOME/bin:$HOME/.local/bin:$PATH\n");
-        if (opts.dry_run) {
-            dds_log(info,
-                    "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
-                    profile_file.string());
-        } else {
-            dds_log(info,
-                    "Updating [.br.cyan[{}]] with a user-local binaries PATH entry"_styled,
-                    profile_file.string());
-            auto tmp_file = profile_file;
-            tmp_file += ".tmp";
-            auto bak_file = profile_file;
-            bak_file += ".bak";
-            // Move .profile back into place if we abore for any reason
-            neo_defer {
-                if (!fs::exists(profile_file)) {
-                    safe_rename(bak_file, profile_file);
-                }
-            };
-            // Write the temporary version
-            dds::write_file(tmp_file, profile_content).value();
-            // Make a backup
-            safe_rename(profile_file, bak_file);
-            // Move the tmp over the final location
-            safe_rename(tmp_file, profile_file);
-            // Okay!
-            dds_log(info,
-                    "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
-                    profile_file.string(),
-                    bak_file.string());
-            dds_log(
-                info,
-                ".bold.cyan[NOTE:] Running applications may need to be restarted to see this change"_styled);
-        }
+        dds_log(info,
+                "Updating [.br.cyan[{}]] with a user-local binaries PATH entry"_styled,
+                profile_file.string());
+        auto tmp_file = profile_file;
+        tmp_file += ".tmp";
+        auto bak_file = profile_file;
+        bak_file += ".bak";
+        // Move .profile back into place if we abore for any reason
+        neo_defer {
+            if (!fs::exists(profile_file)) {
+                safe_rename(bak_file, profile_file);
+            }
+        };
+        // Write the temporary version
+        dds::write_file(tmp_file, profile_content).value();
+        // Make a backup
+        safe_rename(profile_file, bak_file);
+        // Move the tmp over the final location
+        safe_rename(tmp_file, profile_file);
+        // Okay!
+        dds_log(info,
+                "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
+                profile_file.string(),
+                bak_file.string());
+        dds_log(
+            info,
+            ".bold.cyan[NOTE:] Running applications may need to be restarted to see this change"_styled);
     }
 
     auto fish_config = dds::user_config_dir() / "fish/config.fish";
@@ -235,6 +237,10 @@ void fixup_user_path(const options& opts) {
             // Assume that this is up-to-date
             dds_log(info,
                     "Fish configuration in [.br.cyan[{}]] is okay"_styled,
+                    fish_config.string());
+        } else if (opts.dry_run) {
+            dds_log(info,
+                    "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
                     fish_config.string());
         } else {
             dds_log(
@@ -278,7 +284,7 @@ void fixup_user_path(const options& opts) {
                                 "Failed to open user-local environment variables registry "
                                 "entry");
     }
-    fixup_path_env(env_hkey, "%LocalAppData%/bin");
+    fixup_path_env(opts, env_hkey, "%LocalAppData%/bin");
 #endif
 }
 
@@ -302,7 +308,7 @@ int _install_yourself(const options& opts) {
         dest_path += ".exe";
     }
 
-    if (fs::weakly_canonical(dest_path) == fs::canonical(self_exe)) {
+    if (fs::absolute(dest_path).lexically_normal() == fs::canonical(self_exe)) {
         dds_log(error,
                 "We cannot install over our own executable (.br.red[{}])"_styled,
                 self_exe.string());
