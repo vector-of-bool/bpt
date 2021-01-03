@@ -8,7 +8,6 @@
 
 #include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
-#include <fmt/ostream.h>
 #include <neo/assert.hpp>
 #include <neo/platform.hpp>
 #include <neo/scope.hpp>
@@ -89,12 +88,96 @@ fs::path system_binaries_dir() noexcept {
 #endif
 }
 
+#if _WIN32
+void fixup_path_env(const wil::unique_hkey& env_hkey, fs::path want_path) {
+    DWORD len = 0;
+    // Get the length
+    auto err = ::RegGetValueW(env_hkey.get(),
+                              nullptr,
+                              L"PATH",
+                              RRF_RT_REG_EXPAND_SZ | RRF_RT_REG_SZ | RRF_NOEXPAND,
+                              nullptr,
+                              nullptr,
+                              &len);
+    if (err != ERROR_SUCCESS) {
+        throw std::system_error(std::error_code(err, std::system_category()),
+                                "Failed to access PATH environment variable [1]");
+    }
+    // Now get the value
+    std::wstring buffer;
+    buffer.resize(len / 2);
+    err = ::RegGetValueW(env_hkey.get(),
+                         nullptr,
+                         L"PATH",
+                         RRF_RT_REG_EXPAND_SZ | RRF_RT_REG_SZ | RRF_NOEXPAND,
+                         nullptr,
+                         buffer.data(),
+                         &len);
+    if (err != ERROR_SUCCESS) {
+        throw std::system_error(std::error_code(err, std::system_category()),
+                                "Failed to access PATH environment variable [2]");
+    }
+    // Strip null-term
+    buffer.resize(len);
+    while (!buffer.empty() && buffer.back() == 0) {
+        buffer.pop_back();
+    }
+    // Check if we need to append the user-local binaries dir to the path
+    const auto want_entry   = fs::path(want_path).make_preferred().lexically_normal();
+    const auto path_env_str = fs::path(buffer).string();
+    auto       path_elems   = split_view(path_env_str, ";");
+    const bool any_match    = std::any_of(path_elems.cbegin(), path_elems.cend(), [&](auto view) {
+        auto existing = fs::weakly_canonical(view).make_preferred().lexically_normal();
+        dds_log(trace, "Existing PATH entry: '{}'", existing.string());
+        return existing.native() == want_entry.native();
+    });
+    if (any_match) {
+        dds_log(info, "PATH is up-to-date");
+        return;
+    }
+    // It's not there. Add it now.
+    auto want_str = want_entry.string();
+    path_elems.insert(path_elems.begin(), want_str);
+    auto joined = joinstr(";", path_elems);
+    buffer      = fs::path(joined).native();
+    // Put the new PATH entry back into the environment
+    err = ::RegSetValueExW(env_hkey.get(),
+                           L"Path",
+                           0,
+                           REG_EXPAND_SZ,
+                           reinterpret_cast<const BYTE*>(buffer.data()),
+                           (buffer.size() + 1) * 2);
+    if (err != ERROR_SUCCESS) {
+        throw std::system_error(std::error_code(err, std::system_category()),
+                                "Failed to modify PATH environment variable");
+    }
+    dds_log(
+        info,
+        "The directory [.br.cyan[{}]] has been added to your PATH environment variables."_styled,
+        want_path.string());
+    dds_log(
+        info,
+        ".bold.cyan[NOTE:] You may need to restart running applications to see this change!"_styled);
+}
+#endif
+
 void fixup_system_path(const options&) {
 #if !_WIN32
 // We install into /usr/local/bin, and every nix-like system we support already has that on the
 // global PATH
 #else  // Windows!
-#error "Not yet implemented"
+    wil::unique_hkey env_hkey;
+    auto             err = ::RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                               L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+                               0,
+                               KEY_WRITE | KEY_READ,
+                               &env_hkey);
+    if (err != ERROR_SUCCESS) {
+        throw std::system_error(std::error_code(err, std::system_category()),
+                                "Failed to open user-local environment variables registry "
+                                "entry");
+    }
+    fixup_path_env(env_hkey, "C:/bin");
 #endif
 }
 
@@ -104,7 +187,7 @@ void fixup_user_path(const options& opts) {
     auto profile_content = dds::slurp_file(profile_file);
     if (dds::contains(profile_content, "$HOME/.local/bin")) {
         // We'll assume that this is properly loading .local/bin for .profile
-        dds_log(info, ".br.cyan[{}] is okay"_styled, profile_file);
+        dds_log(info, "[.br.cyan[{}]] is okay"_styled, profile_file.string());
     } else {
         // Let's add it
         profile_content
@@ -112,12 +195,12 @@ void fixup_user_path(const options& opts) {
                 "binaries\nPATH=$HOME/bin:$HOME/.local/bin:$PATH\n");
         if (opts.dry_run) {
             dds_log(info,
-                    "Would update .br.cyan[{}] to have ~/.local/bin on $PATH"_styled,
-                    profile_file);
+                    "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
+                    profile_file.string());
         } else {
             dds_log(info,
-                    "Updating .br.cyan[{}] with a user-local binaries PATH entry"_styled,
-                    profile_file);
+                    "Updating [.br.cyan[{}]] with a user-local binaries PATH entry"_styled,
+                    profile_file.string());
             auto tmp_file = profile_file;
             tmp_file += ".tmp";
             auto bak_file = profile_file;
@@ -136,9 +219,9 @@ void fixup_user_path(const options& opts) {
             safe_rename(tmp_file, profile_file);
             // Okay!
             dds_log(info,
-                    ".br.green[{}] was updated. Prior contents are safe in .br.cyan[{}]"_styled,
-                    profile_file,
-                    bak_file);
+                    "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
+                    profile_file.string(),
+                    bak_file.string());
         }
     }
 
@@ -147,12 +230,14 @@ void fixup_user_path(const options& opts) {
         auto fish_config_content = slurp_file(fish_config);
         if (dds::contains(fish_config_content, "$HOME/.local/bin")) {
             // Assume that this is up-to-date
-            dds_log(info, "Fish configuration in .br.cyan[{}] is okay"_styled, fish_config);
+            dds_log(info,
+                    "Fish configuration in [.br.cyan[{}]] is okay"_styled,
+                    fish_config.string());
         } else {
             dds_log(
                 info,
-                "Updating Fish shell configuration .br.cyan[{}] with user-local binaries PATH entry"_styled,
-                fish_config);
+                "Updating Fish shell configuration [.br.cyan[{}]] with user-local binaries PATH entry"_styled,
+                fish_config.string());
             fish_config_content
                 += ("\n# This line was added by 'dds install-yourself' to add the usre-local "
                     "binaries directory to $PATH\nset -x PATH $PATH \"$HOME/.local/bin\"\n");
@@ -173,12 +258,21 @@ void fixup_user_path(const options& opts) {
             safe_rename(tmp_file, fish_config);
             // Okay!
             dds_log(info,
-                    ".br.green[{}] was updated. Prior contents are safe in .br.cyan[{}]"_styled,
-                    fish_config,
-                    bak_file);
+                    "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
+                    fish_config.string(),
+                    bak_file.string());
         }
     }
 #else  // _WIN32
+    wil::unique_hkey env_hkey;
+    auto             err
+        = ::RegOpenKeyExW(HKEY_CURRENT_USER, L"Environment", 0, KEY_WRITE | KEY_READ, &env_hkey);
+    if (err != ERROR_SUCCESS) {
+        throw std::system_error(std::error_code(err, std::system_category()),
+                                "Failed to open user-local environment variables registry "
+                                "entry");
+    }
+    fixup_path_env(env_hkey, "%LocalAppData%/bin");
 #endif
 }
 
@@ -202,67 +296,72 @@ int _install_yourself(const options& opts) {
         dest_path += ".exe";
     }
 
-    if (fs::canonical(dest_path) == fs::canonical(self_exe)) {
-        dds_log(error, "We cannot install over our own executable (.br.red[{}])"_styled, self_exe);
+    if (fs::weakly_canonical(dest_path) == fs::canonical(self_exe)) {
+        dds_log(error,
+                "We cannot install over our own executable (.br.red[{}])"_styled,
+                self_exe.string());
         return 1;
     }
 
     if (!fs::is_directory(dest_dir)) {
         if (opts.dry_run) {
-            dds_log(info, "Would create directory .br.cyan[{}]"_styled, dest_dir);
+            dds_log(info, "Would create directory [.br.cyan[{}]]"_styled, dest_dir.string());
         } else {
-            dds_log(info, "Creating directory .br.cyan[{}]"_styled, dest_dir);
+            dds_log(info, "Creating directory [.br.cyan[{}]]"_styled, dest_dir.string());
             fs::create_directories(dest_dir);
         }
     }
 
     if (opts.dry_run) {
         if (fs::is_symlink(dest_path)) {
-            dds_log(info, "Would remove symlink .br.cyan[{}]"_styled, dest_path);
+            dds_log(info, "Would remove symlink [.br.cyan[{}]]"_styled, dest_path.string());
         }
         if (fs::exists(dest_path) && !fs::is_symlink(dest_path)) {
             if (opts.install_yourself.symlink) {
                 dds_log(
                     info,
                     "Would overwrite .br.yellow[{0}] with a symlink .br.green[{0}] -> .br.cyan[{1}]"_styled,
-                    dest_path,
-                    self_exe);
+                    dest_path.string(),
+                    self_exe.string());
             } else {
                 dds_log(info,
-                        "Would overwrite .br.yellow[{}] with .br.cyan[{}]"_styled,
-                        dest_path,
-                        self_exe);
+                        "Would overwrite .br.yellow[{}] with [.br.cyan[{}]]"_styled,
+                        dest_path.string(),
+                        self_exe.string());
             }
         } else {
             if (opts.install_yourself.symlink) {
                 dds_log(info,
-                        "Would create a symlink .br.green[{}] -> .br.cyan[{}]"_styled,
-                        dest_path,
-                        self_exe);
+                        "Would create a symlink [.br.green[{}]] -> [.br.cyan[{}]]"_styled,
+                        dest_path.string(),
+                        self_exe.string());
             } else {
                 dds_log(info,
-                        "Would install .br.cyan[{}] to .br.yellow[{}]"_styled,
-                        self_exe,
-                        dest_path);
+                        "Would install [.br.cyan[{}]] to .br.yellow[{}]"_styled,
+                        self_exe.string(),
+                        dest_path.string());
             }
         }
     } else {
         if (fs::is_symlink(dest_path)) {
-            dds_log(info, "Removing old symlink file .br.cyan[{}]"_styled, dest_path);
+            dds_log(info, "Removing old symlink file [.br.cyan[{}]]"_styled, dest_path.string());
             dds::remove_file(dest_path).value();
         }
         if (opts.install_yourself.symlink) {
             if (fs::exists(dest_path)) {
-                dds_log(info, "Removing previous file .br.cyan[{}]"_styled, dest_path);
+                dds_log(info, "Removing previous file [.br.cyan[{}]]"_styled, dest_path.string());
                 dds::remove_file(dest_path).value();
             }
             dds_log(info,
-                    "Creating symbolic link .br.green[{}] -> .br.cyan[{}]"_styled,
-                    dest_path,
-                    self_exe);
+                    "Creating symbolic link [.br.green[{}]] -> [.br.cyan[{}]]"_styled,
+                    dest_path.string(),
+                    self_exe.string());
             dds::create_symlink(self_exe, dest_path).value();
         } else {
-            dds_log(info, "Installing .br.cyan[{}] to .br.green[{}]"_styled, self_exe, dest_path);
+            dds_log(info,
+                    "Installing [.br.cyan[{}]] to [.br.green[{}]]"_styled,
+                    self_exe.string(),
+                    dest_path.string());
             dds::copy_file(self_exe, dest_path, fs::copy_options::overwrite_existing).value();
         }
     }
@@ -290,25 +389,25 @@ int install_yourself(const options& opts) {
         },
         [](std::error_code ec, e_copy_file copy) {
             dds_log(error,
-                    "Failed to copy file .br.cyan[{}] to .br.yellow[{}]: .bold.red[{}]"_styled,
-                    copy.source,
-                    copy.dest,
+                    "Failed to copy file [.br.cyan[{}]] to .br.yellow[{}]: .bold.red[{}]"_styled,
+                    copy.source.string(),
+                    copy.dest.string(),
                     ec.message());
             return 1;
         },
         [](std::error_code ec, e_remove_file file) {
             dds_log(error,
                     "Failed to delete file .br.yellow[{}]: .bold.red[{}]"_styled,
-                    file.value,
+                    file.value.string(),
                     ec.message());
             return 1;
         },
         [](std::error_code ec, e_symlink oper) {
             dds_log(
                 error,
-                "Failed to create symlink from .br.yellow[{}] to .br.cyan[{}]: .bold.red[{}]"_styled,
-                oper.symlink,
-                oper.target,
+                "Failed to create symlink from .br.yellow[{}] to [.br.cyan[{}]]: .bold.red[{}]"_styled,
+                oper.symlink.string(),
+                oper.target.string(),
                 ec.message());
             return 1;
         },
