@@ -26,6 +26,7 @@ enum class subcommand {
     build_deps,
     pkg,
     repoman,
+    install_yourself,
 };
 
 /**
@@ -96,6 +97,8 @@ struct options {
     opt_path pkg_db_dir;
     // The `--log-level` argument
     log::level log_level = log::level::info;
+    // Any `--dry-run` argument
+    bool dry_run = false;
 
     // The top-most selected subcommand
     enum subcommand subcommand;
@@ -254,6 +257,16 @@ struct options {
             std::vector<string> pkgs;
         } remove;
     } repoman;
+
+    struct {
+        enum where_e {
+            system,
+            user,
+        } where
+            = user;
+        bool fixup_path_env = true;
+        bool symlink        = false;
+    } install_yourself;
 
     /**
      * @brief Attach arguments and subcommands to the given argument parser, binding those arguments

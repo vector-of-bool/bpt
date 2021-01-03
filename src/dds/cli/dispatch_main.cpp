@@ -16,6 +16,7 @@ using command = int(const options&);
 command build_deps;
 command build;
 command compile_file;
+command install_yourself;
 command pkg_create;
 command pkg_get;
 command pkg_import;
@@ -92,6 +93,8 @@ int dispatch_main(const options& opts) noexcept {
             return cmd::compile_file(opts);
         case subcommand::build_deps:
             return cmd::build_deps(opts);
+        case subcommand::install_yourself:
+            return cmd::install_yourself(opts);
         case subcommand::_none_:;
         }
         neo::unreachable();

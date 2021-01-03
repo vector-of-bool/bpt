@@ -161,6 +161,10 @@ struct setup {
             .name = "repoman",
             .help = "Manage a dds package repository",
         }));
+        setup_install_yourself_cmd(group.add_parser({
+            .name = "install-yourself",
+            .help = "Have this dds executable install itself onto your PATH",
+        }));
     }
 
     void setup_build_cmd(argument_parser& build_cmd) {
@@ -380,11 +384,11 @@ struct setup {
 
     void setup_pkg_search_cmd(argument_parser& pkg_repo_search_cmd) noexcept {
         pkg_repo_search_cmd.add_argument({
-            .help    = std::string(  //
-                "A name or glob-style pattern. Only matching packages will be returned. \n"
-                "Searching is case-insensitive. Only the .italic[name] will be matched (not the \n"
-                "version).\n\nIf this parameter is omitted, the search will return .italic[all] \n"
-                "available packages."_styled),
+            .help
+            = "A name or glob-style pattern. Only matching packages will be returned. \n"
+              "Searching is case-insensitive. Only the .italic[name] will be matched (not the \n"
+              "version).\n\nIf this parameter is omitted, the search will return .italic[all] \n"
+              "available packages."_styled,
             .valname = "<name-or-pattern>",
             .action  = put_into(opts.pkg.search.pattern),
         });
@@ -464,6 +468,37 @@ struct setup {
             .valname    = "<pkg-id>",
             .can_repeat = true,
             .action     = push_back_onto(opts.repoman.remove.pkgs),
+        });
+    }
+
+    void setup_install_yourself_cmd(argument_parser& install_yourself_cmd) {
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"where"},
+            .help = "The scope of the installation. For .bold[system], installs in a global \n"
+                    "directory for all users of the system. For .bold[user], installs in a \n"
+                    "user-specific directory for executable binaries."_styled,
+            .valname = "{user,system}",
+            .action  = put_into(opts.install_yourself.where),
+        });
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"dry-run"},
+            .help
+            = "Do not actually perform any operations, but log what .italic[would] happen"_styled,
+            .nargs  = 0,
+            .action = store_true(opts.dry_run),
+        });
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"no-modify-path"},
+            .help           = "Do not attempt to modify the PATH environment variable",
+            .nargs          = 0,
+            .action         = store_false(opts.install_yourself.fixup_path_env),
+        });
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"symlink"},
+            .help = "Create a symlink at the installed location to the existing 'dds' executable\n"
+                    "instead of copying the executable file",
+            .nargs  = 0,
+            .action = store_true(opts.install_yourself.symlink),
         });
     }
 };

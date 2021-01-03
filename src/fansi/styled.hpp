@@ -19,12 +19,12 @@ enum class should_style {
 std::string stylize(std::string_view text, should_style = should_style::detect);
 
 namespace detail {
-std::string_view cached_rendering(const char* ptr) noexcept;
+const std::string& cached_rendering(const char* ptr) noexcept;
 }
 
 inline namespace literals {
 inline namespace styled_literals {
-inline std::string_view operator""_styled(const char* str, std::size_t) {
+inline const std::string& operator""_styled(const char* str, std::size_t) {
     return detail::cached_rendering(str);
 }
 

@@ -176,7 +176,7 @@ std::string fansi::stylize(std::string_view str, fansi::should_style should) {
     return text_styler{str, should}.render();
 }
 
-std::string_view detail::cached_rendering(const char* ptr) noexcept {
+const std::string& detail::cached_rendering(const char* ptr) noexcept {
     thread_local std::map<const char*, std::string> cache;
     auto                                            found = cache.find(ptr);
     if (found == cache.end()) {
