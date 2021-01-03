@@ -181,11 +181,11 @@ Importing Source Distributions
 ==============================
 
 If you have a source distribution archive, it can be imported with the
-appropriately name ``dds repoman import`` command::
+appropriately named ``dds repoman import`` command::
 
   $ dds repoman import ./my-repo some-pkg@1.2.3.tar.gz
 
-Multiple archive paths may be provided at once to import them all at once.
+Multiple archive paths may be provided to import them all at once.
 
 
 Adding a Package by URL
