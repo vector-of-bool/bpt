@@ -192,7 +192,7 @@ void fixup_user_path(const options& opts) {
         // Let's add it
         profile_content
             += ("\n# This entry was added by 'dds install-yourself' for the user-local "
-                "binaries\nPATH=$HOME/bin:$HOME/.local/bin:$PATH\n");
+                "binaries path\nPATH=$HOME/bin:$HOME/.local/bin:$PATH\n");
         if (opts.dry_run) {
             dds_log(info,
                     "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
@@ -222,6 +222,9 @@ void fixup_user_path(const options& opts) {
                     "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
                     profile_file.string(),
                     bak_file.string());
+            dds_log(
+                info,
+                ".bold.cyan[NOTE:] Running applications may need to be restarted to see this change"_styled);
         }
     }
 
@@ -239,7 +242,7 @@ void fixup_user_path(const options& opts) {
                 "Updating Fish shell configuration [.br.cyan[{}]] with user-local binaries PATH entry"_styled,
                 fish_config.string());
             fish_config_content
-                += ("\n# This line was added by 'dds install-yourself' to add the usre-local "
+                += ("\n# This line was added by 'dds install-yourself' to add the user-local "
                     "binaries directory to $PATH\nset -x PATH $PATH \"$HOME/.local/bin\"\n");
             auto tmp_file = fish_config;
             auto bak_file = fish_config;
@@ -261,6 +264,9 @@ void fixup_user_path(const options& opts) {
                     "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
                     fish_config.string(),
                     bak_file.string());
+            dds_log(
+                info,
+                ".bold.cyan[NOTE:] Running Fish shells will need to be restartred to see this change"_styled);
         }
     }
 #else  // _WIN32
