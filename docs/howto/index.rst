@@ -8,3 +8,4 @@ These pages will discuss some common "How-do-I...?" questions.
   :maxdepth: 2
 
   deps
+  cmake

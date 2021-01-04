@@ -82,7 +82,7 @@ Importing an Index: CMake
 
   This section discusses how to import ``INDEX.lmi`` into CMake, but ``dds``
   also has built-in support for generating a CMake targets file. See
-  :doc:`cmake` and :ref:`cmake.pmm` for even simpler integration steps.
+  :doc:`/howto/cmake` and :doc:`cmake` for even simpler integration steps.
 
 Supposed that we've generated a libman index and set of packages, and we want to
 import them into CMake. CMake doesn't know how to do this natively, but there
