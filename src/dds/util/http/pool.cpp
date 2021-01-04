@@ -113,6 +113,7 @@ struct http_client_impl {
             {"Content-Length", "0"},
             {"TE", "gzip, chunked"},
             {"Connection", "keep-alive"},
+            {"User-Agent", "dds 0.1.0-alpha.6"},
         };
         if (!params.prior_etag.empty()) {
             headers.push_back({"If-None-Match", params.prior_etag});
