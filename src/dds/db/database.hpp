@@ -15,9 +15,11 @@
 
 namespace dds {
 
-struct command_info {
-    std::string command;
+struct completed_compilation {
+    std::string quoted_command;
     std::string output;
+    // The amount of time that the command took to run
+    std::chrono::milliseconds duration;
 };
 
 struct input_file_info {
@@ -43,11 +45,11 @@ public:
     }
 
     void record_dep(path_ref input, path_ref output, fs::file_time_type input_mtime);
-    void store_file_command(path_ref file, const command_info& cmd);
+    void record_compilation(path_ref file, const completed_compilation& cmd);
     void forget_inputs_of(path_ref file);
 
     std::optional<std::vector<input_file_info>> inputs_of(path_ref file) const;
-    std::optional<command_info>                 command_of(path_ref file) const;
+    std::optional<completed_compilation>        command_of(path_ref file) const;
 };
 
 }  // namespace dds

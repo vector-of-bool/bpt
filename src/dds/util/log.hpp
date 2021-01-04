@@ -13,11 +13,22 @@ enum class level : int {
     warn,
     error,
     critical,
+    silent,
 };
 
 inline level current_log_level = level::info;
 
+struct ev_log {
+    log::level       level;
+    std::string_view message;
+
+    void print() const noexcept;
+};
+
 void log_print(level l, std::string_view s) noexcept;
+void log_emit(ev_log) noexcept;
+
+void init_logger() noexcept;
 
 template <typename T>
 concept formattable = requires(const T item) {
@@ -30,7 +41,7 @@ template <formattable... Args>
 void log(level l, std::string_view s, const Args&... args) noexcept {
     if (int(l) >= int(current_log_level)) {
         auto message = fmt::format(s, args...);
-        log_print(l, message);
+        log_emit(ev_log{l, message});
     }
 }
 

@@ -10,10 +10,14 @@
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
+#include <fmt/ostream.h>
+
 #include <array>
 #include <set>
 
 using namespace dds;
+using namespace fansi::literals;
 
 namespace {
 
@@ -23,12 +27,16 @@ struct state {
 };
 
 void log_failure(const test_failure& fail) {
-    dds_log(error, "Test '{}' failed! [exited {}]", fail.executable_path.string(), fail.retc);
+    dds_log(error,
+            "Test .br.yellow[{}] .br.red[{}] [Exited {}]"_styled,
+            fail.executable_path.string(),
+            fail.timed_out ? "TIMED OUT" : "FAILED",
+            fail.retc);
     if (fail.signal) {
         dds_log(error, "Test execution received signal {}", fail.signal);
     }
     if (trim_view(fail.output).empty()) {
-        dds_log(error, "(Test executable produced no output");
+        dds_log(error, "(Test executable produced no output)");
     } else {
         dds_log(error, "Test output:\n{}[dds - test output end]", fail.output);
     }
@@ -43,8 +51,8 @@ prepare_catch2_driver(test_lib test_driver, const build_params& params, build_en
     if (!fs::exists(catch_hpp)) {
         fs::create_directories(catch_hpp.parent_path());
         auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
-        hpp_strm.write(detail::catch2_embedded_single_header_str,
-                       std::strlen(detail::catch2_embedded_single_header_str));
+        auto c2_str   = detail::catch2_embedded_single_header_str();
+        hpp_strm.write(c2_str.data(), c2_str.size());
         hpp_strm.close();
     }
     ret_lib.include_paths.push_back(test_include_root);
@@ -125,7 +133,7 @@ library_plan prepare_library(state&                  st,
 }
 
 package_plan prepare_one(state& st, const sdist_target& sd) {
-    package_plan pkg{sd.sd.manifest.pkg_id.name, sd.sd.manifest.namespace_};
+    package_plan pkg{sd.sd.manifest.id.name, sd.sd.manifest.namespace_};
     auto         libs = collect_libraries(sd.sd.path);
     for (const auto& lib : libs) {
         pkg.add_library(prepare_library(st, sd, lib, sd.sd.manifest));
@@ -195,7 +203,7 @@ void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
 }
 
 void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, path_ref lmi_path) {
-    fs::create_directories(lmi_path.parent_path());
+    fs::create_directories(fs::absolute(lmi_path).parent_path());
     auto out = open(lmi_path, std::ios::binary | std::ios::out);
     out << "Type: Index\n";
     for (const auto& pkg : plan.packages()) {
@@ -203,6 +211,95 @@ void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, pat
         write_lmp(env, pkg, lmp_path);
         out << "Package: " << pkg.name() << "; " << lmp_path.generic_string() << '\n';
     }
+}
+
+void write_lib_cmake(build_env_ref       env,
+                     std::ostream&       out,
+                     const package_plan& pkg,
+                     const library_plan& lib) {
+    fmt::print(out, "# Library {}/{}\n", pkg.namespace_(), lib.name());
+    auto cmake_name = fmt::format("{}::{}", pkg.namespace_(), lib.name());
+    auto cm_kind    = lib.archive_plan().has_value() ? "STATIC" : "INTERFACE";
+    fmt::print(
+        out,
+        "if(TARGET {0})\n"
+        "  get_target_property(dds_imported {0} dds_IMPORTED)\n"
+        "  if(NOT dds_imported)\n"
+        "    message(WARNING [[A target \"{0}\" is already defined, and not by a dds import]])\n"
+        "  endif()\n"
+        "else()\n",
+        cmake_name);
+    fmt::print(out,
+               "  add_library({0} {1} IMPORTED GLOBAL)\n"
+               "  set_property(TARGET {0} PROPERTY dds_IMPORTED TRUE)\n"
+               "  set_property(TARGET {0} PROPERTY INTERFACE_INCLUDE_DIRECTORIES [[{2}]])\n",
+               cmake_name,
+               cm_kind,
+               lib.library_().public_include_dir().generic_string());
+    for (auto&& use : lib.uses()) {
+        fmt::print(out,
+                   "  set_property(TARGET {} APPEND PROPERTY INTERFACE_LINK_LIBRARIES {}::{})\n",
+                   cmake_name,
+                   use.namespace_,
+                   use.name);
+    }
+    for (auto&& link : lib.links()) {
+        fmt::print(out,
+                   "  set_property(TARGET {} APPEND PROPERTY\n"
+                   "               INTERFACE_LINK_LIBRARIES $<LINK_ONLY:{}::{}>)\n",
+                   cmake_name,
+                   link.namespace_,
+                   link.name);
+    }
+    if (auto& arc = lib.archive_plan()) {
+        fmt::print(out,
+                   "  set_property(TARGET {} PROPERTY IMPORTED_LOCATION [[{}]])\n",
+                   cmake_name,
+                   (env.output_root / arc->calc_archive_file_path(env.toolchain)).generic_string());
+    }
+    fmt::print(out, "endif()\n");
+}
+
+void write_cmake_pkg(build_env_ref env, std::ostream& out, const package_plan& pkg) {
+    fmt::print(out, "## Imports for {}\n", pkg.name());
+    for (auto& lib : pkg.libraries()) {
+        write_lib_cmake(env, out, pkg, lib);
+    }
+    fmt::print(out, "\n");
+}
+
+void write_cmake(build_env_ref env, const build_plan& plan, path_ref cmake_out) {
+    fs::create_directories(fs::absolute(cmake_out).parent_path());
+    auto out = open(cmake_out, std::ios::binary | std::ios::out);
+    out << "## This CMake file was generated by `dds build-deps`. DO NOT EDIT!\n\n";
+    for (const auto& pkg : plan.packages()) {
+        write_cmake_pkg(env, out, pkg);
+    }
+}
+
+/**
+ * @brief Calculate a hash of the directory layout of the given directory.
+ *
+ * Because a tweaks-dir is specifically designed to have files added/removed within it, and
+ * its contents are inspected by `__has_include`, we need to have a way to invalidate any caches
+ * when the content of that directory changes. We don't care to hash the contents of the files,
+ * since those will already break any caches.
+ */
+std::string hash_tweaks_dir(const fs::path& tweaks_dir) {
+    if (!fs::is_directory(tweaks_dir)) {
+        return "0";  // No tweaks directory, no cache to bust
+    }
+    std::vector<fs::path> children{fs::recursive_directory_iterator{tweaks_dir},
+                                   fs::recursive_directory_iterator{}};
+    std::sort(children.begin(), children.end());
+    // A really simple inline djb2 hash
+    std::uint32_t hash = 5381;
+    for (auto& p : children) {
+        for (std::uint32_t c : fs::weakly_canonical(p).string()) {
+            hash = ((hash << 5) + hash) + c;
+        }
+    }
+    return std::to_string(hash);
 }
 
 template <typename Func>
@@ -220,10 +317,19 @@ void with_build_plan(const build_params&              params,
         params.out_root,
         db,
         toolchain_knobs{
-            .is_tty = stdout_is_a_tty(),
+            .is_tty     = stdout_is_a_tty(),
+            .tweaks_dir = params.tweaks_dir,
         },
         ureqs,
     };
+
+    if (env.knobs.tweaks_dir) {
+        env.knobs.cache_buster = hash_tweaks_dir(*env.knobs.tweaks_dir);
+        dds_log(trace,
+                "Build cache-buster value for tweaks-dir [{}] content is '{}'",
+                *env.knobs.tweaks_dir,
+                *env.knobs.cache_buster);
+    }
 
     if (st.generate_catch2_main) {
         auto catch_lib                  = prepare_test_driver(params, test_lib::catch_main, env);
@@ -278,6 +384,10 @@ void builder::build(const build_params& params) const {
 
         if (params.emit_lmi) {
             write_lmi(env, plan, params.out_root, *params.emit_lmi);
+        }
+
+        if (params.emit_cmake) {
+            write_cmake(env, plan, *params.emit_cmake);
         }
     });
 }

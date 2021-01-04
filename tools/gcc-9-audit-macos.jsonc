@@ -1,0 +1,24 @@
+{
+    "$schema": "../res/toolchain-schema.json",
+    "compiler_id": "gnu",
+    "c_compiler": "gcc-9",
+    "cxx_compiler": "g++-9",
+    "warning_flags": [
+        "-Werror",
+    ],
+    "flags": [
+        "-I/usr/local/opt/openssl@1.1/include",
+        /// NOTE: Asan/UBsan misbehave on macOS, so we aren't ready to use them in CI
+        // "-fsanitize=address,undefined",
+    ],
+    "cxx_flags": [
+        "-fconcepts",
+        "-std=c++2a",
+    ],
+    "link_flags": [
+        // "-fsanitize=address,undefined",
+        "/usr/local/opt/openssl@1.1/lib/libssl.a",
+        "/usr/local/opt/openssl@1.1/lib/libcrypto.a",
+    ],
+    "debug": true
+}

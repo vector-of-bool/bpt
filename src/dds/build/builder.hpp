@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/build/params.hpp>
-#include <dds/source/dist.hpp>
+#include <dds/sdist/dist.hpp>
 
 #include <cassert>
 #include <map>

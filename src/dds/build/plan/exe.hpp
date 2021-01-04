@@ -18,8 +18,9 @@ class library_plan;
 struct test_failure {
     fs::path    executable_path;
     std::string output;
-    int         retc;
-    int         signal;
+    int         retc{};
+    int         signal{};
+    bool        timed_out = false;
 };
 
 /**

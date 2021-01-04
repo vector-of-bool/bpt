@@ -7,10 +7,13 @@
 #include <dds/util/log.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
+
 #include <algorithm>
 #include <chrono>
 
 using namespace dds;
+using namespace fansi::literals;
 
 fs::path link_executable_plan::calc_executable_path(build_env_ref env) const noexcept {
     return env.output_root / _out_subdir / (_name + env.toolchain.executable_suffix());
@@ -77,25 +80,27 @@ bool link_executable_plan::is_test() const noexcept {
 
 std::optional<test_failure> link_executable_plan::run_test(build_env_ref env) const {
     auto exe_path = calc_executable_path(env);
-    auto msg = fmt::format("Run test: {:30}", fs::relative(exe_path, env.output_root).string());
+    auto msg      = fmt::format("Run test: .br.cyan[{:30}]"_styled,
+                           fs::relative(exe_path, env.output_root).string());
     dds_log(info, msg);
     using namespace std::chrono_literals;
     auto&& [dur, res] = timed<std::chrono::microseconds>(
         [&] { return run_proc({.command = {exe_path.string()}, .timeout = 10s}); });
 
     if (res.okay()) {
-        dds_log(info, "{} - PASSED - {:>9L}μs", msg, dur.count());
+        dds_log(info, "{} - .br.green[PASS] - {:>9L}μs"_styled, msg, dur.count());
         return std::nullopt;
     } else {
         auto exit_msg = fmt::format(res.signal ? "signalled {}" : "exited {}",
                                     res.signal ? res.signal : res.retc);
-        auto fail_str = res.timed_out ? "TIMEOUT" : "FAILED ";
+        auto fail_str = res.timed_out ? ".br.yellow[TIME]"_styled : ".br.red[FAIL]"_styled;
         dds_log(error, "{} - {} - {:>9L}μs [{}]", msg, fail_str, dur.count(), exit_msg);
         test_failure f;
         f.executable_path = exe_path;
         f.output          = res.output;
         f.retc            = res.retc;
         f.signal          = res.signal;
+        f.timed_out       = res.timed_out;
         return f;
     }
 }

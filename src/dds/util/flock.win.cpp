@@ -61,7 +61,7 @@ struct lock_data {
 
 shared_file_mutex::shared_file_mutex(path_ref filepath)
     : _path{filepath} {
-    auto               h = ::CreateFileA(_path.string().c_str(),
+    auto               h = ::CreateFileW(_path.native().c_str(),
                            GENERIC_READ | GENERIC_WRITE,
                            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                            nullptr,

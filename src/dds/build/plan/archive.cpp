@@ -5,10 +5,12 @@
 #include <dds/util/log.hpp>
 #include <dds/util/time.hpp>
 
+#include <fansi/styled.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 
 using namespace dds;
+using namespace fansi::literals;
 
 fs::path create_archive_plan::calc_archive_file_path(const toolchain& tc) const noexcept {
     return _subdir / fmt::format("{}{}{}", "lib", _name, tc.archive_suffix());
@@ -23,9 +25,11 @@ void create_archive_plan::archive(const build_env& env) const {
         ;
     // Build up the archive command
     archive_spec ar;
+
+    auto ar_cwd    = env.output_root;
     ar.input_files = std::move(objects);
     ar.out_path    = env.output_root / calc_archive_file_path(env.toolchain);
-    auto ar_cmd    = env.toolchain.create_archive_command(ar, fs::current_path(), env.knobs);
+    auto ar_cmd    = env.toolchain.create_archive_command(ar, ar_cwd, env.knobs);
 
     // `out_relpath` is purely for the benefit of the user to have a short name
     // in the logs
@@ -43,7 +47,8 @@ void create_archive_plan::archive(const build_env& env) const {
 
     // Do it!
     dds_log(info, "[{}] Archive: {}", _qual_name, out_relpath);
-    auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>([&] { return run_proc(ar_cmd); });
+    auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>(
+        [&] { return run_proc(proc_options{.command = ar_cmd, .cwd = ar_cwd}); });
     dds_log(info, "[{}] Archive: {} - {:L}ms", _qual_name, out_relpath, dur_ms.count());
 
     // Check, log, and throw
@@ -52,7 +57,10 @@ void create_archive_plan::archive(const build_env& env) const {
                 "Creating static library archive [{}] failed for '{}'",
                 out_relpath,
                 _qual_name);
-        dds_log(error, "Subcommand FAILED: {}\n{}", quote_command(ar_cmd), ar_res.output);
+        dds_log(error,
+                "Subcommand FAILED: .bold.yellow[{}]\n{}"_styled,
+                quote_command(ar_cmd),
+                ar_res.output);
         throw_external_error<
             errc::archive_failure>("Creating static library archive [{}] failed for '{}'",
                                    out_relpath,

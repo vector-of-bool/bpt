@@ -1,7 +1,9 @@
 #pragma once
 
+#include <string_view>
+
 namespace dds::detail {
 
-extern const char* const catch2_embedded_single_header_str;
+std::string_view catch2_embedded_single_header_str() noexcept;
 
 }  // namespace dds::detail

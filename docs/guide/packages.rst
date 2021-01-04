@@ -56,7 +56,7 @@ If a file's extension is not listed in the table above, ``dds`` will ignore it.
 .. note::
     Although headers are not compiled, this does not mean they are ignored.
     ``dds`` still understands and respects headers, and they are collected
-    together as part of *source distribution*.
+    together as part of a *source distribution*.
 
 
 .. _pkgs.apps-tests:
@@ -65,15 +65,42 @@ Applications and Tests
 **********************
 
 ``dds`` will recognize certain compilable source files as belonging to
-applications and tests. If a compilable source file stem ends with ``.main`` or
-``.test``, that source file is assumed to correspond to an executable to
-generate. The filename stem before the ``.main`` or ``.test`` will be used as
-the name of the generated executable. For example:
+applications and tests, depending on the filenames "stem," which is the part of
+the filename not including the outer-most file extension. If a compilable source
+filename stem ends with ``.main`` or ``.test``, that source file is assumed to
+correspond to an executable to generate. The filename second-inner stem before
+the ``.main`` or ``.test`` will be used as the name of the generated executable.
+For example:
 
-- ``foo.main.cpp`` will generate an executable named ``foo``.
-- ``bar.test.cpp`` will generate an executable named ``bar``.
-- ``cat-meow.main.cpp`` will generate an executable named ``cat-meow``.
-- ``cats.musical.test.cpp`` will generate an executable named ``cats.musical``.
+- Given ``foo.main.cpp``
+
+  - The stem is ``foo.main``, whose extension is ``.main``, so we will generate
+    an application.
+  - The stem of ``foo.main`` is ``foo``, so the executable will be named
+    ``foo``.
+
+- Given ``bar.test.cpp``
+
+  - The stem is ``bar.test``, whose extension is ``.test``, so we will generate
+    a test.
+  - The stem of ``bar.test`` is ``bar``, so will generate an executable named
+    ``bar``.
+
+- Given ``cat-meow.main.cpp``
+
+  - The stem is ``cat-meow.main``, which has extension ``.main``, so it is an
+    application.
+  - The stem of ``cat-meow.main`` is ``cat-meow``, so will generate an
+    executable named ``cat-meow``.
+
+- Given ``cats.musical.test.cpp``
+
+  - The stem is ``cats.musical.test``, which has extension ``.test``, so this is
+    a text executable.
+  - The stem of ``cats.musical.test`` is ``cats.musical``, so we will generate
+    an executable named ``cats.musical``.
+  - Note that the dot in ``cats.musical`` is not significant, as ``dds`` does
+    strip any further extensions.
 
 .. note::
     ``dds`` will automatically append the appropriate filename extension to the
@@ -161,7 +188,7 @@ In order for any code to compile and resolve these ``#include`` directives, the
 ``src/`` directory must be added to their *include search path*.
 
 Because the ``#include`` directives are based on the *portable* source root,
-the exactly location of ``src/`` is not important to the content of the
+the exact location of ``src/`` is not important to the content of the
 consuming source code, and can thus be relocated and renamed as necessary.
 Consumers only need to update the path of the *include search path* in a single
 location rather than modifying their source code.
@@ -285,8 +312,8 @@ The primary distribution format of packages that is used by ``dds`` is the
 
 Packages are identified by a name/version pair, joined together by an ``@``
 symbol. The version of a package must be a semantic version string. Together,
-the ``name@version`` string forms the *package ID*, and it must be unique
-within a repository or package catalog.
+the ``name@version`` string forms the *package ID*, and it must be unique within
+a repository or local package cache.
 
 In order for a package to be exported by ``dds`` it must have a
 ``package.json5`` file at its package root. Three keys are required to be

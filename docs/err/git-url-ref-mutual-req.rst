@@ -12,4 +12,4 @@ as the ``ref`` requires support from the remote Git server, and it is often
 unavailable in most setups). Using a Git tag is strongly recommended.
 
 .. seealso::
-    Refer to the documentation on :doc:`/guide/catalog`.
+    Refer to the documentation on :doc:`/guide/remote-pkgs`.

@@ -12,6 +12,13 @@ TEST_CASE("Parse Makefile deps") {
     deps = dds::parse_mkfile_deps_str("foo.o: bar.c \\\n baz.c");
     CHECK(deps.output == "foo.o");
     CHECK(deps.inputs == path_vec("bar.c", "baz.c"));
+
+    deps = dds::parse_mkfile_deps_str(
+        "/some-path/Ю́рий\\ Алексе́евич\\ Гага́рин/build/obj/foo.main.cpp.o: \\\n"
+        "  /foo.main.cpp \\\n"
+        "  /stdc-predef.h\n");
+    CHECK(deps.output == "/some-path/Ю́рий Алексе́евич Гага́рин/build/obj/foo.main.cpp.o");
+    CHECK(deps.inputs == path_vec("/foo.main.cpp", "/stdc-predef.h"));
 }
 
 TEST_CASE("Invalid deps") {

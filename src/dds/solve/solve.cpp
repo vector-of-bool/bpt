@@ -66,14 +66,14 @@ struct req_type {
 auto as_pkg_id(const req_type& req) {
     const version_range_set& versions = req.dep.versions;
     assert(versions.num_intervals() == 1);
-    return package_id{req.dep.name, (*versions.iter_intervals().begin()).low};
+    return pkg_id{req.dep.name, (*versions.iter_intervals().begin()).low};
 }
 
 struct solver_provider {
     pkg_id_provider_fn& pkgs_for_name;
     deps_provider_fn&   deps_for_pkg;
 
-    mutable std::map<std::string, std::vector<package_id>> pkgs_by_name = {};
+    mutable std::map<std::string, std::vector<pkg_id>> pkgs_by_name = {};
 
     std::optional<req_type> best_candidate(const req_type& req) const {
         dds_log(debug, "Find best candidate of {}", req.dep.to_string());
@@ -85,14 +85,14 @@ struct solver_provider {
         }
         // Find the first package with the version contained by the ranges in the requirement
         auto& for_name = found->second;
-        auto  cand = std::find_if(for_name.cbegin(), for_name.cend(), [&](const package_id& pk) {
+        auto  cand     = std::find_if(for_name.cbegin(), for_name.cend(), [&](const pkg_id& pk) {
             return req.dep.versions.contains(pk.version);
         });
         if (cand == for_name.cend()) {
             dds_log(debug, "No candidate for requirement {}", req.dep.to_string());
             return std::nullopt;
         }
-        dds_log(debug, "Select candidate {}@{}", cand->to_string());
+        dds_log(debug, "Select candidate {}", cand->to_string());
         return req_type{dependency{cand->name, {cand->version, cand->version.next_after()}}};
     }
 
@@ -156,9 +156,9 @@ struct explainer {
 
 }  // namespace
 
-std::vector<package_id> dds::solve(const std::vector<dependency>& deps,
-                                   pkg_id_provider_fn             pkgs_prov,
-                                   deps_provider_fn               deps_prov) {
+std::vector<pkg_id> dds::solve(const std::vector<dependency>& deps,
+                               pkg_id_provider_fn             pkgs_prov,
+                               deps_provider_fn               deps_prov) {
     auto wrap_req
         = deps | ranges::views::transform([](const dependency& dep) { return req_type{dep}; });
 

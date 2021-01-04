@@ -97,6 +97,13 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         extend(flags, _tty_flags);
     }
 
+    if (knobs.cache_buster) {
+        // This is simply a CPP definition that is used to "bust" any caches that rely on inspecting
+        // the command-line of the compiler (including our own).
+        auto def = replace(_def_template, "[def]", "__dds_cachebust=" + *knobs.cache_buster);
+        extend(flags, def);
+    }
+
     dds_log(trace, "#include-search dirs:");
     for (auto&& inc_dir : spec.include_dirs) {
         dds_log(trace, "  - search: {}", inc_dir.string());
@@ -109,6 +116,13 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         dds_log(trace, "  - search (external): {}", ext_inc_dir.string());
         auto inc_args = external_include_args(ext_inc_dir);
         extend(flags, inc_args);
+    }
+
+    if (knobs.tweaks_dir) {
+        dds_log(trace, "  - search (tweaks): {}", knobs.tweaks_dir->string());
+        auto shortest       = shortest_path_from(*knobs.tweaks_dir, cwd);
+        auto tweak_inc_args = include_args(shortest);
+        extend(flags, tweak_inc_args);
     }
 
     for (auto&& def : spec.definitions) {
@@ -129,7 +143,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                {"-MD"sv,
                 "-MF"sv,
                 std::string_view(gnu_depfile_path->string()),
-                "-MT"sv,
+                "-MQ"sv,
                 std::string_view(spec.out_path.string())});
     } else if (_deps_mode == file_deps_mode::msvc) {
         flags.push_back("/showIncludes");
@@ -273,12 +287,6 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
 
     if (!opt_triple) {
         return std::nullopt;
-    }
-
-    if (starts_with(tc_id, "gcc") || starts_with(tc_id, "clang")) {
-        json5::data& arr = root_map.emplace("link_flags", json5::data::array_type()).first->second;
-        arr.as_array().emplace_back("-static-libgcc");
-        arr.as_array().emplace_back("-static-libstdc++");
     }
 
     root_map.emplace("c_compiler", opt_triple->c);

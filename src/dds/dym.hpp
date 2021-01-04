@@ -11,36 +11,6 @@ namespace dds {
 
 std::size_t lev_edit_distance(std::string_view a, std::string_view b) noexcept;
 
-class dym_target {
-    std::optional<std::string>      _candidate;
-    dym_target*                     _tls_prev = nullptr;
-    static thread_local dym_target* _tls_current;
-
-public:
-    dym_target()
-        : _tls_prev(_tls_current) {
-        _tls_current = this;
-    }
-    dym_target(const dym_target&) = delete;
-    ~dym_target() { _tls_current = _tls_prev; }
-
-    template <typename Func>
-    static void fill(Func&& fn) noexcept {
-        if (_tls_current) {
-            _tls_current->_candidate = fn();
-        }
-    }
-
-    auto& candidate() const noexcept { return _candidate; }
-
-    std::string sentence_suffix() const noexcept {
-        if (_candidate) {
-            return " (Did you mean '" + *_candidate + "'?)";
-        }
-        return "";
-    }
-};
-
 template <typename Range>
 std::optional<std::string> did_you_mean(std::string_view given, Range&& strings) noexcept {
     auto cand = ranges::min_element(strings, ranges::less{}, [&](std::string_view candidate) {

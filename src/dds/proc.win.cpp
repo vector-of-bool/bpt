@@ -1,6 +1,7 @@
 #ifdef _WIN32
 #include "./proc.hpp"
 
+#include <dds/util/fs.hpp>
 #include <dds/util/log.hpp>
 
 #include <fmt/core.h>
@@ -23,10 +24,23 @@ namespace {
     throw std::system_error(std::error_code(::GetLastError(), std::system_category()), what);
 }
 
+std::wstring widen(std::string_view s) {
+    if (s.empty()) {
+        return L"";
+    }
+    auto req_chars
+        = ::MultiByteToWideChar(CP_UTF8, 0, s.data(), static_cast<int>(s.size()), nullptr, 0);
+    std::wstring ret;
+    ret.resize(req_chars);
+    ::MultiByteToWideChar(CP_UTF8, 0, s.data(), static_cast<int>(s.size()), ret.data(), req_chars);
+    return ret;
+}
+
 }  // namespace
 
 proc_result dds::run_proc(const proc_options& opts) {
-    auto cmd_str = quote_command(opts.command);
+    auto cmd_str  = quote_command(opts.command);
+    auto cmd_wide = widen(cmd_str);
     dds_log(debug, "Spawning subprocess: {}", cmd_str);
 
     ::SECURITY_ATTRIBUTES security = {};
@@ -46,20 +60,20 @@ proc_result dds::run_proc(const proc_options& opts) {
 
     wil::unique_process_information proc_info;
 
-    ::STARTUPINFOA startup_info = {};
+    ::STARTUPINFOW startup_info = {};
     ::RtlSecureZeroMemory(&startup_info, sizeof startup_info);
     startup_info.hStdOutput = startup_info.hStdError = writer.get();
     startup_info.dwFlags                             = STARTF_USESTDHANDLES;
     startup_info.cb                                  = sizeof startup_info;
     // DO IT!
-    okay = ::CreateProcessA(nullptr,  // cmd[0].data(),
-                            cmd_str.data(),
+    okay = ::CreateProcessW(nullptr,  // cmd[0].data(),
+                            cmd_wide.data(),
                             nullptr,
                             nullptr,
                             true,
                             CREATE_NEW_PROCESS_GROUP,
                             nullptr,
-                            nullptr,
+                            opts.cwd.value_or(fs::current_path()).c_str(),
                             &startup_info,
                             &proc_info);
     if (!okay) {

@@ -1,22 +1,27 @@
 {
     "$schema": "./res/package-schema.json",
     "name": "dds",
-    "version": "0.1.0-alpha.5",
+    "version": "0.1.0-alpha.6",
     "namespace": "dds",
     "depends": [
         "spdlog@1.7.0",
         "ms-wil@2020.3.16",
         "range-v3@0.11.0",
         "nlohmann-json@3.7.1",
-        "neo-sqlite3@0.2.3",
-        "neo-fun^0.3.2",
-        "neo-compress^0.1.0",
+        "neo-sqlite3@0.4.1",
+        "neo-fun~0.6.0",
+        "neo-compress~0.2.0",
+        "neo-url~0.2.3",
         "semver@0.2.2",
         "pubgrub@0.2.1",
         "vob-json5@0.1.5",
         "vob-semester@0.2.2",
         "ctre@2.8.1",
-        "fmt^7.0.3"
+        "fmt^7.0.3",
+        "neo-http^0.1.0",
+        "neo-io^0.1.1",
+        "boost.leaf~0.3.0",
+        "magic_enum+0.0.0",
     ],
     "test_driver": "Catch-Main"
 }

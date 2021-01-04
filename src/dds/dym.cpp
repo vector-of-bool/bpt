@@ -1,6 +1,7 @@
 #include <dds/dym.hpp>
 
 #include <dds/error/errors.hpp>
+#include <dds/util/log.hpp>
 
 #include <range/v3/algorithm/min_element.hpp>
 #include <range/v3/view/cartesian_product.hpp>
@@ -9,8 +10,6 @@
 #include <cassert>
 
 using namespace dds;
-
-thread_local dym_target* dym_target::_tls_current = nullptr;
 
 std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexcept {
     const auto n_rows    = b.size() + 1;
