@@ -523,7 +523,6 @@ toolchain dds::cli::options::load_toolchain() const {
     }
     // Convert the given string to a toolchain
     auto& tc_str = *toolchain;
-    DDS_E_SCOPE(e_toolchain_name{tc_str});
     DDS_E_SCOPE(e_loading_toolchain{tc_str});
     if (tc_str.starts_with(":")) {
         DDS_E_SCOPE(e_toolchain_builtin{tc_str});

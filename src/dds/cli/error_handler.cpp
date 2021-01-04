@@ -78,10 +78,7 @@ auto handlers = std::tuple(  //
         }
         return 1;
     },
-    [](e_system_error_exc err,
-       e_loading_toolchain,
-       e_toolchain_file* tc_file,
-       e_toolchain_builtin*) {
+    [](e_system_error_exc err, e_loading_toolchain, e_toolchain_file* tc_file) {
         dds_log(error, "Failed to load toolchain: .br.yellow[{}]"_styled, err.message);
         if (tc_file) {
             dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);

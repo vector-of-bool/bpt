@@ -8,10 +8,6 @@ struct e_loading_toolchain {
     std::string value;
 };
 
-struct e_toolchain_name {
-    std::string value;
-};
-
 struct e_toolchain_file {
     std::string value;
 };
