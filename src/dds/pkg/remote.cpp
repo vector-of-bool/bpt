@@ -9,7 +9,9 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
+#include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
+#include <fmt/ostream.h>
 #include <neo/event.hpp>
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
@@ -68,10 +70,10 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
 
 void pkg_remote::store(nsql::database_ref db) {
     auto st = db.prepare(R"(
-        INSERT INTO dds_pkg_remotes (name, remote_url)
+        INSERT INTO dds_pkg_remotes (name, url)
             VALUES (?, ?)
         ON CONFLICT (name) DO
-            UPDATE SET remote_url = ?2
+            UPDATE SET url = ?2
     )");
     nsql::exec(st, _name, _base_url.to_string());
 }
@@ -206,16 +208,16 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
 void dds::update_all_remotes(nsql::database_ref db) {
     dds_log(info, "Updating catalog from all remotes");
-    auto repos_st = db.prepare("SELECT name, remote_url, db_etag, db_mtime FROM dds_pkg_remotes");
+    auto repos_st = db.prepare("SELECT name, url, db_etag, db_mtime FROM dds_pkg_remotes");
     auto tups     = nsql::iter_tuples<std::string,
                                   std::string,
                                   std::optional<std::string>,
                                   std::optional<std::string>>(repos_st)
         | ranges::to_vector;
 
-    for (const auto& [name, remote_url, etag, db_mtime] : tups) {
-        DDS_E_SCOPE(e_url_string{remote_url});
-        pkg_remote repo{name, neo::url::parse(remote_url)};
+    for (const auto& [name, url, etag, db_mtime] : tups) {
+        DDS_E_SCOPE(e_url_string{url});
+        pkg_remote repo{name, neo::url::parse(url)};
         repo.update_pkg_db(db, etag, db_mtime);
     }
 
@@ -224,18 +226,18 @@ void dds::update_all_remotes(nsql::database_ref db) {
 }
 
 void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
-    auto&                           db = pkdb.database();
-    neo::sqlite3::transaction_guard tr{db};
+    auto&                   db = pkdb.database();
+    nsql::transaction_guard tr{db};
     auto get_rowid_st          = db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
     get_rowid_st.bindings()[1] = name;
-    auto row                   = neo::sqlite3::unpack_single_opt<std::int64_t>(get_rowid_st);
+    auto row                   = nsql::unpack_single_opt<std::int64_t>(get_rowid_st);
     if (!row) {
         BOOST_LEAF_THROW_EXCEPTION(  //
             make_user_error<errc::no_catalog_remote_info>("There is no remote with name '{}'",
                                                           name),
             [&] {
                 auto all_st = db.prepare("SELECT name FROM dds_pkg_remotes");
-                auto tups   = neo::sqlite3::iter_tuples<std::string>(all_st);
+                auto tups   = nsql::iter_tuples<std::string>(all_st);
                 auto names  = tups | ranges::views::transform([](auto&& tup) {
                                  auto&& [n] = tup;
                                  return n;
@@ -245,5 +247,63 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
             });
     }
     auto [rowid] = *row;
-    neo::sqlite3::exec(db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), rowid);
+    nsql::exec(db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), rowid);
+}
+
+void dds::add_init_repo(nsql::database_ref db) noexcept {
+    std::string_view init_repo = "https://repo-1.dds.pizza";
+    // _Do not_ let errors stop us from continuing
+    bool okay = boost::leaf::try_catch(
+        [&]() -> bool {
+            try {
+                auto remote = pkg_remote::connect(init_repo);
+                remote.store(db);
+                update_all_remotes(db);
+                return true;
+            } catch (...) {
+                capture_exception();
+            }
+        },
+        [](http_status_error err, http_response_info resp, neo::url url) {
+            dds_log(error,
+                    "An HTTP error occurred while adding the initial repository [{}]: HTTP Status "
+                    "{} {}",
+                    err.what(),
+                    url.to_string(),
+                    resp.status,
+                    resp.status_message);
+            return false;
+        },
+        [](e_sqlite3_error_exc e, neo::url url) {
+            dds_log(error,
+                    "Error accessing remote database while adding initial repository: {}: {}",
+                    url.to_string(),
+                    e.message);
+            return false;
+        },
+        [](e_sqlite3_error_exc e) {
+            dds_log(error, "Unexpected database error: {}", e.message);
+            return false;
+        },
+        [](e_system_error_exc e, network_origin conn) {
+            dds_log(error,
+                    "Error communicating with [.br.red[{}://{}:{}]`]: {}"_styled,
+                    conn.protocol,
+                    conn.hostname,
+                    conn.port,
+                    e.message);
+            return false;
+        },
+        [](boost::leaf::diagnostic_info const& diag) -> int {
+            dds_log(critical, "Unhandled error while adding initial package repository: ", diag);
+            throw;
+        });
+    if (!okay) {
+        dds_log(warn, "We failed to add the initial package repository [{}]", init_repo);
+        dds_log(warn, "No remote packages will be available until the above issue is resolved.");
+        dds_log(
+            warn,
+            "The remote package repository can be added again with [.br.yellow[dds pkg repo add \"{}\"]]"_styled,
+            init_repo);
+    }
 }

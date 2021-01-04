@@ -4,6 +4,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/error/nonesuch.hpp>
 #include <dds/solve/solve.hpp>
+#include <dds/util/env.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 
@@ -23,6 +24,12 @@ using namespace dds;
 
 namespace nsql = neo::sqlite3;
 using namespace neo::sqlite3::literals;
+
+namespace dds {
+
+void add_init_repo(nsql::database_ref db) noexcept;
+
+}  // namespace dds
 
 namespace {
 
@@ -82,7 +89,7 @@ void migrate_repodb_3(nsql::database& db) {
         CREATE TABLE dds_pkg_remotes (
             remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            remote_url TEXT NOT NULL,
+            url TEXT NOT NULL,
             db_etag TEXT,
             db_mtime TEXT
         );
@@ -225,6 +232,13 @@ void ensure_migrated(nsql::database& db) {
     }
     meta["version"] = current_database_version;
     exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), meta.dump());
+    tr.commit();
+
+    if (version < 3 && !getenv_bool("DDS_NO_ADD_INITIAL_REPO")) {
+        // Version 3 introduced remote repositories. If we're updating to 3, add that repo now
+        dds_log(info, "Downloading initial repository");
+        dds::add_init_repo(db);
+    }
 }
 
 }  // namespace

@@ -1,11 +1,15 @@
 #include "./argument_parser.hpp"
 
+/// XXX: Refactor this after pulling debate:: out of dds
+#include <dds/dym.hpp>
+
 #include <boost/leaf/error.hpp>
 #include <boost/leaf/exception.hpp>
 #include <boost/leaf/on_error.hpp>
 
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <neo/scope.hpp>
 
 #include <set>
 
@@ -32,7 +36,7 @@ struct parse_engine {
     void see(const argument& arg) {
         auto did_insert = seen.insert(&arg).second;
         if (!did_insert && !arg.can_repeat) {
-            throw boost::leaf::exception(invalid_repitition("Invalid repitition"));
+            BOOST_LEAF_THROW_EXCEPTION(invalid_repitition("Invalid repitition"));
         }
     }
 
@@ -45,12 +49,42 @@ struct parse_engine {
         finalize();
     }
 
+    std::optional<std::string> find_nearest_arg_spelling(std::string_view given) const noexcept {
+        std::vector<std::string> candidates;
+        // Only match arguments of the corrent type
+        auto parser = bottom_parser;
+        while (parser) {
+            for (auto& arg : parser->arguments()) {
+                for (auto& l : arg.long_spellings) {
+                    candidates.push_back("--" + l);
+                }
+                for (auto& s : arg.short_spellings) {
+                    candidates.push_back("-" + s);
+                }
+            }
+            parser = parser->parent().pointer();
+        }
+        if (bottom_parser->subparsers()) {
+            auto&& grp = *bottom_parser->subparsers();
+            for (auto& p : grp._p_subparsers) {
+                candidates.push_back(p.name);
+            }
+        }
+        return dds::did_you_mean(given, candidates);
+    }
+
     void parse_another() {
         auto given     = current_arg();
         auto did_parse = try_parse_given(given);
         if (!did_parse) {
-            throw boost::leaf::exception(unrecognized_argument("Unrecognized argument"),
-                                         e_arg_spelling{std::string(given)});
+            neo_defer {
+                auto dym = find_nearest_arg_spelling(given);
+                if (dym) {
+                    boost::leaf::current_error().load(e_did_you_mean{*dym});
+                }
+            };
+            BOOST_LEAF_THROW_EXCEPTION(unrecognized_argument("Unrecognized argument"),
+                                       e_arg_spelling{std::string(given)});
         }
     }
 
@@ -81,7 +115,7 @@ struct parse_engine {
 
     bool try_parse_long(strv tail, const strv given) {
         if (tail == "help") {
-            throw boost::leaf::exception(help_request());
+            BOOST_LEAF_THROW_EXCEPTION(help_request());
         }
         auto argset = bottom_parser;
         while (argset) {
@@ -115,8 +149,8 @@ struct parse_engine {
         if (arg.nargs == 0) {
             if (!tail.empty()) {
                 // We should not have a value
-                throw boost::leaf::exception(invalid_arguments("Argument does not expect a value"),
-                                             e_wrong_val_num{1});
+                BOOST_LEAF_THROW_EXCEPTION(invalid_arguments("Argument does not expect a value"),
+                                           e_wrong_val_num{1});
             }
             // Just a switch. Dispatch
             arg.action(given, given);
@@ -133,17 +167,17 @@ struct parse_engine {
             tail.remove_prefix(1);
             // The remainder is a single value
             if (arg.nargs > 1) {
-                throw boost::leaf::exception(invalid_arguments("Invalid number of values"),
-                                             e_wrong_val_num{1});
+                BOOST_LEAF_THROW_EXCEPTION(invalid_arguments("Invalid number of values"),
+                                           e_wrong_val_num{1});
             }
             arg.action(tail, given);
         } else {
             // Trailing words are arguments
             for (auto i = 0; i < arg.nargs; ++i) {
                 if (at_end()) {
-                    throw boost::leaf::exception(invalid_arguments(
-                                                     "Invalid number of argument values"),
-                                                 e_wrong_val_num{i});
+                    BOOST_LEAF_THROW_EXCEPTION(invalid_arguments(
+                                                   "Invalid number of argument values"),
+                                               e_wrong_val_num{i});
                 }
                 arg.action(current_arg(), given);
                 shift();
@@ -164,7 +198,7 @@ struct parse_engine {
 
     bool try_parse_short(strv tail, const strv given) {
         if (tail == "h") {
-            throw boost::leaf::exception(help_request());
+            BOOST_LEAF_THROW_EXCEPTION(help_request());
         }
         auto argset = bottom_parser;
         while (argset) {
@@ -213,7 +247,7 @@ struct parse_engine {
                 // The next argument is the value
                 shift();
                 if (at_end()) {
-                    throw boost::leaf::exception(invalid_arguments("Expected a value"));
+                    BOOST_LEAF_THROW_EXCEPTION(invalid_arguments("Expected a value"));
                 }
                 arg.action(current_arg(), spelling);
                 shift();
@@ -228,16 +262,15 @@ struct parse_engine {
         } else {
             // Consume the next arguments
             if (!tail.empty()) {
-                throw boost::leaf::exception(invalid_arguments(
-                                                 "Wrong number of argument values given"),
-                                             e_wrong_val_num{1});
+                BOOST_LEAF_THROW_EXCEPTION(invalid_arguments(
+                                               "Wrong number of argument values given"),
+                                           e_wrong_val_num{1});
             }
             shift();
             for (auto i = 0; i < arg.nargs; ++i) {
                 if (at_end()) {
-                    throw boost::leaf::exception(invalid_arguments(
-                                                     "Wrong number of argument values"),
-                                                 e_wrong_val_num{i});
+                    BOOST_LEAF_THROW_EXCEPTION(invalid_arguments("Wrong number of argument values"),
+                                               e_wrong_val_num{i});
                 }
                 arg.action(current_arg(), spelling);
                 shift();
@@ -343,15 +376,15 @@ struct parse_engine {
             argset = argset->parent().pointer();
         }
         if (bottom_parser->subparsers() && bottom_parser->subparsers()->required) {
-            throw boost::leaf::exception(missing_required("Expected a subcommand"));
+            BOOST_LEAF_THROW_EXCEPTION(missing_required("Expected a subcommand"));
         }
     }
 
     void finalize(const argument_parser& argset) {
         for (auto& arg : argset.arguments()) {
             if (arg.required && !seen.contains(&arg)) {
-                throw boost::leaf::exception(missing_required("Required argument is missing"),
-                                             e_argument{arg});
+                BOOST_LEAF_THROW_EXCEPTION(missing_required("Required argument is missing"),
+                                           e_argument{arg});
             }
         }
     }

@@ -49,13 +49,19 @@ class LibraryJSON(_LibraryJSONRequired, total=False):
 
 
 class Project:
+    """
+    Utilities to access a project being used as a test.
+    """
     def __init__(self, dirpath: Path, dds: DDSWrapper) -> None:
-        self.dds = dds
+        self.dds = dds.clone()
         self.root = dirpath
         self.build_root = dirpath / '_build'
 
     @property
     def package_json(self) -> PackageJSON:
+        """
+        Get/set the content of the `package.json` file for the project.
+        """
         return cast(PackageJSON, json.loads(self.root.joinpath('package.jsonc').read_text()))
 
     @package_json.setter
@@ -64,6 +70,9 @@ class Project:
 
     @property
     def library_json(self) -> LibraryJSON:
+        """
+        Get/set the content of the `library.json` file for the project.
+        """
         return cast(LibraryJSON, json.loads(self.root.joinpath('library.jsonc').read_text()))
 
     @library_json.setter
@@ -75,30 +84,43 @@ class Project:
         """Argument for --project"""
         return f'--project={self.root}'
 
-    def build(self, *, toolchain: Optional[Pathish] = None) -> None:
+    def build(self,
+              *,
+              toolchain: Optional[Pathish] = None,
+              timeout: Optional[int] = None,
+              tweaks_dir: Optional[Path] = None) -> None:
         """
         Execute 'dds build' on the project
         """
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
-            self.dds.build(root=self.root, build_root=self.build_root, toolchain=tc, more_args=['-ldebug'])
+            self.dds.build(root=self.root,
+                           build_root=self.build_root,
+                           toolchain=tc,
+                           timeout=timeout,
+                           tweaks_dir=tweaks_dir,
+                           more_args=['-ltrace'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
             self.dds.compile_file(paths, toolchain=tc, out=self.build_root, project_dir=self.root)
 
-    def sdist_create(self, *, dest: Optional[Pathish] = None) -> None:
+    def pkg_create(self, *, dest: Optional[Pathish] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
         self.dds.run([
-            'sdist',
+            'pkg',
             'create',
             self.project_dir_arg,
             f'--out={dest}' if dest else (),
         ], cwd=self.build_root)
 
     def sdist_export(self) -> None:
-        self.dds.run(['sdist', 'export', self.dds.repo_dir_arg, self.project_dir_arg])
+        self.dds.run(['sdist', 'export', self.dds.cache_dir_arg, self.project_dir_arg])
 
     def write(self, path: Pathish, content: str) -> Path:
+        """
+        Write the given `content` to `path`. If `path` is relative, it will
+        be resolved relative to the root directory of this project.
+        """
         path = Path(path)
         if not path.is_absolute():
             path = self.root / path
@@ -109,10 +131,17 @@ class Project:
 
 @pytest.fixture()
 def test_parent_dir(request: FixtureRequest) -> Path:
+    """
+    :class:`pathlib.Path` fixture pointing to the parent directory of the file
+    containing the test that is requesting the current fixture
+    """
     return Path(request.fspath).parent
 
 
 class ProjectOpener():
+    """
+    A test fixture that opens project directories for testing
+    """
     def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str,
                  tmp_path_factory: TempPathFactory) -> None:
         self.dds = dds
@@ -131,6 +160,14 @@ class ProjectOpener():
         return Path(self._request.fspath).parent
 
     def open(self, dirpath: Pathish) -> Project:
+        """
+        Open a new project testing fixture from the given project directory.
+
+        :param dirpath: The directory that contains the project to use.
+
+        Clones the given directory and then opens a project within that clone.
+        The clone directory will be destroyed when the test fixture is torn down.
+        """
         dirpath = Path(dirpath)
         if not dirpath.is_absolute():
             dirpath = self.test_dir / dirpath
@@ -159,6 +196,11 @@ class ProjectOpener():
 @pytest.fixture()
 def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper,
                    tmp_path_factory: TempPathFactory) -> ProjectOpener:
+    """
+    A fixture factory that can open directories as Project objects for building
+    and testing. Duplicates the project directory into a temporary location so
+    that the original test directory remains unchanged.
+    """
     opener = ProjectOpener(dds, request, worker_id, tmp_path_factory)
     return opener
 
@@ -166,6 +208,10 @@ def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper,
 @pytest.fixture()
 def tmp_project(request: FixtureRequest, worker_id: str, project_opener: ProjectOpener,
                 tmp_path_factory: TempPathFactory) -> Project:
+    """
+    A fixture that generates an empty temporary project directory that will be thrown away
+    when the test completes.
+    """
     if worker_id != 'master':
         proj_dir = tmp_path_factory.mktemp('temp-project')
         return project_opener.open(proj_dir)
@@ -180,11 +226,15 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
 
 @pytest.fixture(scope='session')
 def dds(dds_exe: Path) -> NewDDSWrapper:
+    """
+    A :class:`~dds_ci.dds.DDSWrapper` around the dds executable under test
+    """
     wr = NewDDSWrapper(dds_exe)
     return wr
 
 
 @pytest.fixture(scope='session')
 def dds_exe(pytestconfig: PyTestConfig) -> Path:
+    """A :class:`pathlib.Path` pointing to the DDS executable under test"""
     opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
     return Path(opt)

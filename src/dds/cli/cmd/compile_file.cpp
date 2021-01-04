@@ -11,6 +11,7 @@ int compile_file(const options& opts) {
                               .out_root = opts.out_path.value_or(fs::current_path() / "_build"),
                               .existing_lm_index = opts.build.lm_index,
                               .emit_lmi          = {},
+                              .tweaks_dir        = opts.build.tweaks_dir,
                               .toolchain         = opts.load_toolchain(),
                               .parallel_jobs     = opts.jobs,
                           });

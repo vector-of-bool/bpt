@@ -25,16 +25,8 @@ enum class subcommand {
     compile_file,
     build_deps,
     pkg,
-    sdist,
     repoman,
-};
-
-/**
- * @brief 'dds sdist' subcommands
- */
-enum class sdist_subcommand {
-    _none_,
-    create,
+    install_yourself,
 };
 
 /**
@@ -44,8 +36,10 @@ enum class pkg_subcommand {
     _none_,
     ls,
     get,
+    create,
     import,
     repo,
+    search,
 };
 
 /**
@@ -103,6 +97,8 @@ struct options {
     opt_path pkg_db_dir;
     // The `--log-level` argument
     log::level log_level = log::level::info;
+    // Any `--dry-run` argument
+    bool dry_run = false;
 
     // The top-most selected subcommand
     enum subcommand subcommand;
@@ -143,6 +139,7 @@ struct options {
         opt_path            lm_index;
         std::vector<string> add_repos;
         bool                update_repos = false;
+        opt_path            tweaks_dir;
     } build;
 
     /**
@@ -161,6 +158,8 @@ struct options {
         std::vector<fs::path> deps_files;
         /// Dependency strings provided directly in the command-line
         std::vector<string> deps;
+        /// Path to a CMake import file to write
+        opt_path cmake_file;
     } build_deps;
 
     /**
@@ -214,11 +213,15 @@ struct options {
             /// Package IDs to download
             std::vector<string> pkgs;
         } get;
-    } pkg;
 
-    struct {
-        sdist_subcommand subcommand;
-    } sdist;
+        /**
+         * @brief Parameters for 'dds pkg search'
+         */
+        struct {
+            /// The search pattern, if provided
+            opt_string pattern;
+        } search;
+    } pkg;
 
     /**
      * @brief Parameters for 'dds repoman'
@@ -244,7 +247,6 @@ struct options {
 
         /// Options for 'dds repoman add'
         struct {
-            std::string pkg_id_str;
             std::string url_str;
             std::string description;
         } add;
@@ -255,6 +257,16 @@ struct options {
             std::vector<string> pkgs;
         } remove;
     } repoman;
+
+    struct {
+        enum where_e {
+            system,
+            user,
+        } where
+            = user;
+        bool fixup_path_env = true;
+        bool symlink        = false;
+    } install_yourself;
 
     /**
      * @brief Attach arguments and subcommands to the given argument parser, binding those arguments

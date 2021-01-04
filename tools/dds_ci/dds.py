@@ -1,5 +1,6 @@
 import multiprocessing
 import shutil
+import os
 from pathlib import Path
 import copy
 from typing import Optional, TypeVar, Iterable
@@ -30,12 +31,12 @@ class DDSWrapper:
         return copy.deepcopy(self)
 
     @property
-    def catalog_path_arg(self) -> str:
+    def pkg_db_path_arg(self) -> str:
         """The arguments for --catalog"""
         return f'--catalog={self.pkg_db_path}'
 
     @property
-    def repo_dir_arg(self) -> str:
+    def cache_dir_arg(self) -> str:
         """The arguments for --repo-dir"""
         return f'--repo-dir={self.repo_dir}'
 
@@ -59,31 +60,33 @@ class DDSWrapper:
         if pkg_db and self.pkg_db_path.exists():
             self.pkg_db_path.unlink()
 
-    def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None) -> None:
+    def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None, timeout: Optional[int] = None) -> None:
         """Execute the 'dds' executable with the given arguments"""
-        proc.check_run([self.path, args], cwd=cwd or self.default_cwd)
+        env = os.environ.copy()
+        env['DDS_NO_ADD_INITIAL_REPO'] = '1'
+        proc.check_run([self.path, args], cwd=cwd or self.default_cwd, env=env, timeout=timeout)
 
     def catalog_json_import(self, path: Path) -> None:
         """Run 'catalog import' to import the given JSON. Only applicable to older 'dds'"""
-        self.run(['catalog', 'import', self.catalog_path_arg, f'--json={path}'])
+        self.run(['catalog', 'import', self.pkg_db_path_arg, f'--json={path}'])
 
     def catalog_get(self, what: str) -> None:
-        self.run(['catalog', 'get', self.catalog_path_arg, what])
+        self.run(['catalog', 'get', self.pkg_db_path_arg, what])
 
     def pkg_get(self, what: str) -> None:
-        self.run(['pkg', 'get', self.catalog_path_arg, what])
+        self.run(['pkg', 'get', self.pkg_db_path_arg, what])
 
     def repo_add(self, url: str) -> None:
-        self.run(['pkg', 'repo', 'add', self.catalog_path_arg, url])
+        self.run(['pkg', 'repo', 'add', self.pkg_db_path_arg, url])
 
     def repo_remove(self, name: str) -> None:
-        self.run(['pkg', 'repo', 'remove', self.catalog_path_arg, name])
+        self.run(['pkg', 'repo', 'remove', self.pkg_db_path_arg, name])
 
     def repo_import(self, sdist: Path) -> None:
-        self.run(['repo', self.repo_dir_arg, 'import', sdist])
+        self.run(['repo', self.cache_dir_arg, 'import', sdist])
 
     def pkg_import(self, filepath: Pathish) -> None:
-        self.run(['pkg', 'import', filepath, self.repo_dir_arg])
+        self.run(['pkg', 'import', filepath, self.cache_dir_arg])
 
     def build(self,
               *,
@@ -91,7 +94,9 @@ class DDSWrapper:
               toolchain: Optional[Path] = None,
               build_root: Optional[Path] = None,
               jobs: Optional[int] = None,
-              more_args: Optional[proc.CommandLine] = None) -> None:
+              tweaks_dir: Optional[Path] = None,
+              more_args: Optional[proc.CommandLine] = None,
+              timeout: Optional[int] = None) -> None:
         """
         Run 'dds build' with the given arguments.
 
@@ -102,16 +107,20 @@ class DDSWrapper:
         """
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         jobs = jobs or multiprocessing.cpu_count() + 2
-        self.run([
-            'build',
-            f'--toolchain={toolchain}',
-            self.repo_dir_arg,
-            self.catalog_path_arg,
-            f'--jobs={jobs}',
-            f'{self.project_dir_flag}={root}',
-            f'--out={build_root}',
-            more_args or (),
-        ])
+        self.run(
+            [
+                'build',
+                f'--toolchain={toolchain}',
+                self.cache_dir_arg,
+                self.pkg_db_path_arg,
+                f'--jobs={jobs}',
+                f'{self.project_dir_flag}={root}',
+                f'--out={build_root}',
+                f'--tweaks-dir={tweaks_dir}' if tweaks_dir else (),
+                more_args or (),
+            ],
+            timeout=timeout,
+        )
 
     def compile_file(self,
                      paths: Iterable[Pathish],
@@ -125,6 +134,8 @@ class DDSWrapper:
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         self.run([
             'compile-file',
+            self.pkg_db_path_arg,
+            self.cache_dir_arg,
             paths,
             f'--toolchain={toolchain}',
             f'{self.project_dir_flag}={project_dir}',
@@ -136,8 +147,8 @@ class DDSWrapper:
         self.run([
             'build-deps',
             f'--toolchain={toolchain}',
-            self.catalog_path_arg,
-            self.repo_dir_arg,
+            self.pkg_db_path_arg,
+            self.cache_dir_arg,
             args,
         ])
 
@@ -147,11 +158,11 @@ class NewDDSWrapper(DDSWrapper):
     Wraps the new 'dds' executable with some convenience APIs
     """
     @property
-    def repo_dir_arg(self) -> str:
+    def cache_dir_arg(self) -> str:
         return f'--pkg-cache-dir={self.repo_dir}'
 
     @property
-    def catalog_path_arg(self) -> str:
+    def pkg_db_path_arg(self) -> str:
         return f'--pkg-db-path={self.pkg_db_path}'
 
     @property

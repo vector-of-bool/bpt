@@ -111,8 +111,9 @@ struct http_client_impl {
             {"Host", hostname_port},
             {"Accept", "*/*"},
             {"Content-Length", "0"},
-            {"TE", "gzip, chunked, plain"},
+            {"TE", "gzip, chunked"},
             {"Connection", "keep-alive"},
+            {"User-Agent", "dds 0.1.0-alpha.6"},
         };
         if (!params.prior_etag.empty()) {
             headers.push_back({"If-None-Match", params.prior_etag});
@@ -385,8 +386,8 @@ void http_client::_set_ready() noexcept {
 }
 
 request_result http_pool::request(neo::url url, http_request_params params) {
-    DDS_E_SCOPE(url);
     for (auto i = 0; i <= 100; ++i) {
+        DDS_E_SCOPE(url);
         params.path  = url.path;
         params.query = url.query.value_or("");
 
@@ -410,18 +411,18 @@ request_result http_pool::request(neo::url url, http_request_params params) {
 
         if (resp.is_error()) {
             client.discard_body(resp);
-            throw boost::leaf::exception(http_status_error("Received an error from HTTP"));
+            throw BOOST_LEAF_EXCEPTION(http_status_error("Received an error from HTTP"));
         }
 
         if (resp.is_redirect()) {
             client.discard_body(resp);
             if (i == 100) {
-                throw boost::leaf::exception(
+                throw BOOST_LEAF_EXCEPTION(
                     http_server_error("Encountered over 100 HTTP redirects. Request aborted."));
             }
             auto loc = resp.headers.find("Location");
             if (!loc) {
-                throw boost::leaf::exception(
+                throw BOOST_LEAF_EXCEPTION(
                     http_server_error("Server sent an invalid response of a 30x redirect without a "
                                       "'Location' header"));
             }

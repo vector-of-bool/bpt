@@ -116,7 +116,6 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 
     auto pkg_man = package_manifest::load_from_file(*man_path);
     sdist_export_file(out, params.project_dir, *man_path);
-    dds_log(info, "Generated export as {}", pkg_man.id.to_string());
     return sdist::from_directory(out);
 }
 

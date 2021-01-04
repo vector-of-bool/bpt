@@ -81,7 +81,7 @@ public:
 
     static fs::path default_local_path() noexcept;
 
-    void add_sdist(const sdist&, if_exists = if_exists::throw_exc);
+    void import_sdist(const sdist&, if_exists = if_exists::throw_exc);
 
     const sdist* find(const pkg_id& pk) const noexcept;
 

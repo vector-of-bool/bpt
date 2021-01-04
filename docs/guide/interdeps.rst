@@ -85,8 +85,8 @@ versions of the dependency are supported.
     Refer to: :ref:`deps.ranges.why-lowest`.
 
 ``dds`` compatible-version ranges are similar to the shorthand range specifiers
-supported by ``npm`` and ``npm``-like tools. There are five (and a half)
-version range formats available, listed in order of most-to-least restrictive:
+supported by ``npm`` and ``npm``-like tools. There are four version range kinds
+available, listed in order of most-to-least restrictive:
 
 Exact: ``@1.2.3``
     Specifies an *exact* requirement. The dependency must match the named

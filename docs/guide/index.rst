@@ -9,7 +9,8 @@ User Guide
     packages
     toolchains
     source-dists
-    repo
-    catalog
+    pkg-cache
+    remote-pkgs
     interdeps
+    build-deps
     cmake

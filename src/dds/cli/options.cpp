@@ -1,14 +1,18 @@
 #include "./options.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/error/on_error.hpp>
+#include <dds/error/toolchain.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/toolchain.hpp>
 
 #include <debate/enum.hpp>
+#include <fansi/styled.hpp>
 
 using namespace dds;
 using namespace debate;
+using namespace fansi::literals;
 
 namespace {
 
@@ -86,6 +90,17 @@ struct setup {
         .action   = put_into(opts.repoman.repo_dir),
     };
 
+    argument tweaks_dir_arg{
+        .long_spellings  = {"tweaks-dir"},
+        .short_spellings = {"TD"},
+        .help
+        = "Base directory of "
+          "\x1b]8;;https://vector-of-bool.github.io/2020/10/04/lib-configuration.html\x1b\\tweak "
+          "headers\x1b]8;;\x1b\\ that should be available to the build.",
+        .valname = "<dir>",
+        .action  = put_into(opts.build.tweaks_dir),
+    };
+
     void do_setup(argument_parser& parser) noexcept {
         parser.add_argument({
             .long_spellings  = {"log-level"},
@@ -142,13 +157,13 @@ struct setup {
             .name = "pkg",
             .help = "Manage packages and package remotes",
         }));
-        setup_sdist_cmd(group.add_parser({
-            .name = "sdist",
-            .help = "Work with source distribution packages",
-        }));
         setup_repoman_cmd(group.add_parser({
             .name = "repoman",
             .help = "Manage a dds package repository",
+        }));
+        setup_install_yourself_cmd(group.add_parser({
+            .name = "install-yourself",
+            .help = "Have this dds executable install itself onto your PATH",
         }));
     }
 
@@ -189,6 +204,7 @@ struct setup {
         build_cmd.add_argument(lm_index_arg.dup()).help
             = "Path to a libman index file to use for loading project dependencies";
         build_cmd.add_argument(jobs_arg.dup());
+        build_cmd.add_argument(tweaks_dir_arg.dup());
     }
 
     void setup_compile_file_cmd(argument_parser& compile_file_cmd) noexcept {
@@ -199,6 +215,7 @@ struct setup {
             = "Set the maximum number of files to compile in parallel";
         compile_file_cmd.add_argument(lm_index_arg.dup());
         compile_file_cmd.add_argument(out_arg.dup());
+        compile_file_cmd.add_argument(tweaks_dir_arg.dup());
         compile_file_cmd.add_argument({
             .help       = "One or more source files to compile",
             .valname    = "<source-files>",
@@ -222,6 +239,14 @@ struct setup {
             .action          = debate::push_back_onto(opts.build_deps.deps_files),
         });
         build_deps_cmd.add_argument({
+            .long_spellings = {"cmake"},
+            .help = "Generate a CMake file at the given path that will create import targets for "
+                    "the dependencies",
+            .valname = "<file-path>",
+            .action  = debate::put_into(opts.build_deps.cmake_file),
+        });
+        build_deps_cmd.add_argument(tweaks_dir_arg.dup());
+        build_deps_cmd.add_argument({
             .help       = "Dependency statement strings",
             .valname    = "<dependency>",
             .can_repeat = true,
@@ -234,17 +259,21 @@ struct setup {
             .valname = "<pkg-subcommand>",
             .action  = put_into(opts.pkg.subcommand),
         });
+        setup_pkg_init_db_cmd(pkg_group.add_parser({
+            .name = "init-db",
+            .help = "Initialize a new package database file (Path specified with '--pkg-db-path')",
+        }));
         pkg_group.add_parser({
             .name = "ls",
             .help = "List locally available packages",
         });
+        setup_pkg_create_cmd(pkg_group.add_parser({
+            .name = "create",
+            .help = "Create a source distribution archive of a project",
+        }));
         setup_pkg_get_cmd(pkg_group.add_parser({
             .name = "get",
             .help = "Obtain a copy of a package from a remote",
-        }));
-        setup_pkg_init_db_cmd(pkg_group.add_parser({
-            .name = "init-db",
-            .help = "Initialize a new package database file (Path specified with '--pkg-db-path')",
         }));
         setup_pkg_import_cmd(pkg_group.add_parser({
             .name = "import",
@@ -254,6 +283,20 @@ struct setup {
             .name = "repo",
             .help = "Manage package repositories",
         }));
+        setup_pkg_search_cmd(pkg_group.add_parser({
+            .name = "search",
+            .help = "Search for packages available to download",
+        }));
+    }
+
+    void setup_pkg_create_cmd(argument_parser& pkg_create_cmd) {
+        pkg_create_cmd.add_argument(project_arg.dup()).help
+            = "Path to the project for which to create a source distribution.\n"
+              "Default is the current working directory.";
+        pkg_create_cmd.add_argument(out_arg.dup()).help
+            = "Destination path for the source distributioon archive";
+        pkg_create_cmd.add_argument(if_exists_arg.dup()).help
+            = "What to do if the destination names an existing file";
     }
 
     void setup_pkg_get_cmd(argument_parser& pkg_get_cmd) {
@@ -339,25 +382,16 @@ struct setup {
             = "What to do if any of the named repositories do not exist";
     }
 
-    void setup_sdist_cmd(argument_parser& sdist_cmd) noexcept {
-        auto& sdist_grp = sdist_cmd.add_subparsers({
-            .valname = "<sdist-subcommand>",
-            .action  = put_into(opts.sdist.subcommand),
+    void setup_pkg_search_cmd(argument_parser& pkg_repo_search_cmd) noexcept {
+        pkg_repo_search_cmd.add_argument({
+            .help
+            = "A name or glob-style pattern. Only matching packages will be returned. \n"
+              "Searching is case-insensitive. Only the .italic[name] will be matched (not the \n"
+              "version).\n\nIf this parameter is omitted, the search will return .italic[all] \n"
+              "available packages."_styled,
+            .valname = "<name-or-pattern>",
+            .action  = put_into(opts.pkg.search.pattern),
         });
-        setup_sdist_create_cmd(sdist_grp.add_parser({
-            .name = "create",
-            .help = "Create a source distribution from a project tree",
-        }));
-    }
-
-    void setup_sdist_create_cmd(argument_parser& sdist_create_cmd) {
-        sdist_create_cmd.add_argument(project_arg.dup()).help
-            = "Path to the project for which to create a source distribution.\n"
-              "Default is the current working directory.";
-        sdist_create_cmd.add_argument(out_arg.dup()).help
-            = "Destination path for the source distributnion archive";
-        sdist_create_cmd.add_argument(if_exists_arg.dup()).help
-            = "What to do if the destination names an existing file";
     }
 
     void setup_repoman_cmd(argument_parser& repoman_cmd) {
@@ -415,12 +449,6 @@ struct setup {
     void setup_repoman_add_cmd(argument_parser& repoman_add_cmd) {
         repoman_add_cmd.add_argument(repoman_repo_dir_arg.dup());
         repoman_add_cmd.add_argument({
-            .help     = "The package ID of the package to add",
-            .valname  = "<pkg-id>",
-            .required = true,
-            .action   = put_into(opts.repoman.add.pkg_id_str),
-        });
-        repoman_add_cmd.add_argument({
             .help     = "URL to add to the repository",
             .valname  = "<url>",
             .required = true,
@@ -440,6 +468,37 @@ struct setup {
             .valname    = "<pkg-id>",
             .can_repeat = true,
             .action     = push_back_onto(opts.repoman.remove.pkgs),
+        });
+    }
+
+    void setup_install_yourself_cmd(argument_parser& install_yourself_cmd) {
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"where"},
+            .help = "The scope of the installation. For .bold[system], installs in a global \n"
+                    "directory for all users of the system. For .bold[user], installs in a \n"
+                    "user-specific directory for executable binaries."_styled,
+            .valname = "{user,system}",
+            .action  = put_into(opts.install_yourself.where),
+        });
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"dry-run"},
+            .help
+            = "Do not actually perform any operations, but log what .italic[would] happen"_styled,
+            .nargs  = 0,
+            .action = store_true(opts.dry_run),
+        });
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"no-modify-path"},
+            .help           = "Do not attempt to modify the PATH environment variable",
+            .nargs          = 0,
+            .action         = store_false(opts.install_yourself.fixup_path_env),
+        });
+        install_yourself_cmd.add_argument({
+            .long_spellings = {"symlink"},
+            .help = "Create a symlink at the installed location to the existing 'dds' executable\n"
+                    "instead of copying the executable file",
+            .nargs  = 0,
+            .action = store_true(opts.install_yourself.symlink),
         });
     }
 };
@@ -464,7 +523,9 @@ toolchain dds::cli::options::load_toolchain() const {
     }
     // Convert the given string to a toolchain
     auto& tc_str = *toolchain;
+    DDS_E_SCOPE(e_loading_toolchain{tc_str});
     if (tc_str.starts_with(":")) {
+        DDS_E_SCOPE(e_toolchain_builtin{tc_str});
         auto default_tc = tc_str.substr(1);
         auto tc         = dds::toolchain::get_builtin(default_tc);
         if (!tc.has_value()) {
@@ -474,6 +535,7 @@ toolchain dds::cli::options::load_toolchain() const {
         }
         return std::move(*tc);
     } else {
+        DDS_E_SCOPE(e_toolchain_file{tc_str});
         return parse_toolchain_json5(slurp_file(tc_str));
     }
 }

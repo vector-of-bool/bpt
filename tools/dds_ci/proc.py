@@ -1,5 +1,5 @@
 from pathlib import PurePath
-from typing import Iterable, Union, Optional, Iterator, NoReturn, Sequence
+from typing import Iterable, Union, Optional, Iterator, NoReturn, Sequence, Mapping
 from typing_extensions import Protocol
 import subprocess
 
@@ -40,9 +40,14 @@ def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
         assert False, f'Invalid command line element: {repr(cmd)}'
 
 
-def run(*cmd: CommandLine, cwd: Optional[Pathish] = None, check: bool = False) -> ProcessResult:
+def run(*cmd: CommandLine,
+        cwd: Optional[Pathish] = None,
+        check: bool = False,
+        env: Optional[Mapping[str, str]] = None,
+        timeout: Optional[int] = None) -> ProcessResult:
+    timeout = timeout or 60 * 5
     command = list(flatten_cmd(cmd))
-    res = subprocess.run(command, cwd=cwd, check=False)
+    res = subprocess.run(command, cwd=cwd, check=False, env=env, timeout=timeout)
     if res.returncode and check:
         raise_error(res)
     return res
@@ -52,5 +57,8 @@ def raise_error(proc: ProcessResult) -> NoReturn:
     raise subprocess.CalledProcessError(proc.returncode, proc.args, output=proc.stdout, stderr=proc.stderr)
 
 
-def check_run(*cmd: CommandLine, cwd: Optional[Pathish] = None) -> ProcessResult:
-    return run(cmd, cwd=cwd, check=True)
+def check_run(*cmd: CommandLine,
+              cwd: Optional[Pathish] = None,
+              env: Optional[Mapping[str, str]] = None,
+              timeout: Optional[int] = None) -> ProcessResult:
+    return run(cmd, cwd=cwd, check=True, env=env, timeout=timeout)

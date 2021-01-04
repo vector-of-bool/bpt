@@ -15,6 +15,7 @@ the :doc:`tut/index` page.
     :maxdepth: 2
 
     tut/index
+    howto/index
     guide/index
     design
     dev/index

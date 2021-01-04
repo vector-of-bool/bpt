@@ -168,9 +168,9 @@ If you run the ``dds build`` command again, you will now see an error:
 
 .. code-block:: text
 
-    [12:55:25] [info ] [dds-hello] Link: hello-world
-    [12:55:25] [info ] [dds-hello] Link: hello-world                    -     57ms
-    [12:55:25] [error] Failed to link executable '<root>/_build/hello-world'.
+    [info ] [dds-hello] Link: hello-world
+    [info ] [dds-hello] Link: hello-world                    -     57ms
+    [error] Failed to link executable '<root>/_build/hello-world'.
     ...
     <additional lines follow>
 
@@ -237,6 +237,10 @@ package root:
     The ``namespace`` option will be discussed later.
 
 Rebuilding the project will show no difference at the moment.
+
+.. note::
+    You may also use a ``.jsonc`` or ``.json`` file extension. ``dds`` will
+    search for all of these files, but they will all be parsed as JSON5.
 
 .. seealso::
     Creating a single application executable is fine and all, but what if we

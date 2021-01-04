@@ -16,7 +16,20 @@
 #include <vector>
 
 #if NEO_OS_IS_WINDOWS
-bool fansi::detect_should_style() noexcept { return false; }
+#include <windows.h>
+
+bool fansi::detect_should_style() noexcept {
+    auto stdio_console = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    if (stdio_console == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    DWORD mode = 0;
+    if (!::GetConsoleMode(stdio_console, &mode)) {
+        // Failed to get the mode
+        return false;
+    }
+    return (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
 #else
 #include <unistd.h>
 bool fansi::detect_should_style() noexcept { return ::isatty(STDOUT_FILENO); }
@@ -163,7 +176,7 @@ std::string fansi::stylize(std::string_view str, fansi::should_style should) {
     return text_styler{str, should}.render();
 }
 
-std::string_view detail::cached_rendering(const char* ptr) noexcept {
+const std::string& detail::cached_rendering(const char* ptr) noexcept {
     thread_local std::map<const char*, std::string> cache;
     auto                                            found = cache.find(ptr);
     if (found == cache.end()) {

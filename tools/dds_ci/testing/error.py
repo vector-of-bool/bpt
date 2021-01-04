@@ -1,5 +1,5 @@
 """
-Test utility for error checking
+Test utilities for error checking
 """
 
 from contextlib import contextmanager
@@ -12,6 +12,17 @@ import os
 
 @contextmanager
 def expect_error_marker(expect: str) -> Iterator[None]:
+    """
+    A context-manager function that should wrap a scope that causes an error
+    from ``dds``.
+
+    :param expect: The error message ID string that is expected to appear.
+
+    The wrapped scope should raise :class:`subprocess.CalledProcessError`.
+
+    After handling the exception, asserts that the subprocess wrote an
+    error marker containing the string given in ``expect``.
+    """
     tdir = Path(tempfile.mkdtemp())
     err_file = tdir / 'error'
     try:

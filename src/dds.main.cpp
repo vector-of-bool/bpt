@@ -1,12 +1,15 @@
 #include <dds/cli/dispatch_main.hpp>
 #include <dds/cli/options.hpp>
+#include <dds/util/env.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/output.hpp>
 #include <dds/util/signal.hpp>
 
 #include <debate/debate.hpp>
 #include <debate/enum.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
+#include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
 
@@ -15,13 +18,15 @@
 #include <iostream>
 #include <locale>
 
+using namespace fansi::literals;
+
 static void load_locale() {
-    auto lang = std::getenv("LANG");
+    auto lang = dds::getenv("LANG");
     if (!lang) {
         return;
     }
     try {
-        std::locale::global(std::locale(lang));
+        std::locale::global(std::locale(*lang));
     } catch (const std::runtime_error& e) {
         // No locale with the given name
         return;
@@ -35,6 +40,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
     std::setlocale(LC_CTYPE, ".utf8");
 
     dds::install_signal_handlers();
+    dds::enable_ansi_console();
 
     dds::cli::options       opts;
     debate::argument_parser parser;
@@ -51,12 +57,22 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         },
         [&](debate::unrecognized_argument,
             debate::e_argument_parser p,
-            debate::e_arg_spelling    arg) {
+            debate::e_arg_spelling    arg,
+            debate::e_did_you_mean*   dym) {
             std::cerr << p.parser.usage_string(program_name) << '\n';
             if (p.parser.subparsers()) {
-                fmt::print(std::cerr, "Unrecognized argument/subcommand: \"{}\"\n", arg.spelling);
+                fmt::print(std::cerr,
+                           "Unrecognized argument/subcommand: \".bold.red[{}]\"\n"_styled,
+                           arg.spelling);
             } else {
-                fmt::print(std::cerr, "Unrecognized argument: \"{}\"\n", arg.spelling);
+                fmt::print(std::cerr,
+                           "Unrecognized argument: \".bold.red[{}]\"\n"_styled,
+                           arg.spelling);
+            }
+            if (dym) {
+                fmt::print(std::cerr,
+                           "  (Did you mean '.br.yellow[{}]'?)\n"_styled,
+                           dym->candidate);
             }
             return 2;
         },
@@ -105,7 +121,8 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             return 2;
         },
         [&](debate::invalid_repitition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
-            fmt::print(std::cerr << "{}\nArgument '{}' cannot be provided more than once\n",
+            fmt::print(std::cerr,
+                       "{}\nArgument '{}' cannot be provided more than once\n",
                        p.parser.usage_string(program_name),
                        sp.spelling);
             return 2;

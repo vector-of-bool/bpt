@@ -3,13 +3,14 @@
 
 ``dds`` has been designed from the very beginning as an extremely opinionated
 hybrid *build system* and *package manager*. Unlike most build systems however,
-``dds`` has a hyper-specific focus on a particular aspect of software
-development: C and C++ libraries.
+``dds`` has a strong focus on a particular aspect of software development: C and
+C++ libraries.
 
 This may sound pointless, right? Libraries are useless unless we can use them
 to build applications!
 
-Indeed, applications *are* essential, but that is "not our job" with ``dds``.
+Indeed, applications *are* essential, and ``dds`` is able to build those as
+well.
 
 Another design decision is that ``dds`` is built to be driven by automated
 tools as well as humans. ``dds`` is not designed to entirely replace existing
@@ -32,8 +33,8 @@ incredible implementation challenges.
 
 Despite the vast amount of work put into build systems and tooling, virtually
 all developers are using them *incorrectly* and/or *dangerously* without
-realizing it. Despite this work, we seem to be a great distance from a unified
-library package distribution and consumption mechanism.
+realizing it, and we seem to be still a great distance from a unified library
+package distribution and consumption mechanism.
 
 
 Tabula Rasa
@@ -46,7 +47,7 @@ If you opt-in to have your library built by ``dds``, you forgoe
 *customizability* in favor of *simplicity* and *ease*.
 
 ``dds`` takes a look at what is needed to build and develop *libraries* and
-hyper-optimizes for that use case. It is also built with a very strong, very
+optimizes for that use case. It is also built with a very strong, very
 opinionated idea of *how* libraries should be constructed and used. These
 prescriptions are not at all arbitrary, though. They are built upon the
 observations of the strengths and weaknesses of build systems in use throughout
@@ -69,14 +70,14 @@ different, despite both using the same underlying "Build System."
 
 ``dds`` takes a massive divergence at this point. One project using ``dds`` as
 their build system has a nearly identical build process to every other project
-using ``dds``. Simply running :code:`dds build -t <toolchain>` should be enough
+using ``dds``. Simply running ``dds build`` should be enough
 to build *any* ``dds`` project.
 
 In order to reach this uniformity and simplicity, ``dds`` drops almost all
 aspects of project-by-project customizability. Instead, ``dds`` affords the
 developer a contract:
 
-    If you play by my rules, you get to play in my space.
+    If you play by the rules, you get to play in this space.
 
 
 .. _design.rules:
@@ -91,7 +92,7 @@ imposes, but what are they?
 .. _design.rules.not-apps:
 
 ``dds`` Is not Made for Complex Applications
-===============================================
+============================================
 
 Alright, this one isn't a "rule" as much as a recommendation: If you are
 building an application that *needs* some build process functionality that
@@ -105,22 +106,28 @@ violate any of the other existing rules.
     customization features to permit the rules to be bent arbitrarily: Read
     on.
 
-``dds`` contains a minimal amount of functionality for building simple
-applications, but it is certainly not its primary purpose.
+``dds`` *does* contain functionality for building applications, but they must
+also play by the rules.
+
+If you want to build a complex application with ``dds`` that uses lots of
+platform-specific sources, code generation, and conditional components, a good
+option is to use an external build script that prepares the project tree before
+invoking ``dds``.
 
 
 .. _design.rules.change:
 
-*Your* Code Should Be Changed Before ``dds`` Should Be Changed
-=================================================================
+*Your Code* Should Be Changed Before ``dds`` Should Be Changed
+==============================================================
 
-The wording of this rule means that the onus is on the library developer to
-meet the expectations that ``dds`` prescribes in order to make the build
-work.
+The wording of this rule means that the onus is on the developer to meet the
+expectations that ``dds`` prescribes in order to make the build work.
 
-If your library meets all the requirements outlined in this document but you
-still find trouble in making your build work, this is grounds for change in
-``dds``, either in clarifying the rules or tweaking ``dds`` functionality.
+If your project meets all the requirements outlined in this document but you
+still find trouble in making your build work, or if you *cannot* see *any*
+possible way for your project to be built by ``dds`` regardless of what changes
+you make, then it this is grounds for change in ``dds``, either in clarifying
+the rules or tweaking ``dds`` functionality
 
 
 .. _design.rules.layout:
@@ -154,9 +161,8 @@ conditional compilation.
 All Code Must Be in Place Before Building
 =========================================
 
-``dds`` does not provide code-generation functionality. Instead, any
-generated code should be generated and committed to the repository to be only
-ever modified through such generation scripts.
+``dds`` does not provide code-generation functionality. Instead, any generated
+code should be generated by separate build steps before ``dds`` is executed.
 
 
 .. _design.rules.one-binary-per-src:
@@ -176,7 +182,7 @@ No Arbitrary ``#include`` Directories
 =====================================
 
 Only ``src/`` and ``include/`` will ever be used as the basis for header
-resolution while building a library, so all ``#include`` directives should be
+resolution while building a project, so all ``#include`` directives should be
 relative to those directories. Refer to :ref:`pkg.source-root`.
 
 
@@ -185,7 +191,7 @@ relative to those directories. Refer to :ref:`pkg.source-root`.
 All Files Compile with the Same Options
 =======================================
 
-When DDS compiles a library, every source file will be compiled with an
+When DDS compiles a project, every source file will be compiled with an
 identical set of options. Additionally, when DDS compiles a dependency tree,
 every library in that dependency tree will be compiled with an identical set of
 options. Refer to the :doc:`guide/toolchains` page for more information.

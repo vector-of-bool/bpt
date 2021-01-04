@@ -12,9 +12,7 @@
 
 using namespace dds;
 
-namespace {
-
-temporary_sdist do_pull_sdist(const any_remote_pkg& rpkg) {
+temporary_sdist dds::get_package_sdist(const any_remote_pkg& rpkg) {
     auto tmpdir = dds::temporary_dir::create();
 
     rpkg.get_sdist(tmpdir.path());
@@ -29,10 +27,8 @@ temporary_sdist do_pull_sdist(const any_remote_pkg& rpkg) {
     return {sd_tmp_dir, sd};
 }
 
-}  // namespace
-
 temporary_sdist dds::get_package_sdist(const pkg_listing& pkg) {
-    auto tsd = do_pull_sdist(pkg.remote_pkg);
+    auto tsd = get_package_sdist(pkg.remote_pkg);
     if (!(tsd.sdist.manifest.id == pkg.ident)) {
         throw_external_error<errc::sdist_ident_mismatch>(
             "The package name@version in the generated source distribution does not match the name "
@@ -62,7 +58,7 @@ void dds::get_all(const std::vector<pkg_id>& pkgs, pkg_cache& repo, const pkg_db
         dds_log(info, "Download package: {}", inf.ident.to_string());
         auto             tsd = get_package_sdist(inf);
         std::scoped_lock lk{repo_mut};
-        repo.add_sdist(tsd.sdist, if_exists::throw_exc);
+        repo.import_sdist(tsd.sdist, if_exists::throw_exc);
     });
 
     if (!okay) {

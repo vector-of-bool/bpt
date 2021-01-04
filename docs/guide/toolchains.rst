@@ -299,6 +299,16 @@ Specify *additional* compiler options, possibly per-language.
 
 Specify *additional* link options to use when linking executables.
 
+.. note::
+
+    ``dds`` does not invoke the linker directly, but instead invokes the
+    compiler with the appropriate flags to perform linking. If you need to pass
+    flags directly to the linker, you will need to use the compiler's options to
+    direct flags through to the linker. On GNU-style, this is
+    ``-Wl,<linker-option>``. With MSVC, a separate flag ``/LINK`` must be
+    specified, and all following options are passed to the underlying
+    ``link.exe``.
+
 
 ``optimize``
 ------------
