@@ -33,16 +33,12 @@ class DDSWrapper:
     @property
     def pkg_db_path_arg(self) -> str:
         """The arguments for --catalog"""
-        return f'--catalog={self.pkg_db_path}'
+        return f'--pkg-db-path={self.pkg_db_path}'
 
     @property
     def cache_dir_arg(self) -> str:
         """The arguments for --repo-dir"""
-        return f'--repo-dir={self.repo_dir}'
-
-    @property
-    def project_dir_flag(self) -> str:
-        return '--project-dir'
+        return f'--pkg-cache-dir={self.repo_dir}'
 
     def set_repo_scratch(self, path: Pathish) -> None:
         self.repo_dir = Path(path) / 'data'
@@ -65,13 +61,6 @@ class DDSWrapper:
         env = os.environ.copy()
         env['DDS_NO_ADD_INITIAL_REPO'] = '1'
         proc.check_run([self.path, args], cwd=cwd or self.default_cwd, env=env, timeout=timeout)
-
-    def catalog_json_import(self, path: Path) -> None:
-        """Run 'catalog import' to import the given JSON. Only applicable to older 'dds'"""
-        self.run(['catalog', 'import', self.pkg_db_path_arg, f'--json={path}'])
-
-    def catalog_get(self, what: str) -> None:
-        self.run(['catalog', 'get', self.pkg_db_path_arg, what])
 
     def pkg_get(self, what: str) -> None:
         self.run(['pkg', 'get', self.pkg_db_path_arg, what])
@@ -114,7 +103,7 @@ class DDSWrapper:
                 self.cache_dir_arg,
                 self.pkg_db_path_arg,
                 f'--jobs={jobs}',
-                f'{self.project_dir_flag}={root}',
+                f'--project={root}',
                 f'--out={build_root}',
                 f'--tweaks-dir={tweaks_dir}' if tweaks_dir else (),
                 more_args or (),
@@ -138,7 +127,7 @@ class DDSWrapper:
             self.cache_dir_arg,
             paths,
             f'--toolchain={toolchain}',
-            f'{self.project_dir_flag}={project_dir}',
+            f'--project={project_dir}',
             f'--out={out}',
         ])
 
@@ -151,20 +140,3 @@ class DDSWrapper:
             self.cache_dir_arg,
             args,
         ])
-
-
-class NewDDSWrapper(DDSWrapper):
-    """
-    Wraps the new 'dds' executable with some convenience APIs
-    """
-    @property
-    def cache_dir_arg(self) -> str:
-        return f'--pkg-cache-dir={self.repo_dir}'
-
-    @property
-    def pkg_db_path_arg(self) -> str:
-        return f'--pkg-db-path={self.pkg_db_path}'
-
-    @property
-    def project_dir_flag(self) -> str:
-        return '--project'

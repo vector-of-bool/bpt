@@ -134,7 +134,7 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
     if args.clean:
         dds.clean(build_dir=paths.BUILD_DIR)
 
-    dds.catalog_json_import(paths.PROJECT_ROOT / 'old-catalog.json')
+    dds.repo_add('https://repo-1.dds.pizza')
 
     if args.rapid:
         return main_build(dds, args)

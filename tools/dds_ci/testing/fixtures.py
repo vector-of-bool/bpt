@@ -14,7 +14,7 @@ from _pytest.tmpdir import TempPathFactory
 from _pytest.fixtures import FixtureRequest
 
 from dds_ci import toolchain, paths
-from ..dds import DDSWrapper, NewDDSWrapper
+from ..dds import DDSWrapper
 from ..util import Pathish
 tc_mod = toolchain
 
@@ -225,11 +225,11 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
 
 
 @pytest.fixture(scope='session')
-def dds(dds_exe: Path) -> NewDDSWrapper:
+def dds(dds_exe: Path) -> DDSWrapper:
     """
     A :class:`~dds_ci.dds.DDSWrapper` around the dds executable under test
     """
-    wr = NewDDSWrapper(dds_exe)
+    wr = DDSWrapper(dds_exe)
     return wr
 
 
