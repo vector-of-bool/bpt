@@ -118,7 +118,7 @@ auto make_external_error() {
 
 template <errc ErrorCode, typename... Args>
 [[noreturn]] void throw_external_error(std::string_view fmt_str, Args&&... args) {
-    throw make_external_error<ErrorCode>(fmt::format(fmt_str, std::forward<Args>(args)...));
+    throw make_external_error<ErrorCode>(fmt_str, std::forward<Args>(args)...);
 }
 
 template <errc ErrorCode>
