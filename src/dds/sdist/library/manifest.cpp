@@ -13,7 +13,7 @@
 using namespace dds;
 
 library_manifest library_manifest::load_from_file(path_ref fpath) {
-    DDS_E_SCOPE(e_library_manifest_path{std::string(fpath)});
+    DDS_E_SCOPE(e_library_manifest_path{fpath.string()});
 
     auto content = slurp_file(fpath);
     auto data    = json5::parse_data(content);
