@@ -129,11 +129,13 @@ library_plan prepare_library(state&                  st,
             }
         }
     }
-    return library_plan::create(lib, std::move(lp), pkg_man.namespace_ + "/" + lib.manifest().name);
+    return library_plan::create(lib,
+                                std::move(lp),
+                                pkg_man.namespace_.str + "/" + lib.manifest().name.str);
 }
 
 package_plan prepare_one(state& st, const sdist_target& sd) {
-    package_plan pkg{sd.sd.manifest.id.name, sd.sd.manifest.namespace_};
+    package_plan pkg{sd.sd.manifest.id.name.str, sd.sd.manifest.namespace_.str};
     auto         libs = collect_libraries(sd.sd.path);
     for (const auto& lib : libs) {
         pkg.add_library(prepare_library(st, sd, lib, sd.sd.manifest));
@@ -154,7 +156,7 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
     usage_requirement_map ureqs;
     for (const auto& pkg : plan.packages()) {
         for (const auto& lib : pkg.libraries()) {
-            auto& lib_reqs = ureqs.add(pkg.namespace_(), lib.name());
+            auto& lib_reqs = ureqs.add(pkg.namespace_(), lib.name().str);
             lib_reqs.include_paths.push_back(lib.library_().public_include_dir());
             lib_reqs.uses  = lib.library_().manifest().uses;
             lib_reqs.links = lib.library_().manifest().links;
@@ -174,7 +176,7 @@ void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
     fs::create_directories(lml_path.parent_path());
     auto out = open(lml_path, std::ios::binary | std::ios::out);
     out << "Type: Library\n"
-        << "Name: " << lib.name() << '\n'
+        << "Name: " << lib.name().str << '\n'
         << "Include-Path: " << lib.library_().public_include_dir().generic_string() << '\n';
     for (auto&& use : lib.uses()) {
         out << "Uses: " << use.namespace_ << "/" << use.name << '\n';
@@ -196,7 +198,7 @@ void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
         << "Name: " << pkg.name() << '\n'
         << "Namespace: " << pkg.namespace_() << '\n';
     for (const auto& lib : pkg.libraries()) {
-        auto lml_path = lmp_path.parent_path() / pkg.namespace_() / (lib.name() + ".lml");
+        auto lml_path = lmp_path.parent_path() / pkg.namespace_() / (lib.name().str + ".lml");
         write_lml(env, lib, lml_path);
         out << "Library: " << lml_path.generic_string() << '\n';
     }
@@ -217,8 +219,8 @@ void write_lib_cmake(build_env_ref       env,
                      std::ostream&       out,
                      const package_plan& pkg,
                      const library_plan& lib) {
-    fmt::print(out, "# Library {}/{}\n", pkg.namespace_(), lib.name());
-    auto cmake_name = fmt::format("{}::{}", pkg.namespace_(), lib.name());
+    fmt::print(out, "# Library {}/{}\n", pkg.namespace_(), lib.name().str);
+    auto cmake_name = fmt::format("{}::{}", pkg.namespace_(), lib.name().str);
     auto cm_kind    = lib.archive_plan().has_value() ? "STATIC" : "INTERFACE";
     fmt::print(
         out,

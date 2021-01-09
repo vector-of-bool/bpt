@@ -16,7 +16,7 @@ TEST_CASE("Package package ID strings") {
 
     auto pk_id = dds::pkg_id::parse(id_str);
     CHECK(pk_id.to_string() == id_str);
-    CHECK(pk_id.name == exp_name);
+    CHECK(pk_id.name.str == exp_name);
     CHECK(pk_id.version.to_string() == exp_ver);
 }
 

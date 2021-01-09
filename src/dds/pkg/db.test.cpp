@@ -34,7 +34,7 @@ TEST_CASE_METHOD(pkg_db_test_case, "Store a simple package") {
 
     auto pkgs = db.by_name("foo");
     REQUIRE(pkgs.size() == 1);
-    CHECK(pkgs[0].name == "foo");
+    CHECK(pkgs[0].name.str == "foo");
     CHECK(pkgs[0].version == semver::version::parse("1.2.3"));
     auto info = db.get(pkgs[0]);
     REQUIRE(info);
@@ -67,9 +67,9 @@ TEST_CASE_METHOD(pkg_db_test_case, "Package requirements") {
     });
     auto pkgs = db.by_name("foo");
     REQUIRE(pkgs.size() == 1);
-    CHECK(pkgs[0].name == "foo");
+    CHECK(pkgs[0].name.str == "foo");
     auto deps = db.dependencies_of(pkgs[0]);
     CHECK(deps.size() == 2);
-    CHECK(deps[0].name == "bar");
-    CHECK(deps[1].name == "baz");
+    CHECK(deps[0].name.str == "bar");
+    CHECK(deps[1].name.str == "baz");
 }

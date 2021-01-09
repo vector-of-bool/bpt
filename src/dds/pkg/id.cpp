@@ -10,21 +10,23 @@
 using namespace dds;
 
 pkg_id pkg_id::parse(const std::string_view s) {
-    DDS_E_SCOPE(e_invalid_pkg_id_str{std::string(s)});
+    DDS_E_SCOPE(e_pkg_id_str{std::string(s)});
     auto at_pos = s.find('@');
     if (at_pos == s.npos) {
         BOOST_LEAF_THROW_EXCEPTION(
             make_user_error<errc::invalid_pkg_id>("Package ID must contain an '@' symbol"));
     }
 
-    auto name    = s.substr(0, at_pos);
+    auto name    = *dds::name::from_string(s.substr(0, at_pos));
     auto ver_str = s.substr(at_pos + 1);
 
     try {
-        return {std::string(name), semver::version::parse(ver_str)};
+        return {name, semver::version::parse(ver_str)};
     } catch (const semver::invalid_version& err) {
         BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::invalid_pkg_id>(), err);
     }
 }
 
-std::string pkg_id::to_string() const noexcept { return name + "@" + version.to_string(); }
+std::string pkg_id::to_string() const noexcept {
+    return fmt::format("{}@{}", name.str, version.to_string());
+}

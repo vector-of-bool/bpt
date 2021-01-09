@@ -1,5 +1,7 @@
 #pragma once
 
+#include <neo/pp.hpp>
+
 #include <boost/leaf/on_error.hpp>
 
 /**

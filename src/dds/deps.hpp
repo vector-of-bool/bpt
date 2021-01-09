@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/pkg/name.hpp>
 #include <dds/util/fs.hpp>
 
 #include <pubgrub/interval.hpp>
@@ -12,8 +13,12 @@ namespace dds {
 
 using version_range_set = pubgrub::interval_set<semver::version>;
 
+struct e_dependency_string {
+    std::string value;
+};
+
 struct dependency {
-    std::string       name;
+    dds::name         name;
     version_range_set versions;
 
     static dependency parse_depends_string(std::string_view str);

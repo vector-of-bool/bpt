@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/pkg/name.hpp>
 #include <dds/util/fs.hpp>
 
 #include <libman/library.hpp>
@@ -8,6 +9,10 @@
 
 namespace dds {
 
+struct e_library_manifest_path {
+    std::string value;
+};
+
 /**
  * Represents the contents of a `library.json5`. This is somewhat a stripped-down
  * version of lm::library, to only represent exactly the parts that we want to
@@ -15,7 +20,7 @@ namespace dds {
  */
 struct library_manifest {
     /// The name of the library
-    std::string name;
+    dds::name name;
     /// The libraries that the owning library "uses"
     std::vector<lm::usage> uses;
     /// The libraries that the owning library must be linked with

@@ -2,6 +2,7 @@
 
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/result.hpp>
 #include <dds/sdist/root.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
@@ -60,10 +61,16 @@ library_root library_root::from_directory(path_ref lib_dir) {
     auto sources = collect_pf_sources(lib_dir);
 
     library_manifest man;
-    man.name   = lib_dir.filename().string();
-    auto found = library_manifest::find_in_directory(lib_dir);
+    auto             found = library_manifest::find_in_directory(lib_dir);
     if (found) {
         man = library_manifest::load_from_file(*found);
+    } else {
+        auto name_from_dir = dds::name::from_string(lib_dir.filename().string());
+        if (!name_from_dir) {
+            man.name.str = "unnamed";
+        } else {
+            man.name = *name_from_dir;
+        }
     }
 
     auto lib = library_root(lib_dir, std::move(sources), std::move(man));

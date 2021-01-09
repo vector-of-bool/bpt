@@ -29,7 +29,7 @@ static int _pkg_ls(const options& opts) {
                            });
 
         for (const auto& [name, grp] : grp_by_name) {
-            dds_log(info, "{}:", name);
+            dds_log(info, "{}:", name.str);
             for (const dds::sdist& sd : grp) {
                 dds_log(info, "  - {}", sd.manifest.id.version.to_string());
             }

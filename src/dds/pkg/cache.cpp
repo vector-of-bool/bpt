@@ -126,7 +126,7 @@ std::vector<pkg_id> pkg_cache::solve(const std::vector<dependency>& deps,
         [&](std::string_view name) -> std::vector<pkg_id> {
             auto mine = ranges::views::all(_sdists)  //
                 | ranges::views::filter(
-                            [&](const sdist& sd) { return sd.manifest.id.name == name; })
+                            [&](const sdist& sd) { return sd.manifest.id.name.str == name; })
                 | ranges::views::transform([](const sdist& sd) { return sd.manifest.id; });
             auto avail = ctlg.by_name(name);
             auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
