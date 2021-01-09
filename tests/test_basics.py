@@ -45,14 +45,14 @@ def test_simple_lib(tmp_project: Project) -> None:
     """
     tmp_project.write('src/foo.cpp', 'int the_answer() { return 42; }')
     tmp_project.package_json = {
-        'name': 'TestProject',
+        'name': 'test-project',
         'version': '0.0.0',
         'namespace': 'test',
     }
-    tmp_project.library_json = {'name': 'TestLibrary'}
+    tmp_project.library_json = {'name': 'test-library'}
     tmp_project.build()
-    assert (tmp_project.build_root / 'compile_commands.json').is_file()
-    assert list(tmp_project.build_root.glob('libTestLibrary.*')) != []
+    assert (tmp_project.build_root / 'compile_commands.json').is_file(), 'compdb was not created'
+    assert list(tmp_project.build_root.glob('libtest-library.*')) != [], 'No archive was created'
 
 
 def test_lib_with_just_test(tmp_project: Project) -> None:
@@ -64,6 +64,53 @@ def test_lib_with_just_test(tmp_project: Project) -> None:
 def test_lib_with_failing_test(tmp_project: Project) -> None:
     tmp_project.write('src/foo.test.cpp', 'int main() { return 2; }')
     with expect_error_marker('build-failed-test-failed'):
+        tmp_project.build()
+
+
+def test_invalid_names(tmp_project: Project) -> None:
+    tmp_project.package_json = {
+        'name': 'test',
+        'version': '1.2.3',
+        'namespace': 'test',
+        'depends': ['invalid name@1.2.3']
+    }
+    with expect_error_marker('invalid-pkg-dep-name'):
+        tmp_project.build()
+    with expect_error_marker('invalid-pkg-dep-name'):
+        tmp_project.pkg_create()
+    with expect_error_marker('invalid-pkg-dep-name'):
+        tmp_project.dds.build_deps(['invalid name@1.2.3'])
+
+    tmp_project.package_json = {
+        **tmp_project.package_json,
+        'name': 'invalid name',
+        'depends': [],
+    }
+    with expect_error_marker('invalid-pkg-name'):
+        tmp_project.build()
+    with expect_error_marker('invalid-pkg-name'):
+        tmp_project.pkg_create()
+
+    tmp_project.package_json = {
+        **tmp_project.package_json,
+        'name': 'simple_name',
+        'namespace': 'invalid namespace',
+    }
+    with expect_error_marker('invalid-pkg-namespace-name'):
+        tmp_project.build()
+    with expect_error_marker('invalid-pkg-namespace-name'):
+        tmp_project.pkg_create()
+
+    tmp_project.package_json = {
+        'name': 'test',
+        'version': '1.2.3',
+        'namespace': 'test',
+        'depends': [],
+    }
+    tmp_project.library_json = {'name': 'invalid name'}
+    # Need a source directory for dds to load the lib manifest
+    tmp_project.write('src/empty.hpp', '')
+    with expect_error_marker('invalid-lib-name'):
         tmp_project.build()
 
 
