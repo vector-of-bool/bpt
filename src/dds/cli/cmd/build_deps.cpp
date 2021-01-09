@@ -1,5 +1,7 @@
 #include "../options.hpp"
 
+#include "./build_common.hpp"
+
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
 #include <dds/pkg/cache.hpp>
@@ -12,7 +14,7 @@
 
 namespace dds::cli::cmd {
 
-int build_deps(const options& opts) {
+static int _build_deps(const options& opts) {
     dds::build_params params{
         .out_root          = opts.out_path.value_or(fs::current_path() / "_deps"),
         .existing_lm_index = {},
@@ -60,6 +62,10 @@ int build_deps(const options& opts) {
 
     bd.build(params);
     return 0;
+}
+
+int build_deps(const options& opts) {
+    return handle_build_error([&] { return _build_deps(opts); });
 }
 
 }  // namespace dds::cli::cmd

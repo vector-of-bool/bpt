@@ -36,7 +36,7 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<source_file> lib_sources;
     std::vector<source_file> template_sources;
 
-    auto qual_name = std::string(qual_name_.value_or(lib.manifest().name));
+    auto qual_name = std::string(qual_name_.value_or(lib.manifest().name.str));
 
     // Collect the source for this library. This will look for any compilable sources in the
     // `src/` subdirectory of the library.
@@ -84,7 +84,7 @@ library_plan library_plan::create(const library_root&             lib,
     std::optional<create_archive_plan> archive_plan;
     if (!lib_compile_files.empty()) {
         dds_log(debug, "Generating an archive library for {}", qual_name);
-        archive_plan.emplace(lib.manifest().name,
+        archive_plan.emplace(lib.manifest().name.str,
                              qual_name,
                              params.out_subdir,
                              std::move(lib_compile_files));

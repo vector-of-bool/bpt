@@ -1,3 +1,5 @@
+import json
+
 from dds_ci.dds import DDSWrapper
 from dds_ci.testing import Project, RepoServer, PackageJSON
 from dds_ci.testing.error import expect_error_marker
@@ -70,3 +72,30 @@ def test_pkg_search(_test_repo: RepoServer, tmp_project: Project) -> None:
     dds.run(['pkg', dds.pkg_db_path_arg, 'search', 'neo-*'])
     with expect_error_marker('pkg-search-no-result'):
         dds.run(['pkg', dds.pkg_db_path_arg, 'search', 'nonexistent'])
+
+
+def test_pkg_cache_invalid_nofail(tmp_project: Project) -> None:
+    """
+    Check that dds will not fail a build just because the package cache has an invalid
+    object within.
+    """
+    sdist_dir = tmp_project.dds.repo_dir / 'bad@1.2.3'
+    sdist_dir.mkdir(parents=True)
+    tmp_project.build()
+
+    # Write an invalid source distribution
+    pkman_path = sdist_dir / 'package.json5'
+    pkman_path.write_text(json.dumps({}))
+    tmp_project.build()
+
+    pkman_path.write_text('lol')  # Inavlid JSON
+    tmp_project.build()
+
+    pkman_path.write_text('''
+        {
+            name: 'invalid name',
+            namespace: 'test',
+            version: '1.2.3'
+        }
+    ''')
+    tmp_project.build()

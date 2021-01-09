@@ -1,8 +1,11 @@
 #include "./build_common.hpp"
 
+#include <dds/error/errors.hpp>
 #include <dds/pkg/cache.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/pkg/get/get.hpp>
+
+#include <boost/leaf/handle_exception.hpp>
 
 using namespace dds;
 
@@ -42,4 +45,16 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     }
     builder.add(sdist{std::move(man), opts.project_dir}, main_params);
     return builder;
+}
+
+int dds::cli::handle_build_error(std::function<int()> fn) {
+    return boost::leaf::try_catch(  //
+        fn,
+        [](user_error<errc::test_failure> exc) {
+            write_error_marker("build-failed-test-failed");
+            dds_log(error, "{}", exc.what());
+            dds_log(error, "{}", exc.explanation());
+            dds_log(error, "Refer: {}", exc.error_reference());
+            return 1;
+        });
 }

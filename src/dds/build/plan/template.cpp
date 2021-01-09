@@ -136,7 +136,7 @@ std::string render_template(std::string_view tmpl, const library_root& lib) {
         {
             "lib",
             json_data::mapping_type{
-                {"name", lib.manifest().name},
+                {"name", lib.manifest().name.str},
                 {"root", lib.path().string()},
             },
         },

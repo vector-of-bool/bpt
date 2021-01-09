@@ -66,7 +66,7 @@ struct req_type {
 auto as_pkg_id(const req_type& req) {
     const version_range_set& versions = req.dep.versions;
     assert(versions.num_intervals() == 1);
-    return pkg_id{req.dep.name, (*versions.iter_intervals().begin()).low};
+    return pkg_id{req.dep.name.str, (*versions.iter_intervals().begin()).low};
 }
 
 struct solver_provider {
@@ -78,10 +78,10 @@ struct solver_provider {
     std::optional<req_type> best_candidate(const req_type& req) const {
         dds_log(debug, "Find best candidate of {}", req.dep.to_string());
         // Look up in the cachce for the packages we have with the given name
-        auto found = pkgs_by_name.find(req.dep.name);
+        auto found = pkgs_by_name.find(req.dep.name.str);
         if (found == pkgs_by_name.end()) {
             // If it isn't there, insert an entry in the cache
-            found = pkgs_by_name.emplace(req.dep.name, pkgs_for_name(req.dep.name)).first;
+            found = pkgs_by_name.emplace(req.dep.name.str, pkgs_for_name(req.dep.name.str)).first;
         }
         // Find the first package with the version contained by the ranges in the requirement
         auto& for_name = found->second;
@@ -99,7 +99,7 @@ struct solver_provider {
     std::vector<req_type> requirements_of(const req_type& req) const {
         dds_log(trace,
                 "Lookup requirements of {}@{}",
-                req.key(),
+                req.key().str,
                 (*req.dep.versions.iter_intervals().begin()).low.to_string());
         auto pk_id = as_pkg_id(req);
         auto deps  = deps_for_pkg(pk_id);

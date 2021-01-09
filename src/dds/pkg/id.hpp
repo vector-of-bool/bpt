@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./name.hpp"
+
 #include <semver/version.hpp>
 
 #include <string>
@@ -8,7 +10,7 @@
 
 namespace dds {
 
-struct e_invalid_pkg_id_str {
+struct e_pkg_id_str {
     std::string value;
 };
 
@@ -21,7 +23,7 @@ struct e_invalid_pkg_id_str {
  */
 struct pkg_id {
     /// The name of the package
-    std::string name;
+    dds::name name;
     /// The version of the package
     semver::version version;
 

@@ -52,11 +52,19 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
              required_key{"name",
                           "A string 'name' is required",
                           require_str{"'name' must be a string"},
-                          put_into{ret.id.name}},
+                          put_into{ret.id.name,
+                                   [](std::string s) {
+                                       DDS_E_SCOPE(e_pkg_name_str{s});
+                                       return *dds::name::from_string(s);
+                                   }}},
              required_key{"namespace",
                           "A string 'namespace' is a required ",
                           require_str{"'namespace' must be a string"},
-                          put_into{ret.namespace_}},
+                          put_into{ret.namespace_,
+                                   [](std::string s) {
+                                       DDS_E_SCOPE(e_pkg_namespace_str{s});
+                                       return *dds::name::from_string(s);
+                                   }}},
              required_key{"version",
                           "A 'version' string is requried",
                           require_str{"'version' must be a string"},
@@ -104,12 +112,14 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
 }  // namespace
 
 package_manifest package_manifest::load_from_file(const fs::path& fpath) {
+    DDS_E_SCOPE(e_package_manifest_path{fpath.string()});
     auto content = slurp_file(fpath);
     return load_from_json5_str(content, fpath.string());
 }
 
 package_manifest package_manifest::load_from_json5_str(std::string_view content,
                                                        std::string_view input_name) {
+    DDS_E_SCOPE(e_package_manifest_path{std::string(input_name)});
     try {
         auto data = json5::parse_data(content);
         return parse_json(data, input_name);

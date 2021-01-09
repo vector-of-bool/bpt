@@ -149,8 +149,7 @@ void repo_manager::import_targz(path_ref tgz_file) {
     DDS_E_SCOPE(man->id);
 
     neo::sqlite3::transaction_guard tr{_db};
-
-    dds_log(debug, "Recording package {}@{}", man->id.name, man->id.version.to_string());
+    dds_log(debug, "Recording package {}", man->id.to_string());
     dds::pkg_listing info{.ident       = man->id,
                           .deps        = man->dependencies,
                           .description = "[No description]",
@@ -158,7 +157,7 @@ void repo_manager::import_targz(path_ref tgz_file) {
     auto             rel_url = fmt::format("dds:{}", man->id.to_string());
     add_pkg(info, rel_url);
 
-    auto dest_path = pkg_dir() / man->id.name / man->id.version.to_string() / "sdist.tar.gz";
+    auto dest_path = pkg_dir() / man->id.name.str / man->id.version.to_string() / "sdist.tar.gz";
     fs::create_directories(dest_path.parent_path());
     fs::copy(tgz_file, dest_path);
 
@@ -176,11 +175,11 @@ void repo_manager::delete_package(pkg_id pkg_id) {
                 WHERE name = ?
                   AND version = ?
             )"_sql),
-        pkg_id.name,
+        pkg_id.name.str,
         pkg_id.version.to_string());
     /// XXX: Verify with _db.changes() that we actually deleted one row
 
-    auto name_dir = pkg_dir() / pkg_id.name;
+    auto name_dir = pkg_dir() / pkg_id.name.str;
     auto ver_dir  = name_dir / pkg_id.version.to_string();
 
     DDS_E_SCOPE(e_repo_delete_path{ver_dir});
@@ -210,7 +209,7 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
             INSERT INTO dds_repo_packages (name, version, description, url)
             VALUES (?, ?, ?, ?)
         )"_sql),
-        info.ident.name,
+        info.ident.name.str,
         info.ident.version.to_string(),
         info.description,
         url);
@@ -227,12 +226,12 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
         dds_log(trace, "  Depends on: {}", dep.to_string());
         nsql::exec(insert_dep_st,
                    package_rowid,
-                   dep.name,
+                   dep.name.str,
                    iv_1.low.to_string(),
                    iv_1.high.to_string());
     }
 
-    auto dest_dir   = pkg_dir() / info.ident.name / info.ident.version.to_string();
+    auto dest_dir   = pkg_dir() / info.ident.name.str / info.ident.version.to_string();
     auto stamp_path = dest_dir / "url.txt";
     fs::create_directories(dest_dir);
     std::ofstream stamp_file{stamp_path, std::ios::binary};

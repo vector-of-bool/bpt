@@ -2,6 +2,8 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/on_error.hpp>
+#include <dds/error/result.hpp>
 #include <dds/util/algo.hpp>
 
 #include <json5/parse_data.hpp>
@@ -11,6 +13,8 @@
 using namespace dds;
 
 library_manifest library_manifest::load_from_file(path_ref fpath) {
+    DDS_E_SCOPE(e_library_manifest_path{fpath.string()});
+
     auto content = slurp_file(fpath);
     auto data    = json5::parse_data(content);
 
@@ -27,7 +31,7 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
                 mapping{
                     if_key{"name",
                            require_type<std::string>{"`name` must be a string"},
-                           put_into{lib.name}},
+                           put_into{lib.name.str}},
                     if_key{"uses",
                            require_type<json5::data::array_type>{
                                "`uses` must be an array of usage requirements"},
@@ -54,10 +58,11 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
         throw_user_error<errc::invalid_lib_manifest>(rej->message);
     }
 
-    if (lib.name.empty()) {
+    if (lib.name.str.empty()) {
         throw_user_error<errc::invalid_lib_manifest>(
             "The 'name' field is required (Reading library manifest [{}])", fpath.string());
     }
+    lib.name = *dds::name::from_string(lib.name.str);
 
     return lib;
 }

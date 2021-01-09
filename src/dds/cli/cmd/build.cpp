@@ -12,7 +12,7 @@ using namespace dds;
 
 namespace dds::cli::cmd {
 
-int build(const options& opts) {
+static int _build(const options& opts) {
     if (!opts.build.add_repos.empty()) {
         auto cat = opts.open_pkg_db();
         for (auto& str : opts.build.add_repos) {
@@ -36,6 +36,10 @@ int build(const options& opts) {
     });
 
     return 0;
+}
+
+int build(const options& opts) {
+    return handle_build_error([&] { return _build(opts); });
 }
 
 }  // namespace dds::cli::cmd

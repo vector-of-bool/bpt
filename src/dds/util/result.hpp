@@ -50,10 +50,6 @@ struct e_url_string {
     std::string value;
 };
 
-struct e_human_message {
-    std::string value;
-};
-
 struct e_missing_file {
     std::filesystem::path path;
 };

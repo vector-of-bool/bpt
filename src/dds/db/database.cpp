@@ -61,7 +61,7 @@ void ensure_migrated(nsql::database& db) {
         PRAGMA foreign_keys = 1;
         DROP TABLE IF EXISTS dds_meta;
         CREATE TABLE IF NOT EXISTS dds_meta_1 AS
-            WITH init (version) AS (VALUES ('eggs'))
+            WITH init (version) AS (VALUES (''))
             SELECT * FROM init;
         )");
     nsql::transaction_guard tr{db};

@@ -19,14 +19,26 @@ enum class test_lib {
     catch_main,
 };
 
+struct e_package_manifest_path {
+    std::string value;
+};
+
+struct e_pkg_name_str {
+    std::string value;
+};
+
+struct e_pkg_namespace_str {
+    std::string value;
+};
+
 /**
- * Struct representing the contents of a `packaeg.dds` file.
+ * Struct representing the contents of a `package.json5` file.
  */
 struct package_manifest {
     /// The package ID, as determined by `Name` and `Version` together
     dds::pkg_id id;
     /// The declared `Namespace` of the package. This directly corresponds with the libman Namespace
-    std::string namespace_;
+    name namespace_;
     /// The `test_driver` that this package declares, or `nullopt` if absent.
     std::optional<test_lib> test_driver;
     /// The dependencies declared with the `Depends` fields, if any.

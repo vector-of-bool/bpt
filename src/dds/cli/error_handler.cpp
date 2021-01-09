@@ -3,6 +3,8 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/error/toolchain.hpp>
+#include <dds/sdist/library/manifest.hpp>
+#include <dds/sdist/package.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -42,13 +44,6 @@ auto handlers = std::tuple(  //
         write_error_marker("package-json5-parse-error");
         return 1;
     },
-    [](user_error<errc::test_failure> exc, matchv<cli::subcommand::build>) {
-        write_error_marker("build-failed-test-failed");
-        dds_log(error, "{}", exc.what());
-        dds_log(error, "{}", exc.explanation());
-        dds_log(error, "Refer: {}", exc.error_reference());
-        return 1;
-    },
     [](boost::leaf::catch_<error_base> exc) {
         dds_log(error, "{}", exc.value().what());
         dds_log(error, "{}", exc.value().explanation());
@@ -83,6 +78,67 @@ auto handlers = std::tuple(  //
         if (tc_file) {
             dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
         }
+        return 1;
+    },
+    [](e_name_str               badname,
+       invalid_name_reason      why,
+       e_dependency_string      depstr,
+       e_package_manifest_path* pkman_path) {
+        dds_log(
+            error,
+            "Invalid package name '.bold.red[{}]' in dependency string '.br.red[{}]': .br.yellow[{}]"_styled,
+            badname.value,
+            depstr.value,
+            invalid_name_reason_str(why));
+        if (pkman_path) {
+            dds_log(error,
+                    "  (While reading package manifest from [.bold.yellow[{}]])"_styled,
+                    pkman_path->value);
+        }
+        write_error_marker("invalid-pkg-dep-name");
+        return 1;
+    },
+    [](e_pkg_name_str,
+       e_name_str               badname,
+       invalid_name_reason      why,
+       e_package_manifest_path* pkman_path) {
+        dds_log(error,
+                "Invalid package name '.bold.red[{}]': .br.yellow[{}]"_styled,
+                badname.value,
+                invalid_name_reason_str(why));
+        if (pkman_path) {
+            dds_log(error,
+                    "  (While reading package manifest from [.bold.yellow[{}]])"_styled,
+                    pkman_path->value);
+        }
+        write_error_marker("invalid-pkg-name");
+        return 1;
+    },
+    [](e_pkg_namespace_str,
+       e_name_str               badname,
+       invalid_name_reason      why,
+       e_package_manifest_path* pkman_path) {
+        dds_log(error,
+                "Invalid package namespace '.bold.red[{}]': .br.yellow[{}]"_styled,
+                badname.value,
+                invalid_name_reason_str(why));
+        if (pkman_path) {
+            dds_log(error,
+                    "  (While reading package manifest from [.bold.yellow[{}]])"_styled,
+                    pkman_path->value);
+        }
+        write_error_marker("invalid-pkg-namespace-name");
+        return 1;
+    },
+    [](e_library_manifest_path libpath, invalid_name_reason why, e_name_str badname) {
+        dds_log(error,
+                "Invalid library name '.bold.red[{}]': .br.yellow[{}]"_styled,
+                badname.value,
+                invalid_name_reason_str(why));
+        dds_log(error,
+                "  (While reading library manifest from [.bold.yellow[{}]]"_styled,
+                libpath.value);
+        write_error_marker("invalid-lib-name");
         return 1;
     },
     [](e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {

@@ -32,7 +32,7 @@ dds_http_remote_pkg dds_http_remote_pkg::from_url(const neo::url& url) {
 
 void dds_http_remote_pkg::do_get_raw(path_ref dest) const {
     auto     http_url = repo_url;
-    fs::path path     = fs::path(repo_url.path) / "pkg" / pkg_id.name / pkg_id.version.to_string()
+    fs::path path = fs::path(repo_url.path) / "pkg" / pkg_id.name.str / pkg_id.version.to_string()
         / "sdist.tar.gz";
     http_url.path = path.lexically_normal().generic_string();
     http_remote_pkg http;

@@ -1,8 +1,13 @@
 #include "./deps.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/error/on_error.hpp>
+#include <dds/error/result.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/string.hpp>
 
+#include <boost/leaf/exception.hpp>
+#include <ctre.hpp>
 #include <json5/parse_data.hpp>
 #include <semester/walk.hpp>
 
@@ -14,21 +19,29 @@
 using namespace dds;
 
 dependency dependency::parse_depends_string(std::string_view str) {
+    DDS_E_SCOPE(e_dependency_string{std::string(str)});
     auto sep_pos = str.find_first_of("=@^~+");
     if (sep_pos == str.npos) {
         throw_user_error<errc::invalid_version_range_string>("Invalid dependency string '{}'", str);
     }
 
-    auto name = str.substr(0, sep_pos);
+    auto name = *dds::name::from_string(str.substr(0, sep_pos));
 
-    if (str[sep_pos] == '@') {
-        ++sep_pos;
+    if (str[sep_pos] != '@') {
+        static bool did_warn = false;
+        if (!did_warn) {
+            dds_log(warn,
+                    "Dependency version ranges are deprecated. All are treated as "
+                    "same-major-version. (Parsing dependency '{}')",
+                    str);
+        }
+        did_warn = true;
     }
-    auto range_str = str.substr(sep_pos);
 
+    auto range_str = "^" + std::string(str.substr(sep_pos + 1));
     try {
         auto rng = semver::range::parse_restricted(range_str);
-        return dependency{std::string(name), {rng.low(), rng.high()}};
+        return dependency{name, {rng.low(), rng.high()}};
     } catch (const semver::invalid_range&) {
         throw_user_error<errc::invalid_version_range_string>(
             "Invalid version range string '{}' in dependency string '{}'", range_str, str);
@@ -81,7 +94,7 @@ std::string iv_string(const pubgrub::interval_set<semver::version>::interval_typ
 
 std::string dependency::to_string() const noexcept {
     std::stringstream strm;
-    strm << name << "@";
+    strm << name.str << "@";
     if (versions.num_intervals() == 1) {
         auto iv = *versions.iter_intervals().begin();
         if (iv.high == iv.low.next_after()) {
@@ -89,7 +102,7 @@ std::string dependency::to_string() const noexcept {
             return strm.str();
         }
         if (iv.low == semver::version() && iv.high == semver::version::max_version()) {
-            return name;
+            return name.str;
         }
         strm << "[" << iv_string(iv) << "]";
         return strm.str();
