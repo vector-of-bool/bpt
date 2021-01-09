@@ -15,6 +15,8 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #elif __FreeBSD__
+#include <sys/types.h>
+// <sys/types.h> must come first
 #include <sys/sysctl.h>
 #elif _WIN32
 #include <windows.h>
@@ -41,20 +43,22 @@ fs::path current_executable() {
     return fs::canonical(buffer);
 #elif __FreeBSD__
     std::string buffer;
-    int         mib[] = {CTRL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
-    std::size_t len   = 0;
-    auto        rc    = ::sysctl(mib, 4, nullptr, &len, nullptr, 0);
+    int         mib[]  = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+    std::size_t len    = 0;
+    auto        rc     = ::sysctl(mib, 4, nullptr, &len, nullptr, 0);
+    auto        errno_ = errno;
     neo_assert(invariant,
                rc == 0,
                "Unexpected error from ::sysctl() while getting executable path",
-               errno);
+               errno_);
     buffer.resize(len + 1);
-    rc = ::sysctl(mib, 4, buffer.data(), &len, nullptr, 0);
+    rc     = ::sysctl(mib, 4, buffer.data(), &len, nullptr, 0);
+    errno_ = errno;
     neo_assert(invariant,
                rc == 0,
                "Unexpected error from ::sysctl() while getting executable path",
-               errno);
-    return fs::canonical(nullptr);
+               errno_);
+    return fs::canonical(buffer);
 #elif _WIN32
     std::wstring buffer;
     while (true) {
