@@ -98,7 +98,7 @@ def _bootstrap_p6() -> Path:
     if ret_dds.exists():
         return ret_dds
 
-    _clone_self_at(p6_dir, '0.1.0-alpha.6')
+    _clone_self_at(p6_dir, '0.1.0-alpha.6-bootstrap')
     tc = 'msvc-rel.jsonc' if platform.system() == 'Windows' else 'gcc-9-rel.jsonc'
 
     catalog_arg = f'--catalog={p6_dir}/_catalog.db'
@@ -170,7 +170,7 @@ def _bootstrap_p5() -> Path:
     if ret_dds.exists():
         return ret_dds
 
-    _clone_self_at(p5_dir, 'bootstrap-p5')
+    _clone_self_at(p5_dir, 'bootstrap-p5.2')
     build_py = p5_dir / 'tools/build.py'
     proc.check_run(
         [
@@ -192,7 +192,7 @@ def _bootstrap_p4() -> Path:
     if ret_dds.exists():
         return ret_dds
 
-    _clone_self_at(p4_dir, 'bootstrap-p4')
+    _clone_self_at(p4_dir, 'bootstrap-p4.2')
     build_py = p4_dir / 'tools/build.py'
     proc.check_run(
         [
@@ -213,7 +213,7 @@ def _bootstrap_p1() -> Path:
     if ret_dds.exists():
         return ret_dds
 
-    _clone_self_at(p1_dir, 'bootstrap-p1')
+    _clone_self_at(p1_dir, 'bootstrap-p1.2')
     build_py = p1_dir / 'tools/build.py'
     proc.check_run([
         sys.executable,

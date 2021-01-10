@@ -49,7 +49,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
     auto result = boost::leaf::try_catch(
         [&]() -> std::optional<int> {
             parser.parse_argv(argv);
-            return {};
+            return std::nullopt;
         },
         [&](debate::help_request, debate::e_argument_parser p) {
             std::cout << p.parser.help_string(program_name);

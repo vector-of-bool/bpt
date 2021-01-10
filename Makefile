@@ -86,6 +86,7 @@ vagrant-freebsd-ci:
 	vagrant up freebsd11
 	vagrant rsync
 	vagrant ssh freebsd11 -c '\
+		export PATH=$$PATH:$$HOME/.local/bin && \
 		cd /vagrant && \
 		make full-ci \
 		'
