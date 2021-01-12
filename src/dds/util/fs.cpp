@@ -17,6 +17,18 @@ std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode, std::e
     return ret;
 }
 
+std::fstream dds::open(const fs::path& filepath, std::ios::openmode mode) {
+    DDS_E_SCOPE(e_open_file_path{filepath.string()});
+    std::error_code ec;
+    auto            ret = dds::open(filepath, mode, ec);
+    if (ec) {
+        BOOST_LEAF_THROW_EXCEPTION(std::system_error{ec,
+                                                     "Error opening file: " + filepath.string()},
+                                   ec);
+    }
+    return ret;
+}
+
 std::string dds::slurp_file(const fs::path& path, std::error_code& ec) {
     auto file = dds::open(path, std::ios::in, ec);
     if (ec) {
@@ -26,6 +38,16 @@ std::string dds::slurp_file(const fs::path& path, std::error_code& ec) {
     std::ostringstream out;
     out << file.rdbuf();
     return std::move(out).str();
+}
+
+std::string dds::slurp_file(const fs::path& path) {
+    DDS_E_SCOPE(e_read_file_path{path.string()});
+    std::error_code ec;
+    auto            contents = dds::slurp_file(path, ec);
+    if (ec) {
+        BOOST_LEAF_THROW_EXCEPTION(std::system_error{ec, "Reading file: " + path.string()}, ec);
+    }
+    return contents;
 }
 
 void dds::safe_rename(path_ref source, path_ref dest) {

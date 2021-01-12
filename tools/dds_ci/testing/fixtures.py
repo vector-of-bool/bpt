@@ -2,6 +2,7 @@
 Test fixtures used by DDS in pytest
 """
 
+from contextlib import ExitStack
 from pathlib import Path
 import pytest
 import json
@@ -87,15 +88,19 @@ class Project:
     def build(self,
               *,
               toolchain: Optional[Pathish] = None,
+              fixup_toolchain: bool = True,
               timeout: Optional[int] = None,
               tweaks_dir: Optional[Path] = None) -> None:
         """
         Execute 'dds build' on the project
         """
-        with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
+        with ExitStack() as scope:
+            if fixup_toolchain:
+                toolchain = scope.enter_context(tc_mod.fixup_toolchain(toolchain
+                                                                       or tc_mod.get_default_test_toolchain()))
             self.dds.build(root=self.root,
                            build_root=self.build_root,
-                           toolchain=tc,
+                           toolchain=toolchain,
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
                            more_args=['-ltrace'])

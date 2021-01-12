@@ -49,7 +49,13 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
 
 int dds::cli::handle_build_error(std::function<int()> fn) {
     return boost::leaf::try_catch(  //
-        fn,
+        [&] {
+            try {
+                return fn();
+            } catch (...) {
+                capture_exception();
+            }
+        },
         [](user_error<errc::test_failure> exc) {
             write_error_marker("build-failed-test-failed");
             dds_log(error, "{}", exc.what());

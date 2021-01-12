@@ -18,8 +18,8 @@ void dds::capture_exception() {
     } catch (const std::system_error& e) {
         current_error().load(e_system_error_exc{std::string(e.what()), e.code()}, e.code());
     }
-    // Re-throw as a bare exception.
-    throw std::exception();
+    // Re-throw as a bad_result exception with the same error ID
+    throw boost::leaf::bad_result(boost::leaf::current_error());
 }
 
 void dds::write_error_marker(std::string_view error) noexcept {

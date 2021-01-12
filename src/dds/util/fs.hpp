@@ -23,23 +23,17 @@ struct e_write_file_path {
 };
 [[nodiscard]] result<void> write_file(const fs::path& path, std::string_view content) noexcept;
 
-inline std::fstream open(const fs::path& filepath, std::ios::openmode mode) {
-    std::error_code ec;
-    auto            ret = dds::open(filepath, mode, ec);
-    if (ec) {
-        throw std::system_error{ec, "Error opening file: " + filepath.string()};
-    }
-    return ret;
-}
+struct e_open_file_path {
+    fs::path value;
+};
 
-inline std::string slurp_file(const fs::path& path) {
-    std::error_code ec;
-    auto            contents = dds::slurp_file(path, ec);
-    if (ec) {
-        throw std::system_error{ec, "Reading file: " + path.string()};
-    }
-    return contents;
-}
+std::fstream open(const fs::path& filepath, std::ios::openmode mode);
+
+struct e_read_file_path {
+    fs::path value;
+};
+
+std::string slurp_file(const fs::path& path);
 
 void safe_rename(path_ref source, path_ref dest);
 

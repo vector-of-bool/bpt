@@ -78,6 +78,7 @@ auto handlers = std::tuple(  //
         if (tc_file) {
             dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
         }
+        write_error_marker("bad-toolchain");
         return 1;
     },
     [](e_name_str               badname,

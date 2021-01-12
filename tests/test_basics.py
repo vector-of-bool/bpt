@@ -67,6 +67,11 @@ def test_lib_with_failing_test(tmp_project: Project) -> None:
         tmp_project.build()
 
 
+def test_error_enoent_toolchain(tmp_project: Project) -> None:
+    with expect_error_marker('bad-toolchain'):
+        tmp_project.build(toolchain='no-such-file', fixup_toolchain=False)
+
+
 def test_invalid_names(tmp_project: Project) -> None:
     tmp_project.package_json = {
         'name': 'test',
