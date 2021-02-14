@@ -21,6 +21,6 @@ fs::path dds::user_home_dir() {
 
 fs::path dds::user_data_dir() { return user_home_dir() / "Library/Application Support"; }
 fs::path dds::user_cache_dir() { return user_home_dir() / "Library/Caches"; }
-fs::path dds::user_config_dir() { return user_home_dir() / "Preferences"; }
+fs::path dds::user_config_dir() { return user_home_dir() / "Library/Preferences"; }
 
 #endif
