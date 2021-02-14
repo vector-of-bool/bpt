@@ -320,6 +320,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         c99,
         c11,
         c18,
+        gnu18,
     } c_version_e
         = [&] {
               if (!c_version) {
@@ -332,6 +333,8 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                   return c11;
               } else if (c_version == "c18") {
                   return c18;
+              } else if (c_version == "gnu18") {
+                  return gnu18;
               } else {
                   fail(context, "Unknown `c_version` ‘{}’", *c_version);
               }
@@ -345,6 +348,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         cxx14,
         cxx17,
         cxx20,
+        gnuxx20,
     } cxx_version_e
         = [&] {
               if (!cxx_version) {
@@ -361,6 +365,8 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                   return cxx17;
               } else if (cxx_version == "c++20") {
                   return cxx20;
+              } else if (cxx_version == "gnu++20") {
+                  return gnuxx20;
               } else {
                   fail(context, "Unknown `cxx_version` ‘{}’", *cxx_version);
               }
@@ -377,11 +383,13 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{gnu, c99}, {"-std=c99"}},
         {{gnu, c11}, {"-std=c11"}},
         {{gnu, c18}, {"-std=c18"}},
+        {{gnu, gnu18}, {"-std=gnu18"}},
         {{clang, c_none}, {}},
         {{clang, c89}, {"-std=c89"}},
         {{clang, c99}, {"-std=c99"}},
         {{clang, c11}, {"-std=c11"}},
         {{clang, c18}, {"-std=c18"}},
+        {{clang, gnu18}, {"-std=gnu18"}},
     };
 
     auto get_c_version_flags = [&]() -> string_seq {
@@ -408,6 +416,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{gnu, cxx14}, {"-std=c++14"}},
         {{gnu, cxx17}, {"-std=c++17"}},
         {{gnu, cxx20}, {"-std=c++20"}},
+        {{gnu, gnuxx20}, {"-std=gnu++20"}},
         {{clang, cxx_none}, {}},
         {{clang, cxx98}, {"-std=c++98"}},
         {{clang, cxx03}, {"-std=c++03"}},
@@ -415,6 +424,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{clang, cxx14}, {"-std=c++14"}},
         {{clang, cxx17}, {"-std=c++17"}},
         {{clang, cxx20}, {"-std=c++20"}},
+        {{clang, gnuxx20}, {"-std=gnu++20"}},
     };
 
     auto get_cxx_version_flags = [&]() -> string_seq {
