@@ -19,8 +19,29 @@ fs::path dds::user_home_dir() {
     return ret;
 }
 
-fs::path dds::user_data_dir() { return user_home_dir() / "Library/Application Support"; }
-fs::path dds::user_cache_dir() { return user_home_dir() / "Library/Caches"; }
-fs::path dds::user_config_dir() { return user_home_dir() / "Library/Preferences"; }
+fs::path dds::user_data_dir() {
+    static auto ret = []() -> fs::path {
+        return fs::absolute(dds::getenv("XDG_DATA_HOME", [] {
+            return user_home_dir() / "Library/Application Support";
+        }));
+    }();
+    return ret;
+}
+
+fs::path dds::user_cache_dir() {
+    static auto ret = []() -> fs::path {
+        return fs::absolute(
+            dds::getenv("XDG_CACHE_HOME", [] { return user_home_dir() / "Library/Caches"; }));
+    }();
+    return ret;
+}
+
+fs::path dds::user_config_dir() {
+    static auto ret = []() -> fs::path {
+        return fs::absolute(
+            dds::getenv("XDG_CONFIG_HOME", [] { return user_home_dir() / "Library/Preferences"; }));
+    }();
+    return ret;
+}
 
 #endif
