@@ -164,6 +164,10 @@
                     "description": "Set the base warning flags for the toolchain. These are always prepended to `warning_flags`.",
                     "$ref": "#/definitions/command_line_flags"
                 },
+                "base_compile_flags": {
+                    "description": "Set the base compile flags for the toolchain. These are always prepended to `flags`.",
+                    "$ref": "#/definitions/command_line_flags"
+                },
                 "c_compile_file": {
                     "description": "Set the command template for compiling C source files",
                     "$ref": "#/definitions/command_line_flags"

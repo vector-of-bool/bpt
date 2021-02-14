@@ -76,6 +76,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string     exe_prefix;
     opt_string     exe_suffix;
     opt_string_seq base_warning_flags;
+    opt_string_seq base_compile_flags;
     opt_string_seq include_template;
     opt_string_seq external_include_template;
     opt_string_seq define_template;
@@ -161,6 +162,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     KEY_EXTEND_FLAGS(external_include_template),
                     KEY_EXTEND_FLAGS(define_template),
                     KEY_EXTEND_FLAGS(base_warning_flags),
+                    KEY_EXTEND_FLAGS(base_compile_flags),
                     KEY_EXTEND_FLAGS(c_compile_file),
                     KEY_EXTEND_FLAGS(cxx_compile_file),
                     KEY_EXTEND_FLAGS(create_archive),
@@ -180,6 +182,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                     "external_include_template",
                                                     "define_template",
                                                     "base_warning_flags",
+                                                    "base_compile_flags",
                                                     "c_compile_file",
                                                     "cxx_compile_file",
                                                     "create_archive",
@@ -491,19 +494,34 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         return ret;
     };
 
+    auto get_default_compile_command = [&]() -> string_seq {
+        string_seq ret;
+        if (is_msvc) {
+            extend(ret, {"[flags]", "/c", "[in]", "/Fo[out]"});
+        } else if (is_gnu_like) {
+            extend(ret, {"[flags]", "-c", "[in]", "-o[out]"});
+        }
+        return ret;
+    };
+
+    auto get_base_compile_flags = [&](language lang) -> string_seq {
+        string_seq ret;
+        if (is_msvc) {
+            if (lang == language::cxx) {
+                extend(ret, {"/EHsc"});
+            }
+            extend(ret, {"/nologo", "/permissive-"});
+        } else if (is_gnu_like) {
+            extend(ret, {"-fPIC", "-pthread"});
+        }
+        return ret;
+    };
+
     auto get_flags = [&](language lang) -> string_seq {
         string_seq ret;
         extend(ret, get_runtime_flags());
         extend(ret, get_optim_flags());
         extend(ret, get_debug_flags());
-        if (is_msvc) {
-            if (lang == language::cxx) {
-                extend(ret, {"/EHsc"});
-            }
-            extend(ret, {"/nologo", "/permissive-", "[flags]", "/c", "[in]", "/Fo[out]"});
-        } else if (is_gnu_like) {
-            extend(ret, {"-fPIC", "-pthread", "[flags]", "-c", "[in]", "-o[out]"});
-        }
         if (common_flags) {
             extend(ret, *common_flags);
         }
@@ -530,9 +548,13 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             extend(c, *compiler_launcher);
         }
         c.push_back(get_compiler_executable_path(language::c));
-        extend(c, get_flags(language::c));
+        extend(c, get_default_compile_command());
         return c;
     });
+    extend(tc.c_compile, get_flags(language::c));
+    extend(tc.c_compile, read_opt(base_compile_flags, [&]() -> string_seq {
+        return get_base_compile_flags(language::c);
+    }));
 
     tc.cxx_compile = read_opt(cxx_compile_file, [&] {
         string_seq cxx;
@@ -540,9 +562,13 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             extend(cxx, *compiler_launcher);
         }
         cxx.push_back(get_compiler_executable_path(language::cxx));
-        extend(cxx, get_flags(language::cxx));
+        extend(cxx, get_default_compile_command());
         return cxx;
     });
+    extend(tc.cxx_compile, get_flags(language::cxx));
+    extend(tc.cxx_compile, read_opt(base_compile_flags, [&]() -> string_seq {
+        return get_base_compile_flags(language::cxx);
+    }));
 
     tc.include_template = read_opt(include_template, [&]() -> string_seq {
         if (!compiler_id) {
