@@ -64,8 +64,8 @@ the repository. When ``dds-ci`` builds ``dds``, it will print the path to the
 toolchain file that is selected for that build.
 
 While these provided toolchains will work perfectly well in CI, you may need to
-tweak these for your build setup. For example: ``gcc-9-*.jsonc`` toolchains
-assume that the GCC 9 executables are named ``gcc-9`` and ``g++-9``, which is
+tweak these for your build setup. For example: ``gcc-10-*.jsonc`` toolchains
+assume that the GCC 10 executables are named ``gcc-10`` and ``g++-10``, which is
 incorrect on some Unix and Linux distributions.
 
 It is recommended to tweak these files as necessary to get the build working on

@@ -99,7 +99,7 @@ def _bootstrap_p6() -> Path:
         return ret_dds
 
     _clone_self_at(p6_dir, '0.1.0-alpha.6-bootstrap')
-    tc = 'msvc-rel.jsonc' if platform.system() == 'Windows' else 'gcc-9-rel.jsonc'
+    tc = 'msvc-rel.jsonc' if platform.system() == 'Windows' else 'gcc-10-rel.jsonc'
 
     catalog_arg = f'--catalog={p6_dir}/_catalog.db'
     repo_arg = f'--repo-dir={p6_dir}/_repo'
