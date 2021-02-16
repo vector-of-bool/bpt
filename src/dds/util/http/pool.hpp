@@ -24,9 +24,9 @@ struct http_client_impl;
 }  // namespace detail
 
 struct erased_message_body {
-    virtual ~erased_message_body()                   = default;
-    virtual neo::const_buffer next(std::size_t n)    = 0;
-    virtual void              consume(std::size_t n) = 0;
+    virtual ~erased_message_body()                            = default;
+    virtual neo::const_buffer next(std::size_t n)             = 0;
+    virtual void              consume(std::size_t n) noexcept = 0;
 };
 
 class http_status_error : public std::runtime_error {

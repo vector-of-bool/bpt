@@ -2,6 +2,7 @@
 
 #include <dds/error/result_fwd.hpp>
 
+#include <iosfwd>
 #include <string>
 
 namespace dds {
@@ -15,6 +16,8 @@ enum class invalid_name_reason {
     invalid_char,
     whitespace,
 };
+
+std::ostream& operator<<(std::ostream& out, invalid_name_reason);
 
 struct e_name_str {
     std::string value;

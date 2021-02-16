@@ -11,6 +11,7 @@
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
 #include <neo/concepts.hpp>
+#include <neo/sqlite3/error.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
@@ -153,10 +154,10 @@ void do_store_pkg(neo::sqlite3::database&        db,
             (?, ?, ?, ?)
     )"_sql);
     nsql::exec(store_pkg_st,
-               pkg.ident.name.str,
-               pkg.ident.version.to_string(),
-               pkg.remote_pkg.to_url_string(),
-               pkg.description);
+               std::forward_as_tuple(pkg.ident.name.str,
+                                     pkg.ident.version.to_string(),
+                                     pkg.remote_pkg.to_url_string(),
+                                     pkg.description));
 
     auto  db_pkg_id  = db.last_insert_rowid();
     auto& new_dep_st = st_cache(R"(
@@ -178,10 +179,10 @@ void do_store_pkg(neo::sqlite3::database&        db,
         auto iv_1 = *dep.versions.iter_intervals().begin();
         dds_log(trace, "  Depends on: {}", dep.to_string());
         nsql::exec(new_dep_st,
-                   db_pkg_id,
-                   dep.name.str,
-                   iv_1.low.to_string(),
-                   iv_1.high.to_string());
+                   std::forward_as_tuple(db_pkg_id,
+                                         dep.name.str,
+                                         iv_1.low.to_string(),
+                                         iv_1.high.to_string()));
     }
 }
 
@@ -235,7 +236,7 @@ void ensure_migrated(nsql::database& db) {
         migrate_repodb_3(db);
     }
     meta["version"] = current_database_version;
-    exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), meta.dump());
+    exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), std::forward_as_tuple(meta.dump()));
     tr.commit();
 
     if (version < 3 && !getenv_bool("DDS_NO_ADD_INITIAL_REPO")) {
@@ -258,7 +259,7 @@ pkg_db pkg_db::open(const std::string& db_path) {
     auto db = nsql::database::open(db_path);
     try {
         ensure_migrated(db);
-    } catch (const nsql::sqlite3_error& e) {
+    } catch (const nsql::error& e) {
         dds_log(critical,
                 "Failed to load the package database. It appears to be invalid/corrupted. The "
                 "exception message is: {}",
@@ -345,8 +346,9 @@ auto pair_to_pkg_id = [](auto&& pair) {
 };
 
 std::vector<pkg_id> pkg_db::all() const noexcept {
-    return nsql::exec_tuples<std::string, std::string>(
-               _stmt_cache("SELECT name, version FROM dds_pkgs"_sql))
+    return nsql::exec_tuples<std::string,
+                             std::string>(_stmt_cache("SELECT name, version FROM dds_pkgs"_sql),
+                                          std::tuple())
         | neo::lref                                 //
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
@@ -361,7 +363,7 @@ std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
                  WHERE name = ?
                  ORDER BY pkg_id DESC
                 )"_sql),
-               sv)                                  //
+               std::tie(sv))                        //
         | neo::lref                                 //
         | ranges::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
@@ -384,9 +386,9 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
                 )"_sql),
-               pkg.name.str,
-               pkg.version.to_string())  //
-        | neo::lref                      //
+               std::forward_as_tuple(pkg.name.str,
+                                     pkg.version.to_string()))  //
+        | neo::lref                                             //
         | ranges::views::transform([](auto&& pair) {
                auto& [name, low, high] = pair;
                auto dep

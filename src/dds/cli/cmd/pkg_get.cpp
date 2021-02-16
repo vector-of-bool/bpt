@@ -51,8 +51,8 @@ int pkg_get(const options& opts) {
                     e.what());
             return 1;
         },
-        [](dds::e_sqlite3_error_exc e) {
-            dds_log(error, "Error accessing the package database: {}", e.message);
+        [](boost::leaf::catch_<neo::sqlite3::error> e) {
+            dds_log(error, "Error accessing the package database: {}", e.value().what());
             return 1;
         },
         [](e_nonesuch nonesuch) -> int {

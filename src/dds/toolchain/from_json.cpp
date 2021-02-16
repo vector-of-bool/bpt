@@ -8,7 +8,7 @@
 
 #include <fmt/core.h>
 #include <json5/parse_data.hpp>
-#include <semester/decomp.hpp>
+#include <semester/walk.hpp>
 
 #include <string>
 
@@ -92,21 +92,20 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             if (!opt_flags) {
                 opt_flags.emplace();
             }
-            return decompose(  //
+            walk(  //
                 dat,
-                try_seq{
-                    if_type<string>([&](auto& str_) {
-                        auto more_flags = split_shell_string(str_.as_string());
-                        extend(*opt_flags, more_flags);
-                        return dc_accept;
-                    }),
-                    if_array{for_each{
-                        require_type<string>{
-                            fmt::format("Elements of `{}` array must be strings", key)},
-                        write_to{std::back_inserter(*opt_flags)},
-                    }},
-                    reject_with{fmt::format("`{}` must be an array or a shell-like string", key)},
-                });
+                if_type<string>([&](auto& str_) {
+                    auto more_flags = split_shell_string(str_.as_string());
+                    extend(*opt_flags, more_flags);
+                    return walk.accept;
+                }),
+                if_array{for_each{
+                    require_type<string>{
+                        fmt::format("Elements of `{}` array must be strings", key)},
+                    put_into{std::back_inserter(*opt_flags)},
+                }},
+                reject_with(fmt::format("`{}` must be an array or a shell-like string", key)));
+            return walk.accept;
         };
     };
 
@@ -114,125 +113,113 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     if_key { #Name, extend_flags(#Name, Name) }
 
 #define KEY_STRING(Name)                                                                           \
-    if_key { #Name, require_type < string>("`" #Name "` must be a string"), put_into{Name }, }
+    if_key{                                                                                        \
+        #Name,                                                                                     \
+        require_type<string>("`" #Name "` must be a string"),                                      \
+        put_into{Name},                                                                            \
+    }
 
-    auto result = semester::decompose(  //
+    walk(  //
         dat,
-        try_seq{
-            require_type<json5::data::mapping_type>("Root of toolchain data must be a mapping"),
-            mapping{
-                if_key{"$schema", just_accept},
-                KEY_STRING(compiler_id),
-                KEY_STRING(c_compiler),
-                KEY_STRING(cxx_compiler),
-                KEY_STRING(c_version),
-                KEY_STRING(cxx_version),
-                KEY_EXTEND_FLAGS(c_flags),
-                KEY_EXTEND_FLAGS(cxx_flags),
-                KEY_EXTEND_FLAGS(warning_flags),
-                KEY_EXTEND_FLAGS(link_flags),
-                KEY_EXTEND_FLAGS(compiler_launcher),
-                if_key{"debug",
-                       if_type<bool>(put_into{debug_bool}),
-                       if_type<std::string>(put_into{debug_str}),
-                       reject_with{"'debug' must be a bool or string"}},
-                if_key{"optimize",
-                       require_type<bool>("`optimize` must be a boolean value"),
-                       put_into{do_optimize}},
-                if_key{"flags", extend_flags("flags", common_flags)},
-                if_key{"runtime",
-                       require_type<json5::data::mapping_type>("'runtime' must be a JSON object"),
-                       mapping{if_key{"static",
-                                      require_type<bool>("'/runtime/static' should be a boolean"),
-                                      put_into(runtime_static)},
-                               if_key{"debug",
-                                      require_type<bool>("'/runtime/debug' should be a boolean"),
-                                      put_into(runtime_debug)},
-                               [](auto&& key, auto&&) {
-                                   fail("Unknown 'runtime' key '{}'", key);
-                                   return dc_reject_t();
-                               }}},
-                if_key{
-                    "advanced",
-                    require_type<json5::data::mapping_type>("`advanced` must be a mapping"),
-                    mapping{
-                        if_key{"deps_mode",
-                               require_type<string>("`deps_mode` must be a string"),
-                               put_into{deps_mode_str}},
-                        KEY_EXTEND_FLAGS(include_template),
-                        KEY_EXTEND_FLAGS(external_include_template),
-                        KEY_EXTEND_FLAGS(define_template),
-                        KEY_EXTEND_FLAGS(base_warning_flags),
-                        KEY_EXTEND_FLAGS(c_compile_file),
-                        KEY_EXTEND_FLAGS(cxx_compile_file),
-                        KEY_EXTEND_FLAGS(create_archive),
-                        KEY_EXTEND_FLAGS(link_executable),
-                        KEY_EXTEND_FLAGS(tty_flags),
-                        KEY_STRING(obj_prefix),
-                        KEY_STRING(obj_suffix),
-                        KEY_STRING(archive_prefix),
-                        KEY_STRING(archive_suffix),
-                        KEY_STRING(exe_prefix),
-                        KEY_STRING(exe_suffix),
-                        [&](auto key, auto) -> dc_reject_t {
-                            auto dym = did_you_mean(key,
-                                                    {
-                                                        "deps_mode",
-                                                        "include_template",
-                                                        "external_include_template",
-                                                        "define_template",
-                                                        "base_warning_flags",
-                                                        "c_compile_file",
-                                                        "cxx_compile_file",
-                                                        "create_archive",
-                                                        "link_executable",
-                                                        "obj_prefix",
-                                                        "obj_suffix",
-                                                        "archive_prefix",
-                                                        "archive_suffix",
-                                                        "exe_prefix",
-                                                        "exe_suffix",
-                                                        "tty_flags",
-                                                    });
-                            fail(context,
-                                 "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
-                                 key,
-                                 *dym);
-                            std::terminate();
-                        },
+        require_type<json5::data::mapping_type>("Root of toolchain data must be a mapping"),
+        mapping{
+            if_key{"$schema", just_accept},
+            KEY_STRING(compiler_id),
+            KEY_STRING(c_compiler),
+            KEY_STRING(cxx_compiler),
+            KEY_STRING(c_version),
+            KEY_STRING(cxx_version),
+            KEY_EXTEND_FLAGS(c_flags),
+            KEY_EXTEND_FLAGS(cxx_flags),
+            KEY_EXTEND_FLAGS(warning_flags),
+            KEY_EXTEND_FLAGS(link_flags),
+            KEY_EXTEND_FLAGS(compiler_launcher),
+            if_key{"debug",
+                   if_type<bool>(put_into{debug_bool}),
+                   if_type<std::string>(put_into{debug_str}),
+                   reject_with("'debug' must be a bool or string")},
+            if_key{"optimize",
+                   require_type<bool>("`optimize` must be a boolean value"),
+                   put_into{do_optimize}},
+            if_key{"flags", extend_flags("flags", common_flags)},
+            if_key{"runtime",
+                   require_type<json5::data::mapping_type>("'runtime' must be a JSON object"),
+                   mapping{if_key{"static",
+                                  require_type<bool>("'/runtime/static' should be a boolean"),
+                                  put_into(runtime_static)},
+                           if_key{"debug",
+                                  require_type<bool>("'/runtime/debug' should be a boolean"),
+                                  put_into(runtime_debug)}}},
+            if_key{
+                "advanced",
+                require_type<json5::data::mapping_type>("`advanced` must be a mapping"),
+                mapping{
+                    if_key{"deps_mode",
+                           require_type<string>("`deps_mode` must be a string"),
+                           put_into{deps_mode_str}},
+                    KEY_EXTEND_FLAGS(include_template),
+                    KEY_EXTEND_FLAGS(external_include_template),
+                    KEY_EXTEND_FLAGS(define_template),
+                    KEY_EXTEND_FLAGS(base_warning_flags),
+                    KEY_EXTEND_FLAGS(c_compile_file),
+                    KEY_EXTEND_FLAGS(cxx_compile_file),
+                    KEY_EXTEND_FLAGS(create_archive),
+                    KEY_EXTEND_FLAGS(link_executable),
+                    KEY_EXTEND_FLAGS(tty_flags),
+                    KEY_STRING(obj_prefix),
+                    KEY_STRING(obj_suffix),
+                    KEY_STRING(archive_prefix),
+                    KEY_STRING(archive_suffix),
+                    KEY_STRING(exe_prefix),
+                    KEY_STRING(exe_suffix),
+                    [&](auto key, auto) -> walk_result {
+                        auto dym = did_you_mean(key,
+                                                {
+                                                    "deps_mode",
+                                                    "include_template",
+                                                    "external_include_template",
+                                                    "define_template",
+                                                    "base_warning_flags",
+                                                    "c_compile_file",
+                                                    "cxx_compile_file",
+                                                    "create_archive",
+                                                    "link_executable",
+                                                    "obj_prefix",
+                                                    "obj_suffix",
+                                                    "archive_prefix",
+                                                    "archive_suffix",
+                                                    "exe_prefix",
+                                                    "exe_suffix",
+                                                    "tty_flags",
+                                                });
+                        fail(context,
+                             "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
+                             key,
+                             *dym);
                     },
                 },
-                [&](auto key, auto &&) -> dc_reject_t {
-                    // They've given an unknown key. Ouch.
-                    auto dym = did_you_mean(key,
-                                            {
-                                                "compiler_id",
-                                                "c_compiler",
-                                                "cxx_compiler",
-                                                "c_version",
-                                                "cxx_version",
-                                                "c_flags",
-                                                "cxx_flags",
-                                                "warning_flags",
-                                                "link_flags",
-                                                "flags",
-                                                "debug",
-                                                "optimize",
-                                                "runtime",
-                                            });
-                    fail(context,
-                         "Unknown toolchain config key ‘{}’ (Did you mean ‘{}’?)",
-                         key,
-                         *dym);
-                    std::terminate();
-                },
+            },
+            [&](auto key, auto &&) -> walk_result {
+                // They've given an unknown key. Ouch.
+                auto dym = did_you_mean(key,
+                                        {
+                                            "compiler_id",
+                                            "c_compiler",
+                                            "cxx_compiler",
+                                            "c_version",
+                                            "cxx_version",
+                                            "c_flags",
+                                            "cxx_flags",
+                                            "warning_flags",
+                                            "link_flags",
+                                            "flags",
+                                            "debug",
+                                            "optimize",
+                                            "runtime",
+                                        });
+                fail(context, "Unknown toolchain config key ‘{}’ (Did you mean ‘{}’?)", key, *dym);
             },
         });
-
-    auto rej_opt = std::get_if<dc_reject_t>(&result);
-    if (rej_opt) {
-        fail(context, rej_opt->message);
-    }
 
     if (debug_str.has_value() && debug_str != "embedded" && debug_str != "split"
         && debug_str != "none") {

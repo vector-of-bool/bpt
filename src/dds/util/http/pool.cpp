@@ -261,7 +261,7 @@ namespace {
 
 struct recv_none_state : erased_message_body {
     neo::const_buffer next(std::size_t) override { return {}; }
-    void              consume(std::size_t) override {}
+    void              consume(std::size_t) noexcept override {}
 };
 
 template <typename Stream>
@@ -281,7 +281,7 @@ struct recv_chunked_state : erased_message_body {
         }
         return part;
     }
-    void consume(std::size_t n) override { _chunked.consume(n); }
+    void consume(std::size_t n) noexcept override { _chunked.consume(n); }
 };
 
 template <typename Stream>
@@ -301,7 +301,7 @@ struct recv_gzip_state : erased_message_body {
         }
         return part;
     }
-    void consume(std::size_t n) override { _gzip.consume(n); }
+    void consume(std::size_t n) noexcept override { _gzip.consume(n); }
 };
 
 template <typename Stream>
@@ -322,7 +322,7 @@ struct recv_plain_state : erased_message_body {
         }
         return part;
     }
-    void consume(std::size_t n) override {
+    void consume(std::size_t n) noexcept override {
         _size -= n;
         return _strm.consume(n);
     }
