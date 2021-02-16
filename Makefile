@@ -64,8 +64,8 @@ _alpine-static-ci:
 	# our test-build. Just use the same build for both. CCache will also speed this up.
 	poetry run dds-ci \
 		--bootstrap-with=lazy \
-		--test-toolchain=tools/gcc-9-static-rel.jsonc \
-		--main-toolchain=tools/gcc-9-static-rel.jsonc
+		--test-toolchain=tools/gcc-10-static-rel.jsonc \
+		--main-toolchain=tools/gcc-10-static-rel.jsonc
 	mv _build/dds _build/dds-linux-x64
 
 alpine-static-ci:

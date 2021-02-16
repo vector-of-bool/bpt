@@ -438,6 +438,8 @@ struct setup {
 
     void setup_repoman_import_cmd(argument_parser& repoman_import_cmd) {
         repoman_import_cmd.add_argument(repoman_repo_dir_arg.dup());
+        repoman_import_cmd.add_argument(if_exists_arg.dup()).help
+            = "Behavior when the package already exists in the repository";
         repoman_import_cmd.add_argument({
             .help       = "Paths to source distribution archives to import",
             .valname    = "<sdist-file-path>",
