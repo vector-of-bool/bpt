@@ -94,6 +94,22 @@ TEST_CASE("Generating toolchain commands") {
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
 
+    check_tc_compile("{compiler_id: 'gnu', link_flags: '-mthumb'}",
+                     "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fPIC -pthread",
+                     "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c "
+                     "foo.cpp -ofoo.o -fPIC -pthread",
+                     "ar rcs stuff.a foo.o bar.o",
+                     "g++ -fPIC foo.o bar.a -pthread -omeow.exe -mthumb");
+
+    check_tc_compile(
+        "{compiler_id: 'gnu', link_flags: '-mthumb', advanced: {link_executable: 'g++ [in] "
+        "-o[out]'}}",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fPIC -pthread",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-fPIC -pthread",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ foo.o bar.a -omeow.exe -mthumb");
+
     check_tc_compile("{compiler_id: 'msvc'}",
                      "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT /EHsc /nologo /permissive-",
                      "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT /EHsc /nologo /permissive-",

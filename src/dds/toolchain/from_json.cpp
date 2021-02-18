@@ -703,9 +703,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             assert(false && "No link-exe command");
             std::terminate();
         }
-        extend(ret, get_link_flags());
         return ret;
     });
+    extend(tc.link_exe, get_link_flags());
 
     tc.tty_flags = read_opt(tty_flags, [&]() -> string_seq {
         if (!compiler_id) {
