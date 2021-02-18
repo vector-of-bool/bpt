@@ -25,6 +25,7 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
     assert(std::is_sorted(header_exts.begin(), header_exts.end()));
     static std::vector<std::string_view> source_exts = {
         ".C",
+        ".S",
         ".c",
         ".c++",
         ".cc",
