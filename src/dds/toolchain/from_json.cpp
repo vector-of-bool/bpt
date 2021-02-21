@@ -320,6 +320,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         c99,
         c11,
         c18,
+        gnu99,
         gnu18,
     } c_version_e
         = [&] {
@@ -333,6 +334,8 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                   return c11;
               } else if (c_version == "c18") {
                   return c18;
+              } else if (c_version == "gnu99") {
+                  return gnu99;
               } else if (c_version == "gnu18") {
                   return gnu18;
               } else {
@@ -383,12 +386,14 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{gnu, c99}, {"-std=c99"}},
         {{gnu, c11}, {"-std=c11"}},
         {{gnu, c18}, {"-std=c18"}},
+        {{gnu, gnu99}, {"-std=gnu99"}},
         {{gnu, gnu18}, {"-std=gnu18"}},
         {{clang, c_none}, {}},
         {{clang, c89}, {"-std=c89"}},
         {{clang, c99}, {"-std=c99"}},
         {{clang, c11}, {"-std=c11"}},
         {{clang, c18}, {"-std=c18"}},
+        {{clang, gnu99}, {"-std=gnu99"}},
         {{clang, gnu18}, {"-std=gnu18"}},
     };
 
