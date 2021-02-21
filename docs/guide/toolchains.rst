@@ -430,12 +430,12 @@ Defaults::
 
     {
         // On GNU-like compilers (GCC, Clang):
-        c_compile_file:   "<compiler> -fPIC -pthread [flags] -c [in] -o[out]",
-        cxx_compile_file: "<compiler> -fPIC -pthread [flags] -c [in] -o[out]",
+        c_compile_file:   "<compiler> <base_compile_flags> [flags] -c [in] -o[out]",
+        cxx_compile_file: "<compiler> <base_compile_flags> [flags] -c [in] -o[out]",
 
         // On MSVC:
-        c_compile_file:   "cl.exe /nologo /permissive- [flags] /c [in] /Fo[out]",
-        cxx_compile_file: "cl.exe /EHsc /nologo /permissive- [flags] /c [in] /Fo[out]",
+        c_compile_file:   "cl.exe <base_compile_flags> [flags] /c [in] /Fo[out]",
+        cxx_compile_file: "cl.exe <base_compile_flags> [flags] /c [in] /Fo[out]",
     }
 
 
@@ -544,3 +544,21 @@ On GNU-like compilers, the base warning flags are ``-Wall -Wextra -Wpedantic
 For example, if you set ``warning_flags`` to ``"-Werror"`` on a GNU-like
 compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
 -Wconversion -Werror``.
+
+
+.. _toolchains.opts.base_compile_flags:
+
+``base_compile_flags``
+----------------------
+
+When you compile your project, ``dds`` will concatenate the flags from this
+option with the flags provided by ``flags``. This option is "advanced," because
+it provides a set of defaults based on the ``compiler_id``.
+
+On GNU-like compilers, the base flags are ``-fPIC -pthread``. On
+MSVC the default flags are ``/EHsc /nologo /permissive-`` for C++ and ``/nologo
+/permissive-`` for C.
+
+For example, if you set ``flags`` to ``-fno-exceptions`` on a GNU-like
+compiler, the resulting command line will contain ``-fPIC -pthread
+-fno-exceptions``.
