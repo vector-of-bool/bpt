@@ -29,6 +29,7 @@ struct toolchain_prep {
     std::string exe_suffix;
 
     enum file_deps_mode deps_mode;
+    bool hide_includes = false;
 
     toolchain realize() const;
 };

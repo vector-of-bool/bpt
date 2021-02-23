@@ -62,6 +62,7 @@ class toolchain {
     string_seq _link_exe;
     string_seq _warning_flags;
     string_seq _tty_flags;
+    
 
     std::string _archive_prefix;
     std::string _archive_suffix;
@@ -71,7 +72,7 @@ class toolchain {
     std::string _exe_suffix;
 
     enum file_deps_mode _deps_mode;
-
+    bool _hide_includes;
 public:
     toolchain() = default;
 

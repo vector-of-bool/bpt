@@ -84,6 +84,8 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string_seq create_archive;
     opt_string_seq link_executable;
     opt_string_seq tty_flags;
+    
+    optional<bool> hide_includes;
 
     // For copy-pasting convenience: ‘{}’
 
@@ -201,6 +203,10 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                             std::terminate();
                         },
                     },
+                },
+                if_key{"hide_includes",
+                    require_type<bool>("`hide_includes` must be a bool"),
+                    put_into{hide_includes}
                 },
                 [&](auto key, auto &&) -> dc_reject_t {
                     // They've given an unknown key. Ouch.
@@ -708,6 +714,12 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         } else {
             assert(false && "Impossible compiler_id while deducing `tty_flags`");
             std::terminate();
+        }
+    });
+
+    tc.hide_includes = read_opt(hide_includes,[&]() -> bool {
+        if(is_msvc) {
+            return false;
         }
     });
 

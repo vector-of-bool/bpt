@@ -40,6 +40,7 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
     ret._exe_suffix          = prep.exe_suffix;
     ret._deps_mode           = prep.deps_mode;
     ret._tty_flags           = prep.tty_flags;
+    ret._hide_includes       = prep.hide_includes;
     return ret;
 }
 
@@ -145,7 +146,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                 std::string_view(gnu_depfile_path->string()),
                 "-MQ"sv,
                 std::string_view(spec.out_path.string())});
-    } else if (_deps_mode == file_deps_mode::msvc) {
+    } else if (_deps_mode == file_deps_mode::msvc && !_hide_includes) {
         flags.push_back("/showIncludes");
     }
 
