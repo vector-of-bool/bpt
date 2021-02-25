@@ -320,7 +320,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         c99,
         c11,
         c18,
+        gnu89,
         gnu99,
+        gnu11,
         gnu18,
     } c_version_e
         = [&] {
@@ -334,8 +336,12 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                   return c11;
               } else if (c_version == "c18") {
                   return c18;
+              } else if (c_version == "gnu89") {
+                  return gnu89;
               } else if (c_version == "gnu99") {
                   return gnu99;
+              } else if (c_version == "gnu11") {
+                  return gnu11;
               } else if (c_version == "gnu18") {
                   return gnu18;
               } else {
@@ -351,6 +357,11 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         cxx14,
         cxx17,
         cxx20,
+        gnuxx98,
+        gnuxx03,
+        gnuxx11,
+        gnuxx14,
+        gnuxx17,
         gnuxx20,
     } cxx_version_e
         = [&] {
@@ -368,6 +379,16 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                   return cxx17;
               } else if (cxx_version == "c++20") {
                   return cxx20;
+              } else if (cxx_version == "gnu++98") {
+                  return gnuxx98;
+              } else if (cxx_version == "gnu++03") {
+                  return gnuxx03;
+              } else if (cxx_version == "gnu++11") {
+                  return gnuxx11;
+              } else if (cxx_version == "gnu++14") {
+                  return gnuxx14;
+              } else if (cxx_version == "gnu++17") {
+                  return gnuxx17;
               } else if (cxx_version == "gnu++20") {
                   return gnuxx20;
               } else {
@@ -386,14 +407,18 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{gnu, c99}, {"-std=c99"}},
         {{gnu, c11}, {"-std=c11"}},
         {{gnu, c18}, {"-std=c18"}},
+        {{gnu, gnu89}, {"-std=gnu89"}},
         {{gnu, gnu99}, {"-std=gnu99"}},
+        {{gnu, gnu11}, {"-std=gnu11"}},
         {{gnu, gnu18}, {"-std=gnu18"}},
         {{clang, c_none}, {}},
         {{clang, c89}, {"-std=c89"}},
         {{clang, c99}, {"-std=c99"}},
         {{clang, c11}, {"-std=c11"}},
         {{clang, c18}, {"-std=c18"}},
+        {{clang, gnu89}, {"-std=gnu89"}},
         {{clang, gnu99}, {"-std=gnu99"}},
+        {{clang, gnu11}, {"-std=gnu11"}},
         {{clang, gnu18}, {"-std=gnu18"}},
     };
 
@@ -421,6 +446,11 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{gnu, cxx14}, {"-std=c++14"}},
         {{gnu, cxx17}, {"-std=c++17"}},
         {{gnu, cxx20}, {"-std=c++20"}},
+        {{gnu, gnuxx98}, {"-std=gnu++98"}},
+        {{gnu, gnuxx03}, {"-std=gnu++03"}},
+        {{gnu, gnuxx11}, {"-std=gnu++11"}},
+        {{gnu, gnuxx14}, {"-std=gnu++14"}},
+        {{gnu, gnuxx17}, {"-std=gnu++17"}},
         {{gnu, gnuxx20}, {"-std=gnu++20"}},
         {{clang, cxx_none}, {}},
         {{clang, cxx98}, {"-std=c++98"}},
@@ -429,6 +459,11 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         {{clang, cxx14}, {"-std=c++14"}},
         {{clang, cxx17}, {"-std=c++17"}},
         {{clang, cxx20}, {"-std=c++20"}},
+        {{clang, gnuxx98}, {"-std=gnu++98"}},
+        {{clang, gnuxx03}, {"-std=gnu++03"}},
+        {{clang, gnuxx11}, {"-std=gnu++11"}},
+        {{clang, gnuxx14}, {"-std=gnu++14"}},
+        {{clang, gnuxx17}, {"-std=gnu++17"}},
         {{clang, gnuxx20}, {"-std=gnu++20"}},
     };
 

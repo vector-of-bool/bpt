@@ -231,6 +231,11 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
     CXX_VER_TAG("c++14:", "c++14");
     CXX_VER_TAG("c++17:", "c++17");
     CXX_VER_TAG("c++20:", "c++20");
+    CXX_VER_TAG("gnu++98:", "gnu++98");
+    CXX_VER_TAG("gnu++03:", "gnu++03");
+    CXX_VER_TAG("gnu++11:", "gnu++11");
+    CXX_VER_TAG("gnu++14:", "gnu++14");
+    CXX_VER_TAG("gnu++17:", "gnu++17");
     CXX_VER_TAG("gnu++20:", "gnu++20");
 
     struct compiler_info {
