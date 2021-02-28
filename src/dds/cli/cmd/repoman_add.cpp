@@ -38,9 +38,7 @@ int repoman_add(const options& opts) {
                 dds::capture_exception();
             }
         },
-        [](dds::e_sqlite3_error_exc,
-           boost::leaf::match<neo::sqlite3::errc, neo::sqlite3::errc::constraint_unique>,
-           dds::pkg_id pkid) {
+        [](boost::leaf::catch_<neo::sqlite3::constraint_unique_error>, dds::pkg_id pkid) {
             dds_log(error, "Package {} is already present in the repository", pkid.to_string());
             write_error_marker("dup-pkg-add");
             return 1;
@@ -58,8 +56,11 @@ int repoman_add(const options& opts) {
             write_error_marker("repoman-add-invalid-pkg-url");
             throw;
         },
-        [](dds::e_sqlite3_error_exc e, dds::e_repo_import_targz tgz) {
-            dds_log(error, "Database error while importing tar file {}: {}", tgz.path, e.message);
+        [](boost::leaf::catch_<neo::sqlite3::error> e, dds::e_repo_import_targz tgz) {
+            dds_log(error,
+                    "Database error while importing tar file {}: {}",
+                    tgz.path,
+                    e.value().what());
             return 1;
         },
         [](dds::e_system_error_exc e, dds::e_open_repo_db db) {

@@ -44,9 +44,9 @@ def get_default_audit_toolchain() -> Path:
     if sys.platform == 'win32':
         return paths.TOOLS_DIR / 'msvc-audit.jsonc'
     if sys.platform == 'linux':
-        return paths.TOOLS_DIR / 'gcc-9-audit.jsonc'
+        return paths.TOOLS_DIR / 'gcc-10-audit.jsonc'
     if sys.platform == 'darwin':
-        return paths.TOOLS_DIR / 'gcc-9-audit-macos.jsonc'
+        return paths.TOOLS_DIR / 'gcc-10-audit-macos.jsonc'
     if sys.platform == 'freebsd11':
         return paths.TOOLS_DIR / 'freebsd-gcc-10.jsonc'
     raise RuntimeError(f'Unable to determine the default toolchain (sys.platform is {sys.platform!r})')
@@ -60,7 +60,7 @@ def get_default_test_toolchain() -> Path:
     if sys.platform == 'win32':
         return paths.TESTS_DIR / 'msvc.tc.jsonc'
     if sys.platform in ('linux', 'darwin'):
-        return paths.TESTS_DIR / 'gcc-9.tc.jsonc'
+        return paths.TESTS_DIR / 'gcc-10.tc.jsonc'
     if sys.platform == 'freebsd11':
         return paths.TOOLS_DIR / 'freebsd-gcc-10.jsonc'
     raise RuntimeError(f'Unable to determine the default toolchain (sys.platform is {sys.platform!r})')
@@ -74,9 +74,9 @@ def get_default_toolchain() -> Path:
     if sys.platform == 'win32':
         return paths.TOOLS_DIR / 'msvc-rel.jsonc'
     if sys.platform == 'linux':
-        return paths.TOOLS_DIR / 'gcc-9-rel.jsonc'
+        return paths.TOOLS_DIR / 'gcc-10-rel.jsonc'
     if sys.platform == 'darwin':
-        return paths.TOOLS_DIR / 'gcc-9-rel-macos.jsonc'
+        return paths.TOOLS_DIR / 'gcc-10-rel-macos.jsonc'
     if sys.platform == 'freebsd11':
         return paths.TOOLS_DIR / 'freebsd-gcc-10.jsonc'
     raise RuntimeError(f'Unable to determine the default toolchain (sys.platform is {sys.platform!r})')

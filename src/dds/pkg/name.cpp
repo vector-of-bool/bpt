@@ -42,9 +42,9 @@ static err_reason calc_invalid_name_reason(std::string_view str) noexcept {
 std::string_view dds::invalid_name_reason_str(err_reason e) noexcept {
     switch (e) {
     case err_reason::capital:
-        return "Uppercase letters are not valid in package names";
+        return "Uppercase letters are not valid in names";
     case err_reason::double_punct:
-        return "Adjacent punctuation characters are not valid in package names";
+        return "Adjacent punctuation characters are not valid in names";
     case err_reason::end_punct:
         return "Names must not end with a punctuation character";
     case err_reason::whitespace:
@@ -70,4 +70,9 @@ result<name> name::from_string(std::string_view str) noexcept {
     }
 
     return name{std::string(str)};
+}
+
+std::ostream& dds::operator<<(std::ostream& out, invalid_name_reason r) {
+    out << invalid_name_reason_str(r);
+    return out;
 }

@@ -75,9 +75,10 @@ void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name
         migrate_db_1(db);
     }
 
-    nsql::exec(db.prepare("UPDATE dds_repo_meta SET version=?"), current_database_version);
+    nsql::exec(db.prepare("UPDATE dds_repo_meta SET version=?"),
+               std::tie(current_database_version));
     if (name) {
-        nsql::exec(db.prepare("UPDATE dds_repo_meta SET name=?"), *name);
+        nsql::exec(db.prepare("UPDATE dds_repo_meta SET name=?"), std::tie(*name));
     }
 }
 
@@ -175,8 +176,7 @@ void repo_manager::delete_package(pkg_id pkg_id) {
                 WHERE name = ?
                   AND version = ?
             )"_sql),
-        pkg_id.name.str,
-        pkg_id.version.to_string());
+        std::forward_as_tuple(pkg_id.name.str, pkg_id.version.to_string()));
     /// XXX: Verify with _db.changes() that we actually deleted one row
 
     auto name_dir = pkg_dir() / pkg_id.name.str;
@@ -209,10 +209,10 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
             INSERT INTO dds_repo_packages (name, version, description, url)
             VALUES (?, ?, ?, ?)
         )"_sql),
-        info.ident.name.str,
-        info.ident.version.to_string(),
-        info.description,
-        url);
+        std::forward_as_tuple(info.ident.name.str,
+                              info.ident.version.to_string(),
+                              info.description,
+                              url));
 
     auto package_rowid = _db.last_insert_rowid();
 
@@ -225,10 +225,10 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
         auto iv_1 = *dep.versions.iter_intervals().begin();
         dds_log(trace, "  Depends on: {}", dep.to_string());
         nsql::exec(insert_dep_st,
-                   package_rowid,
-                   dep.name.str,
-                   iv_1.low.to_string(),
-                   iv_1.high.to_string());
+                   std::forward_as_tuple(package_rowid,
+                                         dep.name.str,
+                                         iv_1.low.to_string(),
+                                         iv_1.high.to_string()));
     }
 
     auto dest_dir   = pkg_dir() / info.ident.name.str / info.ident.version.to_string();

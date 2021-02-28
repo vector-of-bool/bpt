@@ -8,6 +8,7 @@
 #include <fansi/styled.hpp>
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
+#include <neo/sqlite3/error.hpp>
 #include <neo/url/parse.hpp>
 
 #include <iostream>
@@ -65,8 +66,8 @@ int pkg_import(const options& opts) {
             dds_log(error, "Error parsing JSON in package archive: {}", e.what());
             return 1;
         },
-        [](dds::e_sqlite3_error_exc e) {
-            dds_log(error, "Unexpected database error: {}", e.message);
+        [](boost::leaf::catch_<neo::sqlite3::error> e) {
+            dds_log(error, "Unexpected database error: {}", e.value().what());
             return 1;
         },
         [](e_system_error_exc err, e_importing what) {

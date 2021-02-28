@@ -38,14 +38,6 @@ struct e_system_error_exc {
     std::error_code code;
 };
 
-/**
- * @brief Error object representing a captured neo::sqlite3::sqlite3_error
- */
-struct e_sqlite3_error_exc {
-    std::string     message;
-    std::error_code code;
-};
-
 struct e_url_string {
     std::string value;
 };

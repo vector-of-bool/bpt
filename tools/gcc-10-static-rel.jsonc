@@ -1,8 +1,9 @@
 {
     "$schema": "../res/toolchain-schema.json",
     "compiler_id": "gnu",
-    "c_compiler": "gcc-9",
-    "cxx_compiler": "g++-9",
+    "c_compiler": "gcc-10",
+    "cxx_compiler": "g++-10",
+    "cxx_version": "c++20",
     "warning_flags": [
         "-Werror",
     ],
@@ -10,10 +11,6 @@
         "-fdata-sections",
         "-ffunction-sections",
         "-Os"
-    ],
-    "cxx_flags": [
-        "-fconcepts",
-        "-std=c++2a"
     ],
     "link_flags": [
         "-static",

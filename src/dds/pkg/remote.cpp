@@ -75,7 +75,7 @@ void pkg_remote::store(nsql::database_ref db) {
         ON CONFLICT (name) DO
             UPDATE SET url = ?2
     )");
-    nsql::exec(st, _name, _base_url.to_string());
+    nsql::exec(st, std::forward_as_tuple(_name, _base_url.to_string()));
 }
 
 void pkg_remote::update_pkg_db(nsql::database_ref              db,
@@ -120,7 +120,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
     rid_st.reset();
 
     dds_log(trace, "Attaching downloaded database");
-    nsql::exec(db.prepare("ATTACH DATABASE ? AS remote"), db_path.string());
+    nsql::exec(db.prepare("ATTACH DATABASE ? AS remote"), std::forward_as_tuple(db_path.string()));
     neo_defer { db.exec("DETACH DATABASE remote"); };
     nsql::transaction_guard tr{db};
     dds_log(trace, "Clearing prior contents");
@@ -129,7 +129,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
             DELETE FROM dds_pkgs
             WHERE remote_id = ?
         )"),
-        remote_id);
+        std::tie(remote_id));
     dds_log(trace, "Importing packages");
     nsql::exec(  //
         db.prepare(R"(
@@ -151,8 +151,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
                 ?1
             FROM remote.dds_repo_packages
         )"),
-        remote_id,
-        base_url_str);
+        std::tie(remote_id, base_url_str));
     dds_log(trace, "Importing dependencies");
     db.exec(R"(
         INSERT OR REPLACE INTO dds_pkg_deps (pkg_id, dep_name, low, high)
@@ -196,13 +195,11 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
     // Save the cache info for the remote
     if (auto new_etag = resp.etag()) {
         nsql::exec(db.prepare("UPDATE dds_pkg_remotes SET db_etag = ? WHERE name = ?"),
-                   *new_etag,
-                   _name);
+                   std::tie(*new_etag, _name));
     }
     if (auto mtime = resp.last_modified()) {
         nsql::exec(db.prepare("UPDATE dds_pkg_remotes SET db_mtime = ? WHERE name = ?"),
-                   *mtime,
-                   _name);
+                   std::tie(*mtime, _name));
     }
 }
 
@@ -247,7 +244,7 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
             });
     }
     auto [rowid] = *row;
-    nsql::exec(db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), rowid);
+    nsql::exec(db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), std::tie(rowid));
 }
 
 void dds::add_init_repo(nsql::database_ref db) noexcept {
@@ -274,15 +271,15 @@ void dds::add_init_repo(nsql::database_ref db) noexcept {
                     resp.status_message);
             return false;
         },
-        [](e_sqlite3_error_exc e, neo::url url) {
+        [](boost::leaf::catch_<neo::sqlite3::error> e, neo::url url) {
             dds_log(error,
                     "Error accessing remote database while adding initial repository: {}: {}",
                     url.to_string(),
-                    e.message);
+                    e.value().what());
             return false;
         },
-        [](e_sqlite3_error_exc e) {
-            dds_log(error, "Unexpected database error: {}", e.message);
+        [](boost::leaf::catch_<neo::sqlite3::error> e) {
+            dds_log(error, "Unexpected database error: {}", e.value().what());
             return false;
         },
         [](e_system_error_exc e, network_origin conn) {

@@ -8,9 +8,13 @@
 
 #include <json5/parse_data.hpp>
 #include <range/v3/view/transform.hpp>
-#include <semester/decomp.hpp>
+#include <semester/walk.hpp>
 
 using namespace dds;
+
+using require_obj   = semester::require_type<json5::data::mapping_type>;
+using require_array = semester::require_type<json5::data::array_type>;
+using require_str   = semester::require_type<std::string>;
 
 library_manifest library_manifest::load_from_file(path_ref fpath) {
     DDS_E_SCOPE(e_library_manifest_path{fpath.string()});
@@ -23,46 +27,21 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
     }
 
     library_manifest lib;
-    using namespace semester::decompose_ops;
-    auto res = semester::decompose(  //
-        data,
-        try_seq{require_type<json5::data::mapping_type>{
-                    "The root of the library manifest must be an object (mapping)"},
-                mapping{
-                    if_key{"name",
-                           require_type<std::string>{"`name` must be a string"},
-                           put_into{lib.name.str}},
-                    if_key{"uses",
-                           require_type<json5::data::array_type>{
-                               "`uses` must be an array of usage requirements"},
-                           for_each{
-                               require_type<std::string>{"`uses` elements must be strings"},
-                               [&](auto&& uses) {
-                                   lib.uses.push_back(lm::split_usage_string(uses.as_string()));
-                                   return semester::dc_accept;
-                               },
-                           }},
-                    if_key{"links",
-                           require_type<json5::data::array_type>{
-                               "`links` must be an array of usage requirements"},
-                           for_each{
-                               require_type<std::string>{"`links` elements must be strings"},
-                               [&](auto&& links) {
-                                   lib.links.push_back(lm::split_usage_string(links.as_string()));
-                                   return semester::dc_accept;
-                               },
-                           }},
-                }});
-    auto rej = std::get_if<semester::dc_reject_t>(&res);
-    if (rej) {
-        throw_user_error<errc::invalid_lib_manifest>(rej->message);
-    }
-
-    if (lib.name.str.empty()) {
-        throw_user_error<errc::invalid_lib_manifest>(
-            "The 'name' field is required (Reading library manifest [{}])", fpath.string());
-    }
-    lib.name = *dds::name::from_string(lib.name.str);
+    using namespace semester::walk_ops;
+    walk(data,
+         require_obj{"Root of library manifest should be a JSON object"},
+         mapping{if_key{"$scheme", just_accept},
+                 required_key{"name",
+                              "A string 'name' is required",
+                              require_str{"'name' must be a string"},
+                              put_into{lib.name,
+                                       [](std::string s) { return *dds::name::from_string(s); }}},
+                 if_key{"uses",
+                        require_array{"'uses' must be an array of strings"},
+                        for_each{require_str{"Each 'uses' element should be a string"},
+                                 put_into{std::back_inserter(lib.uses), [](std::string s) {
+                                              return lm::split_usage_string(s);
+                                          }}}}});
 
     return lib;
 }

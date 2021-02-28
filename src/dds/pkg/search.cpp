@@ -6,6 +6,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/string.hpp>
 
+#include <neo/fwd.hpp>
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 

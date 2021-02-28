@@ -24,9 +24,9 @@ struct http_client_impl;
 }  // namespace detail
 
 struct erased_message_body {
-    virtual ~erased_message_body()                   = default;
-    virtual neo::const_buffer next(std::size_t n)    = 0;
-    virtual void              consume(std::size_t n) = 0;
+    virtual ~erased_message_body()                            = default;
+    virtual neo::const_buffer next(std::size_t n)             = 0;
+    virtual void              consume(std::size_t n) noexcept = 0;
 };
 
 class http_status_error : public std::runtime_error {
@@ -130,8 +130,8 @@ public:
 
     http_client client_for_origin(const network_origin&);
 
-    request_result request(neo::url url, http_request_params params);
-    auto           request(neo::url url) { return request(url, http_request_params{}); }
+    request_result request(neo::url_view url, http_request_params params);
+    auto           request(neo::url_view url) { return request(url, http_request_params{}); }
 };
 
 }  // namespace dds

@@ -3,6 +3,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 
+#include <neo/sqlite3/error.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
@@ -78,7 +79,7 @@ void ensure_migrated(nsql::database& db) {
         }
         migrate_1(db);
     }
-    exec(db.prepare("UPDATE dds_meta_1 SET version=?"), cur_version);
+    exec(db.prepare("UPDATE dds_meta_1 SET version=?"), std::tie(cur_version));
 }
 
 }  // namespace
@@ -87,7 +88,7 @@ database database::open(const std::string& db_path) {
     auto db = nsql::database::open(db_path);
     try {
         ensure_migrated(db);
-    } catch (const nsql::sqlite3_error& e) {
+    } catch (const nsql::error& e) {
         dds_log(
             error,
             "Failed to load the databsae. It appears to be invalid/corrupted. We'll delete it and "
@@ -97,7 +98,7 @@ database database::open(const std::string& db_path) {
         db = nsql::database::open(db_path);
         try {
             ensure_migrated(db);
-        } catch (const nsql::sqlite3_error& e) {
+        } catch (const nsql::error& e) {
             dds_log(critical,
                     "Failed to apply database migrations to recovery database. This is a critical "
                     "error. The exception message is: {}",
@@ -117,7 +118,7 @@ std::int64_t database::_record_file(path_ref path_) {
                     INSERT OR IGNORE INTO dds_source_files (path)
                     VALUES (?)
                   )"_sql),
-               path.generic_string());
+               std::forward_as_tuple(path.generic_string()));
     auto& st = _stmt_cache(R"(
         SELECT file_id
           FROM dds_source_files
@@ -137,7 +138,7 @@ void database::record_dep(path_ref input, path_ref output, fs::file_time_type in
         INSERT OR REPLACE INTO dds_compile_deps (input_file_id, output_file_id, input_mtime)
         VALUES (?, ?, ?)
     )"_sql);
-    nsql::exec(st, in_id, out_id, input_mtime.time_since_epoch().count());
+    nsql::exec(st, std::forward_as_tuple(in_id, out_id, input_mtime.time_since_epoch().count()));
 }
 
 void database::record_compilation(path_ref file, const completed_compilation& cmd) {
@@ -159,10 +160,10 @@ void database::record_compilation(path_ref file, const completed_compilation& cm
             END
     )"_sql);
     nsql::exec(st,
-               file_id,
-               std::string_view(cmd.quoted_command),
-               std::string_view(cmd.output),
-               cmd.duration.count());
+               std::forward_as_tuple(file_id,
+                                     std::string_view(cmd.quoted_command),
+                                     std::string_view(cmd.output),
+                                     cmd.duration.count()));
 }
 
 void database::forget_inputs_of(path_ref file) {
@@ -175,7 +176,7 @@ void database::forget_inputs_of(path_ref file) {
         DELETE FROM dds_compile_deps
          WHERE output_file_id IN id_to_delete
     )"_sql);
-    nsql::exec(st, fs::weakly_canonical(file).generic_string());
+    nsql::exec(st, std::forward_as_tuple(fs::weakly_canonical(file).generic_string()));
 }
 
 std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) const {

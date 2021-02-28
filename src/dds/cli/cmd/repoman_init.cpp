@@ -6,6 +6,7 @@
 
 #include <boost/leaf/handle_exception.hpp>
 #include <fmt/ostream.h>
+#include <neo/sqlite3/error.hpp>
 
 namespace dds::cli::cmd {
 
@@ -24,23 +25,25 @@ int repoman_init(const options& opts) {
                 dds::capture_exception();
             }
         },
-        [](dds::e_sqlite3_error_exc e, dds::e_init_repo init, dds::e_init_repo_db init_db) {
+        [](boost::leaf::catch_<neo::sqlite3::error> e,
+           dds::e_init_repo                         init,
+           dds::e_init_repo_db                      init_db) {
             dds_log(error,
                     "SQLite error while initializing repository in [{}] (SQlite database {}): {}",
                     init.path,
                     init_db.path,
-                    e.message);
+                    e.value().what());
             return 1;
         },
         [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
             dds_log(error, "Error while opening repository database {}: {}", db.path, e.message);
             return 1;
         },
-        [](dds::e_sqlite3_error_exc e, dds::e_init_repo init) {
+        [](boost::leaf::catch_<neo::sqlite3::error> e, dds::e_init_repo init) {
             dds_log(error,
                     "SQLite error while initializing repository in [{}]: {}",
                     init.path,
-                    e.message);
+                    e.value().what());
             return 1;
         });
 }

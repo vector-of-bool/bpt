@@ -37,10 +37,10 @@ stages:
             displayName: Publish
             artifact: dds-win-x64
 
-      - job: linux_gcc9
-        displayName: Linux - GCC 9
+      - job: linux_gcc10
+        displayName: Linux - GCC 10
         pool:
-          vmImage: ubuntu-18.04
+          vmImage: ubuntu-20.04
         steps:
           - script: make alpine-static-ci
             displayName: Build and Test
@@ -55,13 +55,13 @@ stages:
             displayName: Publish
             artifact: dds-linux-x64
 
-      - job: macos_gcc9
-        displayName: macOS - GCC 9
+      - job: macos_gcc10
+        displayName: macOS - GCC 10
         pool:
           vmImage: macOS-10.15
         steps:
-          - script: brew install gcc@9 ccache
-            displayName: Get GCC 9
+          - script: brew install gcc@10 ccache
+            displayName: Get GCC 10
           - script: brew install openssl@1.1
             displayName: Install OpenSSL
           - script: python3 -m pip install poetry

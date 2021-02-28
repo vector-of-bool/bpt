@@ -52,8 +52,8 @@ int pkg_ls(const options& opts) {
                 dds::capture_exception();
             }
         },
-        [](dds::e_sqlite3_error_exc e) {
-            dds_log(error, "Unexpected database error: {}", e.message);
+        [](boost::leaf::catch_<neo::sqlite3::error> e) {
+            dds_log(error, "Unexpected database error: {}", e.value().what());
             return 1;
         });
 }
