@@ -130,8 +130,8 @@ public:
 
     http_client client_for_origin(const network_origin&);
 
-    request_result request(neo::url url, http_request_params params);
-    auto           request(neo::url url) { return request(url, http_request_params{}); }
+    request_result request(neo::url_view url, http_request_params params);
+    auto           request(neo::url_view url) { return request(url, http_request_params{}); }
 };
 
 }  // namespace dds

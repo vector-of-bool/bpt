@@ -385,7 +385,8 @@ void http_client::_set_ready() noexcept {
     _impl->_state = detail::http_client_impl::_state_t::ready;
 }
 
-request_result http_pool::request(neo::url url, http_request_params params) {
+request_result http_pool::request(neo::url_view url_, http_request_params params) {
+    auto url = url_.normalized();
     for (auto i = 0; i <= 100; ++i) {
         DDS_E_SCOPE(url);
         params.path  = url.path;
