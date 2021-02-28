@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
       ln -fs gcc9 /usr/local/bin/gcc-9
       ln -fs g++8 /usr/local/bin/g++-8
       ln -fs gcc8 /usr/local/bin/gcc-8
-      sudo -u vagrant pip install -q --user pytest pytest-xdist
+      sudo -u vagrant pip install -q --user poetry
     SHELL
   end
 
