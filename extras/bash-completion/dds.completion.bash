@@ -1,3 +1,24 @@
+# A bash completion script for dds
+
+# Method:
+# Keep a separate pointer $CWORDI (evaluated result stored in $CWORD)
+#   which iterates over the $COMP_WORDS array.
+# Use $CWORD to run the "state machine" that keeps track of where in
+#   the command line we are. That is, we use the information to
+#   call the appropriate _dds_complete_* function.
+# Subcommands are implemented as functions.
+# Each command can have FLAGS, POSITIONAL, and SUBCOMMANDS.
+
+# Completion for a single argument (assumes that this is the arg that needs completion)
+# Input: ARG
+# Output: COMPREPLY
+# ARG can be:
+#  - "directory" - completes as a directory
+#  - "file" - completes as a file
+#  - "file-or-list: some list" - completes as a file or as a value in the
+#                                space-separated "some list"
+#  - "some list" - Requires one of these enumerated values
+#  - " " - Use no completion for this argument
 _dds_complete_single_arg()
 {
   case $ARG in
@@ -17,6 +38,11 @@ _dds_complete_single_arg()
   esac
 } &&
 
+# Evaluates the completion for a positional argument.
+# Input: POS_ARG
+# POS_ARG may have the same values as in _dds_complete_single_arg, but also:
+#  - "repeat:..." where the "..." is any of the valid _dds_complete_single_arg specifiers.
+#    This will consume all remaining commandline arguments to follow the specified schema.
 _dds_complete_positional_arg()
 {
   if [[ $CWORDI -ge $COMP_CWORD ]]; then
@@ -42,6 +68,9 @@ _dds_complete_positional_arg()
   CWORD="${COMP_WORDS[$CWORDI]}"
 } &&
 
+# Evaluates the completion for a flag argument
+# If ARG is an empty string, assumes the flag takes no arguments.
+# ARG can also be any of what is specified in _dds_complete_single_arg
 _dds_complete_flags()
 {
   local ARG
@@ -59,13 +88,26 @@ _dds_complete_flags()
   fi
 } &&
 
+# General completion function.
+# Inputs:
+#  - SUBCOMMANDS - Associative Array: SubcommandString -> Function
+#  - FLAGS - Associative Array: FlagString -> ARG specifier (see _dds_complete_flags)
+#  - POSITIONAL - Array: List of POS_ARG specifiers (see _dds_complete_positional_arg)
+# Only one of SUBCOMMANDS or POSITIONAL can contain elements at the same time
+# Output: COMPREPLY
 _dds_complete_command()
 {
   local RESULT_WORDS SUBCOMMAND FLAG
   if [[ ${#POSITIONAL[@]} -eq 0 ]]; then
+    # SUBCOMMANDS branch
+
+    # If we are at the final entry (the one we are trying to complete)
     if [[ $CWORDI -ge $COMP_CWORD ]]; then
+      # Fill results with the subcommands
       RESULT_WORDS="${!SUBCOMMANDS[@]}"
 
+      # And any flags if the completee starts with "-"
+      # (or if we have no subcommands)
       if [[ $CWORD == "-"* || -z $RESULT_WORDS ]]; then
         RESULT_WORDS+=" ${!FLAGS[@]}"
       fi
@@ -74,44 +116,67 @@ _dds_complete_command()
       return
     fi
 
+    # Otherwise, we need to jump to the correct state.
     SUBCOMMAND="${SUBCOMMANDS[$CWORD]}"
     FLAG="${FLAGS[$CWORD]}"
     if [[ -n $FLAG || $CWORD == "-"* ]]; then
+      # If $CWORD is a flag or partial flag, parse it as a flag
       _dds_complete_flags
+      # After parsing a flag, we should behave as if we are still parsing the command:
       _dds_complete_command
     elif [[ -n $SUBCOMMAND ]]; then
+      # Drop the subcommand word
       ((CWORDI=CWORDI+1))
       CWORD="${COMP_WORDS[$CWORDI]}"
+      # Call the subcommand's completion function
       $SUBCOMMAND
     fi
   else
-    local POS_ARG
+    # Do positional arguments
+    local POS_ARG CONTINUE
+    # Go through all the positional arguments.
+    # We expect to either see that positional argument or a flag.
     for POS_ARG in "${POSITIONAL[@]}"; do
-      while [[ $CWORDI -lt $COMP_CWORD ]]; do
+      CONTINUE=1
+      # Parse as many flags as we can
+      while [[ $CWORDI -lt $COMP_CWORD && $CONTINUE -eq 1 ]]; do
         FLAG="${FLAGS[$CWORD]}"
         if [[ -n $FLAG || $CWORD == "-"* ]]; then
           _dds_complete_flags
+          CONTINUE=1
         else
           _dds_complete_positional_arg
+          CONTINUE=0 # break; we need to advance POS_ARG
         fi
       done
 
-      _dds_complete_positional_arg
+      if [[ $CONTINUE -ne 0 ]]; then
+        # This means that $CWORDI -ge $COMP_CWORD,
+        # i.e. that we have reached the completing argument.
 
-      if [[ $CWORD == "-"* || -z "${COMPREPLY[@]}" ]]; then
-        RESULT_WORDS=" ${!FLAGS[@]}"
-        COMPREPLY+=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
+        # Fill out COMPREPLY with the completions for this POS_ARG
+        _dds_complete_positional_arg
+
+        # Also add any relevant flags
+        if [[ $CWORD == "-"* || -z "${COMPREPLY[@]}" ]]; then
+          RESULT_WORDS=" ${!FLAGS[@]}"
+          COMPREPLY+=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
+        fi
+
+        return
       fi
-
-      return
     done
 
+    # If we have parsed all the positional arguments, still parse any remaining flags.
     local POSITIONAL
     POSITIONAL=()
+    # This will hit the SUBCOMMANDS branch, but as SUBCOMMANDS is empty, it works fine.
     _dds_complete_command
   fi
 } &&
 
+# Computes the dds builtin toolchains
+# Output: BUILTIN_TOOLCHAINS
 _dds_complete_get_builtin_toolchains()
 {
   local gccs clangs cxxstds base ccached debugged cxx98 cxx03 cxx11 cxx14 cxx17 cxx20
@@ -138,6 +203,7 @@ _dds_complete_get_builtin_toolchains()
   BUILTIN_TOOLCHAINS="${BUILTIN_TOOLCHAINS[@]} $debugged"
 } &&
 
+# dds build
 _dds_complete_build()
 {
   local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
@@ -164,6 +230,7 @@ _dds_complete_build()
   _dds_complete_command
 } &&
 
+# dds compile-file
 _dds_complete_compile_file()
 {
   local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
@@ -186,6 +253,7 @@ _dds_complete_compile_file()
   )
 } &&
 
+# dds build-deps
 _dds_complete_build_deps()
 {
   local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
@@ -210,6 +278,7 @@ _dds_complete_build_deps()
   _dds_complete_command
 } &&
 
+# dds pkg create
 _dds_complete_pkg_create()
 {
   local RESULT_WORDS POSITIONAL
@@ -226,6 +295,7 @@ _dds_complete_pkg_create()
   _dds_complete_command
 } &&
 
+# dds pkg get
 _dds_complete_pkg_get()
 {
   local RESULT_WORDS POSITIONAL
@@ -242,6 +312,7 @@ _dds_complete_pkg_get()
   _dds_complete_command
 } &&
 
+# dds pkg import
 _dds_complete_pkg_import()
 {
   local RESULT_WORDS POSITIONAL
@@ -259,6 +330,7 @@ _dds_complete_pkg_import()
   _dds_complete_command
 } &&
 
+# dds pkg repo add
 _dds_complete_pkg_repo_add()
 {
   local RESULT_WORDS POSITIONAL
@@ -275,6 +347,7 @@ _dds_complete_pkg_repo_add()
   _dds_complete_command
 } &&
 
+# dds pkg repo remove
 _dds_complete_pkg_repo_remove()
 {
   local RESULT_WORDS POSITIONAL
@@ -291,6 +364,7 @@ _dds_complete_pkg_repo_remove()
   _dds_complete_command
 } &&
 
+# dds pkg repo
 _dds_complete_pkg_repo()
 {
   local RESULT_WORDS POSITIONAL
@@ -307,6 +381,7 @@ _dds_complete_pkg_repo()
   _dds_complete_command
 } &&
 
+# dds pkg
 _dds_complete_pkg()
 {
   local RESULT_WORDS POSITIONAL
@@ -326,6 +401,7 @@ _dds_complete_pkg()
   _dds_complete_command
 } &&
 
+# dds repoman init
 _dds_complete_repoman_init()
 {
   local RESULT_WORDS POSITIONAL
@@ -343,6 +419,7 @@ _dds_complete_repoman_init()
   _dds_complete_command
 } &&
 
+# dds repoman ls
 _dds_complete_repoman_ls()
 {
   local POSITIONAL
@@ -357,6 +434,7 @@ _dds_complete_repoman_ls()
   _dds_complete_command
 } &&
 
+# dds repoman add
 _dds_complete_repoman_add()
 {
   local RESULT_WORDS POSITIONAL
@@ -374,6 +452,7 @@ _dds_complete_repoman_add()
   _dds_complete_command
 } &&
 
+# dds repoman import
 _dds_complete_repoman_import()
 {
   local POSITIONAL
@@ -388,6 +467,7 @@ _dds_complete_repoman_import()
   _dds_complete_command
 } &&
 
+# dds repoman remove
 _dds_complete_repoman_remove()
 {
   local POSITIONAL
@@ -402,6 +482,7 @@ _dds_complete_repoman_remove()
   _dds_complete_command
 } &&
 
+# dds repoman
 _dds_complete_repoman()
 {
   local POSITIONAL
@@ -420,6 +501,7 @@ _dds_complete_repoman()
   _dds_complete_command
 } &&
 
+# dds install-yourself
 _dds_complete_install_yourself()
 {
   local RESULT_WORDS POSITIONAL
@@ -437,6 +519,7 @@ _dds_complete_install_yourself()
   _dds_complete_command
 } &&
 
+# dds
 _dds_complete_impl()
 {
   local POSITIONAL
