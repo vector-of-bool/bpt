@@ -1,22 +1,40 @@
-_dds_complete_flag_arg()
+_dds_complete_single_arg()
+{
+  case $ARG in
+  "directory")
+    COMPREPLY+=( $(compgen -d -- $CWORD) )
+    ;;
+  "file")
+    COMPREPLY+=( $(compgen -f -- $CWORD) )
+    ;;
+  "file-or-list: "*)
+    COMPREPLY+=( $(compgen -f -- $CWORD) )
+    COMPREPLY+=( $(compgen -W "${ARG//file-or-list: /}" -- $CWORD) )
+    ;;
+  *)
+    COMPREPLY+=( $(compgen -W "$ARG" -- $CWORD) )
+    ;;
+  esac
+} &&
+
+_dds_complete_positional_arg()
 {
   if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    case $ARG in
-    "directory")
-      COMPREPLY=( $(compgen -d -- $CWORD) )
-      ;;
-    "file")
-      COMPREPLY=( $(compgen -f -- $CWORD) )
-      ;;
-    "file-or-list: "*)
-      COMPREPLY=( $(compgen -f -- $CWORD) )
-      COMPREPLY+=( $(compgen -W "${ARG//file-or-list: /}" -- $CWORD) )
+    local ARG
+    case $POS_ARG in
+    "repeat:"*)
+      ARG="${POS_ARG//repeat:/}"
+      while [[ $CWORDI -lt $COMP_CWORD ]]; do
+        ((CWORDI=CWORDI+1))
+        CWORD="${COMP_WORDS[$CWORDI]}"
+      done
       ;;
     *)
-      COMPREPLY=( $(compgen -W "$ARG" -- $CWORD) )
+      ARG="$POS_ARG"
       ;;
     esac
 
+    _dds_complete_single_arg
     return
   fi
 
@@ -28,14 +46,73 @@ _dds_complete_flags()
 {
   local ARG
   ARG="${FLAGS[$CWORD]}"
+  ((CWORDI=CWORDI+1))
+  CWORD="${COMP_WORDS[$CWORDI]}"
+
   if [[ -n "$ARG" ]]; then
-    ((CWORDI=CWORDI+1))
-    CWORD="${COMP_WORDS[$CWORDI]}"
-    _dds_complete_flag_arg
+    if [[ $CWORDI -ge $COMP_CWORD ]]; then
+      _dds_complete_single_arg
+    else
+      ((CWORDI=CWORDI+1))
+      CWORD="${COMP_WORDS[$CWORDI]}"
+    fi
   fi
 } &&
 
-_dds_complete_build_builtin_toolchains()
+_dds_complete_command()
+{
+  local RESULT_WORDS SUBCOMMAND FLAG
+  if [[ ${#POSITIONAL[@]} -eq 0 ]]; then
+    if [[ $CWORDI -ge $COMP_CWORD ]]; then
+      RESULT_WORDS="${!SUBCOMMANDS[@]}"
+
+      if [[ $CWORD == "-"* || -z $RESULT_WORDS ]]; then
+        RESULT_WORDS+=" ${!FLAGS[@]}"
+      fi
+
+      COMPREPLY+=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
+      return
+    fi
+
+    SUBCOMMAND="${SUBCOMMANDS[$CWORD]}"
+    FLAG="${FLAGS[$CWORD]}"
+    if [[ -n $FLAG || $CWORD == "-"* ]]; then
+      _dds_complete_flags
+      _dds_complete_command
+    elif [[ -n $SUBCOMMAND ]]; then
+      ((CWORDI=CWORDI+1))
+      CWORD="${COMP_WORDS[$CWORDI]}"
+      $SUBCOMMAND
+    fi
+  else
+    local POS_ARG
+    for POS_ARG in "${POSITIONAL[@]}"; do
+      while [[ $CWORDI -lt $COMP_CWORD ]]; do
+        FLAG="${FLAGS[$CWORD]}"
+        if [[ -n $FLAG || $CWORD == "-"* ]]; then
+          _dds_complete_flags
+        else
+          _dds_complete_positional_arg
+        fi
+      done
+
+      _dds_complete_positional_arg
+
+      if [[ $CWORD == "-"* || -z "${COMPREPLY[@]}" ]]; then
+        RESULT_WORDS=" ${!FLAGS[@]}"
+        COMPREPLY+=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
+      fi
+
+      return
+    done
+
+    local POSITIONAL
+    POSITIONAL=()
+    _dds_complete_command
+  fi
+} &&
+
+_dds_complete_get_builtin_toolchains()
 {
   local gccs clangs cxxstds base ccached debugged cxx98 cxx03 cxx11 cxx14 cxx17 cxx20
 
@@ -63,11 +140,10 @@ _dds_complete_build_builtin_toolchains()
 
 _dds_complete_build()
 {
-  local SUBCOMMANDS FLAGS BUILTIN_TOOLCHAINS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
-  _dds_complete_build_builtin_toolchains
+  _dds_complete_get_builtin_toolchains
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -83,26 +159,17 @@ _dds_complete_build()
     [--jobs]=' '
     [--tweaks-dir]='directory'
   )
+  POSITIONAL=()
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
+  _dds_complete_command
 } &&
 
 _dds_complete_compile_file()
 {
-  local SUBCOMMANDS FLAGS BUILTIN_TOOLCHAINS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
-  _dds_complete_build_builtin_toolchains
+  _dds_complete_get_builtin_toolchains
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -114,32 +181,17 @@ _dds_complete_compile_file()
     [--jobs]=' '
     [--tweaks-dir]='directory'
   )
-
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  while [[ $CWORDI -lt $COMP_CWORD ]]; do
-    ((CWORDI=CWORDI+1))
-    CWORD="${COMP_WORDS[$CWORDI]}"
-  done
-  COMPREPLY+=( $(compgen -f -- $CWORD) )
+  POSITIONAL=(
+    'repeat:file' # <source-files> ...
+  )
 } &&
 
 _dds_complete_build_deps()
 {
-  local SUBCOMMANDS FLAGS BUILTIN_TOOLCHAINS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
-  _dds_complete_build_builtin_toolchains
+  _dds_complete_get_builtin_toolchains
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -151,26 +203,17 @@ _dds_complete_build_deps()
     [--cmake]=' '
     [--tweaks-dir]='directory'
   )
+  POSITIONAL=(
+    # <dependency> ... # No completion implemented
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # Do nothing for the dependency statement strings
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg_create()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -178,402 +221,233 @@ _dds_complete_pkg_create()
     [--out]=' '
     [--if-exists]='replace skip fail'
   )
+  POSITIONAL=()
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg_get()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
     [--output]='directory'
   )
+  POSITIONAL=(
+    # <pkg-id> ... # No completion implemented
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # Ignore positional arguments (pkg-ids)
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg_import()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
     [--stdin]=''
     [--if-exists]='replace skip fail'
   )
+  POSITIONAL=(
+    'repeat:file' # <path-or-url> ...
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # <path-or-url> ...
-  while [[ $CWORDI -lt $COMP_CWORD ]]; do
-    ((CWORDI=CWORDI+1))
-    CWORD="${COMP_WORDS[$CWORDI]}"
-  done
-  COMPREPLY+=( $(compgen -f -- $CWORD) )
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg_repo_add()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
     [--no-update]=''
   )
+  POSITIONAL=(
+    # <url> # No completion implemented
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # Do nothing for url
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg_repo_remove()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
     [--if-missing]='fail ignore'
   )
+  POSITIONAL=(
+    # <repo-name> # No completion implemented
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # Do nothing for <repo-name>s
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg_repo()
 {
-  local SUBCOMMANDS FLAGS CWORD RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=(
-    [add]=1
-    [remove]=1
-    [update]=1
-    [ls]=1
+    [add]=_dds_complete_pkg_repo_add
+    [remove]=_dds_complete_pkg_repo_remove
+    [update]=:
+    [ls]=:
   )
   FLAGS=()
+  POSITIONAL=()
 
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!SUBCOMMANDS[@]}"
-
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  case $CWORD in
-    "ls"|"update")
-      # No arguments; completion is done
-      ;;
-    "add")
-      _dds_complete_pkg_repo_add
-      ;;
-    "remove")
-      _dds_complete_pkg_repo_remove
-      ;;
-    *)
-      ;;
-  esac
+  _dds_complete_command
 } &&
 
 _dds_complete_pkg()
 {
-  local SUBCOMMANDS FLAGS CWORD RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=(
-    [init-db]=1
-    [ls]=1
-    [create]=1
-    [get]=1
-    [import]=1
-    [repo]=1
-    [search]=1
+    [init-db]=:
+    [ls]=:
+    [create]=_dds_complete_pkg_create
+    [get]=_dds_complete_pkg_get
+    [import]=_dds_complete_pkg_import
+    [repo]=_dds_complete_pkg_repo
+    [search]=:
   )
   FLAGS=()
+  POSITIONAL=()
 
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!SUBCOMMANDS[@]}"
-
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  case $CWORD in
-    "init-db"|"ls"|"search")
-      # No arguments or can't complete; completion is done
-      ;;
-    "create")
-      _dds_complete_pkg_create
-      ;;
-    "get")
-      _dds_complete_pkg_get
-      ;;
-    "import")
-      _dds_complete_pkg_import
-      ;;
-    "repo")
-      _dds_complete_pkg_repo
-      ;;
-    *)
-      ;;
-  esac
+  _dds_complete_command
 } &&
 
 _dds_complete_repoman_init()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
     [--if-exists]='replace skip fail'
     [--name]=' '
   )
+  POSITIONAL=(
+    'directory' # <repo-dir>
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # repo-dir
-  if [[ $CWORDI -lt $COMP_CWORD ]]; then
-    ((CWORDI=CWORDI+1))
-    CWORD="${COMP_WORDS[$CWORDI]}"
-
-    if [[ $CWORDI -ge $COMP_CWORD ]]; then
-      COMPREPLY+=( $(compgen -d -- $CWORD) )
-    fi
-  fi
+  _dds_complete_command
 } &&
 
 _dds_complete_repoman_ls()
 {
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
+  local POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    COMPREPLY=( $(compgen -d -- $CWORD) )
-    return
-  fi
+  SUBCOMMANDS=()
+  FLAGS=()
+  POSITIONAL=(
+    'directory' # <repo-dir>
+  )
+
+  _dds_complete_command
 } &&
 
 _dds_complete_repoman_add()
 {
-  local SUBCOMMANDS FLAGS RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
   FLAGS=(
     [--description]=' '
   )
+  POSITIONAL=(
+    'directory' # <repo-dir>
+    # <url> # No completion implemented
+  )
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
-
-  # repo-dir
-  if [[ $CWORDI -lt $COMP_CWORD ]]; then
-    ((CWORDI=CWORDI+1))
-    CWORD="${COMP_WORDS[$CWORDI]}"
-
-    if [[ $CWORDI -ge $COMP_CWORD ]]; then
-      COMPREPLY+=( $(compgen -d -- $CWORD) )
-    fi
-  fi
+  _dds_complete_command
 } &&
 
 _dds_complete_repoman_import()
 {
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
+  local POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
+  SUBCOMMANDS=()
+  FLAGS=()
+  POSITIONAL=(
+    'directory' # <repo-dir>
+    'repeat:file' # <sdist-file-path> ...
+  )
 
-  # <repo-dir>
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    COMPREPLY=( $(compgen -d -- $CWORD) )
-    return
-  fi
-
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  while [[ $CWORDI -lt $COMP_CWORD ]]; do
-    ((CWORDI=CWORDI+1))
-    CWORD="${COMP_WORDS[$CWORDI]}"
-  done
-
-  COMPREPLY+=( $(compgen -f -- $CWORD) )
+  _dds_complete_command
 } &&
 
 _dds_complete_repoman_remove()
 {
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
+  local POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
+  SUBCOMMANDS=()
+  FLAGS=()
+  POSITIONAL=(
+    'directory' # <repo-dir>
+    # <pkg-id> ... # No completion implemented
+  )
 
-  # <repo-dir>
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    COMPREPLY=( $(compgen -d -- $CWORD) )
-    return
-  fi
-
-  # No completion for <pkg-id>s
+  _dds_complete_command
 } &&
 
 _dds_complete_repoman()
 {
-  local SUBCOMMANDS FLAGS CWORD RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
+  local RESULT_WORDS
   SUBCOMMANDS=(
-    [init]=1
-    [ls]=1
-    [add]=1
-    [import]=1
-    [remove]=1
+    [init]=_dds_complete_repoman_init
+    [ls]=_dds_complete_repoman_ls
+    [add]=_dds_complete_repoman_add
+    [import]=_dds_complete_repoman_import
+    [remove]=_dds_complete_repoman_remove
   )
   FLAGS=()
+  POSITIONAL=()
 
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!SUBCOMMANDS[@]}"
-
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  case $CWORD in
-    "init")
-      _dds_complete_repoman_init
-      ;;
-    "ls")
-      _dds_complete_repoman_ls
-      ;;
-    "add")
-      _dds_complete_repoman_add
-      ;;
-    "import")
-      _dds_complete_repoman_import
-      ;;
-    "remove")
-      _dds_complete_repoman_remove
-      ;;
-    *)
-      ;;
-  esac
+  _dds_complete_command
 } &&
 
 _dds_complete_install_yourself()
 {
-  local FLAGS RESULT_WORDS
-  declare -A FLAGS
+  local RESULT_WORDS POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
 
+  SUBCOMMANDS=()
   FLAGS=(
     [--where]='user system'
     [--dry-run]=''
     [--no-modify-path]=''
     [--symlink]=''
   )
+  POSITIONAL=()
 
-  ((CWORDI=CWORDI+1))
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!FLAGS[@]}"
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  _dds_complete_flags
+  _dds_complete_command
 } &&
 
 _dds_complete_impl()
 {
-  local SUBCOMMANDS FLAGS CWORD RESULT_WORDS
-  declare -A FLAGS
-  declare -A SUBCOMMANDS
+  local POSITIONAL
+  declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=(
-    [build]=1
-    [compile-file]=1
-    [build-deps]=1
-    [pkg]=1
-    [repoman]=1
-    [install-yourself]=1
+    [build]=_dds_complete_build
+    [compile-file]=_dds_complete_compile_file
+    [build-deps]=_dds_complete_build_deps
+    [pkg]=_dds_complete_pkg
+    [repoman]=_dds_complete_repoman
+    [install-yourself]=_dds_complete_install_yourself
   )
   FLAGS=(
     [--log-level]='trace debug info warn error critical silent'
@@ -581,52 +455,17 @@ _dds_complete_impl()
     [--pkg-cache-dir]='directory'
     [--pkg-db-path]='file'
   )
+  POSITIONAL=()
 
-  CWORD="${COMP_WORDS[$CWORDI]}"
-
-  if [[ $CWORDI -ge $COMP_CWORD ]]; then
-    RESULT_WORDS="${!SUBCOMMANDS[@]}"
-
-    if [[ $CWORD == "-"* ]]; then
-      RESULT_WORDS+=" ${!FLAGS[@]}"
-    fi
-
-    COMPREPLY=( $(compgen -W "$RESULT_WORDS" -- $CWORD) )
-    return
-  fi
-
-  case $CWORD in
-    "build")
-      _dds_complete_build
-      ;;
-    "compile-file")
-      _dds_complete_compile_file
-      ;;
-    "build-deps")
-      _dds_complete_build_deps
-      ;;
-    "pkg")
-      _dds_complete_pkg
-      ;;
-    "repoman")
-      _dds_complete_repoman
-      ;;
-    "install-yourself")
-      _dds_complete_install_yourself
-      ;;
-    "-"*)
-      _dds_complete_flags
-      _dds_complete_impl
-      ;;
-    *)
-      ;;
-  esac
+  _dds_complete_command
 } &&
 
 _dds_complete()
 {
-  local CWORDI
+  local CWORDI CWORD
+  COMPREPLY=()
   CWORDI=1
+  CWORD="${COMP_WORDS[$CWORDI]}"
   _dds_complete_impl
   return 0
 } &&
