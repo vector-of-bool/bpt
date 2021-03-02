@@ -350,15 +350,21 @@ _dds_complete_pkg_repo_add()
 # dds pkg repo remove
 _dds_complete_pkg_repo_remove()
 {
-  local RESULT_WORDS POSITIONAL
+  local RESULT_WORDS POSITIONAL REPOS
   declare -A SUBCOMMANDS FLAGS
+
+  if [[ -x "$(command -v dds)" ]]; then
+    REPOS=$(dds pkg repo ls | grep Remote | sed -E "s/^\s*Remote '(.*)':/\1/g")
+  else
+    REPOS=""
+  fi
 
   SUBCOMMANDS=()
   FLAGS=(
     [--if-missing]='fail ignore'
   )
   POSITIONAL=(
-    # <repo-name> # No completion implemented
+    "$REPOS" # <repo-name> ...
   )
 
   _dds_complete_command
@@ -381,6 +387,26 @@ _dds_complete_pkg_repo()
   _dds_complete_command
 } &&
 
+# dds pkg search
+_dds_complete_pkg_search()
+{
+  local RESULT_WORDS POSITIONAL PACKAGES
+  if [[ -x "$(command -v dds)" ]]; then
+    PACKAGES=$(dds pkg search | grep Name: | sed -E 's/Name://g')
+  else
+    PACKAGES=""
+  fi
+
+  declare -A SUBCOMMANDS FLAGS
+  SUBCOMMANDS=()
+  FLAGS=()
+  POSITIONAL=(
+    "$PACKAGES"
+  )
+
+  _dds_complete_command
+}
+
 # dds pkg
 _dds_complete_pkg()
 {
@@ -393,7 +419,7 @@ _dds_complete_pkg()
     [get]=_dds_complete_pkg_get
     [import]=_dds_complete_pkg_import
     [repo]=_dds_complete_pkg_repo
-    [search]=:
+    [search]=_dds_complete_pkg_search
   )
   FLAGS=()
   POSITIONAL=()
@@ -458,7 +484,9 @@ _dds_complete_repoman_import()
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=()
-  FLAGS=()
+  FLAGS=(
+    [--if-exists]="replace skip fail"
+  )
   POSITIONAL=(
     'directory' # <repo-dir>
     'repeat:file' # <sdist-file-path> ...
