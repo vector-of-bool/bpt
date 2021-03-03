@@ -6,7 +6,7 @@ are controlled via Python scripts. You will need Python 3.6 or later available
 on your system to get started.
 
 
-.. _Poetry: python-poetry.org
+.. _Poetry: https://python-poetry.org
 
 Getting Started with *Poetry*
 *****************************
@@ -88,4 +88,3 @@ Code JSON build task that builds ``dds`` and also contains the environment
 variables required for the MSVC toolchain to compile and link programs. You can
 save this JSON task into ``.vscode/tasks.json`` to use as your primary build
 task while hacking on ``dds``.
-

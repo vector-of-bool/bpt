@@ -17,6 +17,8 @@ Building ``dds`` has a simple set of requirements:
   including Concepts. Newer releases of Visual C++ that ship with **VS
   2019** will be sufficient on Windows, as will **GCC 9** with ``-fconcepts`` on
   other platforms.
+- On Linux, the OpenSSL headers are needed. This can be installed through the
+  ``libssl-dev`` APT package.
 
 .. note::
     On Windows, you will need to execute the build from within a Visual C++
@@ -26,4 +28,3 @@ Building ``dds`` has a simple set of requirements:
 .. note::
     At the time of writing, C++20 Concepts has not yet been released in Clang,
     but should be available in LLVM/Clang 11 and newer.
-
