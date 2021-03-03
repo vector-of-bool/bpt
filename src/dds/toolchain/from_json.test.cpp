@@ -86,11 +86,21 @@ TEST_CASE("Generating toolchain commands") {
         "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
 
     check_tc_compile(
-        "{compiler_id: 'gnu', flags: '-fno-rtti', advanced: {base_compile_flags: "
+        "{compiler_id: 'gnu', flags: '-fno-rtti', advanced: {base_flags: "
         "'-fno-exceptions'}}",
         "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fno-rtti -fno-exceptions",
         "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
         "-fno-rtti -fno-exceptions",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
+
+    check_tc_compile(
+        "{compiler_id: 'gnu', flags: '-ansi', cxx_flags: '-fno-rtti', advanced: {base_flags: "
+        "'-fno-builtin', base_cxx_flags: '-fno-exceptions'}}",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -ansi -fno-rtti -fno-builtin "
+        "-fno-exceptions",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-ansi -fno-rtti -fno-builtin -fno-exceptions",
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
 
@@ -111,57 +121,63 @@ TEST_CASE("Generating toolchain commands") {
         "g++ foo.o bar.a -omeow.exe -mthumb");
 
     check_tc_compile("{compiler_id: 'msvc'}",
-                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT /EHsc /nologo /permissive-",
-                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT /EHsc /nologo /permissive-",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive- /EHsc",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive- /EHsc",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: true}",
-        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /EHsc /nologo /permissive-",
-        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /EHsc /nologo /permissive-",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Z7");
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: 'embedded'}",
-        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /EHsc /nologo /permissive-",
-        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /EHsc /nologo /permissive-",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Z7");
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: 'split'}",
-        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Zi /FS /EHsc /nologo /permissive-",
-        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Zi /FS /EHsc /nologo /permissive-",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Zi /FS /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Zi /FS /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Zi /FS");
 
     check_tc_compile(
         "{compiler_id: 'msvc', flags: '-DFOO'}",
-        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT -DFOO /EHsc /nologo /permissive-",
-        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT -DFOO /EHsc /nologo /permissive-",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT -DFOO /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT -DFOO /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 
     check_tc_compile("{compiler_id: 'msvc', runtime: {static: false}}",
-                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MD /EHsc /nologo /permissive-",
-                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MD /EHsc /nologo /permissive-",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MD /nologo /permissive- /EHsc",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MD /nologo /permissive- /EHsc",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MD");
 
     check_tc_compile(
         "{compiler_id: 'msvc', runtime: {static: false}, debug: true}",
-        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MDd /Z7 /EHsc /nologo /permissive-",
-        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MDd /Z7 /EHsc /nologo /permissive-",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MDd /Z7 /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MDd /Z7 /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MDd /Z7");
 
     check_tc_compile("{compiler_id: 'msvc', runtime: {static: false, debug: true}}",
-                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MDd /EHsc /nologo /permissive-",
-                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MDd /EHsc /nologo /permissive-",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MDd /nologo /permissive- /EHsc",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MDd /nologo /permissive- /EHsc",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MDd");
+
+    check_tc_compile("{compiler_id: 'msvc', advanced: {base_cxx_flags: ''}}",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive-",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive-",
+                     "lib /nologo /OUT:stuff.a foo.o bar.o",
+                     "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 }
 
 TEST_CASE("Manipulate a toolchain and file compilation") {

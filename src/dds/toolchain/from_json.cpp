@@ -76,7 +76,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string     exe_prefix;
     opt_string     exe_suffix;
     opt_string_seq base_warning_flags;
-    opt_string_seq base_compile_flags;
+    opt_string_seq base_flags;
+    opt_string_seq base_c_flags;
+    opt_string_seq base_cxx_flags;
     opt_string_seq include_template;
     opt_string_seq external_include_template;
     opt_string_seq define_template;
@@ -162,7 +164,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     KEY_EXTEND_FLAGS(external_include_template),
                     KEY_EXTEND_FLAGS(define_template),
                     KEY_EXTEND_FLAGS(base_warning_flags),
-                    KEY_EXTEND_FLAGS(base_compile_flags),
+                    KEY_EXTEND_FLAGS(base_flags),
+                    KEY_EXTEND_FLAGS(base_c_flags),
+                    KEY_EXTEND_FLAGS(base_cxx_flags),
                     KEY_EXTEND_FLAGS(c_compile_file),
                     KEY_EXTEND_FLAGS(cxx_compile_file),
                     KEY_EXTEND_FLAGS(create_archive),
@@ -182,7 +186,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                     "external_include_template",
                                                     "define_template",
                                                     "base_warning_flags",
-                                                    "base_compile_flags",
+                                                    "base_flags",
+                                                    "base_c_flags",
+                                                    "base_cxx_flags",
                                                     "c_compile_file",
                                                     "cxx_compile_file",
                                                     "create_archive",
@@ -202,7 +208,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     },
                 },
             },
-            [&](auto key, auto &&) -> walk_result {
+            [&](auto key, auto&&) -> walk_result {
                 // They've given an unknown key. Ouch.
                 auto dym = did_you_mean(key,
                                         {
@@ -504,15 +510,24 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         return ret;
     };
 
-    auto get_base_compile_flags = [&](language lang) -> string_seq {
+    auto get_base_flags = [&](language lang) -> string_seq {
         string_seq ret;
-        if (is_msvc) {
-            if (lang == language::cxx) {
-                extend(ret, {"/EHsc"});
-            }
+        if (base_flags) {
+            extend(ret, *base_flags);
+        } else if (is_msvc) {
             extend(ret, {"/nologo", "/permissive-"});
         } else if (is_gnu_like) {
             extend(ret, {"-fPIC", "-pthread"});
+        }
+        if (lang == language::c && base_c_flags) {
+            extend(ret, *base_c_flags);
+        }
+        if (lang == language::cxx) {
+            if (base_cxx_flags) {
+                extend(ret, *base_cxx_flags);
+            } else if (is_msvc) {
+                extend(ret, {"/EHsc"});
+            }
         }
         return ret;
     };
@@ -537,6 +552,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         if (lang == language::c && c_version) {
             extend(ret, get_c_version_flags());
         }
+        extend(ret, get_base_flags(lang));
         return ret;
     };
 
@@ -552,9 +568,6 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         return c;
     });
     extend(tc.c_compile, get_flags(language::c));
-    extend(tc.c_compile, read_opt(base_compile_flags, [&]() -> string_seq {
-        return get_base_compile_flags(language::c);
-    }));
 
     tc.cxx_compile = read_opt(cxx_compile_file, [&] {
         string_seq cxx;
@@ -566,9 +579,6 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         return cxx;
     });
     extend(tc.cxx_compile, get_flags(language::cxx));
-    extend(tc.cxx_compile, read_opt(base_compile_flags, [&]() -> string_seq {
-        return get_base_compile_flags(language::cxx);
-    }));
 
     tc.include_template = read_opt(include_template, [&]() -> string_seq {
         if (!compiler_id) {

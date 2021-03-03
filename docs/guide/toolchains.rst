@@ -430,12 +430,12 @@ Defaults::
 
     {
         // On GNU-like compilers (GCC, Clang):
-        c_compile_file:   "<compiler> <base_compile_flags> [flags] -c [in] -o[out]",
-        cxx_compile_file: "<compiler> <base_compile_flags> [flags] -c [in] -o[out]",
+        c_compile_file:   "<compiler> <base_flags> [flags] -c [in] -o[out]",
+        cxx_compile_file: "<compiler> <base_flags> [flags] -c [in] -o[out]",
 
         // On MSVC:
-        c_compile_file:   "cl.exe <base_compile_flags> [flags] /c [in] /Fo[out]",
-        cxx_compile_file: "cl.exe <base_compile_flags> [flags] /c [in] /Fo[out]",
+        c_compile_file:   "cl.exe <base_flags> [flags] /c [in] /Fo[out]",
+        cxx_compile_file: "cl.exe <base_flags> [flags] /c [in] /Fo[out]",
     }
 
 
@@ -546,19 +546,31 @@ compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
 -Wconversion -Werror``.
 
 
-.. _toolchains.opts.base_compile_flags:
+.. _toolchains.opts.base_flags:
 
-``base_compile_flags``
+``base_flags``, ``base_c_flags``, and ``base_cxx_flags``
 ----------------------
 
-When you compile your project, ``dds`` will concatenate the flags from this
-option with the flags provided by ``flags``. This option is "advanced," because
-it provides a set of defaults based on the ``compiler_id``.
+When you compile your project, ``dds`` uses a set of default flags appropriate
+to the target language and compiler. These flags are always included in the
+compile command and are inserted in addition to those flags provided by
+``flags``, ``c_flags``, and ``cxx_flags``.
 
 On GNU-like compilers, the base flags are ``-fPIC -pthread``. On
 MSVC the default flags are ``/EHsc /nologo /permissive-`` for C++ and ``/nologo
 /permissive-`` for C.
 
-For example, if you set ``flags`` to ``-fno-exceptions`` on a GNU-like
-compiler, the resulting command line will contain ``-fPIC -pthread
--fno-exceptions``.
+These defaults may be changed by providing values for three different options.
+The ``base_flags`` value is always output, regardless of language. Flags
+exclusive to C are specified in ``base_c_flags``, and those exclusively for
+C++ should be in ``base_cxx_flags``. Note that the language-specific values are
+independent from ``base_flags``; that is, providing ``base_c_flags`` or
+``base_cxx_flags`` does not override or prevent the inclusion of the
+``base_flags`` value, and vice-versa. Empty values are acceptable, should you
+need to simply prohibit one or more of the defaults from being used.
+
+For example, if you set ``flags`` to ``-ansi`` on a GNU-like compiler, the
+resulting command line will contain ``-fPIC -pthread -ansi``. If, additionally,
+you set ``base_flags`` to ``-fno-builtin`` and ``base_cxx_flags`` to
+``-fno-exceptions``, the generated command will include ``-fno-builtin
+-fno-exceptions -ansi`` for C++ and ``-fno-builtin -ansi`` for C.
