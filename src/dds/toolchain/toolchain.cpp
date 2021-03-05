@@ -10,6 +10,7 @@
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -208,29 +209,30 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
     json5::data tc_data  = json5::data::mapping_type();
     auto&       root_map = tc_data.as_object();
 
+    auto handle_prefix = [&](std::string_view key, std::string_view prefix) {
+        assert(!prefix.empty());
+        assert(prefix.back() == ':');
+        if (starts_with(tc_id, prefix)) {
+            tc_id.remove_prefix(prefix.length());
+            prefix.remove_suffix(1);  // remove trailing :
+            root_map.emplace(key, std::string(prefix));
+            return true;
+        }
+        return false;
+    };
+
     if (starts_with(tc_id, "debug:")) {
         tc_id = tc_id.substr("debug:"sv.length());
         root_map.emplace("debug", true);
     }
 
-    if (starts_with(tc_id, "ccache:")) {
-        tc_id = tc_id.substr("ccache:"sv.length());
-        root_map.emplace("compiler_launcher", "ccache");
+    handle_prefix("compiler_launcher", "ccache:");
+
+    for (std::string_view prefix : {"c++98:", "c++03:", "c++11:", "c++14:", "c++17:", "c++20:"}) {
+        if (handle_prefix("cxx_version", prefix)) {
+            break;
+        }
     }
-
-#define CXX_VER_TAG(str, version)                                                                  \
-    if (starts_with(tc_id, str)) {                                                                 \
-        tc_id = tc_id.substr(std::string_view(str).length());                                      \
-        root_map.emplace("cxx_version", version);                                                  \
-    }                                                                                              \
-    static_assert(true)
-
-    CXX_VER_TAG("c++98:", "c++98");
-    CXX_VER_TAG("c++03:", "c++03");
-    CXX_VER_TAG("c++11:", "c++11");
-    CXX_VER_TAG("c++14:", "c++14");
-    CXX_VER_TAG("c++17:", "c++17");
-    CXX_VER_TAG("c++20:", "c++20");
 
     struct compiler_info {
         string c;
