@@ -48,87 +48,136 @@ void check_tc_compile(std::string_view tc_content,
 
 TEST_CASE("Generating toolchain commands") {
     check_tc_compile("{compiler_id: 'gnu'}",
-                     "g++ -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
-                     "g++ -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
+                     "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fPIC -pthread",
+                     "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c "
+                     "foo.cpp -ofoo.o -fPIC -pthread",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
 
     check_tc_compile("{compiler_id: 'gnu', debug: true}",
-                     "g++ -g -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
-                     "g++ -g -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
+                     "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -g -fPIC -pthread",
+                     "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c "
+                     "foo.cpp -ofoo.o -g -fPIC -pthread",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC foo.o bar.a -pthread -omeow.exe -g");
 
     check_tc_compile("{compiler_id: 'gnu', debug: true, optimize: true}",
-                     "g++ -O2 -g -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp "
-                     "-ofoo.o",
-                     "g++ -O2 -g -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion "
-                     "-MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
+                     "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -O2 -g -fPIC -pthread",
+                     "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c "
+                     "foo.cpp -ofoo.o -O2 -g -fPIC -pthread",
                      "ar rcs stuff.a foo.o bar.o",
                      "g++ -fPIC foo.o bar.a -pthread -omeow.exe -O2 -g");
 
     check_tc_compile(
         "{compiler_id: 'gnu', debug: 'split', optimize: true}",
-        "g++ -O2 -g -gsplit-dwarf -fPIC -pthread -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
-        "g++ -O2 -g -gsplit-dwarf -fPIC -pthread -Wall -Wextra -Wpedantic -Wconversion -MD -MF "
-        "foo.o.d -MQ foo.o -c foo.cpp -ofoo.o",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -O2 -g -gsplit-dwarf -fPIC -pthread",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-O2 -g -gsplit-dwarf -fPIC -pthread",
         "ar rcs stuff.a foo.o bar.o",
         "g++ -fPIC foo.o bar.a -pthread -omeow.exe -O2 -g -gsplit-dwarf");
 
+    check_tc_compile(
+        "{compiler_id: 'gnu', flags: '-fno-rtti', advanced: {cxx_compile_file: 'g++ [flags] -c "
+        "[in] -o[out]'}}",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fno-rtti -fPIC -pthread",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-fno-rtti -fPIC -pthread",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
+
+    check_tc_compile(
+        "{compiler_id: 'gnu', flags: '-fno-rtti', advanced: {base_flags: "
+        "'-fno-exceptions'}}",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fno-rtti -fno-exceptions",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-fno-rtti -fno-exceptions",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
+
+    check_tc_compile(
+        "{compiler_id: 'gnu', flags: '-ansi', cxx_flags: '-fno-rtti', advanced: {base_flags: "
+        "'-fno-builtin', base_cxx_flags: '-fno-exceptions'}}",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -ansi -fno-rtti -fno-builtin "
+        "-fno-exceptions",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-ansi -fno-rtti -fno-builtin -fno-exceptions",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ -fPIC foo.o bar.a -pthread -omeow.exe");
+
+    check_tc_compile("{compiler_id: 'gnu', link_flags: '-mthumb'}",
+                     "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fPIC -pthread",
+                     "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c "
+                     "foo.cpp -ofoo.o -fPIC -pthread",
+                     "ar rcs stuff.a foo.o bar.o",
+                     "g++ -fPIC foo.o bar.a -pthread -omeow.exe -mthumb");
+
+    check_tc_compile(
+        "{compiler_id: 'gnu', link_flags: '-mthumb', advanced: {link_executable: 'g++ [in] "
+        "-o[out]'}}",
+        "g++ -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o -fPIC -pthread",
+        "g++ -Wall -Wextra -Wpedantic -Wconversion -MD -MF foo.o.d -MQ foo.o -c foo.cpp -ofoo.o "
+        "-fPIC -pthread",
+        "ar rcs stuff.a foo.o bar.o",
+        "g++ foo.o bar.a -omeow.exe -mthumb");
+
     check_tc_compile("{compiler_id: 'msvc'}",
-                     "cl.exe /MT /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-                     "cl.exe /MT /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive- /EHsc",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive- /EHsc",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: true}",
-        "cl.exe /MTd /Z7 /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-        "cl.exe /MTd /Z7 /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Z7");
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: 'embedded'}",
-        "cl.exe /MTd /Z7 /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-        "cl.exe /MTd /Z7 /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Z7 /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Z7");
 
     check_tc_compile(
         "{compiler_id: 'msvc', debug: 'split'}",
-        "cl.exe /MTd /Zi /FS /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-        "cl.exe /MTd /Zi /FS /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MTd /Zi /FS /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MTd /Zi /FS /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MTd /Zi /FS");
 
     check_tc_compile(
         "{compiler_id: 'msvc', flags: '-DFOO'}",
-        "cl.exe /MT /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o -DFOO",
-        "cl.exe /MT /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o -DFOO",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT -DFOO /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT -DFOO /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 
     check_tc_compile("{compiler_id: 'msvc', runtime: {static: false}}",
-                     "cl.exe /MD /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-                     "cl.exe /MD /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MD /nologo /permissive- /EHsc",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MD /nologo /permissive- /EHsc",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MD");
 
     check_tc_compile(
         "{compiler_id: 'msvc', runtime: {static: false}, debug: true}",
-        "cl.exe /MDd /Z7 /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-        "cl.exe /MDd /Z7 /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+        "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MDd /Z7 /nologo /permissive- /EHsc",
+        "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MDd /Z7 /nologo /permissive- /EHsc",
         "lib /nologo /OUT:stuff.a foo.o bar.o",
         "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MDd /Z7");
 
     check_tc_compile("{compiler_id: 'msvc', runtime: {static: false, debug: true}}",
-                     "cl.exe /MDd /EHsc /nologo /permissive- /showIncludes /c foo.cpp /Fofoo.o",
-                     "cl.exe /MDd /EHsc /nologo /permissive- /W4 /showIncludes /c foo.cpp /Fofoo.o",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MDd /nologo /permissive- /EHsc",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MDd /nologo /permissive- /EHsc",
                      "lib /nologo /OUT:stuff.a foo.o bar.o",
                      "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MDd");
+
+    check_tc_compile("{compiler_id: 'msvc', advanced: {base_cxx_flags: ''}}",
+                     "cl.exe /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive-",
+                     "cl.exe /W4 /showIncludes /c foo.cpp /Fofoo.o /MT /nologo /permissive-",
+                     "lib /nologo /OUT:stuff.a foo.o bar.o",
+                     "cl.exe /nologo /EHsc foo.o bar.a /Femeow.exe /MT");
 }
 
 TEST_CASE("Manipulate a toolchain and file compilation") {
@@ -140,8 +189,6 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
     auto cmd = tc.create_compile_command(cfs, dds::fs::current_path(), dds::toolchain_knobs{});
     CHECK(cmd.command
           == std::vector<std::string>{"g++",
-                                      "-fPIC",
-                                      "-pthread",
                                       "-MD",
                                       "-MF",
                                       "foo.o.d",
@@ -149,7 +196,9 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "foo.o",
                                       "-c",
                                       "foo.cpp",
-                                      "-ofoo.o"});
+                                      "-ofoo.o",
+                                      "-fPIC",
+                                      "-pthread"});
 
     cfs.definitions.push_back("FOO=BAR");
     cmd = tc.create_compile_command(cfs,
@@ -157,8 +206,6 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                     dds::toolchain_knobs{.is_tty = true});
     CHECK(cmd.command
           == std::vector<std::string>{"g++",
-                                      "-fPIC",
-                                      "-pthread",
                                       "-fdiagnostics-color",
                                       "-D",
                                       "FOO=BAR",
@@ -169,14 +216,14 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "foo.o",
                                       "-c",
                                       "foo.cpp",
-                                      "-ofoo.o"});
+                                      "-ofoo.o",
+                                      "-fPIC",
+                                      "-pthread"});
 
     cfs.include_dirs.push_back("fake-dir");
     cmd = tc.create_compile_command(cfs, dds::fs::current_path(), dds::toolchain_knobs{});
     CHECK(cmd.command
           == std::vector<std::string>{"g++",
-                                      "-fPIC",
-                                      "-pthread",
                                       "-I",
                                       "fake-dir",
                                       "-D",
@@ -188,5 +235,7 @@ TEST_CASE("Manipulate a toolchain and file compilation") {
                                       "foo.o",
                                       "-c",
                                       "foo.cpp",
-                                      "-ofoo.o"});
+                                      "-ofoo.o",
+                                      "-fPIC",
+                                      "-pthread"});
 }
