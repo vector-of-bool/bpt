@@ -1,0 +1,4 @@
+{
+    name: 'uses',
+    uses: ['dds/the_test_lib']
+}
