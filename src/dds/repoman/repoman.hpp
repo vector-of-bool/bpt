@@ -45,6 +45,8 @@ class repo_manager {
         : _db(std::move(db))
         , _root(root) {}
 
+    void _compress();
+
 public:
     repo_manager(repo_manager&&) = default;
 

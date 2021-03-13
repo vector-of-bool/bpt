@@ -2,6 +2,7 @@
 
 #include <dds/pkg/listing.hpp>
 #include <dds/sdist/package.hpp>
+#include <dds/util/compress.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
@@ -95,7 +96,9 @@ repo_manager repo_manager::create(path_ref directory, std::optional<std::string_
         ensure_migrated(db, name);
         fs::create_directories(directory / "pkg");
     }
-    return open(directory);
+    auto r = open(directory);
+    r._compress();
+    return r;
 }
 
 repo_manager repo_manager::open(path_ref directory) {
@@ -163,6 +166,7 @@ void repo_manager::import_targz(path_ref tgz_file) {
     fs::copy(tgz_file, dest_path);
 
     tr.commit();
+    _compress();
 }
 
 void repo_manager::delete_package(pkg_id pkg_id) {
@@ -192,6 +196,7 @@ void repo_manager::delete_package(pkg_id pkg_id) {
     fs::remove_all(ver_dir);
 
     tr.commit();
+    _compress();
 
     std::error_code ec;
     fs::remove(name_dir, ec);
@@ -236,4 +241,14 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
     fs::create_directories(dest_dir);
     std::ofstream stamp_file{stamp_path, std::ios::binary};
     stamp_file << url;
+
+    if (tr.is_top_transaction()) {
+        tr.commit();
+        _compress();
+    }
+}
+
+void repo_manager::_compress() {
+    _db.exec("VACUUM");
+    dds::compress_file_gz(_root / "repo.db", _root / "repo.db.gz").value();
 }

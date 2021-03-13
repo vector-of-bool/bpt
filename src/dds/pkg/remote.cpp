@@ -5,6 +5,7 @@
 #include <dds/error/nonesuch.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/temp.hpp>
+#include <dds/util/compress.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -36,13 +37,16 @@ struct remote_db {
     nsql::database db;
 
     static remote_db download_and_open(http_client& client, const http_response_info& resp) {
-        auto tempdir    = temporary_dir::create();
-        auto repo_db_dl = tempdir.path() / "repo.db";
+        auto tempdir       = temporary_dir::create();
+        auto repo_db_gz_dl = tempdir.path() / "repo.db.gz";
         fs::create_directories(tempdir.path());
-        auto outfile = neo::file_stream::open(repo_db_dl, neo::open_mode::write);
-        client.recv_body_into(resp, neo::stream_io_buffers(outfile));
-
-        auto db = nsql::open(repo_db_dl.string());
+        {
+            auto outfile = neo::file_stream::open(repo_db_gz_dl, neo::open_mode::write);
+            client.recv_body_into(resp, neo::stream_io_buffers(outfile));
+        }
+        auto repo_db = tempdir.path() / "repo.db";
+        dds::decompress_file_gz(repo_db_gz_dl, repo_db).value();
+        auto db = nsql::open(repo_db.string());
         return {tempdir, std::move(db)};
     }
 };
@@ -53,12 +57,8 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
     DDS_E_SCOPE(e_url_string{std::string(url_str)});
     const auto url = neo::url::parse(url_str);
 
-    auto& pool   = http_pool::global_pool();
-    auto  db_url = url;
-    while (db_url.path.ends_with("/"))
-        db_url.path.pop_back();
-    auto full_path      = fmt::format("{}/{}", db_url.path, "repo.db");
-    db_url.path         = full_path;
+    auto&      pool     = http_pool::global_pool();
+    const auto db_url   = url / "repo.db.gz";
     auto [client, resp] = pool.request(db_url, http_request_params{.method = "GET"});
     auto db             = remote_db::download_and_open(client, resp);
 
@@ -82,17 +82,13 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
                                std::optional<std::string_view> etag,
                                std::optional<std::string_view> db_mtime) {
     dds_log(info,
-            "Pulling repository contents for .cyan[{}] [{}`]"_styled,
+            "Pulling repository contents for .cyan[{}] [{}]"_styled,
             _name,
             _base_url.to_string());
 
-    auto& pool = http_pool::global_pool();
-    auto  url  = _base_url;
-    while (url.path.ends_with("/"))
-        url.path.pop_back();
-    auto full_path      = fmt::format("{}/{}", url.path, "repo.db");
-    url.path            = full_path;
-    auto [client, resp] = pool.request(url,
+    auto&      pool     = http_pool::global_pool();
+    const auto db_url   = _base_url / "repo.db.gz";
+    auto [client, resp] = pool.request(db_url,
                                        http_request_params{
                                            .method        = "GET",
                                            .prior_etag    = etag.value_or(""),
@@ -284,7 +280,7 @@ void dds::add_init_repo(nsql::database_ref db) noexcept {
         },
         [](e_system_error_exc e, network_origin conn) {
             dds_log(error,
-                    "Error communicating with [.br.red[{}://{}:{}]`]: {}"_styled,
+                    "Error communicating with [.br.red[{}://{}:{}]]: {}"_styled,
                     conn.protocol,
                     conn.hostname,
                     conn.port,
