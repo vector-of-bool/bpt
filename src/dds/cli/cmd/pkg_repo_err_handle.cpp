@@ -31,25 +31,32 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
             dds_log(error, "Invalid URL [{}]: {}", bad_url.to_string(), url_err.what());
             return 1;
         },
-        [](dds::http_status_error err, dds::http_response_info resp, neo::url bad_url) {
+        [](dds::http_status_error, matchv<dds::e_http_status{404}>, neo::url bad_url) {
             dds_log(error,
-                    "An HTTP error occured while requesting [{}]: HTTP Status {} {}",
-                    err.what(),
-                    bad_url.to_string(),
-                    resp.status,
-                    resp.status_message);
+                    "Failed to download non-existent resource [.br.red[{}]] from the remote "
+                    "server. Is this a valid dds repository?"_styled,
+                    bad_url.to_string());
+            return 1;
+        },
+        [](dds::http_status_error, dds::http_response_info resp, neo::url bad_url) {
+            dds_log(
+                error,
+                "An HTTP error occured while requesting [.br.red[{}]]: HTTP Status .red[{} {}]"_styled,
+                bad_url.to_string(),
+                resp.status,
+                resp.status_message);
             return 1;
         },
         [](const json5::parse_error& e, neo::url bad_url) {
             dds_log(error,
-                    "Error parsing JSON downloaded from URL [.br.red[{}]`]: {}"_styled,
+                    "Error parsing JSON downloaded from URL [.br.red[{}]]: {}"_styled,
                     bad_url.to_string(),
                     e.what());
             return 1;
         },
         [](boost::leaf::catch_<neo::sqlite3::error> e, neo::url url) {
             dds_log(error,
-                    "Error accessing remote database [.br.red[{}]`]: {}"_styled,
+                    "Error accessing remote database [.br.red[{}]]: {}"_styled,
                     url.to_string(),
                     e.value().what());
             return 1;
@@ -60,7 +67,7 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
         },
         [](dds::e_system_error_exc e, dds::network_origin conn) {
             dds_log(error,
-                    "Error communicating with [.br.red[{}://{}:{}]`]: {}"_styled,
+                    "Error communicating with [.br.red[{}://{}:{}]]: {}"_styled,
                     conn.protocol,
                     conn.hostname,
                     conn.port,

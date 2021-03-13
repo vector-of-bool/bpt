@@ -29,6 +29,8 @@ struct erased_message_body {
     virtual void              consume(std::size_t n) noexcept = 0;
 };
 
+enum e_http_status : int {};
+
 class http_status_error : public std::runtime_error {
     using runtime_error::runtime_error;
 };

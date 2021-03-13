@@ -412,7 +412,8 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
 
         if (resp.is_error()) {
             client.discard_body(resp);
-            throw BOOST_LEAF_EXCEPTION(http_status_error("Received an error from HTTP"));
+            throw BOOST_LEAF_EXCEPTION(http_status_error("Received an error from HTTP"),
+                                       e_http_status{resp.status});
         }
 
         if (resp.is_redirect()) {
