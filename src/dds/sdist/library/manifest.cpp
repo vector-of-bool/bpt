@@ -7,7 +7,6 @@
 #include <dds/util/algo.hpp>
 
 #include <json5/parse_data.hpp>
-#include <range/v3/view/transform.hpp>
 #include <semester/walk.hpp>
 
 using namespace dds;
@@ -30,7 +29,7 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
     using namespace semester::walk_ops;
     walk(data,
          require_obj{"Root of library manifest should be a JSON object"},
-         mapping{if_key{"$scheme", just_accept},
+         mapping{if_key{"$schema", just_accept},
                  required_key{"name",
                               "A string 'name' is required",
                               require_str{"'name' must be a string"},
