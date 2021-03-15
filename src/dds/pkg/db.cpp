@@ -11,15 +11,14 @@
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
 #include <neo/concepts.hpp>
+#include <neo/ranges.hpp>
 #include <neo/sqlite3/error.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
 #include <neo/sqlite3/transaction.hpp>
+#include <neo/tl.hpp>
 #include <nlohmann/json.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/join.hpp>
-#include <range/v3/view/transform.hpp>
 
 using namespace dds;
 
@@ -297,9 +296,8 @@ result<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
     auto ec       = st.step(std::nothrow);
     if (ec == nsql::errc::done) {
         return new_error([&] {
-            auto all_ids = this->all();
-            auto id_strings
-                = ranges::views::transform(all_ids, [&](auto id) { return id.to_string(); });
+            auto all_ids    = this->all();
+            auto id_strings = std::views::transform(all_ids, NEO_TL(_1.to_string()));
             return e_nonesuch{pk_id.to_string(), did_you_mean(pk_id.to_string(), id_strings)};
         });
     }
@@ -349,9 +347,9 @@ std::vector<pkg_id> pkg_db::all() const noexcept {
     return nsql::exec_tuples<std::string,
                              std::string>(_stmt_cache("SELECT name, version FROM dds_pkgs"_sql),
                                           std::tuple())
-        | neo::lref                                 //
-        | ranges::views::transform(pair_to_pkg_id)  //
-        | ranges::to_vector;
+        | neo::lref                              //
+        | std::views::transform(pair_to_pkg_id)  //
+        | neo::to_vector;
 }
 
 std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
@@ -363,10 +361,10 @@ std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
                  WHERE name = ?
                  ORDER BY pkg_id DESC
                 )"_sql),
-               std::tie(sv))                        //
-        | neo::lref                                 //
-        | ranges::views::transform(pair_to_pkg_id)  //
-        | ranges::to_vector;
+               std::tie(sv))                     //
+        | neo::lref                              //
+        | std::views::transform(pair_to_pkg_id)  //
+        | neo::to_vector;
 }
 
 std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcept {
@@ -389,12 +387,12 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                std::forward_as_tuple(pkg.name.str,
                                      pkg.version.to_string()))  //
         | neo::lref                                             //
-        | ranges::views::transform([](auto&& pair) {
+        | std::views::transform([](auto&& pair) {
                auto& [name, low, high] = pair;
                auto dep
                    = dependency{name, {semver::version::parse(low), semver::version::parse(high)}};
                dds_log(trace, "  Depends: {}", dep.to_string());
                return dep;
            })  //
-        | ranges::to_vector;
+        | neo::to_vector;
 }

@@ -6,9 +6,8 @@
 #include <dds/util/shlex.hpp>
 #include <dds/util/string.hpp>
 
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 
 using namespace dds;
 
@@ -91,11 +90,11 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
     auto& inputs        = *inputs_;
     auto  changed_files =  //
         inputs             //
-        | ranges::views::filter([](const input_file_info& input) {
+        | std::views::filter([](const input_file_info& input) {
               return !fs::exists(input.path) || fs::last_write_time(input.path) != input.last_mtime;
           })
-        | ranges::views::transform([](auto& info) { return info.path; })  //
-        | ranges::to_vector;
+        | std::views::transform(NEO_TL(_1.path))  //
+        | neo::to_vector;
     prior_compilation ret;
     ret.newer_inputs     = std::move(changed_files);
     ret.previous_command = cmd;

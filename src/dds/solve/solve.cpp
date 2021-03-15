@@ -3,10 +3,9 @@
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 #include <pubgrub/solve.hpp>
-
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
 
 #include <sstream>
 
@@ -103,9 +102,9 @@ struct solver_provider {
                 (*req.dep.versions.iter_intervals().begin()).low.to_string());
         auto pk_id = as_pkg_id(req);
         auto deps  = deps_for_pkg(pk_id);
-        return deps                                                                          //
-            | ranges::views::transform([](const dependency& dep) { return req_type{dep}; })  //
-            | ranges::to_vector;
+        return deps                                        //
+            | std::views::transform(NEO_TL(req_type{_1}))  //
+            | neo::to_vector;
     }
 };
 
@@ -159,12 +158,11 @@ struct explainer {
 std::vector<pkg_id> dds::solve(const std::vector<dependency>& deps,
                                pkg_id_provider_fn             pkgs_prov,
                                deps_provider_fn               deps_prov) {
-    auto wrap_req
-        = deps | ranges::views::transform([](const dependency& dep) { return req_type{dep}; });
+    auto wrap_req = deps | std::views::transform(NEO_TL(req_type{_1}));
 
     try {
         auto solution = pubgrub::solve(wrap_req, solver_provider{pkgs_prov, deps_prov});
-        return solution | ranges::views::transform(as_pkg_id) | ranges::to_vector;
+        return solution | std::views::transform(as_pkg_id) | neo::to_vector;
     } catch (const solve_fail_exc& failure) {
         dds_log(error, "Dependency resolution has failed! Explanation:");
         pubgrub::generate_explaination(failure, explainer());

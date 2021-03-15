@@ -8,6 +8,7 @@
 #include <dds/util/log.hpp>
 
 #include <neo/ref.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -118,7 +119,7 @@ std::vector<library_root> dds::collect_libraries(path_ref root) {
                    | neo::lref                                //
                    | ranges::views::filter(has_library_dirs)  //
                    | ranges::views::transform(
-                       [&](auto p) { return library_root::from_directory(fs::canonical(p)); }));
+                       NEO_TL(library_root::from_directory(fs::canonical(_1)))));
     }
     return ret;
 }

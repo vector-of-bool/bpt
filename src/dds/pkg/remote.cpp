@@ -16,15 +16,15 @@
 #include <neo/event.hpp>
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
+#include <neo/ranges.hpp>
 #include <neo/scope.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/single.hpp>
 #include <neo/sqlite3/transaction.hpp>
+#include <neo/tl.hpp>
 #include <neo/url.hpp>
 #include <neo/utility.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
 
 using namespace dds;
 using namespace fansi::literals;
@@ -206,7 +206,7 @@ void dds::update_all_remotes(nsql::database_ref db) {
                                   std::string,
                                   std::optional<std::string>,
                                   std::optional<std::string>>(repos_st)
-        | ranges::to_vector;
+        | neo::to_vector;
 
     for (const auto& [name, url, etag, db_mtime] : tups) {
         DDS_E_SCOPE(e_url_string{url});
@@ -229,13 +229,12 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
             make_user_error<errc::no_catalog_remote_info>("There is no remote with name '{}'",
                                                           name),
             [&] {
-                auto all_st = db.prepare("SELECT name FROM dds_pkg_remotes");
-                auto tups   = nsql::iter_tuples<std::string>(all_st);
-                auto names  = tups | ranges::views::transform([](auto&& tup) {
-                                 auto&& [n] = tup;
-                                 return n;
-                             })
-                    | ranges::to_vector;
+                auto names =  //
+                    nsql::iter_tuples<std::string>(db.prepare("SELECT name FROM dds_pkg_remotes")
+                                                   | neo::lref)       //
+                    | neo::lref                                       //
+                    | std::views::transform(NEO_TL(std::get<0>(_1)))  //
+                    | neo::to_vector;
                 return e_nonesuch{name, did_you_mean(name, names)};
             });
     }

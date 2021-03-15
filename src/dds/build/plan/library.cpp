@@ -3,10 +3,9 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 
-#include <range/v3/range/conversion.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/view/concat.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
 
 #include <cassert>
 #include <string>
@@ -74,10 +73,9 @@ library_plan library_plan::create(const library_root&             lib,
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
         lib_sources           //
-        | ranges::views::transform([&](const source_file& sf) {
-              return compile_file_plan(compile_rules, sf, qual_name, params.out_subdir / "obj");
-          })
-        | ranges::to_vector;
+        | std::views::transform(
+            NEO_TL(compile_file_plan{compile_rules, _1, qual_name, params.out_subdir / "obj"}))
+        | neo::to_vector;
 
     // If we have any compiled library files, generate a static library archive
     // for this library

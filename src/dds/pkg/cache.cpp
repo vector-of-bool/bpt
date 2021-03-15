@@ -12,13 +12,10 @@
 
 #include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
+#include <neo/ranges.hpp>
 #include <neo/ref.hpp>
-#include <range/v3/action/sort.hpp>
-#include <range/v3/action/unique.hpp>
-#include <range/v3/range/conversion.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/view/concat.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
 
 using namespace dds;
 using namespace fansi::literals;
@@ -85,18 +82,14 @@ std::optional<sdist> try_open_sdist_for_directory(path_ref p) noexcept {
 }  // namespace
 
 pkg_cache pkg_cache::_open_for_directory(bool writeable, path_ref dirpath) {
-    auto entries =
-        // Get the top-level `name-version` dirs
-        fs::directory_iterator(dirpath)  //
-        | neo::lref                      //
-        //  Convert each dir into an `sdist` object
-        | ranges::views::transform(try_open_sdist_for_directory)  //
-        //  Drop items that failed to load
-        | ranges::views::filter([](auto&& opt) { return opt.has_value(); })  //
-        | ranges::views::transform([](auto&& opt) { return *opt; })          //
-        | to<sdist_set>();
+    sdist_set entries;
+    for (auto&& el : fs::directory_iterator(dirpath)) {
+        if (auto opt_sdist = try_open_sdist_for_directory(el); opt_sdist.has_value()) {
+            entries.emplace(NEO_MOVE(*opt_sdist));
+        }
+    }
 
-    return {writeable, dirpath, std::move(entries)};
+    return {writeable, dirpath, NEO_MOVE(entries)};
 }
 
 void pkg_cache::import_sdist(const sdist& sd, if_exists ife_action) {
@@ -164,14 +157,13 @@ std::vector<pkg_id> pkg_cache::solve(const std::vector<dependency>& deps,
     return dds::solve(
         deps,
         [&](std::string_view name) -> std::vector<pkg_id> {
-            auto mine = ranges::views::all(_sdists)  //
-                | ranges::views::filter(
-                            [&](const sdist& sd) { return sd.manifest.id.name.str == name; })
-                | ranges::views::transform([](const sdist& sd) { return sd.manifest.id; });
+            auto mine = std::views::all(_sdists)  //
+                | std::views::filter(NEO_TL(_1.manifest.id.name.str == name))
+                | std::views::transform(NEO_TL(_1.manifest.id));
             auto avail = ctlg.by_name(name);
-            auto all   = ranges::views::concat(mine, avail) | ranges::to_vector;
-            ranges::sort(all, std::less{});
-            ranges::unique(all, std::less{});
+            auto all   = ranges::views::concat(mine, avail) | neo::to_vector;
+            std::ranges::sort(all, std::less{});
+            std::ranges::unique(all, std::less{});
             return all;
         },
         [&](const pkg_id& pkg_id) {

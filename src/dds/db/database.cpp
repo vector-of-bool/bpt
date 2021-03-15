@@ -10,8 +10,6 @@
 #include <neo/sqlite3/transaction.hpp>
 
 #include <nlohmann/json.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
 
 using namespace dds;
 

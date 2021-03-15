@@ -6,8 +6,8 @@
 #include <dds/util/time.hpp>
 
 #include <fansi/styled.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 
 using namespace dds;
 using namespace fansi::literals;
@@ -18,10 +18,10 @@ fs::path create_archive_plan::calc_archive_file_path(const toolchain& tc) const 
 
 void create_archive_plan::archive(const build_env& env) const {
     // Convert the file compilation plans into the paths to their respective object files.
-    const auto objects =  //
-        _compile_files    //
-        | ranges::views::transform([&](auto&& cf) { return cf.calc_object_file_path(env); })
-        | ranges::to_vector  //
+    const auto objects =                                                //
+        _compile_files                                                  //
+        | std::views::transform(NEO_TL(_1.calc_object_file_path(env)))  //
+        | neo::to_vector                                                //
         ;
     // Build up the archive command
     archive_spec ar;

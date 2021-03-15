@@ -6,11 +6,11 @@
 #include <dds/build/params.hpp>
 #include <dds/pkg/cache.hpp>
 #include <dds/pkg/get/get.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 
 #include <range/v3/action/join.hpp>
-#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
-#include <range/v3/view/transform.hpp>
 
 namespace dds::cli::cmd {
 
@@ -29,17 +29,17 @@ static int _build_deps(const options& opts) {
     dds::sdist_build_params sdist_params;
 
     auto all_file_deps = opts.build_deps.deps_files  //
-        | ranges::views::transform([&](auto dep_fpath) {
+        | std::views::transform([&](auto dep_fpath) {
                              dds_log(info, "Reading deps from {}", dep_fpath.string());
                              return dds::dependency_manifest::from_file(dep_fpath).dependencies;
                          })
-        | ranges::actions::join;
+        | ranges::actions::join  //
+        | neo::to_vector;
 
-    auto cmd_deps = ranges::views::transform(opts.build_deps.deps, [&](auto dep_str) {
-        return dds::dependency::parse_depends_string(dep_str);
-    });
+    auto cmd_deps = std::views::transform(opts.build_deps.deps,
+                                          NEO_TL(dds::dependency::parse_depends_string(_1)));
 
-    auto all_deps = ranges::views::concat(all_file_deps, cmd_deps) | ranges::to_vector;
+    auto all_deps = ranges::views::concat(all_file_deps, cmd_deps) | neo::to_vector;
 
     auto cat = opts.open_pkg_db();
     dds::pkg_cache::with_cache(  //

@@ -7,8 +7,8 @@
 #include <dds/util/parallel.hpp>
 
 #include <neo/assert.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
+
+#include <ranges>
 
 using namespace dds;
 
@@ -44,11 +44,11 @@ void dds::get_all(const std::vector<pkg_id>& pkgs, pkg_cache& repo, const pkg_db
 
     auto absent_pkg_infos
         = pkgs  //
-        | ranges::views::filter([&](auto pk) {
+        | std::views::filter([&](auto pk) {
               std::scoped_lock lk{repo_mut};
               return !repo.find(pk);
           })
-        | ranges::views::transform([&](auto id) {
+        | std::views::transform([&](auto id) {
               auto info = cat.get(id);
               neo_assert(invariant, !!info, "No database entry for package id?", id.to_string());
               return *info;

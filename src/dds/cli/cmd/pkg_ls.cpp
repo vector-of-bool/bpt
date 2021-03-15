@@ -2,13 +2,13 @@
 
 #include <dds/pkg/cache.hpp>
 #include <dds/sdist/dist.hpp>
+#include <dds/util/range_compat.hpp>
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
 #include <neo/assert.hpp>
-#include <range/v3/range/conversion.hpp>
+#include <neo/ranges.hpp>
 #include <range/v3/view/group_by.hpp>
-#include <range/v3/view/transform.hpp>
 
 #include <iostream>
 #include <string_view>
@@ -20,12 +20,11 @@ static int _pkg_ls(const options& opts) {
             = [](auto&& a, auto&& b) { return a.manifest.id.name == b.manifest.id.name; };
 
         auto all         = repo.iter_sdists();
-        auto grp_by_name = all                             //
-            | ranges::views::group_by(same_name)           //
-            | ranges::views::transform(ranges::to_vector)  //
-            | ranges::views::transform([](auto&& grp) {
-                               assert(grp.size() > 0);
-                               return std::pair(grp[0].manifest.id.name, grp);
+        auto grp_by_name = all                    //
+            | ranges::views::group_by(same_name)  //
+            | std::views::transform([](auto&& grp) {
+                               auto first = *std::ranges::begin(grp);
+                               return std::pair(first.manifest.id.name, grp);
                            });
 
         for (const auto& [name, grp] : grp_by_name) {

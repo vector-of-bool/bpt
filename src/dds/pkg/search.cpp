@@ -7,12 +7,10 @@
 #include <dds/util/string.hpp>
 
 #include <neo/fwd.hpp>
+#include <neo/ranges.hpp>
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
-
-#include <range/v3/algorithm/sort.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
+#include <neo/tl.hpp>
 
 using namespace dds;
 namespace nsql = neo::sqlite3;
@@ -39,21 +37,22 @@ result<pkg_search_results> dds::pkg_search(nsql::database_ref              db,
         search_st);
 
     std::vector<pkg_group_search_result> found;
-    for (auto [name, versions, desc, remote_name, remote_url] : rows) {
+    for (auto [name, versions_, desc, remote_name, remote_url] : rows) {
         dds_log(debug,
                 "Found: {} with versions {} (Description: {}) from {} [{}]",
                 name,
-                versions,
+                versions_,
                 desc,
                 remote_name,
                 remote_url);
-        auto version_strs = split(versions, ";;");
-        auto versions_semver
-            = version_strs | ranges::views::transform(&semver::version::parse) | ranges::to_vector;
-        ranges::sort(versions_semver);
+        auto versions =                                                  //
+            split(versions_, ";;") | neo::lref                           //
+            | std::views::transform(NEO_TL(semver::version::parse(_1)))  //
+            | neo::to_vector;
+        std::ranges::sort(versions);
         found.push_back(pkg_group_search_result{
             .name        = name,
-            .versions    = versions_semver,
+            .versions    = versions,
             .description = desc,
             .remote_name = remote_name,
         });
@@ -61,13 +60,12 @@ result<pkg_search_results> dds::pkg_search(nsql::database_ref              db,
 
     if (found.empty()) {
         return boost::leaf::new_error([&] {
-            auto names_st  = db.prepare("SELECT DISTINCT name from dds_pkgs");
-            auto tups      = nsql::iter_tuples<std::string>(names_st);
-            auto names_vec = tups | ranges::views::transform([](auto&& row) {
-                                 auto [name] = row;
-                                 return name;
-                             })
-                | ranges::to_vector;
+            auto names_st  = db.prepare("SELECT DISTINCT name FROM dds_pkgs");
+            auto names_vec =                                                   //
+                nsql::iter_tuples<std::string>(names_st)                       //
+                | neo::lref                                                    //
+                | std::views::transform(NEO_TL(std::string(std::get<0>(_1))))  //
+                | neo::to_vector;
             auto nearest = dds::did_you_mean(final_pattern, names_vec);
             return e_nonesuch{final_pattern, nearest};
         });

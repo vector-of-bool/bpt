@@ -5,14 +5,13 @@
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
+#include <dds/util/range_compat.hpp>
 
-#include <range/v3/algorithm/any_of.hpp>
-#include <range/v3/range/conversion.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
+
 #include <range/v3/view/concat.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/join.hpp>
 #include <range/v3/view/repeat.hpp>
-#include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
 
 #include <mutex>
@@ -31,12 +30,11 @@ decltype(auto) pair_up(T& left, Range& right) {
 }  // namespace
 
 void build_plan::render_all(build_env_ref env) const {
-    auto templates = _packages                                //
-        | ranges::views::transform(&package_plan::libraries)  //
-        | ranges::views::join                                 //
-        | ranges::views::transform(
-                         [](const auto& lib) { return pair_up(lib, lib.templates()); })  //
-        | ranges::views::join;
+    auto templates = _packages                                        //
+        | std::views::transform(NEO_TL(_1.libraries()))               //
+        | std::views::join                                            //
+        | std::views::transform(NEO_TL(pair_up(_1, _1.templates())))  //
+        | std::views::join;
     for (const auto& [lib, tmpl] : templates) {
         tmpl.render(env, lib.library_());
     }
@@ -57,15 +55,13 @@ void build_plan::compile_files(const build_env&             env,
         fs::path filepath;
     };
 
-    auto as_pending =                  //
-        ranges::views::all(filepaths)  //
-        | ranges::views::transform([](auto&& path) {
-              return pending_file{false, fs::weakly_canonical(path)};
-          })
-        | ranges::to_vector;
+    auto as_pending =                                                                   //
+        std::views::all(filepaths)                                                      //
+        | std::views::transform(NEO_TL(pending_file{false, fs::weakly_canonical(_1)}))  //
+        | neo::to_vector;
 
     auto check_compilation = [&](const compile_file_plan& comp) {
-        return ranges::any_of(as_pending, [&](pending_file& f) {
+        return std::ranges::any_of(as_pending, [&](pending_file& f) {
             bool same_file = f.filepath == fs::weakly_canonical(comp.source_path());
             if (same_file) {
                 f.marked = true;
@@ -74,11 +70,10 @@ void build_plan::compile_files(const build_env&             env,
         });
     };
 
-    auto comps
-        = iter_compilations(*this) | ranges::views::filter(check_compilation) | ranges::to_vector;
+    auto comps = iter_compilations(*this) | std::views::filter(check_compilation) | neo::to_vector;
 
     bool any_unmarked = false;
-    auto unmarked     = ranges::views::filter(as_pending, ranges::not_fn(&pending_file::marked));
+    auto unmarked     = std::views::filter(as_pending, NEO_TL(not _1.marked));
     for (auto&& um : unmarked) {
         dds_log(error, "Source file [{}] is not compiled by this project", um.filepath.string());
         any_unmarked = true;
@@ -127,13 +122,12 @@ void build_plan::link_all(const build_env& env, int njobs) const {
 }
 
 std::vector<test_failure> build_plan::run_all_tests(build_env_ref env, int njobs) const {
-    using namespace ranges::views;
     // Collect executables that are tests
-    auto test_executables =                       //
-        iter_libraries(*this)                     //
-        | transform(&library_plan::executables)   //
-        | join                                    //
-        | filter(&link_executable_plan::is_test)  //
+    auto test_executables =                                //
+        iter_libraries(*this)                              //
+        | std::views::transform(NEO_TL(_1.executables()))  //
+        | std::views::join                                 //
+        | std::views::filter(NEO_TL(_1.is_test()))         //
         ;
 
     std::mutex                mut;

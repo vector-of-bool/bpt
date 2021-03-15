@@ -11,6 +11,7 @@
 
 #include <fansi/styled.hpp>
 #include <neo/assert.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/algorithm/count_if.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
@@ -256,7 +257,7 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     auto each_realized =  //
         compiles
         // Convert each _plan_ into a concrete object for compiler invocation.
-        | views::transform([&](auto&& plan) { return mk_compile_ticket(plan, env); })
+        | views::transform(NEO_TL(mk_compile_ticket(_1, env)))
         // Convert to to a real vector so we can ask its size.
         | ranges::to_vector;
 

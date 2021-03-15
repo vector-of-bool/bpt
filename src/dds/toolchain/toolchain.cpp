@@ -7,11 +7,10 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
-#include <range/v3/view/transform.hpp>
-
 #include <cassert>
 #include <initializer_list>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -68,8 +67,8 @@ static fs::path shortest_path_from(path_ref file, path_ref base) {
 
 template <typename R>
 static auto shortest_path_args(path_ref base, R&& r) {
-    return ranges::views::all(r)  //
-        | ranges::views::transform(
+    return std::views::all(r)  //
+        | std::views::transform(
                [base](auto&& path) { return shortest_path_from(path, base).string(); });  //
 }
 

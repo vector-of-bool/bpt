@@ -1,11 +1,12 @@
 #pragma once
 
 #include <dds/build/plan/full.hpp>
+#include <dds/util/range_compat.hpp>
 
 #include <range/v3/view/concat.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/join.hpp>
-#include <range/v3/view/transform.hpp>
+
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 
 namespace dds {
 
@@ -13,10 +14,10 @@ namespace dds {
  * Iterate over every library defined as part of the build plan
  */
 inline auto iter_libraries(const build_plan& plan) {
-    return                                                    //
-        plan.packages()                                       //
-        | ranges::views::transform(&package_plan::libraries)  //
-        | ranges::views::join                                 //
+    return                                               //
+        plan.packages()                                  //
+        | std::views::transform(NEO_TL(_1.libraries()))  //
+        | std::views::join                               //
         ;
 }
 
@@ -24,21 +25,20 @@ inline auto iter_libraries(const build_plan& plan) {
  * Return a range iterating over ever file compilation defined in the given build plan
  */
 inline auto iter_compilations(const build_plan& plan) {
-    auto lib_compiles =                                                 //
-        iter_libraries(plan)                                            //
-        | ranges::views::transform(&library_plan::archive_plan)         //
-        | ranges::views::filter([&](auto&& opt) { return bool(opt); })  //
-        | ranges::views::transform([&](auto&& opt) -> auto& {
-              return opt->file_compilations();
-          })                   //
-        | ranges::views::join  //
+
+    auto lib_compiles =                                           //
+        iter_libraries(plan)                                      //
+        | std::views::transform(NEO_TL(_1.archive_plan()))        //
+        | std::views::filter(NEO_TL(_1.has_value()))              //
+        | std::views::transform(NEO_TL(_1->file_compilations()))  //
+        | std::views::join                                        //
         ;
 
-    auto exe_compiles =                                                       //
-        iter_libraries(plan)                                                  //
-        | ranges::views::transform(&library_plan::executables)                //
-        | ranges::views::join                                                 //
-        | ranges::views::transform(&link_executable_plan::main_compile_file)  //
+    auto exe_compiles =                                          //
+        iter_libraries(plan)                                     //
+        | std::views::transform(NEO_TL(_1.executables()))        //
+        | std::views::join                                       //
+        | std::views::transform(NEO_TL(_1.main_compile_file()))  //
         ;
 
     return ranges::views::concat(lib_compiles, exe_compiles);

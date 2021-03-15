@@ -5,6 +5,7 @@
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
 
+#include <neo/ad_hoc_range.hpp>
 #include <neo/fwd.hpp>
 
 #include <functional>
@@ -86,17 +87,7 @@ public:
     const sdist* find(const pkg_id& pk) const noexcept;
 
     auto iter_sdists() const noexcept {
-        class ret {
-            const sdist_set& s;
-
-        public:
-            ret(const sdist_set& s)
-                : s(s) {}
-
-            auto begin() const { return s.cbegin(); }
-            auto end() const { return s.cend(); }
-        } r{_sdists};
-        return r;
+        return neo::ad_hoc_range{_sdists.cbegin(), _sdists.cend()};
     }
 
     std::vector<pkg_id> solve(const std::vector<dependency>& deps, const pkg_db&) const;

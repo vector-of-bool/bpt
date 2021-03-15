@@ -10,10 +10,9 @@
 #include <libman/parse.hpp>
 
 #include <neo/assert.hpp>
+#include <neo/ranges.hpp>
 #include <neo/tar/util.hpp>
-#include <range/v3/algorithm/sort.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/filter.hpp>
+#include <neo/tl.hpp>
 
 using namespace dds;
 
@@ -30,7 +29,7 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
 void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_params& params) {
     auto sources_to_keep =  //
         lib.all_sources()   //
-        | ranges::views::filter([&](const source_file& sf) {
+        | std::views::filter([&](const source_file& sf) {
               if (sf.kind == source_kind::app && params.include_apps) {
                   return true;
               }
@@ -42,9 +41,9 @@ void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_
               }
               return false;
           })  //
-        | ranges::to_vector;
+        | neo::to_vector;
 
-    ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
+    std::ranges::sort(sources_to_keep, std::less<>(), NEO_TL(_1.path));
 
     auto lib_man_path = library_manifest::find_in_directory(lib.path());
     if (!lib_man_path) {

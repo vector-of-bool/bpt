@@ -3,10 +3,10 @@
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 
-#include <range/v3/algorithm/min_element.hpp>
+#include <neo/ranges.hpp>
 #include <range/v3/view/cartesian_product.hpp>
-#include <range/v3/view/iota.hpp>
 
+#include <algorithm>
 #include <cassert>
 
 using namespace dds;
@@ -19,8 +19,8 @@ std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexc
 
     std::vector<std::vector<std::size_t>> matrix(n_rows, empty_row);
 
-    auto row_iter = ranges::views::iota(1u, n_rows);
-    auto col_iter = ranges::views::iota(1u, n_columns);
+    auto row_iter = std::views::iota(1u, n_rows);
+    auto col_iter = std::views::iota(1u, n_columns);
 
     for (auto n : col_iter) {
         matrix[0][n] = n;
@@ -39,7 +39,7 @@ std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexc
         auto t3  = matrix[row - 1][col - 1] + cost;
         auto arr = std::array{t1, t2, t3};
 
-        matrix[row][col] = *ranges::min_element(arr);
+        matrix[row][col] = *std::ranges::min_element(arr);
     }
 
     return matrix.back().back();

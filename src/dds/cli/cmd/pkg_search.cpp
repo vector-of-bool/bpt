@@ -9,7 +9,9 @@
 #include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/format.h>
-#include <range/v3/view/transform.hpp>
+#include <neo/tl.hpp>
+
+#include <ranges>
 
 using namespace fansi::literals;
 
@@ -25,7 +27,7 @@ static int _pkg_search(const options& opts) {
             "    From: .bold[{}]\n"
             "          .bold[{}]\n\n"_styled,
             found.name,
-            joinstr(", ", found.versions | ranges::views::transform(&semver::version::to_string)),
+            joinstr(", ", found.versions | std::views::transform(NEO_TL(_1.to_string()))),
             found.remote_name,
             found.description);
     }

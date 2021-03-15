@@ -5,9 +5,6 @@
 #include <dds/util/signal.hpp>
 #include <dds/util/time.hpp>
 
-#include <range/v3/algorithm/sort.hpp>
-#include <range/v3/algorithm/unique.hpp>
-
 #include <string>
 #include <vector>
 

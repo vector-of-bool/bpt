@@ -6,7 +6,8 @@
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/statement_cache.hpp>
-#include <range/v3/view/transform.hpp>
+
+#include <ranges>
 
 namespace dds {
 
@@ -65,7 +66,7 @@ public:
         using namespace neo::sqlite3::literals;
         auto& st   = _stmts("SELECT name, version FROM dds_repo_packages"_sql);
         auto  tups = neo::sqlite3::iter_tuples<std::string, std::string>(st);
-        return tups | ranges::views::transform([](auto&& pair) {
+        return tups | std::views::transform([](auto&& pair) {
                    auto [name, version] = pair;
                    return pkg_id{name, semver::version::parse(version)};
                });
