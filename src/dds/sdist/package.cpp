@@ -89,6 +89,19 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                                 "'depends' should be an array of dependency strings");
                         }
                     }},
+             if_key{"test_depends",
+                    [&](auto&& dat) {
+                        if (!dat.is_array()) {
+                            return walk.reject(
+                                "'test_depends' should be an array of dependency strings");
+                        }
+
+                        return for_each{put_into{std::back_inserter(ret.test_dependencies),
+                                                 [](const std::string& depstr) {
+                                                     return dependency::parse_depends_string(
+                                                         depstr);
+                                                 }}}(dat);
+                    }},
              if_key{"test_driver",
                     require_str{"'test_driver' must be a string"},
                     put_into{ret.test_driver,

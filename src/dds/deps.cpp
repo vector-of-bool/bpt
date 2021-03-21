@@ -71,6 +71,18 @@ dependency_manifest dependency_manifest::from_file(path_ref fpath) {
                              }),
                 },
             },
+            if_key{"test_depends",
+                   [&](auto&& dat) {
+                       if (!dat.is_array()) {
+                           return walk.reject(
+                               "'test_depends' should be an array of dependency strings");
+                       }
+
+                       return for_each{put_into{std::back_inserter(depman.test_dependencies),
+                                                [](const std::string& depstr) {
+                                                    return dependency::parse_depends_string(depstr);
+                                                }}}(dat);
+                   }},
         });
 
     res.throw_if_rejected<user_error<errc::invalid_pkg_manifest>>();
