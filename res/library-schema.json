@@ -22,6 +22,14 @@
                 "pattern": "^[A-z][A-z0-9_]*((\\.|-)[A-z0-9_]+)*/[A-z][A-z0-9_]*((\\.|-)[A-z0-9_]+)*$"
             }
         },
+        "test_uses": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "A library that is used by this library for tests only. Should be of the form `namespace/name`.",
+                "pattern": "^[A-z][A-z0-9_]*((\\.|-)[A-z0-9_]+)*/[A-z][A-z0-9_]*((\\.|-)[A-z0-9_]+)*$"
+            }
+        },
         "links": {
             "type": "array",
             "items": {
