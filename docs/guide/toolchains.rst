@@ -242,30 +242,34 @@ from ``compiler_id``.
 
 Specify the language versions for C and C++, respectively. By default, ``dds``
 will not set any language version. Using this option requires that the
-``compiler_id`` be specified. Setting this value will cause the corresponding
-language-version flag to be passed to the compiler.
+``compiler_id`` be specified (Or the ``lang_version_flag_template`` advanced
+setting).
 
-Valid ``c_version`` values are:
+Examples of ``c_version`` values are:
 
 - ``c89``
 - ``c99``
 - ``c11``
 - ``c18``
 
-Valid ``cxx_version`` values are:
+Examples of ``cxx_version`` values are:
 
-- ``c++98``
-- ``c++03``
-- ``c++11``
 - ``c++14``
 - ``c++17``
 - ``c++20``
 
-.. warning::
-    ``dds`` will not do any "smarts" to infer the exact option to pass to have
-    the required effect. If you ask for ``c++20`` from ``gcc 4.8``, ``dds``
-    will simply pass ``-std=c++20`` with no questions asked. If you need
-    finer-grained control, use the ``c_flags`` and ``cxx_flags`` options.
+The given string will be substituted in the appropriate compile flag to specify
+the language version being passed.
+
+To enable GNU language extensions on GNU compilers, one can values like
+``gnu++20``, which will result in ``-std=gnu++20`` being passed. Likewise, if
+the language version is "experimental" in your GCC release, you may set
+``cxx_version`` to the appropriate experimental version name, e.g. ``"c++2a"``
+for ``-std=c++2a``.
+
+For MSVC, setting ``cxx_version`` to ``c++latest`` will result in
+``/std:c++latest``. **Beware** that this is an unstable setting value that could
+change the major language version in a future MSVC update.
 
 
 ``warning_flags``
@@ -512,6 +516,19 @@ On MSVC, this defaults to ``/D [def]``. On GNU-like compilers, this is
 ``-D [def]``.
 
 
+``lang_version_flag_template``
+------------------------------
+
+Set the flag template string for the language-version specifier for the
+compiler command line.
+
+This template expects a single placeholder: ``[version]``, which is the version
+string passed for ``c_version`` or ``cxx_version``.
+
+On MSVC, this defaults to ``/std:[version]``. On GNU-like compilers, it
+defaults to ``-std=[version]``.
+
+
 ``tty_flags``
 -------------
 
@@ -549,7 +566,7 @@ compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
 .. _toolchains.opts.base_flags:
 
 ``base_flags``, ``base_c_flags``, and ``base_cxx_flags``
-----------------------
+--------------------------------------------------------
 
 When you compile your project, ``dds`` uses a set of default flags appropriate
 to the target language and compiler. These flags are always included in the
