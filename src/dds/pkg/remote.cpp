@@ -231,10 +231,8 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
             [&] {
                 auto all_st = db.prepare("SELECT name FROM dds_pkg_remotes");
                 auto tups   = nsql::iter_tuples<std::string>(all_st);
-                auto names  = tups | ranges::views::transform([](auto&& tup) {
-                                 auto&& [n] = tup;
-                                 return n;
-                             })
+                auto names  = tups
+                    | ranges::views::transform([](auto&& tup) { return std::get<0>(tup); })
                     | ranges::to_vector;
                 return e_nonesuch{name, did_you_mean(name, names)};
             });
