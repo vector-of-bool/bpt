@@ -54,6 +54,13 @@ dependency_manifest dependency_manifest::from_file(path_ref fpath) {
 
     dependency_manifest depman;
     using namespace semester::walk_ops;
+    // Helpers
+    using require_array  = require_type<json5::data::array_type>;
+    using require_string = require_type<std::string>;
+    auto str_as_dep = [](const std::string& str) { return dependency::parse_depends_string(str); };
+    auto append_dep = [&](auto& deps) { return put_into(std::back_inserter(deps), str_as_dep); };
+
+    // Parse and validate
     auto res = walk.try_walk(  //
         data,
         require_type<json5::data::mapping_type>{
@@ -62,27 +69,16 @@ dependency_manifest dependency_manifest::from_file(path_ref fpath) {
             required_key{
                 "depends",
                 "A 'depends' key is required",
-                require_type<json5::data::array_type>{"'depends' must be an array of strings"},
-                for_each{
-                    require_type<std::string>{"Each dependency should be a string"},
-                    put_into(std::back_inserter(depman.dependencies),
-                             [](const std::string& str) {
-                                 return dependency::parse_depends_string(str);
-                             }),
-                },
+                require_array{"'depends' must be an array of strings"},
+                for_each{require_string{"Each dependency should be a string"},
+                         append_dep(depman.dependencies)},
             },
-            if_key{"test_depends",
-                   [&](auto&& dat) {
-                       if (!dat.is_array()) {
-                           return walk.reject(
-                               "'test_depends' should be an array of dependency strings");
-                       }
-
-                       return for_each{put_into{std::back_inserter(depman.test_dependencies),
-                                                [](const std::string& depstr) {
-                                                    return dependency::parse_depends_string(depstr);
-                                                }}}(dat);
-                   }},
+            if_key{
+                "test_depends",
+                require_array{"'test_depends' must be an array of strings"},
+                for_each{require_string{"Each dependency should be a string"},
+                         append_dep(depman.test_dependencies)},
+            },
         });
 
     res.throw_if_rejected<user_error<errc::invalid_pkg_manifest>>();
