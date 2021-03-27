@@ -246,8 +246,12 @@ def dds_exe(pytestconfig: PyTestConfig) -> Path:
     return Path(opt)
 
 
+TmpGitRepoFactory = Callable[[Pathish], Path]
+
+
 @pytest.fixture
-def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequest, pytestconfig: PyTestConfig) -> Callable[[str], Path]:
+def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequest,
+                         pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
     """
     A temporary directory :class:`pathlib.Path` object in which a git repo will
     be initialized
@@ -255,23 +259,24 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequ
 
     test_dir = Path(request.fspath).parent
 
-    def f(dirpath) -> Path:
+    def f(dirpath: Pathish) -> Path:
         dirpath = Path(dirpath)
         if not dirpath.is_absolute():
             dirpath = test_dir / dirpath
 
         tmp_path = tmp_path_factory.mktemp('tmp-git')
 
-        shutil.copytree(dirpath, tmp_path, dirs_exist_ok=True)
+        # Could use dirs_exists_ok=True with Python 3.8, but we min dep on 3.6
+        repo = tmp_path / 'r'
+        shutil.copytree(dirpath, repo)
 
         git = pytestconfig.getoption('--git-exe') or 'git'
-        check_run([git, 'init', str(tmp_path)])
-        check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=str(tmp_path))
-        check_run([git, 'add', '-A'], cwd=str(tmp_path))
-        check_run([git, '-c', "user.name='Tmp Git'",
-                   '-c', "user.email='dds@example.org'",
-                   'commit', '-m', 'Initial commit'], cwd=str(tmp_path))
+        check_run([git, 'init', repo])
+        check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
+        check_run([git, 'add', '-A'], cwd=repo)
+        check_run(
+            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'], cwd=repo)
 
-        return tmp_path
+        return repo
 
     return f
