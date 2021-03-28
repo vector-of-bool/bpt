@@ -3,9 +3,14 @@
 #include <dds/build/iter_compilations.hpp>
 #include <dds/build/plan/compile_exec.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/nonesuch.hpp>
+#include <dds/error/on_error.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
 
+#include <boost/leaf/exception.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
@@ -74,19 +79,18 @@ void build_plan::compile_files(const build_env&             env,
         });
     };
 
+    // Create a vector of compilations, and mark files so that we can find who hasn't been marked.
     auto comps
         = iter_compilations(*this) | ranges::views::filter(check_compilation) | ranges::to_vector;
 
-    bool any_unmarked = false;
-    auto unmarked     = ranges::views::filter(as_pending, ranges::not_fn(&pending_file::marked));
-    for (auto&& um : unmarked) {
-        dds_log(error, "Source file [{}] is not compiled by this project", um.filepath.string());
-        any_unmarked = true;
-    }
+    // Make an error if there are any unmarked files
+    auto missing_files = as_pending  //
+        | ranges::views::filter(NEO_TL(!_1.marked))
+        | ranges::views::transform(NEO_TL(e_nonesuch{_1.filepath.string(), std::nullopt}))
+        | neo::to_vector;
 
-    if (any_unmarked) {
-        throw_user_error<errc::compile_failure>(
-            "One or more requested files is not part of this project (See above)");
+    if (!missing_files.empty()) {
+        BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::compile_failure>(), missing_files);
     }
 
     auto okay = dds::compile_all(comps, env, njobs);
