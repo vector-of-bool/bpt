@@ -39,7 +39,7 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
                         require_array{"'uses' must be an array of strings"},
                         for_each{require_str{"Each 'uses' element should be a string"},
                                  put_into{std::back_inserter(lib.uses), [](std::string s) {
-                                              return lm::split_usage_string(s);
+                                              return *lm::split_usage_string(s);
                                           }}}}});
 
     return lib;

@@ -137,9 +137,17 @@ auto handlers = std::tuple(  //
                 badname.value,
                 invalid_name_reason_str(why));
         dds_log(error,
-                "  (While reading library manifest from [.bold.yellow[{}]]"_styled,
+                "  (While reading library manifest from [.bold.yellow[{}]])"_styled,
                 libpath.value);
         write_error_marker("invalid-lib-name");
+        return 1;
+    },
+    [](e_library_manifest_path libpath, lm::e_invalid_usage_string usage) {
+        dds_log(error, "Invalid 'uses' library identifier '.bold.red[{}]'"_styled, usage.value);
+        dds_log(error,
+                "  (While reading library manifest from [.bold.yellow[{}]])"_styled,
+                libpath.value);
+        write_error_marker("invalid-uses-spec");
         return 1;
     },
     [](e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {
