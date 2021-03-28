@@ -9,7 +9,6 @@
 #include <dds/util/parallel.hpp>
 
 #include <boost/leaf/exception.hpp>
-#include <neo/ranges.hpp>
 #include <neo/tl.hpp>
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -87,7 +86,7 @@ void build_plan::compile_files(const build_env&             env,
     auto missing_files = as_pending  //
         | ranges::views::filter(NEO_TL(!_1.marked))
         | ranges::views::transform(NEO_TL(e_nonesuch{_1.filepath.string(), std::nullopt}))
-        | neo::to_vector;
+        | ranges::to_vector;
 
     if (!missing_files.empty()) {
         BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::compile_failure>(), missing_files);
