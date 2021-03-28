@@ -63,10 +63,8 @@ result<pkg_search_results> dds::pkg_search(nsql::database_ref              db,
         return boost::leaf::new_error([&] {
             auto names_st  = db.prepare("SELECT DISTINCT name from dds_pkgs");
             auto tups      = nsql::iter_tuples<std::string>(names_st);
-            auto names_vec = tups | ranges::views::transform([](auto&& row) {
-                                 auto [name] = row;
-                                 return name;
-                             })
+            auto names_vec = tups
+                | ranges::views::transform([](auto&& row) { return std::get<0>(row); })
                 | ranges::to_vector;
             auto nearest = dds::did_you_mean(final_pattern, names_vec);
             return e_nonesuch{final_pattern, nearest};

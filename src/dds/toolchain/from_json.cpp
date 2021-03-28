@@ -5,6 +5,7 @@
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/shlex.hpp>
+#include <dds/util/string.hpp>
 
 #include <fmt/core.h>
 #include <json5/parse_data.hpp>
@@ -87,6 +88,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string_seq create_archive;
     opt_string_seq link_executable;
     opt_string_seq tty_flags;
+    opt_string     lang_version_flag_template;
 
     // For copy-pasting convenience: ‘{}’
 
@@ -178,6 +180,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     KEY_STRING(archive_suffix),
                     KEY_STRING(exe_prefix),
                     KEY_STRING(exe_suffix),
+                    KEY_STRING(lang_version_flag_template),
                     [&](auto key, auto) -> walk_result {
                         auto dym = did_you_mean(key,
                                                 {
@@ -200,6 +203,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                     "exe_prefix",
                                                     "exe_suffix",
                                                     "tty_flags",
+                                                    "lang_version_flag_template",
                                                 });
                         fail(context,
                              "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
@@ -208,7 +212,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     },
                 },
             },
-            [&](auto key, auto&&) -> walk_result {
+            [&](auto key, auto &&) -> walk_result {
                 // They've given an unknown key. Ouch.
                 auto dym = did_you_mean(key,
                                         {
@@ -260,6 +264,14 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     bool is_msvc     = compiler_id_e == msvc;
     bool is_gnu_like = is_gnu || is_clang;
 
+    if (!lang_version_flag_template.has_value()) {
+        if (is_gnu_like) {
+            lang_version_flag_template = "-std=[version]";
+        } else if (is_msvc) {
+            lang_version_flag_template = "/std:[version]";
+        }
+    }
+
     const enum file_deps_mode deps_mode = [&] {
         if (!deps_mode_str.has_value()) {
             if (is_gnu_like) {
@@ -309,117 +321,44 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         std::terminate();
     };
 
-    // Determine the C language version
-    enum c_version_e_t {
-        c_none,
-        c89,
-        c99,
-        c11,
-        c18,
-    } c_version_e
-        = [&] {
-              if (!c_version) {
-                  return c_none;
-              } else if (c_version == "c89") {
-                  return c89;
-              } else if (c_version == "c99") {
-                  return c99;
-              } else if (c_version == "c11") {
-                  return c11;
-              } else if (c_version == "c18") {
-                  return c18;
-              } else {
-                  fail(context, "Unknown `c_version` ‘{}’", *c_version);
-              }
-          }();
-
-    enum cxx_version_e_t {
-        cxx_none,
-        cxx98,
-        cxx03,
-        cxx11,
-        cxx14,
-        cxx17,
-        cxx20,
-    } cxx_version_e
-        = [&] {
-              if (!cxx_version) {
-                  return cxx_none;
-              } else if (cxx_version == "c++98") {
-                  return cxx98;
-              } else if (cxx_version == "c++03") {
-                  return cxx03;
-              } else if (cxx_version == "c++11") {
-                  return cxx11;
-              } else if (cxx_version == "c++14") {
-                  return cxx14;
-              } else if (cxx_version == "c++17") {
-                  return cxx17;
-              } else if (cxx_version == "c++20") {
-                  return cxx20;
-              } else {
-                  fail(context, "Unknown `cxx_version` ‘{}’", *cxx_version);
-              }
-          }();
-
-    std::map<std::tuple<compiler_id_e_t, c_version_e_t>, string_seq> c_version_flag_table = {
-        {{msvc, c_none}, {}},
-        {{msvc, c89}, {}},
-        {{msvc, c99}, {}},
-        {{msvc, c11}, {}},
-        {{msvc, c18}, {}},
-        {{gnu, c_none}, {}},
-        {{gnu, c89}, {"-std=c89"}},
-        {{gnu, c99}, {"-std=c99"}},
-        {{gnu, c11}, {"-std=c11"}},
-        {{gnu, c18}, {"-std=c18"}},
-        {{clang, c_none}, {}},
-        {{clang, c89}, {"-std=c89"}},
-        {{clang, c99}, {"-std=c99"}},
-        {{clang, c11}, {"-std=c11"}},
-        {{clang, c18}, {"-std=c18"}},
-    };
-
     auto get_c_version_flags = [&]() -> string_seq {
-        if (!compiler_id.has_value()) {
-            fail(context, "Unable to deduce flags for 'c_version' without setting 'compiler_id'");
+        if (!c_version) {
+            return {};
         }
-        auto c_ver_iter = c_version_flag_table.find({compiler_id_e, c_version_e});
-        assert(c_ver_iter != c_version_flag_table.end());
-        return c_ver_iter->second;
-    };
-
-    std::map<std::tuple<compiler_id_e_t, cxx_version_e_t>, string_seq> cxx_version_flag_table = {
-        {{msvc, cxx_none}, {}},
-        {{msvc, cxx98}, {}},
-        {{msvc, cxx03}, {}},
-        {{msvc, cxx11}, {}},
-        {{msvc, cxx14}, {"/std:c++14"}},
-        {{msvc, cxx17}, {"/std:c++17"}},
-        {{msvc, cxx20}, {"/std:c++latest"}},
-        {{gnu, cxx_none}, {}},
-        {{gnu, cxx98}, {"-std=c++98"}},
-        {{gnu, cxx03}, {"-std=c++03"}},
-        {{gnu, cxx11}, {"-std=c++11"}},
-        {{gnu, cxx14}, {"-std=c++14"}},
-        {{gnu, cxx17}, {"-std=c++17"}},
-        {{gnu, cxx20}, {"-std=c++20"}},
-        {{clang, cxx_none}, {}},
-        {{clang, cxx98}, {"-std=c++98"}},
-        {{clang, cxx03}, {"-std=c++03"}},
-        {{clang, cxx11}, {"-std=c++11"}},
-        {{clang, cxx14}, {"-std=c++14"}},
-        {{clang, cxx17}, {"-std=c++17"}},
-        {{clang, cxx20}, {"-std=c++20"}},
+        if (!lang_version_flag_template) {
+            if (!compiler_id) {
+                fail(context,
+                     "Unable to deduce flags for 'c_version' without setting 'compiler_id' or "
+                     "'lang_version_flag_template'");
+            } else {
+                fail(context,
+                     "Unable to determine the 'lang_version_flag_template' for the given "
+                     "'compiler_id', required to generate the language version flags for "
+                     "'c_version'");
+            }
+        }
+        auto flag = replace(*lang_version_flag_template, "[version]", *c_version);
+        return {flag};
     };
 
     auto get_cxx_version_flags = [&]() -> string_seq {
-        if (!compiler_id.has_value()) {
-            fail(context, "Unable to deduce flags for 'cxx_version' without setting 'compiler_id'");
+        if (!cxx_version) {
+            return {};
         }
-        auto cxx_ver_iter = cxx_version_flag_table.find({compiler_id_e, cxx_version_e});
-        assert(cxx_ver_iter != cxx_version_flag_table.end());
-        return cxx_ver_iter->second;
+        if (!lang_version_flag_template) {
+            if (!compiler_id) {
+                fail(context,
+                     "Unable to deduce flags for 'cxx_version' without setting 'compiler_id' or "
+                     "'lang_version_flag_template'");
+            } else {
+                fail(context,
+                     "Unable to determine the 'lang_version_flag_template' for the given "
+                     "'compiler_id', required to generate the language version flags for "
+                     "'cxx_version'");
+            }
+        }
+        auto flag = replace(*lang_version_flag_template, "[version]", *cxx_version);
+        return {flag};
     };
 
     auto get_runtime_flags = [&]() -> string_seq {
@@ -540,16 +479,16 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         if (common_flags) {
             extend(ret, *common_flags);
         }
-        if (lang == language::cxx && cxx_flags) {
-            extend(ret, *cxx_flags);
-        }
-        if (lang == language::cxx && cxx_version) {
+        if (lang == language::cxx) {
+            if (cxx_flags) {
+                extend(ret, *cxx_flags);
+            }
             extend(ret, get_cxx_version_flags());
         }
-        if (lang == language::c && c_flags) {
-            extend(ret, *c_flags);
-        }
-        if (lang == language::c && c_version) {
+        if (lang == language::c) {
+            if (c_flags) {
+                extend(ret, *c_flags);
+            }
             extend(ret, get_c_version_flags());
         }
         extend(ret, get_base_flags(lang));
