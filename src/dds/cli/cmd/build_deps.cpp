@@ -8,6 +8,7 @@
 #include <dds/pkg/get/get.hpp>
 
 #include <range/v3/action/join.hpp>
+#include <range/v3/action/push_back.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/transform.hpp>
@@ -31,7 +32,13 @@ static int _build_deps(const options& opts) {
     auto all_file_deps = opts.build_deps.deps_files  //
         | ranges::views::transform([&](auto dep_fpath) {
                              dds_log(info, "Reading deps from {}", dep_fpath.string());
-                             return dds::dependency_manifest::from_file(dep_fpath).dependencies;
+                             dds::dependency_manifest depman
+                                 = dds::dependency_manifest::from_file(dep_fpath);
+                             if (opts.build.want_tests) {
+                                 ranges::actions::push_back(depman.dependencies,
+                                                            std::move(depman.test_dependencies));
+                             }
+                             return std::move(depman).dependencies;
                          })
         | ranges::actions::join;
 

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import json
 import shutil
-from typing import Sequence, cast, Optional
+from typing import Sequence, cast, Optional, Callable
 from typing_extensions import TypedDict
 
 from _pytest.config import Config as PyTestConfig
@@ -17,6 +17,7 @@ from _pytest.fixtures import FixtureRequest
 from dds_ci import toolchain, paths
 from ..dds import DDSWrapper
 from ..util import Pathish
+from ..proc import check_run
 tc_mod = toolchain
 
 
@@ -243,3 +244,39 @@ def dds_exe(pytestconfig: PyTestConfig) -> Path:
     """A :class:`pathlib.Path` pointing to the DDS executable under test"""
     opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
     return Path(opt)
+
+
+TmpGitRepoFactory = Callable[[Pathish], Path]
+
+
+@pytest.fixture
+def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequest,
+                         pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
+    """
+    A temporary directory :class:`pathlib.Path` object in which a git repo will
+    be initialized
+    """
+
+    test_dir = Path(request.fspath).parent
+
+    def f(dirpath: Pathish) -> Path:
+        dirpath = Path(dirpath)
+        if not dirpath.is_absolute():
+            dirpath = test_dir / dirpath
+
+        tmp_path = tmp_path_factory.mktemp('tmp-git')
+
+        # Could use dirs_exists_ok=True with Python 3.8, but we min dep on 3.6
+        repo = tmp_path / 'r'
+        shutil.copytree(dirpath, repo)
+
+        git = pytestconfig.getoption('--git-exe') or 'git'
+        check_run([git, 'init', repo])
+        check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
+        check_run([git, 'add', '-A'], cwd=repo)
+        check_run(
+            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'], cwd=repo)
+
+        return repo
+
+    return f

@@ -1,0 +1,6 @@
+{
+    name: 'the_test_lib',
+    namespace: 'dds',
+    version: '0.0.0',
+    test_depends: ['the_test_dependency@0.0.0'],
+}

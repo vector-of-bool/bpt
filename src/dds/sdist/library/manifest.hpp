@@ -23,6 +23,8 @@ struct library_manifest {
     dds::name name;
     /// The libraries that the owning library "uses"
     std::vector<lm::usage> uses;
+    /// The libraries that the owning library uses for tests
+    std::vector<lm::usage> test_uses;
     /// The libraries that the owning library must be linked with
     std::vector<lm::usage> links;
 

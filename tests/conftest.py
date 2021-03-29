@@ -15,6 +15,7 @@ def pytest_addoption(parser: Any) -> None:
                      default=False,
                      help='Run the exhaustive and intensive dds-deps tests')
     parser.addoption('--dds-exe', help='Path to the dds executable under test', type=Path)
+    parser.addoption('--git-exe', help='Path to the git executable', type=Path)
 
 
 def pytest_configure(config: Any) -> None:
