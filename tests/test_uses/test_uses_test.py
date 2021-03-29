@@ -79,12 +79,3 @@ def test_build_dependent_with_multiple_libs(test_parent_dir: Path, project_opene
                 proj.root / 'libs/uses_for_tests/src')
     proj.dds.repo_add(http_repo.url)
     proj.build()
-
-
-def test_fail_to_build_when_test_depends_but_regular_uses(test_parent_dir: Path, project_opener: ProjectOpener, http_repo: RepoServer) -> None:
-    proj = project_opener.open('dependents/test_depends_but_regular_uses')
-    shutil.copytree(test_parent_dir / 'dependents/src',
-                    proj.root / 'src')
-    proj.dds.repo_add(http_repo.url)
-    with pytest.raises(subprocess.CalledProcessError, match=r'.*(test_depends.*test_uses|test_uses.*test_depends).*'):
-        proj.build()
