@@ -6,6 +6,7 @@
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/statement_cache.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 
 namespace dds {
@@ -68,7 +69,8 @@ public:
         return tups | ranges::views::transform([](auto&& pair) {
                    auto [name, version] = pair;
                    return pkg_id{name, semver::version::parse(version)};
-               });
+               })
+            | ranges::to_vector;
     }
 };
 
