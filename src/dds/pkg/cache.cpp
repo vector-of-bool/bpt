@@ -12,6 +12,7 @@
 
 #include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
+#include <libman/library.hpp>
 #include <neo/ref.hpp>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/action/unique.hpp>
@@ -46,6 +47,20 @@ std::optional<sdist> try_open_sdist_for_directory(path_ref p) noexcept {
                     "Failed to load source distribution from directory '{}': {}",
                     p.string(),
                     exc.value().what());
+            return std::nullopt;
+        },
+        [&](e_library_manifest_path lman_path, lm::e_invalid_usage_string usage) {
+            dds_log(warn, "Failed to load a source distribution in the package cache directory");
+            dds_log(warn,
+                    "The source distribution is located in [.bold.yellow[{}]]"_styled,
+                    p.string());
+            dds_log(
+                warn,
+                "The source distribution contains a usage requirement of '.bold.red[{}]', which is not a valid 'uses' string"_styled,
+                usage.value);
+            dds_log(warn,
+                    "The invalid 'uses' string is in [.bold.yellow[{}]]"_styled,
+                    lman_path.value);
             return std::nullopt;
         },
         [&](e_package_manifest_path*,

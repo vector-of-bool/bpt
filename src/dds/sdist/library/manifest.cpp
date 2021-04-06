@@ -28,7 +28,7 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
     library_manifest lib;
     using namespace semester::walk_ops;
     // Helpers
-    auto str_to_usage = [](const std::string& s) { return lm::split_usage_string(s); };
+    auto str_to_usage = [](const std::string& s) { return *lm::split_usage_string(s); };
     auto append_usage
         = [&](auto& usages) { return put_into(std::back_inserter(usages), str_to_usage); };
 

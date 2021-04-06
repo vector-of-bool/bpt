@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/error/result_fwd.hpp>
 #include <libman/util.hpp>
 
 #include <optional>
@@ -13,7 +14,11 @@ struct usage {
     std::string name;
 };
 
-usage split_usage_string(std::string_view);
+struct e_invalid_usage_string {
+    std::string value;
+};
+
+dds::result<usage> split_usage_string(std::string_view);
 
 class library {
 public:
@@ -25,7 +30,7 @@ public:
     std::vector<usage>       links;
     std::vector<std::string> special_uses;
 
-    static library from_file(path_ref);
+    static dds::result<library> from_file(path_ref);
 };
 
 }  // namespace lm

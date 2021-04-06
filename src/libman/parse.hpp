@@ -282,7 +282,7 @@ public:
         , _items(c)
         , _tr(unchanged()) {}
 
-    int operator()(std::string_view, std::string_view key, std::string_view value) const {
+    int operator()(std::string_view, std::string_view key, std::string_view value) {
         if (key == _key) {
             _items.emplace_back(_tr(value));
             return 1;
