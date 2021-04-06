@@ -45,6 +45,9 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
         return walk.accept;
     };
 
+    auto str_to_dependency
+        = [](const std::string& s) { return dependency::parse_depends_string(s); };
+
     walk(data,
          require_obj{"Root of package manifest should be a JSON object"},
          mapping{
@@ -80,14 +83,17 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                             return mapping{push_depends_obj_kv}(dat);
                         } else if (dat.is_array()) {
                             return for_each{put_into{std::back_inserter(ret.dependencies),
-                                                     [](const std::string& depstr) {
-                                                         return dependency::parse_depends_string(
-                                                             depstr);
-                                                     }}}(dat);
+                                                     str_to_dependency}}(dat);
                         } else {
                             return walk.reject(
                                 "'depends' should be an array of dependency strings");
                         }
+                    }},
+             if_key{"test_depends",
+                    require_array{"'test_depends' should be an array of dependency strings"},
+                    for_each{
+                        require_str{"Each of 'test_depends' should be a string"},
+                        put_into{std::back_inserter(ret.test_dependencies), str_to_dependency},
                     }},
              if_key{"test_driver",
                     require_str{"'test_driver' must be a string"},

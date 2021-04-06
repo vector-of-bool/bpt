@@ -31,6 +31,7 @@ struct dependency {
  */
 struct dependency_manifest {
     std::vector<dependency> dependencies;
+    std::vector<dependency> test_dependencies;
 
     static dependency_manifest from_file(path_ref where);
 };

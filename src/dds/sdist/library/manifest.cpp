@@ -27,20 +27,30 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
 
     library_manifest lib;
     using namespace semester::walk_ops;
+    // Helpers
+    auto str_to_usage = [](const std::string& s) { return *lm::split_usage_string(s); };
+    auto append_usage
+        = [&](auto& usages) { return put_into(std::back_inserter(usages), str_to_usage); };
+
+    // Parse and validate
     walk(data,
          require_obj{"Root of library manifest should be a JSON object"},
-         mapping{if_key{"$schema", just_accept},
-                 required_key{"name",
-                              "A string 'name' is required",
-                              require_str{"'name' must be a string"},
-                              put_into{lib.name,
-                                       [](std::string s) { return *dds::name::from_string(s); }}},
-                 if_key{"uses",
-                        require_array{"'uses' must be an array of strings"},
-                        for_each{require_str{"Each 'uses' element should be a string"},
-                                 put_into{std::back_inserter(lib.uses), [](std::string s) {
-                                              return *lm::split_usage_string(s);
-                                          }}}}});
+         mapping{
+             if_key{"$schema", just_accept},
+             required_key{"name",
+                          "A string 'name' is required",
+                          require_str{"'name' must be a string"},
+                          put_into{lib.name,
+                                   [](std::string s) { return *dds::name::from_string(s); }}},
+             if_key{"uses",
+                    require_array{"'uses' must be an array of strings"},
+                    for_each{require_str{"Each 'uses' element should be a string"},
+                             append_usage(lib.uses)}},
+             if_key{"test_uses",
+                    require_array{"'test_uses' must be an array of strings"},
+                    for_each{require_str{"Each 'test_uses' element should be a string"},
+                             append_usage(lib.test_uses)}},
+         });
 
     return lib;
 }

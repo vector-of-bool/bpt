@@ -4,6 +4,7 @@
 #include <dds/pkg/cache.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/pkg/get/get.hpp>
+#include <dds/util/algo.hpp>
 
 #include <boost/leaf/handle_exception.hpp>
 
@@ -32,8 +33,11 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
             pkg_cache_flags::write_lock | pkg_cache_flags::create_if_absent,
             [&](pkg_cache repo) {
                 // Download dependencies
-                auto deps = repo.solve(man.dependencies, cat);
+                auto all_deps = man.dependencies;
+                extend(all_deps, man.test_dependencies);
+                auto deps = repo.solve(all_deps, cat);
                 get_all(deps, repo, cat);
+
                 for (const pkg_id& pk : deps) {
                     auto sdist_ptr = repo.find(pk);
                     assert(sdist_ptr);

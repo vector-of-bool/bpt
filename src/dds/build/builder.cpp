@@ -119,6 +119,8 @@ library_plan prepare_library(state&                  st,
     lp.build_tests     = sdt.params.build_tests;
     lp.enable_warnings = sdt.params.enable_warnings;
     if (lp.build_tests) {
+        extend(lp.test_uses, lib.manifest().test_uses);
+
         if (pkg_man.test_driver == test_lib::catch_
             || pkg_man.test_driver == test_lib::catch_main) {
             lp.test_uses.push_back({".dds", "Catch"});
