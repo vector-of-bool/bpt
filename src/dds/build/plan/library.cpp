@@ -37,6 +37,7 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<source_file> lib_sources;
     std::vector<source_file> template_sources;
     std::vector<source_file> header_sources;
+    std::vector<source_file> public_header_sources;
 
     auto qual_name = std::string(qual_name_.value_or(lib.manifest().name.str));
 
@@ -63,6 +64,15 @@ library_plan library_plan::create(const library_root&             lib,
         }
     }
 
+    auto include_dir = lib.include_source_root();
+    if (include_dir.exists()) {
+        auto all_sources = include_dir.collect_sources();
+        for (const auto& sfile : all_sources) {
+            assert(sfile.kind == source_kind::header);
+            public_header_sources.push_back(sfile);
+        }
+    }
+
     // Load up the compile rules
     auto compile_rules              = lib.base_compile_rules();
     compile_rules.enable_warnings() = params.enable_warnings;
@@ -74,8 +84,8 @@ library_plan library_plan::create(const library_root&             lib,
         compile_rules.include_dirs().push_back(codegen_subdir);
     }
 
-    auto header_compile_rules          = compile_rules.clone();
-    header_compile_rules.syntax_only() = true;
+    auto public_header_compile_rules          = compile_rules.clone();
+    public_header_compile_rules.syntax_only() = true;
 
     if (src_dir.exists()) {
         compile_rules.include_dirs().push_back(src_dir.path);
@@ -92,15 +102,21 @@ library_plan library_plan::create(const library_root&             lib,
         | ranges::to_vector;
 
     // Run a syntax-only pass over headers to verify that headers can build in isolation.
-    auto header_indep_plan
-        = header_sources  //
+    auto header_indep_plan = header_sources  //
         | ranges::views::transform([&](const source_file& sf) {
-              auto& rules
-                  = sf.basis_path == src_dir.path ? src_header_compile_rules : header_compile_rules;
-              return compile_file_plan(rules, sf, qual_name, params.out_subdir / "timestamps");
-          })
+                                 return compile_file_plan(src_header_compile_rules,
+                                                          sf,
+                                                          qual_name,
+                                                          params.out_subdir / "timestamps");
+                             })
         | ranges::to_vector;
-
+    extend(header_indep_plan,
+           public_header_sources | ranges::views::transform([&](const source_file& sf) {
+               return compile_file_plan(public_header_compile_rules,
+                                        sf,
+                                        qual_name,
+                                        params.out_subdir / "timestamps");
+           }));
     // If we have any compiled library files, generate a static library archive
     // for this library
     std::optional<create_archive_plan> archive_plan;
