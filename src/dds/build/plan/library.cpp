@@ -72,6 +72,10 @@ library_plan library_plan::create(const library_root&             lib,
             public_header_sources.push_back(sfile);
         }
     }
+    if (!params.build_tests) {
+        public_header_sources.clear();
+        header_sources.clear();
+    }
 
     // Load up the compile rules
     auto compile_rules              = lib.base_compile_rules();
