@@ -42,6 +42,11 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
     ret._exe_suffix          = prep.exe_suffix;
     ret._deps_mode           = prep.deps_mode;
     ret._tty_flags           = prep.tty_flags;
+
+    ret._c_source_type_flags   = prep.c_source_type_flags;
+    ret._cxx_source_type_flags = prep.cxx_source_type_flags;
+    ret._syntax_only_flags     = prep.syntax_only_flags;
+
     return ret;
 }
 
@@ -112,19 +117,18 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
 
     if (spec.syntax_only) {
         dds_log(trace, "Enabling syntax-only mode");
-        flags.emplace_back("-fsyntax-only");
-        if (lang == language::c) {
-            flags.emplace_back("-xc");
-        } else {
-            flags.emplace_back("-xc++");
-        }
+        extend(flags, _syntax_only_flags);
+        extend(flags, lang == language::c ? _c_source_type_flags : _cxx_source_type_flags);
+
         touch_path             = spec.out_path;
         auto syntax_check_file = spec.out_path.parent_path() / spec.source_path.filename();
         syntax_check_file += ".syncheck";
         dds_log(trace, "Syntax check file: {}", syntax_check_file);
         compile_target = syntax_check_file.string();
 
-        std::ofstream syncheck_file(syntax_check_file);
+        fs::create_directories(syntax_check_file.parent_path());
+        std::ofstream syncheck_file(syntax_check_file, std::ios::trunc);
+        dds_log(debug, "syncheck_file status: {}", bool(syncheck_file));
         fmt::print(syncheck_file, "#include \"{}\"", spec.source_path.string());
     }
 

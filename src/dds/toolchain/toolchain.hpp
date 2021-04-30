@@ -66,6 +66,9 @@ class toolchain {
     string_seq _link_exe;
     string_seq _warning_flags;
     string_seq _tty_flags;
+    string_seq _c_source_type_flags;
+    string_seq _cxx_source_type_flags;
+    string_seq _syntax_only_flags;
 
     std::string _archive_prefix;
     std::string _archive_suffix;

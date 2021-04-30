@@ -21,6 +21,10 @@ struct toolchain_prep {
     string_seq warning_flags;
     string_seq tty_flags;
 
+    string_seq c_source_type_flags;
+    string_seq cxx_source_type_flags;
+    string_seq syntax_only_flags;
+
     std::string archive_prefix;
     std::string archive_suffix;
     std::string object_prefix;

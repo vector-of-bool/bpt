@@ -68,7 +68,7 @@ library_plan library_plan::create(const library_root&             lib,
     if (include_dir.exists()) {
         auto all_sources = include_dir.collect_sources();
         for (const auto& sfile : all_sources) {
-            assert(sfile.kind == source_kind::header);
+            assert(sfile.kind == source_kind::header || sfile.kind == source_kind::header_template);
             public_header_sources.push_back(sfile);
         }
     }
