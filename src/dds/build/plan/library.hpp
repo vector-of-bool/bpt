@@ -63,6 +63,8 @@ class library_plan {
     std::vector<link_executable_plan> _link_exes;
     /// The templates that must be rendered for this library
     std::vector<render_template_plan> _templates;
+    /// The headers that must be checked for independence
+    std::vector<compile_file_plan> _headers;
 
 public:
     /**
@@ -76,13 +78,15 @@ public:
                  fs::path                           subdir,
                  std::optional<create_archive_plan> ar,
                  std::vector<link_executable_plan>  exes,
-                 std::vector<render_template_plan>  tmpls)
+                 std::vector<render_template_plan>  tmpls,
+                 std::vector<compile_file_plan>     headers)
         : _lib(std::move(lib))
         , _qual_name(qual_name)
         , _subdir(std::move(subdir))
         , _create_archive(std::move(ar))
         , _link_exes(std::move(exes))
-        , _templates(std::move(tmpls)) {}
+        , _templates(std::move(tmpls))
+        , _headers(std::move(headers)) {}
 
     /**
      * Get the underlying library object
@@ -117,6 +121,10 @@ public:
      * The executables that should be created by this library
      */
     auto& executables() const noexcept { return _link_exes; }
+    /**
+     * The headers that should be checked for independence by this library
+     */
+    auto& headers() const noexcept { return _headers; }
     /**
      * The library identifiers that are used by this library
      */

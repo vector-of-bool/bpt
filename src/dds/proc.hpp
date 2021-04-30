@@ -36,6 +36,7 @@ struct proc_result {
 
 struct proc_options {
     std::vector<std::string> command;
+    std::string              stdin_ = "";
 
     std::optional<std::filesystem::path> cwd = std::nullopt;
 
@@ -47,8 +48,10 @@ struct proc_options {
 
 proc_result run_proc(const proc_options& opts);
 
-inline proc_result run_proc(std::vector<std::string> args) {
-    return run_proc(proc_options{.command = std::move(args)});
+inline proc_result run_proc(std::vector<std::string> args, std::string stdin_) {
+    return run_proc(proc_options{.command = std::move(args), .stdin_ = std::move(stdin_)});
 }
+
+inline proc_result run_proc(std::vector<std::string> args) { return run_proc(std::move(args), ""); }
 
 }  // namespace dds

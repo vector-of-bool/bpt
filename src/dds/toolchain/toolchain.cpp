@@ -77,6 +77,8 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                                                        path_ref                 cwd,
                                                        toolchain_knobs knobs) const noexcept {
     using namespace std::literals;
+    std::string             stdin_;
+    std::optional<fs::path> touch_path;
 
     dds_log(trace,
             "Calculate compile command for source file [{}] to object file [{}]",
@@ -103,6 +105,20 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         // the command-line of the compiler (including our own).
         auto def = replace(_def_template, "[def]", "__dds_cachebust=" + *knobs.cache_buster);
         extend(flags, def);
+    }
+
+    if (spec.syntax_only) {
+        dds_log(trace, "Enabling syntax-only mode");
+        flags.emplace_back("-fsyntax-only");
+        if (lang == language::c) {
+            flags.emplace_back("-xc");
+        } else {
+            flags.emplace_back("-xc++");
+        }
+        auto header = fs::absolute(spec.source_path);
+        stdin_      = fmt::format("#include \"{}\"", header.string());
+        touch_path  = spec.out_path;
+        dds_log(trace, "Syntax only stdin: {}", stdin_);
     }
 
     dds_log(trace, "#include-search dirs:");
@@ -156,12 +172,17 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         if (arg == "[flags]") {
             extend(command, flags);
         } else {
-            arg = replace(arg, "[in]", spec.source_path.string());
+            arg = replace(arg, "[in]", spec.syntax_only ? "-" : spec.source_path.string());
             arg = replace(arg, "[out]", spec.out_path.string());
             command.push_back(arg);
         }
     }
-    return {command, gnu_depfile_path};
+    return {
+        std::move(command),
+        std::move(gnu_depfile_path),
+        std::move(stdin_),
+        std::move(touch_path),
+    };
 }
 
 vector<string> toolchain::create_archive_command(const archive_spec& spec,

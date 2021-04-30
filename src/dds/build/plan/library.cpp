@@ -3,6 +3,7 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 
+#include <range/v3/action/push_back.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -35,6 +36,7 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
     std::vector<source_file> template_sources;
+    std::vector<source_file> header_sources;
 
     auto qual_name = std::string(qual_name_.value_or(lib.manifest().name.str));
 
@@ -56,6 +58,7 @@ library_plan library_plan::create(const library_root&             lib,
                 template_sources.push_back(sfile);
             } else {
                 assert(sfile.kind == source_kind::header);
+                header_sources.push_back(sfile);
             }
         }
     }
@@ -71,11 +74,30 @@ library_plan library_plan::create(const library_root&             lib,
         compile_rules.include_dirs().push_back(codegen_subdir);
     }
 
+    auto header_compile_rules          = compile_rules.clone();
+    header_compile_rules.syntax_only() = true;
+
+    if (src_dir.exists()) {
+        compile_rules.include_dirs().push_back(src_dir.path);
+    }
+    auto src_header_compile_rules          = compile_rules.clone();
+    src_header_compile_rules.syntax_only() = true;
+
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
         lib_sources           //
         | ranges::views::transform([&](const source_file& sf) {
               return compile_file_plan(compile_rules, sf, qual_name, params.out_subdir / "obj");
+          })
+        | ranges::to_vector;
+
+    // Run a syntax-only pass over headers to verify that headers can build in isolation.
+    auto header_indep_plan
+        = header_sources  //
+        | ranges::views::transform([&](const source_file& sf) {
+              auto& rules
+                  = sf.basis_path == src_dir.path ? src_header_compile_rules : header_compile_rules;
+              return compile_file_plan(rules, sf, qual_name, params.out_subdir / "timestamps");
           })
         | ranges::to_vector;
 
@@ -148,5 +170,6 @@ library_plan library_plan::create(const library_root&             lib,
                         params.out_subdir,
                         std::move(archive_plan),
                         std::move(link_executables),
-                        std::move(render_templates)};
+                        std::move(render_templates),
+                        std::move(header_indep_plan)};
 }

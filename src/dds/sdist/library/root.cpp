@@ -90,13 +90,9 @@ fs::path library_root::private_include_dir() const noexcept { return src_source_
 
 shared_compile_file_rules library_root::base_compile_rules() const noexcept {
     auto                      inc_dir = include_source_root();
-    auto                      src_dir = this->src_source_root();
     shared_compile_file_rules ret;
     if (inc_dir.exists()) {
         ret.include_dirs().push_back(inc_dir.path);
-    }
-    if (src_dir.exists()) {
-        ret.include_dirs().push_back(src_dir.path);
     }
     return ret;
 }

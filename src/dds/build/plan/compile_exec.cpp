@@ -41,6 +41,8 @@ struct compile_ticket {
     bool                 needs_recompile;
     // Information about the previous time a file was compiled, if any
     std::optional<completed_compilation> prior_command;
+    // Whether this compilation is for the purpose of header independence
+    bool is_syntax_only = false;
 };
 
 /**
@@ -90,15 +92,17 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
     // Generate a log message to display to the user
     auto source_path = compile.plan.get().source_path();
 
-    auto msg
-        = fmt::format("[{}] Compile: .br.cyan[{}]"_styled,
+    std::string_view compile_event_msg = compile.is_syntax_only ? "Check" : "Compile";
+    auto             msg
+        = fmt::format("[{}] {}: .br.cyan[{}]"_styled,
                       compile.plan.get().qualifier(),
+                      compile_event_msg,
                       fs::relative(source_path, compile.plan.get().source().basis_path).string());
 
     // Do it!
     dds_log(info, msg);
-    auto&& [dur_ms, proc_res]
-        = timed<std::chrono::milliseconds>([&] { return run_proc(compile.command.command); });
+    auto&& [dur_ms, proc_res] = timed<std::chrono::milliseconds>(
+        [&] { return run_proc(compile.command.command, compile.command.stdin_); });
     auto nth = counter.n.fetch_add(1);
     dds_log(info,
             "{:60} - {:>7L}ms [{:{}}/{}]",
@@ -168,6 +172,11 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
          */
     }
 
+    if (compiled_okay && compile.command.touch_path) {
+        dds_log(trace, "Touching specified file: {}", compile.command.touch_path->string());
+        std::ofstream(*compile.command.touch_path);  // Touch the file
+    }
+
     // MSVC prints the filename of the source file. Remove it from the output.
     if (compiler_output.find(source_path.filename().string()) == 0) {
         compiler_output.erase(0, source_path.filename().string().length());
@@ -181,7 +190,9 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
 
     // Log a compiler failure
     if (!compiled_okay) {
-        dds_log(error, "Compilation failed: .bold.cyan[{}]"_styled, source_path.string());
+        std::string_view compilation_failure_msg
+            = compile.is_syntax_only ? "Syntax check failed" : "Compilation failed";
+        dds_log(error, "{}: .bold.cyan[{}]"_styled, compilation_failure_msg, source_path.string());
         dds_log(error,
                 "Subcommand .bold.red[FAILED] [Exited {}]: .bold.yellow[{}]\n{}"_styled,
                 compile_retc,
@@ -190,7 +201,9 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
         if (compile_signal) {
             dds_log(error, "Process exited via signal {}", compile_signal);
         }
-        throw_user_error<errc::compile_failure>("Compilation failed [{}]", source_path.string());
+        throw_user_error<errc::compile_failure>("{} [{}]",
+                                                compilation_failure_msg,
+                                                source_path.string());
     }
 
     // Print any compiler output, sans whitespace
@@ -216,7 +229,8 @@ compile_ticket mk_compile_ticket(const compile_file_plan& plan, build_env_ref en
                        .command          = plan.generate_compile_command(env),
                        .object_file_path = plan.calc_object_file_path(env),
                        .needs_recompile  = false,
-                       .prior_command    = {}};
+                       .prior_command    = {},
+                       .is_syntax_only   = plan.rules().syntax_only()};
 
     auto rb_info = get_prior_compilation(env.db, ret.object_file_path);
     if (!rb_info) {

@@ -31,11 +31,15 @@ struct compile_file_spec {
     std::vector<fs::path>    external_include_dirs = {};
     language                 lang                  = language::automatic;
     bool                     enable_warnings       = false;
+    bool                     syntax_only           = false;
 };
 
 struct compile_command_info {
     std::vector<std::string> command;
     std::optional<fs::path>  gnu_depfile_path;
+    std::string              stdin_;
+    /// Path should be touched on successful completion of command
+    std::optional<fs::path> touch_path;
 };
 
 struct archive_spec {

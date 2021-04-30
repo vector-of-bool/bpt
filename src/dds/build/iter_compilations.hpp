@@ -34,6 +34,11 @@ inline auto iter_compilations(const build_plan& plan) {
         | ranges::views::join  //
         ;
 
+    auto header_compiles =                                  //
+        iter_libraries(plan)                                //
+        | ranges::views::transform(&library_plan::headers)  //
+        | ranges::views::join;
+
     auto exe_compiles =                                                       //
         iter_libraries(plan)                                                  //
         | ranges::views::transform(&library_plan::executables)                //
@@ -41,7 +46,7 @@ inline auto iter_compilations(const build_plan& plan) {
         | ranges::views::transform(&link_executable_plan::main_compile_file)  //
         ;
 
-    return ranges::views::concat(lib_compiles, exe_compiles);
+    return ranges::views::concat(lib_compiles, header_compiles, exe_compiles);
 }
 
 }  // namespace dds
