@@ -7,6 +7,7 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
+#include <fmt/ostream.h>
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
@@ -80,6 +81,8 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
     std::string             stdin_;
     std::optional<fs::path> touch_path;
 
+    std::string compile_target = spec.source_path.string();
+
     dds_log(trace,
             "Calculate compile command for source file [{}] to object file [{}]",
             spec.source_path.string(),
@@ -115,10 +118,14 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         } else {
             flags.emplace_back("-xc++");
         }
-        auto header = fs::absolute(spec.source_path);
-        stdin_      = fmt::format("#include \"{}\"", header.string());
-        touch_path  = spec.out_path;
-        dds_log(trace, "Syntax only stdin: {}", stdin_);
+        touch_path             = spec.out_path;
+        auto syntax_check_file = spec.out_path.parent_path() / spec.source_path.filename();
+        syntax_check_file += ".syncheck";
+        dds_log(trace, "Syntax check file: {}", syntax_check_file);
+        compile_target = syntax_check_file.string();
+
+        std::ofstream syncheck_file(syntax_check_file);
+        fmt::print(syncheck_file, "#include \"{}\"", spec.source_path.string());
     }
 
     dds_log(trace, "#include-search dirs:");
@@ -172,7 +179,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         if (arg == "[flags]") {
             extend(command, flags);
         } else {
-            arg = replace(arg, "[in]", spec.syntax_only ? "-" : spec.source_path.string());
+            arg = replace(arg, "[in]", compile_target);
             arg = replace(arg, "[out]", spec.out_path.string());
             command.push_back(arg);
         }
