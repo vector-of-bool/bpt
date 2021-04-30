@@ -26,11 +26,7 @@ void check_rc(bool b, std::string_view s) {
     }
 }
 
-::pid_t spawn_child(const proc_options& opts,
-                    int                 stdout_pipe,
-                    int                 close_me,
-                    int                 close_me2,
-                    int                 stdin_pipe) noexcept {
+::pid_t spawn_child(const proc_options& opts, int stdout_pipe, int close_me) noexcept {
     // We must allocate BEFORE fork(), since the CRT might stumble with malloc()-related locks that
     // are held during the fork().
     std::vector<const char*> strings;
@@ -51,13 +47,10 @@ void check_rc(bool b, std::string_view s) {
     }
     // We are child
     ::close(close_me);
-    ::close(close_me2);
     auto rc = dup2(stdout_pipe, STDOUT_FILENO);
     check_rc(rc != -1, "Failed to dup2 stdout");
     rc = dup2(stdout_pipe, STDERR_FILENO);
     check_rc(rc != -1, "Failed to dup2 stderr");
-    rc = dup2(stdin_pipe, STDIN_FILENO);
-    check_rc(rc != -1, "Failed to dup2 stdin");
     rc = ::chdir(workdir.data());
     check_rc(rc != -1, "Failed to chdir() for subprocess");
 
@@ -77,14 +70,7 @@ void check_rc(bool b, std::string_view s) {
 }  // namespace
 
 proc_result dds::run_proc(const proc_options& opts) {
-    if (opts.stdin_.empty()) {
-        dds_log(debug, "Spawning subprocess: {}", quote_command(opts.command));
-    } else {
-        dds_log(debug,
-                "Spawning subprocess: {}\n\tWith stdin: {}",
-                quote_command(opts.command),
-                opts.stdin_);
-    }
+    dds_log(debug, "Spawning subprocess: {}", quote_command(opts.command));
     int  stdio_pipe[2] = {};
     auto rc            = ::pipe(stdio_pipe);
     check_rc(rc == 0, "Create stdio pipe for subprocess");
@@ -92,28 +78,9 @@ proc_result dds::run_proc(const proc_options& opts) {
     int read_pipe  = stdio_pipe[0];
     int write_pipe = stdio_pipe[1];
 
-    int proc_stdin_pipe[2] = {};
-    rc                     = ::pipe(proc_stdin_pipe);
-    check_rc(rc == 0, "Create stdin pipe for subprocess");
-    int stdin_read_pipe  = proc_stdin_pipe[0];
-    int stdin_write_pipe = proc_stdin_pipe[1];
+    auto child = spawn_child(opts, write_pipe, read_pipe);
 
-    auto child = spawn_child(opts, write_pipe, read_pipe, stdin_write_pipe, stdin_read_pipe);
-
-    ::close(stdin_read_pipe);
     ::close(write_pipe);
-
-    {
-        const char* stdin_cur = opts.stdin_.data();
-        size_t      remaining = opts.stdin_.size();
-        while (remaining > 0) {
-            ssize_t num_written = ::write(stdin_write_pipe, stdin_cur, remaining);
-            check_rc(num_written != -1, "Unable to write to stdin for subprocess");
-            remaining -= num_written;
-            stdin_cur += num_written;
-        }
-        ::close(stdin_write_pipe);
-    }
 
     pollfd stdio_fd;
     stdio_fd.fd     = read_pipe;

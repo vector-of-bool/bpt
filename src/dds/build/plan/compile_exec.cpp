@@ -101,8 +101,8 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
 
     // Do it!
     dds_log(info, msg);
-    auto&& [dur_ms, proc_res] = timed<std::chrono::milliseconds>(
-        [&] { return run_proc(compile.command.command, compile.command.stdin_); });
+    auto&& [dur_ms, proc_res]
+        = timed<std::chrono::milliseconds>([&] { return run_proc(compile.command.command); });
     auto nth = counter.n.fetch_add(1);
     dds_log(info,
             "{:60} - {:>7L}ms [{:{}}/{}]",

@@ -83,7 +83,6 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                                                        path_ref                 cwd,
                                                        toolchain_knobs knobs) const noexcept {
     using namespace std::literals;
-    std::string             stdin_;
     std::optional<fs::path> touch_path;
 
     std::string compile_target = spec.source_path.string();
@@ -188,12 +187,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
             command.push_back(arg);
         }
     }
-    return {
-        std::move(command),
-        std::move(gnu_depfile_path),
-        std::move(stdin_),
-        std::move(touch_path),
-    };
+    return {std::move(command), std::move(gnu_depfile_path), std::move(touch_path)};
 }
 
 vector<string> toolchain::create_archive_command(const archive_spec& spec,

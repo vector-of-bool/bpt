@@ -37,7 +37,6 @@ struct compile_file_spec {
 struct compile_command_info {
     std::vector<std::string> command;
     std::optional<fs::path>  gnu_depfile_path;
-    std::string              stdin_;
     /// Path should be touched on successful completion of command
     std::optional<fs::path> touch_path;
 };
