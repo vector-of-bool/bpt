@@ -106,7 +106,10 @@ library_plan library_plan::create(const library_root&             lib,
     auto lib_compile_files =  //
         lib_sources           //
         | ranges::views::transform([&](const source_file& sf) {
-              return compile_file_plan(compile_rules, sf, qual_name, params.out_subdir / "obj");
+              return compile_file_plan(compile_rules,
+                                       sf,
+                                       qual_name,
+                                       params.out_subdir / lib.path_from_root() / "obj");
           })
         | ranges::to_vector;
 

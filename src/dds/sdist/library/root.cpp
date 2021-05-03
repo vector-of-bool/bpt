@@ -56,7 +56,7 @@ auto collect_pf_sources(path_ref path) {
 
 }  // namespace
 
-library_root library_root::from_directory(path_ref lib_dir) {
+library_root library_root::from_directory(path_ref lib_dir, path_ref path_from_root) {
     assert(lib_dir.is_absolute());
     auto sources = collect_pf_sources(lib_dir);
 
@@ -73,7 +73,7 @@ library_root library_root::from_directory(path_ref lib_dir) {
         }
     }
 
-    auto lib = library_root(lib_dir, std::move(sources), std::move(man));
+    auto lib = library_root(lib_dir, path_from_root, std::move(sources), std::move(man));
 
     return lib;
 }
@@ -110,7 +110,7 @@ auto has_library_dirs
 std::vector<library_root> dds::collect_libraries(path_ref root) {
     std::vector<library_root> ret;
     if (has_library_dirs(root)) {
-        ret.emplace_back(library_root::from_directory(fs::canonical(root)));
+        ret.emplace_back(library_root::from_directory(fs::canonical(root), fs::path()));
     }
 
     auto pf_libs_dir = root / "libs";
@@ -120,8 +120,10 @@ std::vector<library_root> dds::collect_libraries(path_ref root) {
                fs::directory_iterator(pf_libs_dir)            //
                    | neo::lref                                //
                    | ranges::views::filter(has_library_dirs)  //
-                   | ranges::views::transform(
-                       [&](auto p) { return library_root::from_directory(fs::canonical(p)); }));
+                   | ranges::views::transform([&](auto p) {
+                         return library_root::from_directory(fs::canonical(p),
+                                                             fs::relative(p, root));
+                     }));
     }
     return ret;
 }
