@@ -76,10 +76,14 @@ public:
     const source_list& all_sources() const noexcept { return _sources; }
 
     /**
-     * Generate a compile rules object that should be used when compiling
-     * this library.
+     * Adds the public compile rules to the argument
      */
-    shared_compile_file_rules base_compile_rules() const noexcept;
+    void append_public_compile_rules(shared_compile_file_rules& rules) const noexcept;
+
+    /**
+     * Adds the private compile rules to the argument
+     */
+    void append_private_compile_rules(shared_compile_file_rules& rules) const noexcept;
 };
 
 /**

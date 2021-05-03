@@ -88,13 +88,18 @@ fs::path library_root::public_include_dir() const noexcept {
 
 fs::path library_root::private_include_dir() const noexcept { return src_source_root().path; }
 
-shared_compile_file_rules library_root::base_compile_rules() const noexcept {
-    auto                      inc_dir = include_source_root();
-    shared_compile_file_rules ret;
+void library_root::append_public_compile_rules(shared_compile_file_rules& rules) const noexcept {
+    auto inc_dir = include_source_root();
     if (inc_dir.exists()) {
-        ret.include_dirs().push_back(inc_dir.path);
+        rules.include_dirs().push_back(inc_dir.path);
     }
-    return ret;
+}
+
+void library_root::append_private_compile_rules(shared_compile_file_rules& rules) const noexcept {
+    auto src_dir = this->src_source_root();
+    if (src_dir.exists()) {
+        rules.include_dirs().push_back(src_dir.path);
+    }
 }
 
 auto has_library_dirs

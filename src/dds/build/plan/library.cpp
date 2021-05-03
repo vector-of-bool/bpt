@@ -78,7 +78,8 @@ library_plan library_plan::create(const library_root&             lib,
     }
 
     // Load up the compile rules
-    auto compile_rules              = lib.base_compile_rules();
+    shared_compile_file_rules compile_rules;
+    lib.append_public_compile_rules(compile_rules);
     compile_rules.enable_warnings() = params.enable_warnings;
     compile_rules.uses()            = lib.manifest().uses;
 
@@ -90,12 +91,9 @@ library_plan library_plan::create(const library_root&             lib,
 
     auto public_header_compile_rules          = compile_rules.clone();
     public_header_compile_rules.syntax_only() = true;
-
-    if (src_dir.exists()) {
-        compile_rules.include_dirs().push_back(src_dir.path);
-    }
-    auto src_header_compile_rules          = compile_rules.clone();
-    src_header_compile_rules.syntax_only() = true;
+    auto src_header_compile_rules             = public_header_compile_rules.clone();
+    lib.append_private_compile_rules(compile_rules);
+    lib.append_private_compile_rules(src_header_compile_rules);
 
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
