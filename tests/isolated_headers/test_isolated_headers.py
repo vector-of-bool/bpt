@@ -1,26 +1,16 @@
 import pytest
 import subprocess
 
-from dds_ci.testing import ProjectOpener
+from dds_ci.testing import ProjectOpener, error
 
 
-def test_dependent_src_header_fails(project_opener: ProjectOpener, capfd) -> None:
+def test_dependent_src_header_fails(project_opener: ProjectOpener) -> None:
     proj = project_opener.open('bad_proj')
-    with pytest.raises(subprocess.CalledProcessError):
+    with error.expect_error_marker_re(r'syntax-check-failed.*bad_src\.hpp'):
         proj.build()
-    out = capfd.readouterr()
-    errmsg = out.out + '\n' + out.err
-
-    assert 'Syntax check failed' in errmsg
-    assert 'bad_src.hpp' in errmsg
 
 
-def test_dependent_include_header_fails(project_opener: ProjectOpener, capfd) -> None:
+def test_dependent_include_header_fails(project_opener: ProjectOpener) -> None:
     proj = project_opener.open('bad_proj_include')
-    with pytest.raises(subprocess.CalledProcessError):
+    with error.expect_error_marker_re(r'syntax-check-failed.*depends_src\.hpp'):
         proj.build()
-    out = capfd.readouterr()
-    errmsg = out.out + '\n' + out.err
-
-    assert 'Syntax check failed' in errmsg
-    assert 'depends_src.hpp' in errmsg

@@ -5,6 +5,7 @@
 #include <dds/proc.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
+#include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
 #include <dds/util/string.hpp>
 #include <dds/util/time.hpp>
@@ -195,6 +196,9 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
                 compiler_output);
         if (compile_signal) {
             dds_log(error, "Process exited via signal {}", compile_signal);
+        }
+        if (compile.is_syntax_only) {
+            write_error_marker(fmt::format("syntax-check-failed: {}", source_path.string()));
         }
         throw_user_error<errc::compile_failure>("{} [{}]",
                                                 compilation_failure_msg,
