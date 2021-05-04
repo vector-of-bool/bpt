@@ -172,11 +172,6 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
          */
     }
 
-    if (compiled_okay && compile.command.touch_path) {
-        dds_log(trace, "Touching specified file: {}", compile.command.touch_path->string());
-        std::ofstream(*compile.command.touch_path);  // Touch the file
-    }
-
     // MSVC prints the filename of the source file. Remove it from the output.
     if (compiler_output.find(source_path.filename().string()) == 0) {
         compiler_output.erase(0, source_path.filename().string().length());

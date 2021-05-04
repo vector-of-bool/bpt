@@ -68,8 +68,14 @@ library_plan library_plan::create(const library_root&             lib,
     if (include_dir.exists()) {
         auto all_sources = include_dir.collect_sources();
         for (const auto& sfile : all_sources) {
-            assert(sfile.kind == source_kind::header || sfile.kind == source_kind::header_template);
-            public_header_sources.push_back(sfile);
+            if (sfile.kind != source_kind::header && sfile.kind != source_kind::header_template) {
+                dds_log(warn,
+                        "Public include/ should only contain header or header template files."
+                        " Not a header: {}",
+                        sfile.path.string());
+            } else {
+                public_header_sources.push_back(sfile);
+            }
         }
     }
     if (!params.build_tests) {
@@ -79,7 +85,7 @@ library_plan library_plan::create(const library_root&             lib,
 
     // Load up the compile rules
     shared_compile_file_rules compile_rules;
-    lib.append_public_compile_rules(compile_rules);
+    lib.append_public_compile_rules(neo::into(compile_rules));
     compile_rules.enable_warnings() = params.enable_warnings;
     compile_rules.uses()            = lib.manifest().uses;
 
@@ -92,8 +98,8 @@ library_plan library_plan::create(const library_root&             lib,
     auto public_header_compile_rules          = compile_rules.clone();
     public_header_compile_rules.syntax_only() = true;
     auto src_header_compile_rules             = public_header_compile_rules.clone();
-    lib.append_private_compile_rules(compile_rules);
-    lib.append_private_compile_rules(src_header_compile_rules);
+    lib.append_private_compile_rules(neo::into(compile_rules));
+    lib.append_private_compile_rules(neo::into(src_header_compile_rules));
 
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //

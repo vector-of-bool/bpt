@@ -6,6 +6,8 @@
 #include "../root.hpp"
 #include <dds/build/plan/compile_file.hpp>
 
+#include <neo/out.hpp>
+
 #include <string>
 
 namespace dds {
@@ -78,12 +80,12 @@ public:
     /**
      * Adds the public compile rules to the argument
      */
-    void append_public_compile_rules(shared_compile_file_rules& rules) const noexcept;
+    void append_public_compile_rules(neo::output<shared_compile_file_rules> rules) const noexcept;
 
     /**
      * Adds the private compile rules to the argument
      */
-    void append_private_compile_rules(shared_compile_file_rules& rules) const noexcept;
+    void append_private_compile_rules(neo::output<shared_compile_file_rules> rules) const noexcept;
 };
 
 /**

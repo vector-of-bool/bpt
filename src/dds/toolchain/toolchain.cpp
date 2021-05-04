@@ -7,6 +7,7 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
+#include <boost/leaf/result.hpp>
 #include <fmt/ostream.h>
 #include <range/v3/view/transform.hpp>
 
@@ -83,9 +84,8 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
                                                        path_ref                 cwd,
                                                        toolchain_knobs knobs) const noexcept {
     using namespace std::literals;
-    std::optional<fs::path> touch_path;
 
-    std::string compile_target = spec.source_path.string();
+    fs::path in_file = spec.source_path;
 
     dds_log(trace,
             "Calculate compile command for source file [{}] to object file [{}]",
@@ -119,16 +119,12 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         extend(flags, _syntax_only_flags);
         extend(flags, lang == language::c ? _c_source_type_flags : _cxx_source_type_flags);
 
-        touch_path             = spec.out_path;
-        auto syntax_check_file = spec.out_path.parent_path() / spec.source_path.filename();
-        syntax_check_file += ".syncheck";
-        dds_log(trace, "Syntax check file: {}", syntax_check_file);
-        compile_target = syntax_check_file.string();
+        in_file = spec.out_path.parent_path() / spec.source_path.filename();
+        in_file += ".syncheck";
+        dds_log(trace, "Syntax check file: {}", in_file);
 
-        fs::create_directories(syntax_check_file.parent_path());
-        std::ofstream syncheck_file(syntax_check_file, std::ios::trunc);
-        dds_log(debug, "syncheck_file status: {}", bool(syncheck_file));
-        fmt::print(syncheck_file, "#include \"{}\"", spec.source_path.string());
+        fs::create_directories(in_file.parent_path());
+        dds::write_file(in_file, fmt::format("#include \"{}\"", spec.source_path.string())).value();
     }
 
     dds_log(trace, "#include-search dirs:");
@@ -182,12 +178,12 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         if (arg == "[flags]") {
             extend(command, flags);
         } else {
-            arg = replace(arg, "[in]", compile_target);
+            arg = replace(arg, "[in]", in_file.string());
             arg = replace(arg, "[out]", spec.out_path.string());
             command.push_back(arg);
         }
     }
-    return {std::move(command), std::move(gnu_depfile_path), std::move(touch_path)};
+    return {std::move(command), std::move(gnu_depfile_path)};
 }
 
 vector<string> toolchain::create_archive_command(const archive_spec& spec,
