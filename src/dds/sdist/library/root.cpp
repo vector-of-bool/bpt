@@ -30,7 +30,7 @@ auto collect_pf_sources(path_ref path) {
         auto inc_sources = include_dir.collect_sources();
         // Drop any source files we found within `include/`
         erase_if(sources, [&](auto& info) {
-            if (info.kind != source_kind::header) {
+            if (!is_header(info.kind)) {
                 dds_log(warn,
                         "Source file in `include` will not be compiled: {}",
                         info.path.string());

@@ -34,7 +34,7 @@ void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_
               if (sf.kind == source_kind::app && params.include_apps) {
                   return true;
               }
-              if (sf.kind == source_kind::source || sf.kind == source_kind::header) {
+              if (sf.kind == source_kind::source || is_header(sf.kind)) {
                   return true;
               }
               if (sf.kind == source_kind::test && params.include_tests) {

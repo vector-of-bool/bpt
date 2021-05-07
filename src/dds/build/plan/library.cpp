@@ -57,9 +57,10 @@ library_plan library_plan::create(const library_root&             lib,
                 lib_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::header_template) {
                 template_sources.push_back(sfile);
-            } else {
-                assert(sfile.kind == source_kind::header);
+            } else if (sfile.kind == source_kind::header) {
                 header_sources.push_back(sfile);
+            } else {
+                assert(sfile.kind == source_kind::header_impl);
             }
         }
     }
@@ -68,12 +69,12 @@ library_plan library_plan::create(const library_root&             lib,
     if (include_dir.exists()) {
         auto all_sources = include_dir.collect_sources();
         for (const auto& sfile : all_sources) {
-            if (sfile.kind != source_kind::header && sfile.kind != source_kind::header_template) {
+            if (!is_header(sfile.kind)) {
                 dds_log(warn,
                         "Public include/ should only contain header or header template files."
                         " Not a header: {}",
                         sfile.path.string());
-            } else {
+            } else if (sfile.kind == source_kind::header) {
                 public_header_sources.push_back(sfile);
             }
         }
