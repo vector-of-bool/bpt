@@ -14,3 +14,7 @@ def test_dependent_include_header_fails(project_opener: ProjectOpener) -> None:
     proj = project_opener.open('bad_proj_include')
     with error.expect_error_marker_re(r'syntax-check-failed.*depends_src\.hpp'):
         proj.build()
+
+def test_dependent_inl_or_ipp_succeeds(project_opener: ProjectOpener) -> None:
+    proj = project_opener.open('good_proj_inl')
+    proj.build()
