@@ -107,7 +107,7 @@ class pattern_impl {
             if (c == '\\') {
                 ++cur;
                 if (cur == last) {
-                    throw std::runtime_error("Untermated [group] in pattern");
+                    throw std::runtime_error("Unterminated [group] in pattern");
                 }
                 chars.push_back(*cur);
             } else {

@@ -30,7 +30,7 @@ auto collect_pf_sources(path_ref path) {
         auto inc_sources = include_dir.collect_sources();
         // Drop any source files we found within `include/`
         erase_if(sources, [&](auto& info) {
-            if (info.kind != source_kind::header) {
+            if (!is_header(info.kind)) {
                 dds_log(warn,
                         "Source file in `include` will not be compiled: {}",
                         info.path.string());
@@ -88,17 +88,20 @@ fs::path library_root::public_include_dir() const noexcept {
 
 fs::path library_root::private_include_dir() const noexcept { return src_source_root().path; }
 
-shared_compile_file_rules library_root::base_compile_rules() const noexcept {
-    auto                      inc_dir = include_source_root();
-    auto                      src_dir = this->src_source_root();
-    shared_compile_file_rules ret;
+void library_root::append_public_compile_rules(
+    neo::output<shared_compile_file_rules> rules) const noexcept {
+    auto inc_dir = include_source_root();
     if (inc_dir.exists()) {
-        ret.include_dirs().push_back(inc_dir.path);
+        rules.get().include_dirs().push_back(inc_dir.path);
     }
+}
+
+void library_root::append_private_compile_rules(
+    neo::output<shared_compile_file_rules> rules) const noexcept {
+    auto src_dir = this->src_source_root();
     if (src_dir.exists()) {
-        ret.include_dirs().push_back(src_dir.path);
+        rules.get().include_dirs().push_back(src_dir.path);
     }
-    return ret;
 }
 
 auto has_library_dirs

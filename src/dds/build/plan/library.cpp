@@ -3,6 +3,7 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 
+#include <range/v3/action/push_back.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
@@ -35,6 +36,8 @@ library_plan library_plan::create(const library_root&             lib,
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
     std::vector<source_file> template_sources;
+    std::vector<source_file> header_sources;
+    std::vector<source_file> public_header_sources;
 
     auto qual_name = std::string(qual_name_.value_or(lib.manifest().name.str));
 
@@ -54,14 +57,36 @@ library_plan library_plan::create(const library_root&             lib,
                 lib_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::header_template) {
                 template_sources.push_back(sfile);
+            } else if (sfile.kind == source_kind::header) {
+                header_sources.push_back(sfile);
             } else {
-                assert(sfile.kind == source_kind::header);
+                assert(sfile.kind == source_kind::header_impl);
             }
         }
     }
 
+    auto include_dir = lib.include_source_root();
+    if (include_dir.exists()) {
+        auto all_sources = include_dir.collect_sources();
+        for (const auto& sfile : all_sources) {
+            if (!is_header(sfile.kind)) {
+                dds_log(warn,
+                        "Public include/ should only contain header or header template files."
+                        " Not a header: {}",
+                        sfile.path.string());
+            } else if (sfile.kind == source_kind::header) {
+                public_header_sources.push_back(sfile);
+            }
+        }
+    }
+    if (!params.build_tests) {
+        public_header_sources.clear();
+        header_sources.clear();
+    }
+
     // Load up the compile rules
-    auto compile_rules              = lib.base_compile_rules();
+    shared_compile_file_rules compile_rules;
+    lib.append_public_compile_rules(neo::into(compile_rules));
     compile_rules.enable_warnings() = params.enable_warnings;
     compile_rules.uses()            = lib.manifest().uses;
 
@@ -71,6 +96,12 @@ library_plan library_plan::create(const library_root&             lib,
         compile_rules.include_dirs().push_back(codegen_subdir);
     }
 
+    auto public_header_compile_rules          = compile_rules.clone();
+    public_header_compile_rules.syntax_only() = true;
+    auto src_header_compile_rules             = public_header_compile_rules.clone();
+    lib.append_private_compile_rules(neo::into(compile_rules));
+    lib.append_private_compile_rules(neo::into(src_header_compile_rules));
+
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
         lib_sources           //
@@ -79,6 +110,22 @@ library_plan library_plan::create(const library_root&             lib,
           })
         | ranges::to_vector;
 
+    // Run a syntax-only pass over headers to verify that headers can build in isolation.
+    auto header_indep_plan = header_sources  //
+        | ranges::views::transform([&](const source_file& sf) {
+                                 return compile_file_plan(src_header_compile_rules,
+                                                          sf,
+                                                          qual_name,
+                                                          params.out_subdir / "timestamps");
+                             })
+        | ranges::to_vector;
+    extend(header_indep_plan,
+           public_header_sources | ranges::views::transform([&](const source_file& sf) {
+               return compile_file_plan(public_header_compile_rules,
+                                        sf,
+                                        qual_name,
+                                        params.out_subdir / "timestamps");
+           }));
     // If we have any compiled library files, generate a static library archive
     // for this library
     std::optional<create_archive_plan> archive_plan;
@@ -148,5 +195,6 @@ library_plan library_plan::create(const library_root&             lib,
                         params.out_subdir,
                         std::move(archive_plan),
                         std::move(link_executables),
-                        std::move(render_templates)};
+                        std::move(render_templates),
+                        std::move(header_indep_plan)};
 }

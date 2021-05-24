@@ -29,6 +29,7 @@ class shared_compile_file_rules {
         std::vector<std::string> defs;
         std::vector<lm::usage>   uses;
         bool                     enable_warnings = false;
+        bool                     syntax_only     = false;
     };
 
     /// The actual PIMPL.
@@ -67,6 +68,12 @@ public:
      */
     auto& enable_warnings() noexcept { return _impl->enable_warnings; }
     auto& enable_warnings() const noexcept { return _impl->enable_warnings; }
+
+    /**
+     * A boolean to toggle syntax-only compilation
+     */
+    auto& syntax_only() noexcept { return _impl->syntax_only; }
+    auto& syntax_only() const noexcept { return _impl->syntax_only; }
 };
 
 /**

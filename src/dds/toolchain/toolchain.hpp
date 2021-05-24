@@ -31,6 +31,7 @@ struct compile_file_spec {
     std::vector<fs::path>    external_include_dirs = {};
     language                 lang                  = language::automatic;
     bool                     enable_warnings       = false;
+    bool                     syntax_only           = false;
 };
 
 struct compile_command_info {
@@ -62,6 +63,9 @@ class toolchain {
     string_seq _link_exe;
     string_seq _warning_flags;
     string_seq _tty_flags;
+    string_seq _c_source_type_flags;
+    string_seq _cxx_source_type_flags;
+    string_seq _syntax_only_flags;
 
     std::string _archive_prefix;
     std::string _archive_suffix;

@@ -8,12 +8,20 @@
 namespace dds {
 
 enum class source_kind {
+    // Pure header files, e.g. .h
     header,
+    // "Header" implementation files which are #included in header files. e.g. .inl
+    header_impl,
     header_template,
     source,
     test,
     app,
 };
+
+constexpr bool is_header(source_kind kind) {
+    return kind == source_kind::header || kind == source_kind::header_impl
+        || kind == source_kind::header_template;
+}
 
 std::optional<source_kind> infer_source_kind(path_ref) noexcept;
 

@@ -90,6 +90,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string_seq tty_flags;
     opt_string     lang_version_flag_template;
 
+    opt_string_seq c_source_type_flags;
+    opt_string_seq cxx_source_type_flags;
+    opt_string_seq syntax_only_flags;
     // For copy-pasting convenience: ‘{}’
 
     auto extend_flags = [&](string key, auto& opt_flags) {
@@ -181,6 +184,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     KEY_STRING(exe_prefix),
                     KEY_STRING(exe_suffix),
                     KEY_STRING(lang_version_flag_template),
+                    KEY_EXTEND_FLAGS(c_source_type_flags),
+                    KEY_EXTEND_FLAGS(cxx_source_type_flags),
+                    KEY_EXTEND_FLAGS(syntax_only_flags),
                     [&](auto key, auto) -> walk_result {
                         auto dym = did_you_mean(key,
                                                 {
@@ -204,6 +210,9 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                     "exe_suffix",
                                                     "tty_flags",
                                                     "lang_version_flag_template",
+                                                    "c_source_type_flags",
+                                                    "cxx_source_type_flags",
+                                                    "syntax_only_flags",
                                                 });
                         fail(context,
                              "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
@@ -212,7 +221,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     },
                 },
             },
-            [&](auto key, auto &&) -> walk_result {
+            [&](auto key, auto&&) -> walk_result {
                 // They've given an unknown key. Ouch.
                 auto dym = did_you_mean(key,
                                         {
@@ -669,6 +678,48 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
             return {"-fdiagnostics-color"};
         } else {
             assert(false && "Impossible compiler_id while deducing `tty_flags`");
+            std::terminate();
+        }
+    });
+
+    tc.c_source_type_flags = read_opt(c_source_type_flags, [&]() -> string_seq {
+        if (!compiler_id) {
+            fail(context, "Unable to deduce C source type flags without a 'compiler_id'");
+        }
+        if (is_msvc) {
+            return {"/TC"};
+        } else if (is_gnu_like) {
+            return {"-xc"};
+        } else {
+            assert(false && "Impossible compiler_id while deducing `c_source_type_flags`");
+            std::terminate();
+        }
+    });
+
+    tc.cxx_source_type_flags = read_opt(cxx_source_type_flags, [&]() -> string_seq {
+        if (!compiler_id) {
+            fail(context, "Unable to deduce C++ source type flags without a 'compiler_id'");
+        }
+        if (is_msvc) {
+            return {"/TP"};
+        } else if (is_gnu_like) {
+            return {"-xc++"};
+        } else {
+            assert(false && "Impossible compiler_id while deducing `cxx_source_type_flags`");
+            std::terminate();
+        }
+    });
+
+    tc.syntax_only_flags = read_opt(syntax_only_flags, [&]() -> string_seq {
+        if (!compiler_id) {
+            fail(context, "Unable to deduce C++ syntax only flags without a 'compiler_id'");
+        }
+        if (is_msvc) {
+            return {"/Zs"};
+        } else if (is_gnu_like) {
+            return {"-fsyntax-only"};
+        } else {
+            assert(false && "Impossible compiler_id while deducing `syntax_only_flags`");
             std::terminate();
         }
     });
