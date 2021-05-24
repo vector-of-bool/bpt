@@ -173,6 +173,10 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
          */
     }
 
+    if (ret_deps_info) {
+        ret_deps_info->command.toolchain_hash = env.toolchain.hash();
+    }
+
     // MSVC prints the filename of the source file. Remove it from the output.
     if (compiler_output.find(source_path.filename().string()) == 0) {
         compiler_output.erase(0, source_path.filename().string().length());

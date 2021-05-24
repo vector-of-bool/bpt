@@ -41,6 +41,7 @@ void migrate_1(nsql::database& db) {
                 UNIQUE REFERENCES dds_source_files(file_id),
             command TEXT NOT NULL,
             output TEXT NOT NULL,
+            toolchain_hash INTEGER NOT NULL,
             n_compilations INTEGER NOT NULL DEFAULT 0,
             avg_duration INTEGER NOT NULL DEFAULT 0
         );
@@ -70,7 +71,7 @@ void ensure_migrated(nsql::database& db) {
     auto version_st    = db.prepare("SELECT version FROM dds_meta_1");
     auto [version_str] = nsql::unpack_single<std::string>(version_st);
 
-    const auto cur_version = "alpha-5"sv;
+    const auto cur_version = "alpha-5-dev1"sv;
     if (cur_version != version_str) {
         if (!version_str.empty()) {
             dds_log(info, "NOTE: A prior version of the project build database was found.");
@@ -145,11 +146,14 @@ void database::record_compilation(path_ref file, const completed_compilation& cm
     auto file_id = _record_file(file);
 
     auto& st = _stmt_cache(R"(
-        INSERT INTO dds_compilations(file_id, command, output, n_compilations, avg_duration)
-            VALUES (:file_id, :command, :output, 1, :duration)
+        INSERT INTO dds_compilations
+                (file_id, command, output, n_compilations, toolchain_hash, avg_duration)
+            VALUES
+                (:file_id, :command, :output, 1, :toolchain_hash, :duration)
         ON CONFLICT(file_id) DO UPDATE SET
-            command = ?2,
-            output = ?3,
+            command = :command,
+            output = :output,
+            toolchain_hash = :toolchain_hash,
             n_compilations = CASE
                 WHEN :duration < 500 THEN n_compilations
                 ELSE min(10, n_compilations + 1)
@@ -163,6 +167,7 @@ void database::record_compilation(path_ref file, const completed_compilation& cm
                std::forward_as_tuple(file_id,
                                      std::string_view(cmd.quoted_command),
                                      std::string_view(cmd.output),
+                                     cmd.toolchain_hash,
                                      cmd.duration.count()));
 }
 
@@ -216,16 +221,17 @@ std::optional<completed_compilation> database::command_of(path_ref file_) const 
               FROM dds_source_files
              WHERE path = ?
         )
-        SELECT command, output, avg_duration
+        SELECT command, output, avg_duration, toolchain_hash
           FROM dds_compilations
          WHERE file_id IN file
     )"_sql);
     st.reset();
     st.bindings()[1] = file.generic_string();
-    auto opt_res     = nsql::unpack_single_opt<std::string, std::string, std::int64_t>(st);
+    auto opt_res
+        = nsql::unpack_single_opt<std::string, std::string, std::int64_t, std::int64_t>(st);
     if (!opt_res) {
         return std::nullopt;
     }
-    auto& [cmd, out, dur] = *opt_res;
-    return completed_compilation{cmd, out, std::chrono::milliseconds(dur)};
+    auto& [cmd, out, dur, tc_id] = *opt_res;
+    return completed_compilation{cmd, out, tc_id, std::chrono::milliseconds(dur)};
 }
