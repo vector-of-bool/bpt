@@ -93,6 +93,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
     opt_string_seq c_source_type_flags;
     opt_string_seq cxx_source_type_flags;
     opt_string_seq syntax_only_flags;
+    opt_string_seq consider_env;
     // For copy-pasting convenience: ‘{}’
 
     auto extend_flags = [&](string key, auto& opt_flags) {
@@ -187,6 +188,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     KEY_EXTEND_FLAGS(c_source_type_flags),
                     KEY_EXTEND_FLAGS(cxx_source_type_flags),
                     KEY_EXTEND_FLAGS(syntax_only_flags),
+                    KEY_EXTEND_FLAGS(consider_env),
                     [&](auto key, auto) -> walk_result {
                         auto dym = did_you_mean(key,
                                                 {
@@ -213,6 +215,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                                                     "c_source_type_flags",
                                                     "cxx_source_type_flags",
                                                     "syntax_only_flags",
+                                                    "consider_env",
                                                 });
                         fail(context,
                              "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
@@ -221,7 +224,7 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     },
                 },
             },
-            [&](auto key, auto&&) -> walk_result {
+            [&](auto key, auto &&) -> walk_result {
                 // They've given an unknown key. Ouch.
                 auto dym = did_you_mean(key,
                                         {
@@ -527,6 +530,13 @@ toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         return cxx;
     });
     extend(tc.cxx_compile, get_flags(language::cxx));
+
+    tc.consider_envs = read_opt(consider_env, [&]() -> string_seq {
+        if (is_msvc) {
+            return {"CL", "_CL_", "INCLUDE", "LIBPATH", "LIB"};
+        }
+        return {};
+    });
 
     tc.include_template = read_opt(include_template, [&]() -> string_seq {
         if (!compiler_id) {

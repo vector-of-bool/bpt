@@ -21,6 +21,9 @@ struct toolchain_prep {
     string_seq warning_flags;
     string_seq tty_flags;
 
+    // Environment variables that should be taken into consideration when generating a toolchain ID
+    string_seq consider_envs;
+
     string_seq c_source_type_flags;
     string_seq cxx_source_type_flags;
     string_seq syntax_only_flags;
@@ -34,7 +37,9 @@ struct toolchain_prep {
 
     enum file_deps_mode deps_mode;
 
-    toolchain realize() const;
+    [[nodiscard]] toolchain realize() const;
+
+    [[nodiscard]] std::uint64_t compute_hash() const noexcept;
 };
 
 }  // namespace dds
