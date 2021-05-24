@@ -56,7 +56,7 @@ def expect_error_marker(expect: str):
     return expect_error_marker_pred(expect.__eq__, expect)
 
 
-def expect_error_marker_re(expect: Union[str, re.Pattern]):
+def expect_error_marker_re(expect: Union[str, 're.Pattern']):
     """
     A context-manager function that should wrap a scope that causes an error
     from ``dds``.
