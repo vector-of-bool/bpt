@@ -92,7 +92,21 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
     auto  changed_files =  //
         inputs             //
         | ranges::views::filter([](const input_file_info& input) {
-              return !fs::exists(input.path) || fs::last_write_time(input.path) != input.last_mtime;
+              if (input.path.extension() == ".syncheck") {
+                  // Do not consider .syncheck files, as they will always be re-written and have no
+                  // interesting content
+                  return false;
+              }
+              if (!fs::exists(input.path)) {
+                  // The input does not exist, so consider it out-of-date
+                  return true;
+              }
+              if (fs::last_write_time(input.path) != input.last_mtime) {
+                  // The input has been modified since our last execution
+                  return true;
+              }
+              // No "new" inputs
+              return false;
           })
         | ranges::views::transform([](auto& info) { return info.path; })  //
         | ranges::to_vector;
