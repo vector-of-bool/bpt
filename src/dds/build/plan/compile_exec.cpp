@@ -173,6 +173,10 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
          */
     }
 
+    if (ret_deps_info) {
+        ret_deps_info->command.toolchain_hash = env.toolchain.hash();
+    }
+
     // MSVC prints the filename of the source file. Remove it from the output.
     if (compiler_output.find(source_path.filename().string()) == 0) {
         compiler_output.erase(0, source_path.filename().string().length());
@@ -235,7 +239,7 @@ compile_ticket mk_compile_ticket(const compile_file_plan& plan, build_env_ref en
     if (!rb_info) {
         dds_log(trace, "Compile {}: No recorded compilation info", plan.source_path().string());
         ret.needs_recompile = true;
-    } else if (!fs::exists(ret.object_file_path)) {
+    } else if (!fs::exists(ret.object_file_path) && !ret.is_syntax_only) {
         dds_log(trace, "Compile {}: Output does not exist", plan.source_path().string());
         // The output file simply doesn't exist. We have to recompile, of course.
         ret.needs_recompile = true;
@@ -244,6 +248,9 @@ compile_ticket mk_compile_ticket(const compile_file_plan& plan, build_env_ref en
         dds_log(trace,
                 "Recompile {}: Inputs have changed (or no input information)",
                 plan.source_path().string());
+        for (auto& in : rb_info->newer_inputs) {
+            dds_log(trace, "  - Newer input: [{}]", in.string());
+        }
         ret.needs_recompile = true;
     } else if (quote_command(ret.command.command) != rb_info->previous_command.quoted_command) {
         dds_log(trace, "Recompile {}: Compile command has changed", plan.source_path().string());

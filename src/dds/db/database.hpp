@@ -16,8 +16,9 @@
 namespace dds {
 
 struct completed_compilation {
-    std::string quoted_command;
-    std::string output;
+    std::string  quoted_command;
+    std::string  output;
+    std::int64_t toolchain_hash;
     // The amount of time that the command took to run
     std::chrono::milliseconds duration;
 };

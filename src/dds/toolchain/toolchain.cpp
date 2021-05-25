@@ -48,6 +48,8 @@ toolchain toolchain::realize(const toolchain_prep& prep) {
     ret._cxx_source_type_flags = prep.cxx_source_type_flags;
     ret._syntax_only_flags     = prep.syntax_only_flags;
 
+    ret._hash = prep.compute_hash();
+
     return ret;
 }
 

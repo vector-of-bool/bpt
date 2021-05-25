@@ -76,6 +76,8 @@ class toolchain {
 
     enum file_deps_mode _deps_mode;
 
+    std::uint64_t _hash = 0;
+
 public:
     toolchain() = default;
 
@@ -99,6 +101,8 @@ public:
     std::vector<std::string> create_link_executable_command(const link_exe_spec&,
                                                             path_ref cwd,
                                                             toolchain_knobs) const noexcept;
+
+    [[nodiscard]] std::uint64_t hash() const noexcept { return _hash; }
 
     static std::optional<toolchain> get_builtin(std::string_view key) noexcept;
     static std::optional<toolchain> get_default();
