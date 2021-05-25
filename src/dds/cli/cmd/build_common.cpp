@@ -33,9 +33,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
             pkg_cache_flags::write_lock | pkg_cache_flags::create_if_absent,
             [&](pkg_cache repo) {
                 // Download dependencies
-                auto all_deps = man.dependencies;
-                extend(all_deps, man.test_dependencies);
-                auto deps = repo.solve(all_deps, cat);
+                auto deps = repo.solve(man.dependencies, cat);
                 get_all(deps, repo, cat);
 
                 for (const pkg_id& pk : deps) {

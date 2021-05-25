@@ -73,12 +73,6 @@ dependency_manifest dependency_manifest::from_file(path_ref fpath) {
                 for_each{require_string{"Each dependency should be a string"},
                          append_dep(depman.dependencies)},
             },
-            if_key{
-                "test_depends",
-                require_array{"'test_depends' must be an array of strings"},
-                for_each{require_string{"Each dependency should be a string"},
-                         append_dep(depman.test_dependencies)},
-            },
         });
 
     res.throw_if_rejected<user_error<errc::invalid_pkg_manifest>>();
@@ -100,7 +94,7 @@ std::string iv_string(const pubgrub::interval_set<semver::version>::interval_typ
 
 }  // namespace
 
-std::string dependency::to_string() const noexcept {
+std::string dependency::decl_to_string() const noexcept {
     std::stringstream strm;
     strm << name.str << "@";
     if (versions.num_intervals() == 1) {

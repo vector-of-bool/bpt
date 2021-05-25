@@ -22,31 +22,74 @@ using require_obj   = semester::require_type<json5::data::mapping_type>;
 using require_array = semester::require_type<json5::data::array_type>;
 using require_str   = semester::require_type<std::string>;
 
-package_manifest parse_json(const json5::data& data, std::string_view fpath) {
+dependency parse_dependency(const json5::data& data) {
+    dependency dep;
+
+    std::vector<name> uses;
+    bool              has_use_key = false;
+
+    using namespace semester::walk_ops;
+    auto str_to_dependency
+        = [](const std::string& s) { return dependency::parse_depends_string(s); };
+
+    auto handle_mapping = mapping{
+        required_key{
+            "dep",
+            "A 'dep' string is required",
+            require_str{"'dep' key in dependency must be a string"},
+            [&](const std::string& depstr) {
+                auto part    = str_to_dependency(depstr);
+                dep.name     = part.name;
+                dep.versions = part.versions;
+                return walk.accept;
+            },
+        },
+        if_key{
+            "for",
+            require_str{"'for' must be a string of 'lib', 'test', or 'app'"},
+            [&](const std::string& s) {
+                if (s == "lib") {
+                    dep.for_kind = dep_for_kind::lib;
+                } else if (s == "test") {
+                    dep.for_kind = dep_for_kind::test;
+                } else if (s == "app") {
+                    dep.for_kind = dep_for_kind::app;
+                } else {
+                    return walk.reject(
+                        fmt::format("'for' must be one of 'lib', 'test', or 'app', but got '{}'",
+                                    s));
+                }
+                return walk.accept;
+            },
+        },
+        if_key{
+            "use",
+            require_array{"'use' must be an array of strings"},
+            [&](auto&&) {
+                has_use_key = true;
+                return walk.pass;
+            },
+            for_each{require_str{"Each 'use' item must be a string"},
+                     put_into(std::back_inserter(uses),
+                              [](std::string s) { return *dds::name::from_string(s); })},
+        },
+    };
+
+    walk(data,
+         if_type<json5::data::string_type>(semester::put_into(&dep, str_to_dependency)),
+         if_type<json5::data::mapping_type>(handle_mapping),
+         reject_with("Each entry in 'depends' array must be a string or an object"));
+
+    if (has_use_key) {
+        dep.uses = std::move(uses);
+    }
+    return dep;
+}
+
+package_manifest parse_json(const json5::data& data, std::string_view) {
     package_manifest ret;
 
     using namespace semester::walk_ops;
-    auto push_depends_obj_kv = [&](std::string key, auto&& dat) {
-        dependency pending_dep;
-        if (!dat.is_string()) {
-            return walk.reject("Dependency object values should be strings");
-        }
-        try {
-            auto       rng = semver::range::parse_restricted(dat.as_string());
-            dependency dep{std::move(key), {rng.low(), rng.high()}};
-            ret.dependencies.push_back(std::move(dep));
-        } catch (const semver::invalid_range&) {
-            throw_user_error<errc::invalid_version_range_string>(
-                "Invalid version range string '{}' in dependency declaration for "
-                "'{}'",
-                dat.as_string(),
-                key);
-        }
-        return walk.accept;
-    };
-
-    auto str_to_dependency
-        = [](const std::string& s) { return dependency::parse_depends_string(s); };
 
     walk(data,
          require_obj{"Root of package manifest should be a JSON object"},
@@ -74,27 +117,8 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                           put_into{ret.id.version,
                                    [](std::string s) { return semver::version::parse(s); }}},
              if_key{"depends",
-                    [&](auto&& dat) {
-                        if (dat.is_object()) {
-                            dds_log(warn,
-                                    "{}: Using a JSON object for 'depends' is deprecated. Use an "
-                                    "array of strings instead.",
-                                    fpath);
-                            return mapping{push_depends_obj_kv}(dat);
-                        } else if (dat.is_array()) {
-                            return for_each{put_into{std::back_inserter(ret.dependencies),
-                                                     str_to_dependency}}(dat);
-                        } else {
-                            return walk.reject(
-                                "'depends' should be an array of dependency strings");
-                        }
-                    }},
-             if_key{"test_depends",
-                    require_array{"'test_depends' should be an array of dependency strings"},
-                    for_each{
-                        require_str{"Each of 'test_depends' should be a string"},
-                        put_into{std::back_inserter(ret.test_dependencies), str_to_dependency},
-                    }},
+                    require_array{"'depends' should be an array of strings or objects"},
+                    for_each{put_into(std::back_inserter(ret.dependencies), parse_dependency)}},
              if_key{"test_driver",
                     require_str{"'test_driver' must be a string"},
                     put_into{ret.test_driver,

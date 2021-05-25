@@ -34,10 +34,6 @@ static int _build_deps(const options& opts) {
                              dds_log(info, "Reading deps from {}", dep_fpath.string());
                              dds::dependency_manifest depman
                                  = dds::dependency_manifest::from_file(dep_fpath);
-                             if (opts.build.want_tests) {
-                                 ranges::actions::push_back(depman.dependencies,
-                                                            std::move(depman.test_dependencies));
-                             }
                              return std::move(depman).dependencies;
                          })
         | ranges::actions::join;

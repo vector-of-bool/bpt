@@ -228,7 +228,7 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
     for (auto& dep : info.deps) {
         assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
-        dds_log(trace, "  Depends on: {}", dep.to_string());
+        dds_log(trace, "  Depends on: {}", dep.decl_to_string());
         nsql::exec(insert_dep_st,
                    std::forward_as_tuple(package_rowid,
                                          dep.name.str,

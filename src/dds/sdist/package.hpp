@@ -43,8 +43,6 @@ struct package_manifest {
     std::optional<test_lib> test_driver;
     /// The dependencies declared with the `Depends` fields, if any.
     std::vector<dependency> dependencies;
-    /// The dependencies declared with the 'test_depends' fields, if any.
-    std::vector<dependency> test_dependencies;
 
     /**
      * Load a package manifest from a file on disk.

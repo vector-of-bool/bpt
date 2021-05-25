@@ -177,7 +177,7 @@ void do_store_pkg(neo::sqlite3::database&        db,
         new_dep_st.reset();
         assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
-        dds_log(trace, "  Depends on: {}", dep.to_string());
+        dds_log(trace, "  Depends on: {}", dep.decl_to_string());
         nsql::exec(new_dep_st,
                    std::forward_as_tuple(db_pkg_id,
                                          dep.name.str,
@@ -393,7 +393,7 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                auto& [name, low, high] = pair;
                auto dep
                    = dependency{name, {semver::version::parse(low), semver::version::parse(high)}};
-               dds_log(trace, "  Depends: {}", dep.to_string());
+               dds_log(trace, "  Depends: {}", dep.decl_to_string());
                return dep;
            })  //
         | ranges::to_vector;

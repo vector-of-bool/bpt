@@ -58,7 +58,7 @@ struct req_type {
     }
 
     friend std::ostream& operator<<(std::ostream& out, req_ref self) noexcept {
-        out << self.dep.to_string();
+        out << self.dep.decl_to_string();
         return out;
     }
 };
@@ -76,7 +76,7 @@ struct solver_provider {
     mutable std::map<std::string, std::vector<pkg_id>> pkgs_by_name = {};
 
     std::optional<req_type> best_candidate(const req_type& req) const {
-        dds_log(debug, "Find best candidate of {}", req.dep.to_string());
+        dds_log(debug, "Find best candidate of {}", req.dep.decl_to_string());
         // Look up in the cachce for the packages we have with the given name
         auto found = pkgs_by_name.find(req.dep.name.str);
         if (found == pkgs_by_name.end()) {
@@ -89,7 +89,7 @@ struct solver_provider {
             return req.dep.versions.contains(pk.version);
         });
         if (cand == for_name.cend()) {
-            dds_log(debug, "No candidate for requirement {}", req.dep.to_string());
+            dds_log(debug, "No candidate for requirement {}", req.dep.decl_to_string());
             return std::nullopt;
         }
         dds_log(debug, "Select candidate {}", cand->to_string());

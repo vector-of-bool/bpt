@@ -17,13 +17,23 @@ struct e_dependency_string {
     std::string value;
 };
 
+enum class dep_for_kind {
+    lib,
+    test,
+    app,
+};
+
 struct dependency {
     dds::name         name;
     version_range_set versions;
+    dep_for_kind      for_kind = dep_for_kind::lib;
+
+    // The explicit "use" for this dependency
+    std::optional<std::vector<dds::name>> uses{};
 
     static dependency parse_depends_string(std::string_view str);
 
-    std::string to_string() const noexcept;
+    std::string decl_to_string() const noexcept;
 };
 
 /**
@@ -31,7 +41,6 @@ struct dependency {
  */
 struct dependency_manifest {
     std::vector<dependency> dependencies;
-    std::vector<dependency> test_dependencies;
 
     static dependency_manifest from_file(path_ref where);
 };
