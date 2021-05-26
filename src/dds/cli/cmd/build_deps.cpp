@@ -51,7 +51,7 @@ static int _build_deps(const options& opts) {
         [&](dds::pkg_cache repo) {
             // Download dependencies
             dds_log(info, "Loading {} dependencies", all_deps.size());
-            auto deps = repo.solve(all_deps, cat);
+            auto deps = repo.solve(all_deps, cat, dds::without_test_deps, dds::without_app_deps);
             dds::get_all(deps, repo, cat);
             for (const dds::pkg_id& pk : deps) {
                 auto sdist_ptr = repo.find(pk);

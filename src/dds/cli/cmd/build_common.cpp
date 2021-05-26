@@ -33,7 +33,11 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
             pkg_cache_flags::write_lock | pkg_cache_flags::create_if_absent,
             [&](pkg_cache repo) {
                 // Download dependencies
-                auto deps = repo.solve(man.dependencies, cat);
+                auto deps = repo.solve(  //
+                    man.dependencies,
+                    cat,
+                    opts.build.want_tests ? dds::with_test_deps : dds::without_test_deps,
+                    opts.build.want_apps ? dds::with_app_deps : dds::without_app_deps);
                 get_all(deps, repo, cat);
 
                 for (const pkg_id& pk : deps) {
@@ -57,6 +61,10 @@ int dds::cli::handle_build_error(std::function<int()> fn) {
             } catch (...) {
                 capture_exception();
             }
+        },
+        [](user_error<errc::compile_failure>) -> int {
+            write_error_marker("compile-failed");
+            throw;
         },
         [](user_error<errc::test_failure> exc) {
             write_error_marker("build-failed-test-failed");

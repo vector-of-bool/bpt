@@ -91,7 +91,8 @@ class Project:
               toolchain: Optional[Pathish] = None,
               fixup_toolchain: bool = True,
               timeout: Optional[int] = None,
-              tweaks_dir: Optional[Path] = None) -> None:
+              tweaks_dir: Optional[Path] = None,
+              with_tests: bool = True) -> None:
         """
         Execute 'dds build' on the project
         """
@@ -104,6 +105,7 @@ class Project:
                            toolchain=toolchain,
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
+                           with_tests=with_tests,
                            more_args=['-ltrace'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
@@ -249,17 +251,15 @@ def dds_exe(pytestconfig: PyTestConfig) -> Path:
 TmpGitRepoFactory = Callable[[Pathish], Path]
 
 
-@pytest.fixture
-def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequest,
+@pytest.fixture(scope='session')
+def tmp_git_repo_factory(tmp_path_factory: TempPathFactory,
                          pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
     """
     A temporary directory :class:`pathlib.Path` object in which a git repo will
     be initialized
     """
-
-    test_dir = Path(request.fspath).parent
-
     def f(dirpath: Pathish) -> Path:
+        test_dir = Path()
         dirpath = Path(dirpath)
         if not dirpath.is_absolute():
             dirpath = test_dir / dirpath
@@ -275,7 +275,8 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequ
         check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
         check_run([git, 'add', '-A'], cwd=repo)
         check_run(
-            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'], cwd=repo)
+            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'],
+            cwd=repo)
 
         return repo
 

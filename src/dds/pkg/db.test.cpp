@@ -1,12 +1,16 @@
 #include <dds/pkg/db.hpp>
 
+#include <dds/util/log.hpp>
+
 #include <catch2/catch.hpp>
+#include <neo/event.hpp>
 
 using namespace std::literals;
 
 TEST_CASE("Create a simple database") {
     // Just create and run migrations on an in-memory database
-    auto repo = dds::pkg_db::open(":memory:"s);
+    auto log_subscr = neo::subscribe(&dds::log::ev_log::print);
+    auto repo       = dds::pkg_db::open(":memory:"s);
 }
 
 TEST_CASE("Open a database in a non-ascii path") {
@@ -59,8 +63,12 @@ TEST_CASE_METHOD(pkg_db_test_case, "Package requirements") {
     db.store(dds::pkg_listing{
         dds::pkg_id{"foo", semver::version::parse("1.2.3")},
         {
-            {"bar", {semver::version::parse("1.2.3"), semver::version::parse("1.4.0")}},
-            {"baz", {semver::version::parse("5.3.0"), semver::version::parse("6.0.0")}},
+            {"bar",
+             {semver::version::parse("1.2.3"), semver::version::parse("1.4.0")},
+             dds::dep_for_kind::lib},
+            {"baz",
+             {semver::version::parse("5.3.0"), semver::version::parse("6.0.0")},
+             dds::dep_for_kind::lib},
         },
         "example",
         dds::any_remote_pkg::from_url(neo::url::parse("git+http://example.com#master")),

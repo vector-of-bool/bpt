@@ -41,7 +41,7 @@ dependency dependency::parse_depends_string(std::string_view str) {
     auto range_str = "^" + std::string(str.substr(sep_pos + 1));
     try {
         auto rng = semver::range::parse_restricted(range_str);
-        return dependency{name, {rng.low(), rng.high()}};
+        return dependency{name, {rng.low(), rng.high()}, dep_for_kind::lib};
     } catch (const semver::invalid_range&) {
         throw_user_error<errc::invalid_version_range_string>(
             "Invalid version range string '{}' in dependency string '{}'", range_str, str);
@@ -123,4 +123,16 @@ std::string dependency::decl_to_string() const noexcept {
     }
     strm << "]";
     return strm.str();
+}
+
+std::optional<dep_for_kind> dds::for_kind_from_str(std::string_view sv) noexcept {
+    if (sv == "lib") {
+        return dep_for_kind::lib;
+    } else if (sv == "test") {
+        return dep_for_kind::test;
+    } else if (sv == "app") {
+        return dep_for_kind::app;
+    } else {
+        return std::nullopt;
+    }
 }

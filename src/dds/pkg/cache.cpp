@@ -13,13 +13,17 @@
 #include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
 #include <libman/library.hpp>
+#include <neo/assert.hpp>
 #include <neo/ref.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/action/unique.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
+
+#include <ranges>
 
 using namespace dds;
 using namespace fansi::literals;
@@ -175,9 +179,24 @@ const sdist* pkg_cache::find(const pkg_id& pkg) const noexcept {
 }
 
 std::vector<pkg_id> pkg_cache::solve(const std::vector<dependency>& deps,
-                                     const pkg_db&                  ctlg) const {
+                                     const pkg_db&                  ctlg,
+                                     with_test_deps_t               test_deps_opt,
+                                     with_app_deps_t                app_deps_opt) const {
+    auto keep_deps = deps  //
+        | std::views::filter([&](auto&& dep) {
+                         switch (dep.for_kind) {
+                         case dep_for_kind::lib:
+                             return true;
+                         case dep_for_kind::test:
+                             return test_deps_opt == with_test_deps;
+                         case dep_for_kind::app:
+                             return app_deps_opt == with_app_deps;
+                         }
+                         neo::unreachable();
+                     })
+        | ranges::to_vector;
     return dds::solve(
-        deps,
+        keep_deps,
         [&](std::string_view name) -> std::vector<pkg_id> {
             auto mine = ranges::views::all(_sdists)  //
                 | ranges::views::filter(
@@ -192,8 +211,13 @@ std::vector<pkg_id> pkg_cache::solve(const std::vector<dependency>& deps,
         [&](const pkg_id& pkg_id) {
             auto found = find(pkg_id);
             if (found) {
-                return found->manifest.dependencies;
+                return found->manifest.dependencies  //
+                    | std::views::filter(NEO_TL(_1.for_kind == dep_for_kind::lib))
+                    | ranges::to_vector;
             }
-            return ctlg.dependencies_of(pkg_id);
+            auto ctlg_deps = ctlg.dependencies_of(pkg_id);
+            return ctlg_deps                                                    //
+                | std::views::filter(NEO_TL(_1.for_kind == dep_for_kind::lib))  //
+                | ranges::to_vector;
         });
 }

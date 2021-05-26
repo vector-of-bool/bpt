@@ -36,6 +36,20 @@ struct remote_db {
     temporary_dir  _tempdir;
     nsql::database db;
 
+    static void patchup_db(nsql::database_ref db) {
+        auto get_ver   = db.prepare("SELECT version FROM dds_repo_meta");
+        auto [version] = nsql::unpack_single<int>(get_ver);
+        if (version < 2) {
+            dds_log(warn,
+                    "Remote database uses a prior schema. We'll do an implicit upgrade, but this "
+                    "should be repaired in the server.");
+            db.exec(R"(
+                ALTER TABLE dds_repo_package_deps
+                ADD COLUMN kind TEXT NOT NULL DEFAULT 'lib'
+            )");
+        }
+    }
+
     static remote_db download_and_open(http_client& client, const http_response_info& resp) {
         auto tempdir       = temporary_dir::create();
         auto repo_db_gz_dl = tempdir.path() / "repo.db.gz";
@@ -47,6 +61,7 @@ struct remote_db {
         auto repo_db = tempdir.path() / "repo.db";
         dds::decompress_file_gz(repo_db_gz_dl, repo_db).value();
         auto db = nsql::open(repo_db.string());
+        patchup_db(db);
         return {tempdir, std::move(db)};
     }
 };
@@ -150,12 +165,13 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
         std::tie(remote_id, base_url_str));
     dds_log(trace, "Importing dependencies");
     db.exec(R"(
-        INSERT OR REPLACE INTO dds_pkg_deps (pkg_id, dep_name, low, high)
+        INSERT OR REPLACE INTO dds_pkg_deps (pkg_id, dep_name, low, high, kind)
             SELECT
                 local_pkgs.pkg_id AS pkg_id,
                 dep_name,
                 low,
-                high
+                high,
+                kind
             FROM remote.dds_repo_package_deps AS deps,
                  remote.dds_repo_packages AS pkgs USING(package_id),
                  dds_pkgs AS local_pkgs USING(name, version)

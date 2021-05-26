@@ -3,6 +3,7 @@
 #include <dds/pkg/name.hpp>
 #include <dds/util/fs.hpp>
 
+#include <neo/assert.hpp>
 #include <pubgrub/interval.hpp>
 #include <semver/range.hpp>
 #include <semver/version.hpp>
@@ -23,10 +24,24 @@ enum class dep_for_kind {
     app,
 };
 
+constexpr auto for_kind_str(dep_for_kind k) noexcept {
+    switch (k) {
+    case dep_for_kind::lib:
+        return "lib";
+    case dep_for_kind::app:
+        return "app";
+    case dep_for_kind::test:
+        return "test";
+    }
+    neo::unreachable();
+}
+
+std::optional<dep_for_kind> for_kind_from_str(std::string_view k) noexcept;
+
 struct dependency {
     dds::name         name;
     version_range_set versions;
-    dep_for_kind      for_kind = dep_for_kind::lib;
+    dep_for_kind      for_kind;
 
     // The explicit "use" for this dependency
     std::optional<std::vector<dds::name>> uses{};

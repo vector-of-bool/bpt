@@ -2,6 +2,7 @@
 
 #include <dds/pkg/db.hpp>
 #include <dds/sdist/dist.hpp>
+#include <dds/solve/solve.hpp>
 #include <dds/util/flock.hpp>
 #include <dds/util/fs.hpp>
 
@@ -21,6 +22,21 @@ enum pkg_cache_flags {
     create_if_absent = 0b01,
     write_lock       = 0b10,
 };
+
+enum class with_test_deps_t {
+    with,
+    without,
+};
+
+enum class with_app_deps_t {
+    with,
+    without,
+};
+
+constexpr inline auto with_test_deps = with_test_deps_t::with;
+constexpr inline auto without_test_deps = with_test_deps_t::without;
+constexpr inline auto with_app_deps = with_app_deps_t::with;
+constexpr inline auto without_app_deps  = with_app_deps_t::without;
 
 enum class if_exists {
     replace,
@@ -99,7 +115,10 @@ public:
         return r;
     }
 
-    std::vector<pkg_id> solve(const std::vector<dependency>& deps, const pkg_db&) const;
+    std::vector<pkg_id> solve(const std::vector<dependency>& deps,
+                              const pkg_db&,
+                              with_test_deps_t,
+                              with_app_deps_t) const;
 };
 
 }  // namespace dds

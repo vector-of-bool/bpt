@@ -201,9 +201,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
         if (compile_signal) {
             dds_log(error, "Process exited via signal {}", compile_signal);
         }
-        if (compile.is_syntax_only) {
-            write_error_marker(fmt::format("syntax-check-failed: {}", source_path.string()));
-        }
+        /// XXX: Use different error based on if a syntax-only check failed
         throw_user_error<errc::compile_failure>("{} [{}]",
                                                 compilation_failure_msg,
                                                 source_path.string());

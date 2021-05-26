@@ -51,6 +51,28 @@ void migrate_db_1(nsql::database_ref db) {
     )");
 }
 
+void migrate_db_2(nsql::database_ref db) {
+    db.exec(R"(
+        CREATE TABLE dds_repo_deps_1 (
+            dep_id INTEGER PRIMARY KEY,
+            package_id INTEGER NOT NULL
+                REFERENCES dds_repo_packages
+                ON DELETE CASCADE,
+            dep_name TEXT NOT NULL,
+            low TEXT NOT NULL,
+            high TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            UNIQUE(package_id, dep_name, kind)
+        );
+        INSERT INTO dds_repo_deps_1
+            SELECT dep_id, package_id, dep_name, low, high, 'lib'
+            FROM dds_repo_package_deps;
+        DROP TABLE dds_repo_package_deps;
+        ALTER TABLE dds_repo_deps_1 RENAME TO dds_repo_package_deps;
+        CREATE INDEX idx_deps_for_pkg ON dds_repo_package_deps (package_id);
+    )");
+}
+
 void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name) {
     db.exec(R"(
         PRAGMA busy_timeout = 6000;
@@ -71,9 +93,12 @@ void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name
     auto meta_st   = db.prepare("SELECT version FROM dds_repo_meta");
     auto [version] = nsql::unpack_single<int>(meta_st);
 
-    constexpr int current_database_version = 1;
+    constexpr int current_database_version = 2;
     if (version < 1) {
         migrate_db_1(db);
+    }
+    if (version < 2) {
+        migrate_db_2(db);
     }
 
     nsql::exec(db.prepare("UPDATE dds_repo_meta SET version=?"),
@@ -81,6 +106,9 @@ void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name
     if (name) {
         nsql::exec(db.prepare("UPDATE dds_repo_meta SET name=?"), std::tie(*name));
     }
+
+    tr.commit();
+    db.exec("VACUUM");
 }
 
 }  // namespace
@@ -222,9 +250,10 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
     auto package_rowid = _db.last_insert_rowid();
 
     auto& insert_dep_st = _stmts(R"(
-        INSERT INTO dds_repo_package_deps(package_id, dep_name, low, high)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO dds_repo_package_deps(package_id, dep_name, low, high, kind)
+        VALUES (?, ?, ?, ?, ?)
     )"_sql);
+
     for (auto& dep : info.deps) {
         assert(dep.versions.num_intervals() == 1);
         auto iv_1 = *dep.versions.iter_intervals().begin();
@@ -233,7 +262,8 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
                    std::forward_as_tuple(package_rowid,
                                          dep.name.str,
                                          iv_1.low.to_string(),
-                                         iv_1.high.to_string()));
+                                         iv_1.high.to_string(),
+                                         for_kind_str(dep.for_kind)));
     }
 
     auto dest_dir   = pkg_dir() / info.ident.name.str / info.ident.version.to_string();

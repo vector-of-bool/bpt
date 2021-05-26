@@ -146,6 +146,11 @@ def http_repo_factory(dds_exe: Path, repo_factory: RepoFactory,
     return _make
 
 
+@pytest.fixture(scope='module')
+def module_http_repo(http_repo_factory: HTTPRepoServerFactory, request: FixtureRequest) -> RepoServer:
+    return http_repo_factory(f'module-repo-{request.module.__name__}')
+
+
 @pytest.fixture()
 def http_repo(http_repo_factory: HTTPRepoServerFactory, request: FixtureRequest) -> RepoServer:
     """

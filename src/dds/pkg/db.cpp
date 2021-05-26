@@ -143,6 +143,28 @@ void migrate_repodb_3(nsql::database& db) {
     )");
 }
 
+void migrate_repodb_4(nsql::database_ref db) {
+    db.exec(R"(
+        CREATE TABLE dds_pkg_deps_1 (
+            dep_id INTEGER PRIMARY KEY,
+            pkg_id INTEGER NOT NULL
+                REFERENCES dds_pkgs(pkg_id)
+                ON DELETE CASCADE,
+            dep_name TEXT NOT NULL,
+            low TEXT NOT NULL,
+            high TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            UNIQUE(pkg_id, dep_name, kind)
+        );
+        INSERT INTO dds_pkg_deps_1
+            SELECT dep_id, pkg_id, dep_name, low, high, 'lib'
+            FROM dds_pkg_deps;
+        DROP TABLE dds_pkg_deps;
+        ALTER TABLE dds_pkg_deps_1 RENAME TO dds_pkg_deps;
+        CREATE INDEX idx_deps_for_pkg ON dds_pkg_deps (pkg_id);
+    )");
+}
+
 void do_store_pkg(neo::sqlite3::database&        db,
                   neo::sqlite3::statement_cache& st_cache,
                   const pkg_listing&             pkg) {
@@ -165,8 +187,10 @@ void do_store_pkg(neo::sqlite3::database&        db,
             pkg_id,
             dep_name,
             low,
-            high
+            high,
+            kind
         ) VALUES (
+            ?,
             ?,
             ?,
             ?,
@@ -182,7 +206,8 @@ void do_store_pkg(neo::sqlite3::database&        db,
                    std::forward_as_tuple(db_pkg_id,
                                          dep.name.str,
                                          iv_1.low.to_string(),
-                                         iv_1.high.to_string()));
+                                         iv_1.high.to_string(),
+                                         for_kind_str(dep.for_kind)));
     }
 }
 
@@ -211,7 +236,7 @@ void ensure_migrated(nsql::database& db) {
             "The database metadata is invalid [bad dds_meta.version]");
     }
 
-    constexpr int current_database_version = 3;
+    constexpr int current_database_version = 4;
 
     int version = version_;
 
@@ -234,6 +259,10 @@ void ensure_migrated(nsql::database& db) {
     if (version < 3) {
         dds_log(debug, "Applying pkg_db migration 3");
         migrate_repodb_3(db);
+    }
+    if (version < 4) {
+        dds_log(debug, "Applying pkg_db migration 4");
+        migrate_repodb_4(db);
     }
     meta["version"] = current_database_version;
     exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), std::forward_as_tuple(meta.dump()));
@@ -373,6 +402,7 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
     dds_log(trace, "Lookup dependencies of {}", pkg.to_string());
     return nsql::exec_tuples<std::string,
                              std::string,
+                             std::string,
                              std::string>(  //
                _stmt_cache(
                    R"(
@@ -381,7 +411,7 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                       FROM dds_pkgs
                      WHERE name = ? AND version = ?
                 )
-                SELECT dep_name, low, high
+                SELECT dep_name, low, high, kind
                   FROM dds_pkg_deps
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
@@ -390,9 +420,15 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                                      pkg.version.to_string()))  //
         | neo::lref                                             //
         | ranges::views::transform([](auto&& pair) {
-               auto& [name, low, high] = pair;
-               auto dep
-                   = dependency{name, {semver::version::parse(low), semver::version::parse(high)}};
+               auto& [name, low, high, kind_] = pair;
+
+               auto kind = for_kind_from_str(kind_);
+               if (!kind) {
+                   dds_log(warn, "Unknown dep-for-kind '{}' (Defaulting to 'lib')", kind_);
+               }
+               auto dep = dependency{name,
+                                     {semver::version::parse(low), semver::version::parse(high)},
+                                     kind.value_or(dep_for_kind::lib)};
                dds_log(trace, "  Depends: {}", dep.decl_to_string());
                return dep;
            })  //

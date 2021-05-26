@@ -32,7 +32,7 @@ struct req_type {
         if (range.empty()) {
             return std::nullopt;
         }
-        return req_type{dependency{dep.name, std::move(range)}};
+        return req_type{dependency{dep.name, std::move(range), dep.for_kind}};
     }
 
     std::optional<req_type> union_(req_ref other) const noexcept {
@@ -40,7 +40,7 @@ struct req_type {
         if (range.empty()) {
             return std::nullopt;
         }
-        return req_type{dependency{dep.name, std::move(range)}};
+        return req_type{dependency{dep.name, std::move(range), dep.for_kind}};
     }
 
     std::optional<req_type> difference(req_ref other) const noexcept {
@@ -48,7 +48,7 @@ struct req_type {
         if (range.empty()) {
             return std::nullopt;
         }
-        return req_type{dependency{dep.name, std::move(range)}};
+        return req_type{dependency{dep.name, std::move(range), dep.for_kind}};
     }
 
     auto key() const noexcept { return dep.name; }
@@ -93,7 +93,8 @@ struct solver_provider {
             return std::nullopt;
         }
         dds_log(debug, "Select candidate {}", cand->to_string());
-        return req_type{dependency{cand->name, {cand->version, cand->version.next_after()}}};
+        return req_type{
+            dependency{cand->name, {cand->version, cand->version.next_after()}, dep_for_kind::lib}};
     }
 
     std::vector<req_type> requirements_of(const req_type& req) const {

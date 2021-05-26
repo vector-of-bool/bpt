@@ -84,6 +84,7 @@ class DDSWrapper:
               build_root: Optional[Path] = None,
               jobs: Optional[int] = None,
               tweaks_dir: Optional[Path] = None,
+              with_tests: bool = True,
               more_args: Optional[proc.CommandLine] = None,
               timeout: Optional[int] = None) -> None:
         """
@@ -92,6 +93,7 @@ class DDSWrapper:
         :param toolchain: The toolchain to use for the build.
         :param root: The root project directory.
         :param build_root: The root directory where the output will be written.
+        :param with_tests: Include tests as part of the build
         :param jobs: The number of jobs to use. Default is CPU-count + 2
         """
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
@@ -105,6 +107,7 @@ class DDSWrapper:
                 f'--jobs={jobs}',
                 f'--project={root}',
                 f'--out={build_root}',
+                () if with_tests else ('--no-tests'),
                 f'--tweaks-dir={tweaks_dir}' if tweaks_dir else (),
                 more_args or (),
             ],
