@@ -5,6 +5,8 @@
 #include <dds/util/fs.hpp>
 #include <dds/util/result.hpp>
 
+#include <libman/library.hpp>
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -23,6 +25,14 @@ struct e_pkg_namespace_str {
     std::string value;
 };
 
+struct library_info {
+    std::string relpath;
+    dds::name   name;
+
+    std::optional<std::vector<lm::usage>> uses;
+    std::optional<std::vector<lm::usage>> test_uses;
+};
+
 /**
  * Struct representing the contents of a `package.json5` file.
  */
@@ -33,6 +43,10 @@ struct package_manifest {
     name namespace_;
     /// The dependencies declared with the `Depends` fields, if any.
     std::vector<dependency> dependencies;
+    /// The main library, with its root living in the package root
+    std::optional<library_info> main_library;
+    /// The libraries that this package declares
+    std::optional<std::vector<library_info>> subdirectory_libraries;
 
     /**
      * Load a package manifest from a file on disk.

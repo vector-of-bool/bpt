@@ -136,3 +136,18 @@ def test_empty_sdist_create(tmp_project: Project) -> None:
     tmp_project.pkg_create()
     assert tmp_project.build_root.joinpath('test-pkg@0.2.2.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'
+
+
+def test_new_format(tmp_project: Project)->None:
+    tmp_project.package_json = {
+        'name': 'test-pkg',
+        'version': '1.2.3',
+        'namespace': 'testing',
+        'libraries': {
+            '.': {
+                'name': 'test',
+                'uses': ['foo/bar']
+            }
+        }
+    }
+    tmp_project.pkg_create()

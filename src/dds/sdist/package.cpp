@@ -86,6 +86,49 @@ dependency parse_dependency(const json5::data& data) {
     return dep;
 }
 
+library_info parse_library(const json5::data& lib_data) {
+    using namespace semester::walk_ops;
+    auto str_to_usage = [](const std::string& s) { return *lm::split_usage_string(s); };
+    auto set_usages   = [&](auto& opt_vec) {
+        return [&](auto&& data) {
+            opt_vec.emplace();
+            walk(  //
+                data,
+                require_array{"Usage keys must be arrays of strings"},
+                for_each{require_str{"Each usage item must be a string"},
+                         put_into(std::back_inserter(*opt_vec), str_to_usage)});
+            return walk.accept;
+        };
+    };
+
+    library_info ret;
+    walk(lib_data,
+         require_obj{"Library entries must be objects"},
+         mapping{required_key{"name",
+                              "A library 'name' string is required",
+                              require_str{"'name' must be a string"},
+                              put_into(ret.name,
+                                       [](const std::string& s) {
+                                           return *dds::name::from_string(s);
+                                       })},
+                 if_key{"uses", set_usages(ret.uses)},
+                 if_key{"test_uses", set_usages(ret.test_uses)}});
+    return ret;
+}
+
+std::vector<library_info> parse_libs(const json5::data& libraries) {
+    std::vector<library_info> ret;
+
+    using namespace semester::walk_ops;
+
+    for (const auto& [key, lib_data] : libraries.as_object()) {
+        auto new_info    = parse_library(lib_data);
+        new_info.relpath = key;
+        ret.emplace_back(std::move(new_info));
+    }
+    return ret;
+}
+
 package_manifest parse_json(const json5::data& data, std::string_view fpath) {
     package_manifest ret;
 
@@ -121,6 +164,10 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
              if_key{"depends",
                     require_array{"'depends' should be an array of strings or objects"},
                     for_each{put_into(std::back_inserter(ret.dependencies), parse_dependency)}},
+             if_key{"library", put_into{ret.main_library, parse_library}},
+             if_key{"libraries",
+                    require_obj{"'libraries' must be a JSON object"},
+                    put_into(ret.subdirectory_libraries, parse_libs)},
              if_key{"test_driver",
                     [&](auto&&) {
                         if (!did_warn_test_driver) {
