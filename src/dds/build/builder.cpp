@@ -2,7 +2,6 @@
 
 #include <dds/build/plan/compile_exec.hpp>
 #include <dds/build/plan/full.hpp>
-#include <dds/catch2_embedded.hpp>
 #include <dds/compdb.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
@@ -21,11 +20,6 @@ using namespace fansi::literals;
 
 namespace {
 
-struct state {
-    bool generate_catch2_header = false;
-    bool generate_catch2_main   = false;
-};
-
 void log_failure(const test_failure& fail) {
     dds_log(error,
             "Test .br.yellow[{}] .br.red[{}] [Exited {}]"_styled,
@@ -42,77 +36,8 @@ void log_failure(const test_failure& fail) {
     }
 }
 
-lm::library
-prepare_catch2_driver(test_lib test_driver, const build_params& params, build_env_ref env_) {
-    fs::path test_include_root = params.out_root / "_catch-2.10.2";
-
-    lm::library ret_lib;
-    auto        catch_hpp = test_include_root / "catch2/catch.hpp";
-    if (!fs::exists(catch_hpp)) {
-        fs::create_directories(catch_hpp.parent_path());
-        auto hpp_strm = open(catch_hpp, std::ios::out | std::ios::binary);
-        auto c2_str   = detail::catch2_embedded_single_header_str();
-        hpp_strm.write(c2_str.data(), c2_str.size());
-        hpp_strm.close();
-    }
-    ret_lib.include_paths.push_back(test_include_root);
-
-    if (test_driver == test_lib::catch_) {
-        // Don't compile a library helper
-        return ret_lib;
-    }
-
-    std::string fname;
-    std::string definition;
-
-    if (test_driver == test_lib::catch_main) {
-        fname      = "catch-main.cpp";
-        definition = "CATCH_CONFIG_MAIN";
-    } else {
-        assert(false && "Impossible: Invalid `test_driver` for catch library");
-        std::terminate();
-    }
-
-    shared_compile_file_rules comp_rules;
-    comp_rules.defs().push_back(definition);
-
-    auto catch_cpp = test_include_root / "catch2" / fname;
-    auto cpp_strm  = open(catch_cpp, std::ios::out | std::ios::binary);
-    cpp_strm << "#include \"./catch.hpp\"\n";
-    cpp_strm.close();
-
-    auto sf = source_file::from_path(catch_cpp, test_include_root);
-    assert(sf.has_value());
-
-    compile_file_plan plan{comp_rules, std::move(*sf), "Catch2", "v1"};
-
-    build_env env2 = env_;
-    env2.output_root /= "_test-driver";
-    auto obj_file = plan.calc_object_file_path(env2);
-
-    if (!fs::exists(obj_file)) {
-        dds_log(info, "Compiling Catch2 test driver (This will only happen once)...");
-        compile_all(std::array{plan}, env2, 1);
-    }
-
-    ret_lib.linkable_path = obj_file;
-    return ret_lib;
-}
-
-lm::library
-prepare_test_driver(const build_params& params, test_lib test_driver, build_env_ref env) {
-    if (test_driver == test_lib::catch_ || test_driver == test_lib::catch_main) {
-        return prepare_catch2_driver(test_driver, params, env);
-    } else {
-        assert(false && "Unreachable");
-        std::terminate();
-    }
-}
-
-library_plan prepare_library(state&                  st,
-                             const sdist_target&     sdt,
-                             const library_root&     lib,
-                             const package_manifest& pkg_man) {
+library_plan
+prepare_library(const sdist_target& sdt, const library_root& lib, const package_manifest& pkg_man) {
     library_build_params lp;
     lp.out_subdir      = sdt.params.subdir;
     lp.build_apps      = sdt.params.build_apps;
@@ -120,35 +45,25 @@ library_plan prepare_library(state&                  st,
     lp.enable_warnings = sdt.params.enable_warnings;
     if (lp.build_tests) {
         extend(lp.test_uses, lib.manifest().test_uses);
-
-        if (pkg_man.test_driver == test_lib::catch_
-            || pkg_man.test_driver == test_lib::catch_main) {
-            lp.test_uses.push_back({".dds", "Catch"});
-            st.generate_catch2_header = true;
-            if (pkg_man.test_driver == test_lib::catch_main) {
-                lp.test_uses.push_back({".dds", "Catch-Main"});
-                st.generate_catch2_main = true;
-            }
-        }
     }
     return library_plan::create(lib,
                                 std::move(lp),
                                 pkg_man.namespace_.str + "/" + lib.manifest().name.str);
 }
 
-package_plan prepare_one(state& st, const sdist_target& sd) {
+package_plan prepare_one(const sdist_target& sd) {
     package_plan pkg{sd.sd.manifest.id.name.str, sd.sd.manifest.namespace_.str};
     auto         libs = collect_libraries(sd.sd.path);
     for (const auto& lib : libs) {
-        pkg.add_library(prepare_library(st, sd, lib, sd.sd.manifest));
+        pkg.add_library(prepare_library(sd, lib, sd.sd.manifest));
     }
     return pkg;
 }
 
-build_plan prepare_build_plan(state& st, const std::vector<sdist_target>& sdists) {
+build_plan prepare_build_plan(const std::vector<sdist_target>& sdists) {
     build_plan plan;
     for (const auto& sd_target : sdists) {
-        plan.add_package(prepare_one(st, sd_target));
+        plan.add_package(prepare_one(sd_target));
     }
     return plan;
 }
@@ -313,8 +228,7 @@ void with_build_plan(const build_params&              params,
     fs::create_directories(params.out_root);
     auto db = database::open(params.out_root / ".dds.db");
 
-    state     st;
-    auto      plan  = prepare_build_plan(st, sdists);
+    auto      plan  = prepare_build_plan(sdists);
     auto      ureqs = prepare_ureqs(plan, params.toolchain, params.out_root);
     build_env env{
         params.toolchain,
@@ -333,15 +247,6 @@ void with_build_plan(const build_params&              params,
                 "Build cache-buster value for tweaks-dir [{}] content is '{}'",
                 *env.knobs.tweaks_dir,
                 *env.knobs.cache_buster);
-    }
-
-    if (st.generate_catch2_main) {
-        auto catch_lib                  = prepare_test_driver(params, test_lib::catch_main, env);
-        ureqs.add(".dds", "Catch-Main") = catch_lib;
-    }
-    if (st.generate_catch2_header) {
-        auto catch_lib             = prepare_test_driver(params, test_lib::catch_, env);
-        ureqs.add(".dds", "Catch") = catch_lib;
     }
 
     if (params.generate_compdb) {

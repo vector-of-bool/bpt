@@ -86,10 +86,12 @@ dependency parse_dependency(const json5::data& data) {
     return dep;
 }
 
-package_manifest parse_json(const json5::data& data, std::string_view) {
+package_manifest parse_json(const json5::data& data, std::string_view fpath) {
     package_manifest ret;
 
     using namespace semester::walk_ops;
+
+    static bool did_warn_test_driver = false;
 
     walk(data,
          require_obj{"Root of package manifest should be a JSON object"},
@@ -120,21 +122,16 @@ package_manifest parse_json(const json5::data& data, std::string_view) {
                     require_array{"'depends' should be an array of strings or objects"},
                     for_each{put_into(std::back_inserter(ret.dependencies), parse_dependency)}},
              if_key{"test_driver",
-                    require_str{"'test_driver' must be a string"},
-                    put_into{ret.test_driver,
-                             [](std::string const& td_str) {
-                                 if (td_str == "Catch-Main") {
-                                     return test_lib::catch_main;
-                                 } else if (td_str == "Catch") {
-                                     return test_lib::catch_;
-                                 } else {
-                                     auto dym = *did_you_mean(td_str, {"Catch-Main", "Catch"});
-                                     throw_user_error<errc::unknown_test_driver>(
-                                         "Unknown 'test_driver' '{}' (Did you mean '{}'?)",
-                                         td_str,
-                                         dym);
-                                 }
-                             }}},
+                    [&](auto&&) {
+                        if (!did_warn_test_driver) {
+                            dds_log(warn,
+                                    "'test_driver' is deprecated and has no effect. Use test-mode "
+                                    "dependencies instead. (In [{}])",
+                                    fpath);
+                        }
+                        did_warn_test_driver = true;
+                        return walk.accept;
+                    }},
          });
     return ret;
 }

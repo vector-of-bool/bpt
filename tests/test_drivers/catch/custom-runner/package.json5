@@ -2,5 +2,7 @@
     "name": "test",
     "version": "0.0.0",
     "namespace": "test",
-    "test_driver": "Catch",
+    depends: [
+        {dep: 'catch2@2.5.5', for: 'test'}
+    ]
 }

@@ -11,14 +11,6 @@
 
 namespace dds {
 
-/**
- * Possible values for test_driver in a package.json5
- */
-enum class test_lib {
-    catch_,
-    catch_main,
-};
-
 struct e_package_manifest_path {
     std::string value;
 };
@@ -39,8 +31,6 @@ struct package_manifest {
     dds::pkg_id id;
     /// The declared `Namespace` of the package. This directly corresponds with the libman Namespace
     name namespace_;
-    /// The `test_driver` that this package declares, or `nullopt` if absent.
-    std::optional<test_lib> test_driver;
     /// The dependencies declared with the `Depends` fields, if any.
     std::vector<dependency> dependencies;
 

@@ -112,6 +112,7 @@ class MoveTransform(NamedTuple):
 
 class CopyTransform(MoveTransform):
     def do_reloc_file(self, src: Path, dest: Path) -> None:
+        dest.parent.mkdir(exist_ok=True, parents=True)
         if src.is_dir():
             dest.mkdir(exist_ok=True, parents=True)
         else:
