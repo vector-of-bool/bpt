@@ -31,6 +31,8 @@ std::optional<fs::path> library_plan::generated_include_dir() const noexcept {
 library_plan library_plan::create(const library_root&             lib,
                                   const library_build_params&     params,
                                   std::optional<std::string_view> qual_name_) {
+    const fs::path out_dir = params.out_subdir / lib.path_from_root();
+
     // Source files are kept in three groups:
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
@@ -90,7 +92,7 @@ library_plan library_plan::create(const library_root&             lib,
     compile_rules.enable_warnings() = params.enable_warnings;
     compile_rules.uses()            = lib.manifest().uses;
 
-    const auto codegen_subdir = rebase_gen_incdir(params.out_subdir);
+    const auto codegen_subdir = rebase_gen_incdir(out_dir);
 
     if (!template_sources.empty()) {
         compile_rules.include_dirs().push_back(codegen_subdir);
@@ -106,10 +108,7 @@ library_plan library_plan::create(const library_root&             lib,
     auto lib_compile_files =  //
         lib_sources           //
         | ranges::views::transform([&](const source_file& sf) {
-              return compile_file_plan(compile_rules,
-                                       sf,
-                                       qual_name,
-                                       params.out_subdir / lib.path_from_root() / "obj");
+              return compile_file_plan(compile_rules, sf, qual_name, out_dir / "obj");
           })
         | ranges::to_vector;
 
@@ -119,7 +118,7 @@ library_plan library_plan::create(const library_root&             lib,
                                  return compile_file_plan(src_header_compile_rules,
                                                           sf,
                                                           qual_name,
-                                                          params.out_subdir / "timestamps");
+                                                          out_dir / "timestamps");
                              })
         | ranges::to_vector;
     extend(header_indep_plan,
@@ -127,7 +126,7 @@ library_plan library_plan::create(const library_root&             lib,
                return compile_file_plan(public_header_compile_rules,
                                         sf,
                                         qual_name,
-                                        params.out_subdir / "timestamps");
+                                        out_dir / "timestamps");
            }));
     // If we have any compiled library files, generate a static library archive
     // for this library
@@ -136,7 +135,7 @@ library_plan library_plan::create(const library_root&             lib,
         dds_log(debug, "Generating an archive library for {}", qual_name);
         archive_plan.emplace(lib.manifest().name.str,
                              qual_name,
-                             params.out_subdir,
+                             out_dir,
                              std::move(lib_compile_files));
     } else {
         dds_log(debug,
@@ -169,7 +168,7 @@ library_plan library_plan::create(const library_root&             lib,
             continue;
         }
         // Pick a subdir based on app/test
-        const auto subdir_base = is_test ? params.out_subdir / "test" : params.out_subdir;
+        const auto subdir_base = is_test ? out_dir / "test" : out_dir;
         // Put test/app executables in a further subdirectory based on the source file path
         const auto subdir = subdir_base / source.relative_path().parent_path();
         // Pick compile rules based on app/test
@@ -177,13 +176,11 @@ library_plan library_plan::create(const library_root&             lib,
         // Pick input libs based on app/test
         auto& exe_links = is_test ? test_links : links;
         // TODO: Apps/tests should only see the _public_ include dir, not both
-        auto exe = link_executable_plan{exe_links,
-                                        compile_file_plan(rules,
-                                                          source,
-                                                          qual_name,
-                                                          params.out_subdir / "obj"),
-                                        subdir,
-                                        source.path.stem().stem().string()};
+        auto exe
+            = link_executable_plan{exe_links,
+                                   compile_file_plan(rules, source, qual_name, out_dir / "obj"),
+                                   subdir,
+                                   source.path.stem().stem().string()};
         link_executables.emplace_back(std::move(exe));
     }
 
@@ -195,7 +192,7 @@ library_plan library_plan::create(const library_root&             lib,
     // Done!
     return library_plan{lib,
                         qual_name,
-                        params.out_subdir,
+                        out_dir,
                         std::move(archive_plan),
                         std::move(link_executables),
                         std::move(render_templates),
