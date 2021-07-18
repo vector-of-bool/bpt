@@ -56,7 +56,7 @@ auto collect_pf_sources(path_ref path) {
 
 }  // namespace
 
-library_root library_root::from_directory(path_ref lib_dir, path_ref path_from_root) {
+library_root library_root::from_directory(path_ref lib_dir, path_ref path_namespace) {
     assert(lib_dir.is_absolute());
     auto sources = collect_pf_sources(lib_dir);
 
@@ -73,7 +73,7 @@ library_root library_root::from_directory(path_ref lib_dir, path_ref path_from_r
         }
     }
 
-    auto lib = library_root(lib_dir, path_from_root, std::move(sources), std::move(man));
+    auto lib = library_root(lib_dir, path_namespace, std::move(sources), std::move(man));
 
     return lib;
 }

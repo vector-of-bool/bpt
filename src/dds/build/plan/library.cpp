@@ -31,7 +31,7 @@ std::optional<fs::path> library_plan::generated_include_dir() const noexcept {
 library_plan library_plan::create(const library_root&             lib,
                                   const library_build_params&     params,
                                   std::optional<std::string_view> qual_name_) {
-    const fs::path out_dir = params.out_subdir / lib.path_from_root();
+    const fs::path out_dir = params.out_subdir / lib.path_namespace();
 
     // Source files are kept in three groups:
     std::vector<source_file> app_sources;
