@@ -568,7 +568,7 @@ PACKAGES = [
                                     '**/*_test.c*',
                                     '**/*_testing.c*',
                                     '**/*_benchmark.c*',
-                                    '**/benchmarks.c*',
+                                    '**/*benchmarks.c*',
                                     '**/*_test_common.c*',
                                     '**/mocking_*.c*',
                                     # Misc files that should be removed:
