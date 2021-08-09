@@ -2,7 +2,7 @@ Error: Invalid version string
 #############################
 
 ``dds`` stores version numbers in a type-safe manner, and all version numbers
-are requried to match `Semantic Versioning <https://semver.org>`_.
+are required to match `Semantic Versioning <https://semver.org>`_.
 
 If you see this error, it means that a ``dds`` found a version number that does
 not correctly conform to Semantic Versioning's requirements for version numbers
