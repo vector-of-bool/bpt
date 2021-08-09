@@ -24,7 +24,7 @@ struct missing_required : invalid_arguments {
     using invalid_arguments::invalid_arguments;
 };
 
-struct invalid_repitition : invalid_arguments {
+struct invalid_repetition : invalid_arguments {
     using invalid_arguments::invalid_arguments;
 };
 

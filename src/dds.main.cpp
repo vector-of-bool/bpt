@@ -120,7 +120,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
                        arg.argument.preferred_spelling());
             return 2;
         },
-        [&](debate::invalid_repitition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
+        [&](debate::invalid_repetition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
             fmt::print(std::cerr,
                        "{}\nArgument '{}' cannot be provided more than once\n",
                        p.parser.usage_string(program_name),

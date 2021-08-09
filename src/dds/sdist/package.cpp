@@ -69,7 +69,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                                        return *dds::name::from_string(s);
                                    }}},
              required_key{"version",
-                          "A 'version' string is requried",
+                          "A 'version' string is required",
                           require_str{"'version' must be a string"},
                           put_into{ret.id.version,
                                    [](std::string s) { return semver::version::parse(s); }}},

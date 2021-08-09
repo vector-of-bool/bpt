@@ -56,7 +56,7 @@ auto handlers = std::tuple(  //
     },
     [](e_system_error_exc e, neo::url url, http_response_info) {
         dds_log(error,
-                "An error occured while downloading [.bold.red[{}]]: {}"_styled,
+                "An error occurred while downloading [.bold.red[{}]]: {}"_styled,
                 url.to_string(),
                 e.message);
         return 1;

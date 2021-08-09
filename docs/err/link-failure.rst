@@ -187,7 +187,7 @@ Suppose you have two different source files:
     #include "a.hpp"
 
     void error(string message) {
-        cerr << "An error occured: " << msg << '\n';
+        cerr << "An error occurred: " << msg << '\n';
     }
 
     void a_func() {
