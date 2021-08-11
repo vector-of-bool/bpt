@@ -90,6 +90,7 @@ class Project:
               *,
               toolchain: Optional[Pathish] = None,
               fixup_toolchain: bool = True,
+              jobs: Optional[int] = None,
               timeout: Optional[int] = None,
               tweaks_dir: Optional[Path] = None) -> None:
         """
@@ -102,6 +103,7 @@ class Project:
             self.dds.build(root=self.root,
                            build_root=self.build_root,
                            toolchain=toolchain,
+                           jobs=jobs,
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
                            more_args=['-ltrace'])

@@ -18,6 +18,9 @@ namespace dds {
 class library_root {
     // The path containing the source directories for this library
     fs::path _path;
+    // The path to this library root from the project root; used for namespacing outputs (object
+    // files, test executables, etc.).
+    fs::path _path_namespace;
     // The sources that are part of this library
     source_list _sources;
     // The library manifest associated with this library (may be generated)
@@ -25,8 +28,9 @@ class library_root {
 
     // Private constructor. Use named constructor `from_directory`, which will build
     // the construct arguments approperiately
-    library_root(path_ref dir, source_list&& src, library_manifest&& man)
+    library_root(path_ref dir, path_ref path_namespace, source_list&& src, library_manifest&& man)
         : _path(dir)
+        , _path_namespace(path_namespace)
         , _sources(std::move(src))
         , _man(std::move(man)) {}
 
@@ -36,7 +40,7 @@ public:
      * directory path. This will load the sources and manifest properly and
      * return the resulting library object.
      */
-    static library_root from_directory(path_ref);
+    static library_root from_directory(path_ref lib_dir, path_ref path_namespace);
 
     /**
      * Obtain the manifest for this library
@@ -57,6 +61,11 @@ public:
      * The root path for this library (parent of `src/` and `include/`, if present)
      */
     path_ref path() const noexcept { return _path; }
+
+    /**
+     * The path to this library from the project root.
+     */
+    path_ref path_namespace() const noexcept { return _path_namespace; }
 
     /**
      * The directory that should be considered the "public" include directory.
