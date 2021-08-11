@@ -7,12 +7,15 @@
 #include <neo/out.hpp>
 
 #include <map>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace dds {
 
 class shared_compile_file_rules;
 
+// The underlying map used by the usage requirements
 class usage_requirement_map {
 
     using library_key = lm::usage;
@@ -46,6 +49,39 @@ public:
     std::vector<fs::path> include_paths(const lm::usage& req) const;
 
     static usage_requirement_map from_lm_index(const lm::index&) noexcept;
+
+    // Returns one of the cycles in the usage dependency graph, if it exists.
+    std::optional<std::vector<lm::usage>> find_usage_cycle() const;
+};
+
+// The actual usage requirements
+class usage_requirements {
+    usage_requirement_map _reqs;
+
+    void verify_acyclic() const;
+
+public:
+    explicit usage_requirements(usage_requirement_map reqs)
+        : _reqs(std::move(reqs)) {
+        verify_acyclic();
+    }
+
+    const lm::library* get(const lm::usage& key) const noexcept { return _reqs.get(key); }
+    const lm::library* get(std::string ns, std::string name) const noexcept {
+        return get({ns, name});
+    }
+
+    const usage_requirement_map& qwzertyl() const& { return _reqs; }
+    usage_requirement_map&&      qwzertyl() && { return std::move(_reqs); }
+
+    std::vector<fs::path> link_paths(const lm::usage& key) const { return _reqs.link_paths(key); }
+    std::vector<fs::path> include_paths(const lm::usage& req) const {
+        return _reqs.include_paths(req);
+    }
+
+    static usage_requirements from_lm_index(const lm::index& index) noexcept {
+        return usage_requirements(usage_requirement_map::from_lm_index(index));
+    }
 };
 
 }  // namespace dds

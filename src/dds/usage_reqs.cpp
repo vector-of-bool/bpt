@@ -5,8 +5,12 @@
 #include <dds/util/algo.hpp>
 
 #include <fmt/core.h>
+#include <fmt/ranges.h>
+#include <range/v3/view/transform.hpp>
 
+#include <map>
 #include <stdexcept>
+#include <string_view>
 
 using namespace dds;
 
@@ -73,4 +77,102 @@ std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usag
         extend(ret, include_paths(transitive));
     }
     return ret;
+}
+
+namespace {
+enum class vertex_status {
+    unvisited,  // Never seen before
+    visiting,   // Currently looking at its children
+    visited,    // Finished examining
+};
+
+struct vertex_info {
+    vertex_status status = vertex_status::unvisited;
+    // Only relevant when `visiting`, used for recovering the cycle when we find it.
+    lm::usage next;
+};
+
+// Implements a recursive DFS.
+// Returns a lm::usage in a cycle if it exists.
+// The `vertex_info->next`s can be examined to recover the cycle.
+template <typename UsageCmp>
+std::optional<lm::usage> find_cycle(const usage_requirement_map&                reqs,
+                                    std::map<lm::usage, vertex_info, UsageCmp>& vertices,
+                                    const lm::usage&                            usage,
+                                    const lm::library&                          lib) {
+    neo_assert_audit(invariant,
+                     vertices.find(usage) != vertices.end(),
+                     "Improperly initialized `vertices`.");
+
+    vertex_info& info = vertices.find(usage)->second;
+    if (info.status == vertex_status::visiting) {
+        // Found a cycle!
+        return usage;
+    } else if (info.status == vertex_status::visited) {
+        return std::nullopt;
+    }
+
+    info.status = vertex_status::visiting;
+    for (const lm::usage& next : lib.uses) {
+        info.next                   = next;
+        const lm::library* next_lib = reqs.get(next);
+
+        neo_assert(invariant, next_lib, "Unaccounted for `uses`.");
+
+        if (auto cycle = find_cycle(reqs, vertices, next, *next_lib)) {
+            return cycle;
+        }
+    }
+    info.status = vertex_status::visited;
+
+    return std::nullopt;
+}
+
+}  // namespace
+
+std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() const {
+    std::map<lm::usage, vertex_info, library_key_compare> vertices;
+    // Default construct each.
+    for (const auto& [usage, lib] : _reqs) {
+        vertices[usage];
+    }
+
+    // DFS from each vertex, as we don't have a source vertex.
+    for (const auto& [usage, lib] : _reqs) {
+        if (auto cyclic_usage = find_cycle(*this, vertices, usage, lib)) {
+            // Follow `->next`s to recover the cycle.
+            std::vector<lm::usage> cycle;
+            lm::usage              cur = *cyclic_usage;
+
+            const auto eq = [](const lm::usage& lhs, const lm::usage& rhs) -> bool {
+                return lhs.namespace_ == rhs.namespace_ && lhs.name == rhs.name;
+            };
+
+            do {
+                cycle.push_back(cur);
+                cur = vertices.find(cur)->second.next;
+            } while (!eq(cur, *cyclic_usage));
+
+            return cycle;
+        }
+    }
+
+    return std::nullopt;
+}
+
+void usage_requirements::verify_acyclic() const {
+    std::optional<std::vector<lm::usage>> cycle = qwzertyl().find_usage_cycle();
+    if (cycle) {
+        neo_assert(invariant, cycle->size() >= 1, "Cycles must have at least one usage.");
+
+        // For error formatting purposes, a uses b uses a instead of just a uses b
+        cycle->push_back(cycle->front());
+
+        throw_user_error<errc::cyclic_usage>(
+            "Cyclic dependency found: {}",
+            fmt::join(*cycle | ranges::views::transform([](const lm::usage& usage) {
+                return fmt::format("'{}/{}'", usage.namespace_, usage.name);
+            }),
+                      " uses "));
+    }
 }
