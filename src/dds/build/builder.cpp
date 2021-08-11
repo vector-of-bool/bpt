@@ -153,7 +153,7 @@ build_plan prepare_build_plan(state& st, const std::vector<sdist_target>& sdists
     return plan;
 }
 
-usage_requirement_map
+usage_requirements
 prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_root) {
     usage_requirement_map ureqs;
     for (const auto& pkg : plan.packages()) {
@@ -171,7 +171,7 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             }
         }
     }
-    return ureqs;
+    return usage_requirements(std::move(ureqs));
 }
 
 void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
@@ -335,13 +335,17 @@ void with_build_plan(const build_params&              params,
                 *env.knobs.cache_buster);
     }
 
-    if (st.generate_catch2_main) {
-        auto catch_lib                  = prepare_test_driver(params, test_lib::catch_main, env);
-        ureqs.add(".dds", "Catch-Main") = catch_lib;
-    }
-    if (st.generate_catch2_header) {
-        auto catch_lib             = prepare_test_driver(params, test_lib::catch_, env);
-        ureqs.add(".dds", "Catch") = catch_lib;
+    if (st.generate_catch2_main || st.generate_catch2_header) {
+        auto ureqs_map = std::move(ureqs).steal_usage_map();
+        if (st.generate_catch2_main) {
+            auto catch_lib = prepare_test_driver(params, test_lib::catch_main, env);
+            ureqs_map.add(".dds", "Catch-Main") = catch_lib;
+        }
+        if (st.generate_catch2_header) {
+            auto catch_lib                 = prepare_test_driver(params, test_lib::catch_, env);
+            ureqs_map.add(".dds", "Catch") = catch_lib;
+        }
+        ureqs = dds::usage_requirements(std::move(ureqs_map));
     }
 
     if (params.generate_compdb) {

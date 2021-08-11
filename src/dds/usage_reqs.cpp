@@ -3,6 +3,7 @@
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/result.hpp>
 
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -161,13 +162,14 @@ std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() 
 }
 
 void usage_requirements::verify_acyclic() const {
-    std::optional<std::vector<lm::usage>> cycle = qwzertyl().find_usage_cycle();
+    std::optional<std::vector<lm::usage>> cycle = get_usage_map().find_usage_cycle();
     if (cycle) {
         neo_assert(invariant, cycle->size() >= 1, "Cycles must have at least one usage.");
 
         // For error formatting purposes, a uses b uses a instead of just a uses b
         cycle->push_back(cycle->front());
 
+        write_error_marker("library-json-cyclic-dependency");
         throw_user_error<errc::cyclic_usage>(
             "Cyclic dependency found: {}",
             fmt::join(*cycle | ranges::views::transform([](const lm::usage& usage) {

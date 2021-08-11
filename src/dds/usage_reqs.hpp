@@ -71,8 +71,8 @@ public:
         return get({ns, name});
     }
 
-    const usage_requirement_map& qwzertyl() const& { return _reqs; }
-    usage_requirement_map&&      qwzertyl() && { return std::move(_reqs); }
+    const usage_requirement_map& get_usage_map() const& { return _reqs; }
+    usage_requirement_map&&      steal_usage_map() && { return std::move(_reqs); }
 
     std::vector<fs::path> link_paths(const lm::usage& key) const { return _reqs.link_paths(key); }
     std::vector<fs::path> include_paths(const lm::usage& req) const {
