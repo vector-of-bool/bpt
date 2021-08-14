@@ -82,15 +82,17 @@ std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usag
 }
 
 namespace {
+// The DFS visited status for a vertex
 enum class vertex_status {
     unvisited,  // Never seen before
-    visiting,   // Currently looking at its children
+    visiting,   // Currently looking at its children; helps find cycles
     visited,    // Finished examining
 };
 
 struct vertex_info {
     vertex_status status = vertex_status::unvisited;
-    // Only relevant when `visiting`, used for recovering the cycle when we find it.
+    // When `visiting`, points to the next vertex we are searching.
+    // Can be chased to recover the cycle if we find a cycle.
     lm::usage next;
 };
 
@@ -104,35 +106,48 @@ std::optional<lm::usage> find_cycle(const usage_requirement_map&                
                                     const lm::library&                          lib) {
     neo_assert_audit(invariant,
                      vertices.find(usage) != vertices.end(),
-                     "Improperly initialized `vertices`.");
+                     "Improperly initialized `vertices`; missing vertex for usage.",
+                     usage.namespace_,
+                     usage.name);
 
     vertex_info& info = vertices.find(usage)->second;
-    if (info.status == vertex_status::visiting) {
+    if (info.status == vertex_status::visited) {
+        // We've already seen this vertex before, so there's no cycle down this path
+        return std::nullopt;
+    } else if (info.status == vertex_status::visiting) {
         // Found a cycle!
         return usage;
-    } else if (info.status == vertex_status::visited) {
-        return std::nullopt;
     }
 
+    // Continue searching
     info.status = vertex_status::visiting;
     for (const lm::usage& next : lib.uses) {
         info.next                   = next;
         const lm::library* next_lib = reqs.get(next);
 
-        neo_assert(invariant, next_lib, "Unaccounted for `uses`.");
+        neo_assert(invariant,
+                   next_lib,
+                   "Missing library for lib in `uses`.",
+                   next.namespace_,
+                   next.name);
 
+        // Recursively search each child vertex.
         if (auto cycle = find_cycle(reqs, vertices, next, *next_lib)) {
             return cycle;
         }
     }
     info.status = vertex_status::visited;
 
+    // We visited everything under this vertex and didn't find a cycle, so there's no cycle down
+    // this path.
     return std::nullopt;
 }
 
 }  // namespace
 
 std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() const {
+    // Performs the setup of the DFS and hands off to ::find_cycle() to search particular vertices.
+
     std::map<lm::usage, vertex_info, library_key_compare> vertices;
     // Default construct each.
     for (const auto& [usage, lib] : _reqs) {
@@ -140,6 +155,7 @@ std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() 
     }
 
     // DFS from each vertex, as we don't have a source vertex.
+    // Reuse the same DFS state, so we still visit each vertex only once.
     for (const auto& [usage, lib] : _reqs) {
         if (auto cyclic_usage = find_cycle(*this, vertices, usage, lib)) {
             // Follow `->next`s to recover the cycle.
@@ -163,6 +179,7 @@ std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() 
 }
 
 void usage_requirements::verify_acyclic() const {
+    // Log information on the graph to make it easier to debug issues with the DFS
     dds_log(debug, "Searching for `use` cycles.");
     if (log::level_enabled(log::level::debug)) {
         for (auto const& [k, v] : get_usage_map()) {
@@ -177,9 +194,12 @@ void usage_requirements::verify_acyclic() const {
 
     std::optional<std::vector<lm::usage>> cycle = get_usage_map().find_usage_cycle();
     if (cycle) {
-        neo_assert(invariant, cycle->size() >= 1, "Cycles must have at least one usage.");
+        neo_assert(invariant,
+                   cycle->size() >= 1,
+                   "Cycles must have at least one usage.",
+                   cycle->size());
 
-        // For error formatting purposes, a uses b uses a instead of just a uses b
+        // For error formatting purposes: "a uses b uses a" instead of just "a uses b"
         cycle->push_back(cycle->front());
 
         write_error_marker("library-json-cyclic-dependency");
