@@ -336,14 +336,23 @@ void with_build_plan(const build_params&              params,
     }
 
     if (st.generate_catch2_main || st.generate_catch2_header) {
-        auto ureqs_map = std::move(ureqs).steal_usage_map();
+        // Use a separate copy so that prepare_test_driver(...) doesn't see a moved-from ureqs.
+        dds::usage_requirement_map added_ureqs;
+
         if (st.generate_catch2_main) {
             auto catch_lib = prepare_test_driver(params, test_lib::catch_main, env);
-            ureqs_map.add(".dds", "Catch-Main") = catch_lib;
+            added_ureqs.add(".dds", "Catch-Main", std::move(catch_lib));
         }
         if (st.generate_catch2_header) {
-            auto catch_lib                 = prepare_test_driver(params, test_lib::catch_, env);
-            ureqs_map.add(".dds", "Catch") = catch_lib;
+            auto catch_lib = prepare_test_driver(params, test_lib::catch_, env);
+            added_ureqs.add(".dds", "Catch", std::move(catch_lib));
+        }
+
+        // Now that we gathered the new ureqs, give them to `ureqs`.
+        auto ureqs_map = std::move(ureqs).steal_usage_map();
+        for (const auto& [usage, library] : added_ureqs) {
+            // The view is already `const` when we iterate, so moving has no benefit.
+            ureqs_map.add(usage.namespace_, usage.name, library);
         }
         ureqs = dds::usage_requirements(std::move(ureqs_map));
     }
