@@ -35,9 +35,12 @@ class usage_requirement_map {
         }
     };
 
-    std::map<library_key, lm::library, library_key_compare> _reqs;
+    using _reqs_map_type = std::map<library_key, lm::library, library_key_compare>;
+    _reqs_map_type _reqs;
 
 public:
+    using const_iterator = _reqs_map_type::const_iterator;
+
     const lm::library* get(const lm::usage& key) const noexcept;
     const lm::library* get(std::string ns, std::string name) const noexcept {
         return get({ns, name});
@@ -49,6 +52,9 @@ public:
     std::vector<fs::path> include_paths(const lm::usage& req) const;
 
     static usage_requirement_map from_lm_index(const lm::index&) noexcept;
+
+    const_iterator begin() const { return _reqs.begin(); }
+    const_iterator end() const { return _reqs.end(); }
 
     // Returns one of the cycles in the usage dependency graph, if it exists.
     std::optional<std::vector<lm::usage>> find_usage_cycle() const;

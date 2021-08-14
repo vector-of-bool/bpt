@@ -3,6 +3,7 @@
 #include <dds/build/plan/compile_file.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
 #include <fmt/core.h>
@@ -162,6 +163,18 @@ std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() 
 }
 
 void usage_requirements::verify_acyclic() const {
+    dds_log(debug, "Searching for `use` cycles.");
+    if (log::level_enabled(log::level::debug)) {
+        for (auto const& [k, v] : get_usage_map()) {
+            std::vector<std::string> uses;
+            extend(uses, v.uses | ranges::views::transform([](const lm::usage& usage) {
+                             return fmt::format("'{}/{}'", usage.namespace_, usage.name);
+                         }));
+            const auto uses_str = fmt::format("{}", fmt::join(uses, ", "));
+            dds_log(debug, " lib '{}/{}' uses {}", k.namespace_, k.name, uses_str);
+        }
+    }
+
     std::optional<std::vector<lm::usage>> cycle = get_usage_map().find_usage_cycle();
     if (cycle) {
         neo_assert(invariant, cycle->size() >= 1, "Cycles must have at least one usage.");

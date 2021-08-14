@@ -1,4 +1,0 @@
-{
-    name: 'mylib',
-    test_uses: ['mylib/mylib'],
-}
