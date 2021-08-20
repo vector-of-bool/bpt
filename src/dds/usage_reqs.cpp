@@ -162,14 +162,10 @@ std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() 
             std::vector<lm::usage> cycle;
             lm::usage              cur = *cyclic_usage;
 
-            const auto eq = [](const lm::usage& lhs, const lm::usage& rhs) -> bool {
-                return lhs.namespace_ == rhs.namespace_ && lhs.name == rhs.name;
-            };
-
             do {
                 cycle.push_back(cur);
                 cur = vertices.find(cur)->second.next;
-            } while (!eq(cur, *cyclic_usage));
+            } while (cur != *cyclic_usage);
 
             return cycle;
         }
