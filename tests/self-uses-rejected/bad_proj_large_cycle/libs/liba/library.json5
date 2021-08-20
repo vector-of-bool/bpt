@@ -1,4 +1,0 @@
-{
-    name: 'liba',
-    uses: ['mylib/libb'],
-}
