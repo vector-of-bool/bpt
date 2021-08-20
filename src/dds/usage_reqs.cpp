@@ -48,9 +48,7 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
 std::vector<fs::path> usage_requirement_map::link_paths(const lm::usage& key) const {
     auto req = get(key);
     if (!req) {
-        throw_user_error<errc::unknown_usage_name>("Unable to find linking requirement '{}/{}'",
-                                                   key.namespace_,
-                                                   key.name);
+        throw_user_error<errc::unknown_usage_name>("Unable to find linking requirement {}", key);
     }
     std::vector<fs::path> ret;
     if (req->linkable_path) {
@@ -70,9 +68,7 @@ std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usag
     auto                  lib = get(usage.namespace_, usage.name);
     if (!lib) {
         throw_user_error<
-            errc::unknown_usage_name>("Cannot find non-existent usage requirements for '{}/{}'",
-                                      usage.namespace_,
-                                      usage.name);
+            errc::unknown_usage_name>("Cannot find non-existent usage requirements for {}", usage);
     }
     extend(ret, lib->include_paths);
     for (const auto& transitive : lib->uses) {
@@ -178,13 +174,9 @@ void usage_requirements::verify_acyclic() const {
     // Log information on the graph to make it easier to debug issues with the DFS
     dds_log(debug, "Searching for `use` cycles.");
     if (log::level_enabled(log::level::debug)) {
-        for (auto const& [k, v] : get_usage_map()) {
-            std::vector<std::string> uses;
-            extend(uses, v.uses | ranges::views::transform([](const lm::usage& usage) {
-                             return fmt::format("'{}/{}'", usage.namespace_, usage.name);
-                         }));
-            const auto uses_str = fmt::format("{}", fmt::join(uses, ", "));
-            dds_log(debug, " lib '{}/{}' uses {}", k.namespace_, k.name, uses_str);
+        for (auto const& [lib, deps] : get_usage_map()) {
+            const auto uses_str = fmt::format("{}", fmt::join(deps.uses, ", "));
+            dds_log(debug, " lib {} uses {}", lib, uses_str);
         }
     }
 
@@ -199,11 +191,7 @@ void usage_requirements::verify_acyclic() const {
         cycle->push_back(cycle->front());
 
         write_error_marker("library-json-cyclic-dependency");
-        throw_user_error<errc::cyclic_usage>(
-            "Cyclic dependency found: {}",
-            fmt::join(*cycle | ranges::views::transform([](const lm::usage& usage) {
-                return fmt::format("'{}/{}'", usage.namespace_, usage.name);
-            }),
-                      " uses "));
+        throw_user_error<errc::cyclic_usage>("Cyclic dependency found: {}",
+                                             fmt::join(*cycle, " uses "));
     }
 }

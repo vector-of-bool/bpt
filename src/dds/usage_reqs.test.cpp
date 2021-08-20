@@ -33,13 +33,7 @@ public:
     }
 
     std::string describe() const override {
-        return fmt::format("is a rotation of: {}",
-                           fmt::join(cycle | ranges::views::transform([](const lm::usage& usage) {
-                                         return fmt::format("'{}/{}'",
-                                                            usage.namespace_,
-                                                            usage.name);
-                                     }),
-                                     ", "));
+        return fmt::format("is a rotation of: {}", fmt::join(cycle, ", "));
     }
 };
 }  // namespace

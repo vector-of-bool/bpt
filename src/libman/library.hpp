@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 
+#include <fmt/core.h>
+
 namespace lm {
 
 struct usage {
@@ -40,3 +42,15 @@ public:
 };
 
 }  // namespace lm
+
+namespace fmt {
+template <>
+struct formatter<lm::usage> {
+    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const lm::usage& usage, FormatContext& ctx) {
+        return format_to(ctx.out(), "'{}/{}'", usage.namespace_, usage.name);
+    }
+};
+}  // namespace fmt
