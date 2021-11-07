@@ -288,7 +288,7 @@ _dds_complete_pkg_create()
   FLAGS=(
     [--project]='directory'
     [--out]=' '
-    [--if-exists]='replace skip fail'
+    [--if-exists]='replace ignore fail'
   )
   POSITIONAL=()
 
@@ -321,7 +321,7 @@ _dds_complete_pkg_import()
   SUBCOMMANDS=()
   FLAGS=(
     [--stdin]=''
-    [--if-exists]='replace skip fail'
+    [--if-exists]='replace ignore fail'
   )
   POSITIONAL=(
     'repeat:file' # <path-or-url> ...
@@ -435,7 +435,7 @@ _dds_complete_repoman_init()
 
   SUBCOMMANDS=()
   FLAGS=(
-    [--if-exists]='replace skip fail'
+    [--if-exists]='replace ignore fail'
     [--name]=' '
   )
   POSITIONAL=(
@@ -485,7 +485,7 @@ _dds_complete_repoman_import()
   declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=()
   FLAGS=(
-    [--if-exists]="replace skip fail"
+    [--if-exists]="replace ignore fail"
   )
   POSITIONAL=(
     'directory' # <repo-dir>
