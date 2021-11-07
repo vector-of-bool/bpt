@@ -25,6 +25,31 @@ def test_create_pkg(test_project: Project, tmp_path: Path) -> None:
     assert dest.is_file(), 'Did not create an sdist in the new location'
 
 
+def test_create_pkg_already_exists_fails(test_project: Project) -> None:
+    test_project.pkg_create()
+    with error.expect_error_marker('sdist-already-exists'):
+        test_project.pkg_create()
+
+
+def test_create_pkg_already_exists_fails_with_explicit_fail(test_project: Project) -> None:
+    test_project.pkg_create()
+    with error.expect_error_marker('sdist-already-exists'):
+        test_project.pkg_create(if_exists='fail')
+
+
+def test_create_pkg_already_exists_succeeds_with_ignore(test_project: Project) -> None:
+    test_project.pkg_create()
+    test_project.pkg_create(if_exists='ignore')
+
+
+def test_create_pkg_already_exists_succeeds_with_replace(test_project: Project) -> None:
+    sd_path: Path = test_project.build_root / 'foo@1.2.3.tar.gz'
+    test_project.build_root.mkdir(exist_ok=True, parents=True)
+    sd_path.touch()
+    test_project.pkg_create(if_exists='replace')
+    assert sd_path.stat().st_size > 0, 'Did not replace the existing file'
+
+
 @pytest.fixture()
 def _test_pkg(test_project: Project) -> Tuple[Path, Project]:
     repo_content_path = test_project.dds.repo_dir / 'foo@1.2.3'

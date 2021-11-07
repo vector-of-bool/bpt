@@ -64,6 +64,7 @@ int pkg_create(const options& opts) {
                               opts.if_exists == if_exists::fail,
                               "Unhandled value for if_exists");
 
+            write_error_marker("sdist-already-exists");
             // rethrow; the default handling works.
             throw;
         });
