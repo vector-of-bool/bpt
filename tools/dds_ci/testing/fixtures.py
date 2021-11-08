@@ -156,13 +156,14 @@ class Project:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
             self.dds.compile_file(paths, toolchain=tc, out=self.build_root, project_dir=self.root)
 
-    def pkg_create(self, *, dest: Optional[Pathish] = None) -> None:
+    def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
         self.dds.run([
             'pkg',
             'create',
             self.project_dir_arg,
             f'--out={dest}' if dest else (),
+            f'--if-exists={if_exists}' if if_exists else (),
         ], cwd=self.build_root)
 
     def sdist_export(self) -> None:

@@ -7,6 +7,7 @@
 #include <boost/leaf/handle_exception.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/core.h>
+#include <neo/assert.hpp>
 
 using namespace fansi::literals;
 
@@ -27,7 +28,7 @@ int pkg_create(const options& opts) {
             auto filepath         = opts.out_path.value_or(fs::current_path() / default_filename);
             create_sdist_targz(filepath, params);
             dds_log(info,
-                    "Created source dirtribution archive: .bold.cyan[{}]"_styled,
+                    "Created source distribution archive: .bold.cyan[{}]"_styled,
                     filepath.string());
             return 0;
         },
@@ -49,6 +50,23 @@ int pkg_create(const options& opts) {
                     ec.message());
             write_error_marker("failed-package-json5-scan");
             return 1;
+        },
+        [&](boost::leaf::catch_<user_error<errc::sdist_exists>> exc) -> int {
+            if (opts.if_exists == if_exists::ignore) {
+                // Satisfy the 'ignore' semantics by returning a success exit code, but still warn
+                // the user to let them know what happened.
+                dds_log(warn, "{}", exc.value().what());
+                return 0;
+            }
+            // If if_exists::replace, we wouldn't be here (not an error). Thus, since it's not
+            // if_exists::ignore, it must be if_exists::fail here.
+            neo_assert_always(invariant,
+                              opts.if_exists == if_exists::fail,
+                              "Unhandled value for if_exists");
+
+            write_error_marker("sdist-already-exists");
+            // rethrow; the default handling works.
+            throw;
         });
 }
 
