@@ -26,7 +26,7 @@ struct setup {
     argument if_exists_arg{
         .long_spellings = {"if-exists"},
         .help           = "What to do if the resource already exists",
-        .valname        = "{replace,skip,fail}",
+        .valname        = "{replace,ignore,fail}",
         .action         = put_into(opts.if_exists),
     };
 
