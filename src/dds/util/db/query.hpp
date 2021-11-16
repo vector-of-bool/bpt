@@ -39,20 +39,41 @@ auto db_query(unique_database& db, neo::sqlite3::sql_string_literal s) {
 }
 
 /**
+ * @brief Obtain a singel row from the database using the given query.
+ */
+template <typename... Ts, typename... Args>
+auto db_single(unique_database&                 db,
+               neo::sqlite3::sql_string_literal s,
+               std::tuple<Args...> const&       args) {
+    auto iter = db_query<Ts...>(db, s, args);
+    auto it   = iter.begin();
+    neo_assert(invariant,
+               !it.at_end(),
+               "Database query should have returned a single row",
+               s.string());
+    auto tup = *it;
+    ++it;
+    neo_assert(invariant,
+               it.at_end(),
+               "Database query should have returned only a single row",
+               s.string());
+    return tup;
+}
+
+template <typename... Ts>
+auto db_single(unique_database& db, neo::sqlite3::sql_string_literal s) {
+    return db_single<Ts...>(db, s, std::tie());
+}
+
+/**
  * @brief Obtain a single value from the database of the given type T
  */
 template <typename T, typename... Args>
 auto db_cell(unique_database&                 db,
              neo::sqlite3::sql_string_literal s,
              std::tuple<Args...> const&       args) {
-    auto iter = db_query<T>(db, s, args).begin();
-    neo_assert(invariant,
-               !iter.at_end(),
-               "db_cell() should always have exactly one value",
-               s.string());
-    auto value = std::get<0>(std::move(*iter));
-    ++iter;
-    neo_assert(invariant, iter.at_end(), "db_cell() should only return exactly one row");
+    auto tup   = db_single<T>(db, s, args);
+    auto value = std::get<0>(std::move(tup));
     return value;
 }
 
