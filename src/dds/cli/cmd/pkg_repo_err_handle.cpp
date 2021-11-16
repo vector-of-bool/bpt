@@ -41,7 +41,7 @@ int dds::cli::cmd::handle_pkg_repo_remote_errors(std::function<int()> fn) {
         [](dds::http_status_error, dds::http_response_info resp, neo::url bad_url) {
             dds_log(
                 error,
-                "An HTTP error occured while requesting [.br.red[{}]]: HTTP Status .red[{} {}]"_styled,
+                "An HTTP error occurred while requesting [.br.red[{}]]: HTTP Status .red[{} {}]"_styled,
                 bad_url.to_string(),
                 resp.status,
                 resp.status_message);

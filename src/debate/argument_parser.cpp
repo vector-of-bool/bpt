@@ -36,7 +36,7 @@ struct parse_engine {
     void see(const argument& arg) {
         auto did_insert = seen.insert(&arg).second;
         if (!did_insert && !arg.can_repeat) {
-            BOOST_LEAF_THROW_EXCEPTION(invalid_repitition("Invalid repitition"));
+            BOOST_LEAF_THROW_EXCEPTION(invalid_repetition("Invalid repetition"));
         }
     }
 
@@ -51,7 +51,7 @@ struct parse_engine {
 
     std::optional<std::string> find_nearest_arg_spelling(std::string_view given) const noexcept {
         std::vector<std::string> candidates;
-        // Only match arguments of the corrent type
+        // Only match arguments of the correct type
         auto parser = bottom_parser;
         while (parser) {
             for (auto& arg : parser->arguments()) {

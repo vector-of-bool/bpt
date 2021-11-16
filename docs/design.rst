@@ -43,7 +43,7 @@ Tabula Rasa
 ``dds`` attempts to break from the pattern of legacy demands and strange usage
 demands in a few ways. The major differences between ``dds`` and other build
 systems like CMake, Meson, build2, SCons, MSBuild, etc. is that of *tradeoffs*.
-If you opt-in to have your library built by ``dds``, you forgoe
+If you opt-in to have your library built by ``dds``, you forgo
 *customizability* in favor of *simplicity* and *ease*.
 
 ``dds`` takes a look at what is needed to build and develop *libraries* and

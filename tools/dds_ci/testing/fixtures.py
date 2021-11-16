@@ -50,6 +50,40 @@ class LibraryJSON(_LibraryJSONRequired, total=False):
     uses: Sequence[str]
 
 
+class Library:
+    """
+    Utilities to access a library under libs/ for a Project.
+    """
+
+    def __init__(self, name: str, dirpath: Path) -> None:
+        self.name = name
+        self.root = dirpath
+
+    @property
+    def library_json(self) -> LibraryJSON:
+        """
+        Get/set the content of the `library.json` file for the library.
+        """
+        return cast(LibraryJSON, json.loads(self.root.joinpath('library.jsonc').read_text()))
+
+    @library_json.setter
+    def library_json(self, data: LibraryJSON) -> None:
+        self.root.mkdir(exist_ok=True, parents=True)
+        self.root.joinpath('library.jsonc').write_text(
+            json.dumps(data, indent=2))
+
+    def write(self, path: Pathish, content: str) -> Path:
+        """
+        Write the given `content` to `path`. If `path` is relative, it will
+        be resolved relative to the root directory of this library.
+        """
+        path = Path(path)
+        if not path.is_absolute():
+            path = self.root / path
+        path.parent.mkdir(exist_ok=True, parents=True)
+        path.write_text(content)
+        return path
+
 class Project:
     """
     Utilities to access a project being used as a test.
@@ -70,16 +104,26 @@ class Project:
     def package_json(self, data: PackageJSON) -> None:
         self.root.joinpath('package.jsonc').write_text(json.dumps(data, indent=2))
 
+    def lib(self, name: str) -> Library:
+        return Library(name, self.root / f'libs/{name}')
+
+    @property
+    def __root_library(self) -> Library:
+        """
+        The root/default library for this project
+        """
+        return Library('<default>', self.root)
+
     @property
     def library_json(self) -> LibraryJSON:
         """
         Get/set the content of the `library.json` file for the project.
         """
-        return cast(LibraryJSON, json.loads(self.root.joinpath('library.jsonc').read_text()))
+        return self.__root_library.library_json
 
     @library_json.setter
     def library_json(self, data: LibraryJSON) -> None:
-        self.root.joinpath('library.jsonc').write_text(json.dumps(data, indent=2))
+        self.__root_library.library_json = data
 
     @property
     def project_dir_arg(self) -> str:
@@ -90,6 +134,7 @@ class Project:
               *,
               toolchain: Optional[Pathish] = None,
               fixup_toolchain: bool = True,
+              jobs: Optional[int] = None,
               timeout: Optional[int] = None,
               tweaks_dir: Optional[Path] = None,
               with_tests: bool = True) -> None:
@@ -103,6 +148,7 @@ class Project:
             self.dds.build(root=self.root,
                            build_root=self.build_root,
                            toolchain=toolchain,
+                           jobs=jobs,
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
                            with_tests=with_tests,
@@ -112,13 +158,14 @@ class Project:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
             self.dds.compile_file(paths, toolchain=tc, out=self.build_root, project_dir=self.root)
 
-    def pkg_create(self, *, dest: Optional[Pathish] = None) -> None:
+    def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
         self.dds.run([
             'pkg',
             'create',
             self.project_dir_arg,
             f'--out={dest}' if dest else (),
+            f'--if-exists={if_exists}' if if_exists else (),
         ], cwd=self.build_root)
 
     def sdist_export(self) -> None:
@@ -129,12 +176,7 @@ class Project:
         Write the given `content` to `path`. If `path` is relative, it will
         be resolved relative to the root directory of this project.
         """
-        path = Path(path)
-        if not path.is_absolute():
-            path = self.root / path
-        path.parent.mkdir(exist_ok=True, parents=True)
-        path.write_text(content)
-        return path
+        self.__root_library.write(path, content)
 
 
 @pytest.fixture()

@@ -181,14 +181,14 @@ The following CMake variables and directory properties are used to generate the
   ``add_compile_definitions``
 
 ``CXX_STANDARD``
-  Control the ``cxx_version`` in the toolchian
+  Control the ``cxx_version`` in the toolchain
 
 ``CMAKE_MSVC_RUNTIME_LIBRARY``
   Sets the ``runtime`` option. This option has limited support for generator
   expressions.
 
 ``CMAKE_C_FLAGS`` and ``CMAKE_CXX_FLAGS``, and their per-config variants
-  Set the basic compile flags for the respective file sypes
+  Set the basic compile flags for the respective file types
 
 ``CXX_COMPILE_LAUNCHER``
   Allow providing a compiler launcher, e.g. ``ccache``.

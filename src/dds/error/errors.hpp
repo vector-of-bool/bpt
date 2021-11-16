@@ -42,6 +42,7 @@ enum class errc {
     dependency_resolve_failure,
     dup_lib_name,
     unknown_usage_name,
+    cyclic_usage,
 
     invalid_lib_filesystem,
     invalid_pkg_filesystem,

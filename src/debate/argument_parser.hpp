@@ -36,7 +36,7 @@ struct parser_state_impl : parser_state {
 
     bool             at_end() const noexcept override { return arg_it == arg_stop; }
     std::string_view current_arg() const noexcept override {
-        neo_assert(invariant, !at_end(), "Get argument past the final argumetn?");
+        neo_assert(invariant, !at_end(), "Get argument past the final argument?");
         return *arg_it;
     }
     void shift() noexcept override {
@@ -70,7 +70,7 @@ class argument_parser {
     std::optional<subparser_group> _subparsers;
     std::string                    _name;
     std::string                    _description;
-    // The parent of this argumetn parser, if it was attached using a subparser_group
+    // The parent of this argument parser, if it was attached using a subparser_group
     neo::opt_ref<const argument_parser> _parent;
 
     using strv     = std::string_view;

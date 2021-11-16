@@ -26,7 +26,7 @@ struct setup {
     argument if_exists_arg{
         .long_spellings = {"if-exists"},
         .help           = "What to do if the resource already exists",
-        .valname        = "{replace,skip,fail}",
+        .valname        = "{replace,ignore,fail}",
         .action         = put_into(opts.if_exists),
     };
 
@@ -294,7 +294,7 @@ struct setup {
             = "Path to the project for which to create a source distribution.\n"
               "Default is the current working directory.";
         pkg_create_cmd.add_argument(out_arg.dup()).help
-            = "Destination path for the source distributioon archive";
+            = "Destination path for the source distribution archive";
         pkg_create_cmd.add_argument(if_exists_arg.dup()).help
             = "What to do if the destination names an existing file";
     }

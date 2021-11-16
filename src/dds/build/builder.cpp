@@ -68,7 +68,7 @@ build_plan prepare_build_plan(const std::vector<sdist_target>& sdists) {
     return plan;
 }
 
-usage_requirement_map
+usage_requirements
 prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_root) {
     usage_requirement_map ureqs;
     for (const auto& pkg : plan.packages()) {
@@ -86,7 +86,7 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             }
         }
     }
-    return ureqs;
+    return usage_requirements(std::move(ureqs));
 }
 
 void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {

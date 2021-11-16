@@ -71,6 +71,8 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "dup-lib-name.html";
     case errc::unknown_usage_name:
         return "unknown-usage.html";
+    case errc::cyclic_usage:
+        return "cyclic-usage.html";
     case errc::template_error:
         return "template-error.html";
     case errc::none:
@@ -255,6 +257,12 @@ Check your spelling, and check that the package containing the library is
 available, either from the `package.json5` or from the `INDEX.lmi` that was used
 for the build.
 )";
+    case errc::cyclic_usage:
+        return R"(
+A cyclic dependency was detected among the libraries' `uses` fields. The cycle
+must be removed. If no cycle is apparent, check that the `uses` field for the
+library does not refer to the library itself.
+)";
     case errc::template_error:
         return R"(dds encountered a problem while rendering a file template and cannot continue.)";
     case errc::none:
@@ -330,6 +338,8 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "More than one library has claimed the same name.";
     case errc::unknown_usage_name:
         return "A `uses` or `links` field names a library that isn't recognized.";
+    case errc::cyclic_usage:
+        return "A cyclic dependency was detected among the libraries' `uses` fields.";
     case errc::template_error:
         return "There was an error while rendering a template file." BUG_STRING_SUFFIX;
     case errc::none:

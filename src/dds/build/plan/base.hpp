@@ -14,7 +14,7 @@ struct build_env {
 
     toolchain_knobs knobs;
 
-    const usage_requirement_map& ureqs;
+    const usage_requirements& ureqs;
 };
 
 using build_env_ref = const build_env&;

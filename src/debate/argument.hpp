@@ -83,7 +83,7 @@ struct argument {
 
     std::function<void(std::string_view, std::string_view)> action;
 
-    // This member variable makes this strunct noncopyable, and has no other purpose
+    // This member variable makes this struct noncopyable, and has no other purpose
     std::unique_ptr<int> _make_noncopyable{};
     std::string_view     try_match_short(std::string_view arg) const noexcept;
     std::string_view     try_match_long(std::string_view arg) const noexcept;
