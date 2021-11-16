@@ -16,10 +16,10 @@
 #include <neo/event.hpp>
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
+#include <neo/ranges.hpp>
 #include <neo/scope.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
-#include <neo/sqlite3/single.hpp>
 #include <neo/sqlite3/transaction.hpp>
 #include <neo/url.hpp>
 #include <neo/utility.hpp>
@@ -37,8 +37,8 @@ struct remote_db {
     nsql::database db;
 
     static void patchup_db(nsql::database_ref db) {
-        auto get_ver   = db.prepare("SELECT version FROM dds_repo_meta");
-        auto [version] = nsql::unpack_single<int>(get_ver);
+        auto get_ver   = *db.prepare("SELECT version FROM dds_repo_meta");
+        auto [version] = *nsql::unpack_next<int>(get_ver);
         if (version < 2) {
             dds_log(warn,
                     "Remote database uses a prior schema. We'll do an implicit upgrade, but this "
@@ -46,7 +46,8 @@ struct remote_db {
             db.exec(R"(
                 ALTER TABLE dds_repo_package_deps
                 ADD COLUMN kind TEXT NOT NULL DEFAULT 'lib'
-            )");
+            )")
+                .throw_if_error();
         }
     }
 
@@ -60,7 +61,7 @@ struct remote_db {
         }
         auto repo_db = tempdir.path() / "repo.db";
         dds::decompress_file_gz(repo_db_gz_dl, repo_db).value();
-        auto db = nsql::open(repo_db.string());
+        auto db = *nsql::open(repo_db.string());
         patchup_db(db);
         return {tempdir, std::move(db)};
     }
@@ -77,20 +78,21 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
     auto [client, resp] = pool.request(db_url, http_request_params{.method = "GET"});
     auto db             = remote_db::download_and_open(client, resp);
 
-    auto name_st = db.db.prepare("SELECT name FROM dds_repo_meta");
-    auto [name]  = nsql::unpack_single<std::string>(name_st);
+    auto name_st = *db.db.prepare("SELECT name FROM dds_repo_meta");
+    auto [name]  = *nsql::unpack_next<std::string>(name_st);
 
     return {name, url};
 }
 
 void pkg_remote::store(nsql::database_ref db) {
-    auto st = db.prepare(R"(
+    auto st       = *db.prepare(R"(
         INSERT INTO dds_pkg_remotes (name, url)
             VALUES (?, ?)
         ON CONFLICT (name) DO
             UPDATE SET url = ?2
     )");
-    nsql::exec(st, std::forward_as_tuple(_name, _base_url.to_string()));
+    auto base_str = _base_url.to_string();
+    nsql::exec(st, _name, base_str).throw_if_error();
 }
 
 void pkg_remote::update_pkg_db(nsql::database_ref              db,
@@ -125,25 +127,27 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
     auto db_path = rdb._tempdir.path() / "repo.db";
 
-    auto rid_st          = db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
+    auto rid_st          = *db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
     rid_st.bindings()[1] = _name;
-    auto [remote_id]     = nsql::unpack_single<std::int64_t>(rid_st);
+    auto [remote_id]     = *nsql::unpack_next<std::int64_t>(rid_st);
     rid_st.reset();
 
     dds_log(trace, "Attaching downloaded database");
-    nsql::exec(db.prepare("ATTACH DATABASE ? AS remote"), std::forward_as_tuple(db_path.string()));
-    neo_defer { db.exec("DETACH DATABASE remote"); };
+    auto db_path_str = db_path.string();
+    nsql::exec(*db.prepare("ATTACH DATABASE ? AS remote"), db_path_str).throw_if_error();
+    neo_defer { (void)db.exec("DETACH DATABASE remote"); };
     nsql::transaction_guard tr{db};
     dds_log(trace, "Clearing prior contents");
     nsql::exec(  //
-        db.prepare(R"(
+        *db.prepare(R"(
             DELETE FROM dds_pkgs
             WHERE remote_id = ?
         )"),
-        std::tie(remote_id));
+        remote_id)
+        .throw_if_error();
     dds_log(trace, "Importing packages");
     nsql::exec(  //
-        db.prepare(R"(
+        *db.prepare(R"(
             INSERT INTO dds_pkgs
                 (name, version, description, remote_url, remote_id)
             SELECT
@@ -162,7 +166,9 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
                 ?1
             FROM remote.dds_repo_packages
         )"),
-        std::tie(remote_id, base_url_str));
+        remote_id,
+        base_url_str)
+        .throw_if_error();
     dds_log(trace, "Importing dependencies");
     db.exec(R"(
         INSERT OR REPLACE INTO dds_pkg_deps (pkg_id, dep_name, low, high, kind)
@@ -175,10 +181,11 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
             FROM remote.dds_repo_package_deps AS deps,
                  remote.dds_repo_packages AS pkgs USING(package_id),
                  dds_pkgs AS local_pkgs USING(name, version)
-    )");
+    )")
+        .throw_if_error();
     // Validate our database
     dds_log(trace, "Running integrity check");
-    auto fk_check = db.prepare("PRAGMA foreign_key_check");
+    auto fk_check = *db.prepare("PRAGMA foreign_key_check");
     auto rows = nsql::iter_tuples<std::string, std::int64_t, std::string, std::string>(fk_check);
     bool any_failed = false;
     for (auto [child_table, rowid, parent_table, failed_idx] : rows) {
@@ -191,7 +198,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
             failed_idx);
         any_failed = true;
     }
-    auto int_check = db.prepare("PRAGMA main.integrity_check");
+    auto int_check = *db.prepare("PRAGMA main.integrity_check");
     for (auto [error] : nsql::iter_tuples<std::string>(int_check)) {
         if (error == "ok") {
             continue;
@@ -206,23 +213,27 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
     // Save the cache info for the remote
     if (auto new_etag = resp.etag()) {
-        nsql::exec(db.prepare("UPDATE dds_pkg_remotes SET db_etag = ? WHERE name = ?"),
-                   std::tie(*new_etag, _name));
+        nsql::exec(*db.prepare("UPDATE dds_pkg_remotes SET db_etag = ? WHERE name = ?"),
+                   *new_etag,
+                   _name)
+            .throw_if_error();
     }
     if (auto mtime = resp.last_modified()) {
-        nsql::exec(db.prepare("UPDATE dds_pkg_remotes SET db_mtime = ? WHERE name = ?"),
-                   std::tie(*mtime, _name));
+        nsql::exec(*db.prepare("UPDATE dds_pkg_remotes SET db_mtime = ? WHERE name = ?"),
+                   *mtime,
+                   _name)
+            .throw_if_error();
     }
 }
 
 void dds::update_all_remotes(nsql::database_ref db) {
     dds_log(info, "Updating catalog from all remotes");
-    auto repos_st = db.prepare("SELECT name, url, db_etag, db_mtime FROM dds_pkg_remotes");
+    auto repos_st = *db.prepare("SELECT name, url, db_etag, db_mtime FROM dds_pkg_remotes");
     auto tups     = nsql::iter_tuples<std::string,
                                   std::string,
                                   std::optional<std::string>,
                                   std::optional<std::string>>(repos_st)
-        | ranges::to_vector;
+        | neo::to_vector;
 
     for (const auto& [name, url, etag, db_mtime] : tups) {
         DDS_E_SCOPE(e_url_string{url});
@@ -231,30 +242,31 @@ void dds::update_all_remotes(nsql::database_ref db) {
     }
 
     dds_log(info, "Recompacting database...");
-    db.exec("VACUUM");
+    db.exec("VACUUM").throw_if_error();
 }
 
 void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
     auto&                   db = pkdb.database();
     nsql::transaction_guard tr{db};
-    auto get_rowid_st          = db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
+    auto get_rowid_st = *db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
     get_rowid_st.bindings()[1] = name;
-    auto row                   = nsql::unpack_single_opt<std::int64_t>(get_rowid_st);
-    if (!row) {
+    auto row                   = nsql::unpack_next<std::int64_t>(get_rowid_st);
+    if (!row.has_value()) {
         BOOST_LEAF_THROW_EXCEPTION(  //
             make_user_error<errc::no_catalog_remote_info>("There is no remote with name '{}'",
                                                           name),
             [&] {
-                auto all_st = db.prepare("SELECT name FROM dds_pkg_remotes");
+                auto all_st = *db.prepare("SELECT name FROM dds_pkg_remotes");
                 auto tups   = nsql::iter_tuples<std::string>(all_st);
                 auto names  = tups
-                    | ranges::views::transform([](auto&& tup) { return std::get<0>(tup); })
+                    | std::views::transform([](auto&& tup) { return tup.template get<0>(); })
                     | ranges::to_vector;
                 return e_nonesuch{name, did_you_mean(name, names)};
             });
     }
     auto [rowid] = *row;
-    nsql::exec(db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), std::tie(rowid));
+    nsql::exec(*db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), rowid)
+        .throw_if_error();
 }
 
 void dds::add_init_repo(nsql::database_ref db) noexcept {

@@ -9,6 +9,7 @@
 #include <neo/fwd.hpp>
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
+#include <neo/sqlite3/statement.hpp>
 
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -19,7 +20,7 @@ namespace nsql = neo::sqlite3;
 
 result<pkg_search_results> dds::pkg_search(nsql::database_ref              db,
                                            std::optional<std::string_view> pattern) noexcept {
-    auto search_st = db.prepare(R"(
+    auto search_st = *db.prepare(R"(
         SELECT pkg.name,
                group_concat(version, ';;'),
                description,
@@ -61,10 +62,10 @@ result<pkg_search_results> dds::pkg_search(nsql::database_ref              db,
 
     if (found.empty()) {
         return boost::leaf::new_error([&] {
-            auto names_st  = db.prepare("SELECT DISTINCT name from dds_pkgs");
+            auto names_st  = *db.prepare("SELECT DISTINCT name from dds_pkgs");
             auto tups      = nsql::iter_tuples<std::string>(names_st);
             auto names_vec = tups
-                | ranges::views::transform([](auto&& row) { return std::get<0>(row); })
+                | std::views::transform([](auto&& row) { return row.template get<0>(); })
                 | ranges::to_vector;
             auto nearest = dds::did_you_mean(final_pattern, names_vec);
             return e_nonesuch{final_pattern, nearest};

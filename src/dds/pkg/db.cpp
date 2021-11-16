@@ -14,7 +14,6 @@
 #include <neo/sqlite3/error.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
-#include <neo/sqlite3/single.hpp>
 #include <neo/sqlite3/transaction.hpp>
 #include <nlohmann/json.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -22,9 +21,8 @@
 #include <range/v3/view/transform.hpp>
 
 using namespace dds;
-
 namespace nsql = neo::sqlite3;
-using namespace neo::sqlite3::literals;
+using namespace nsql::literals;
 
 namespace dds {
 
@@ -75,14 +73,16 @@ void migrate_repodb_1(nsql::database& db) {
             high TEXT NOT NULL,
             UNIQUE(pkg_id, dep_name)
         );
-    )");
+    )")
+        .throw_if_error();
 }
 
 void migrate_repodb_2(nsql::database& db) {
     db.exec(R"(
         ALTER TABLE dds_cat_pkgs
             ADD COLUMN repo_transform TEXT NOT NULL DEFAULT '[]'
-    )");
+    )")
+        .throw_if_error();
 }
 
 void migrate_repodb_3(nsql::database& db) {
@@ -140,7 +140,8 @@ void migrate_repodb_3(nsql::database& db) {
 
         DROP TABLE dds_cat_pkg_deps;
         DROP TABLE dds_cat_pkgs;
-    )");
+    )")
+        .throw_if_error();
 }
 
 void migrate_repodb_4(nsql::database_ref db) {
@@ -162,7 +163,8 @@ void migrate_repodb_4(nsql::database_ref db) {
         DROP TABLE dds_pkg_deps;
         ALTER TABLE dds_pkg_deps_1 RENAME TO dds_pkg_deps;
         CREATE INDEX idx_deps_for_pkg ON dds_pkg_deps (pkg_id);
-    )");
+    )")
+        .throw_if_error();
 }
 
 void do_store_pkg(neo::sqlite3::database&        db,
@@ -176,10 +178,11 @@ void do_store_pkg(neo::sqlite3::database&        db,
             (?, ?, ?, ?)
     )"_sql);
     nsql::exec(store_pkg_st,
-               std::forward_as_tuple(pkg.ident.name.str,
-                                     pkg.ident.version.to_string(),
-                                     pkg.remote_pkg.to_url_string(),
-                                     pkg.description));
+               pkg.ident.name.str,
+               pkg.ident.version.to_string(),
+               pkg.remote_pkg.to_url_string(),
+               pkg.description)
+        .throw_if_error();
 
     auto  db_pkg_id  = db.last_insert_rowid();
     auto& new_dep_st = st_cache(R"(
@@ -203,11 +206,12 @@ void do_store_pkg(neo::sqlite3::database&        db,
         auto iv_1 = *dep.versions.iter_intervals().begin();
         dds_log(trace, "  Depends on: {}", dep.decl_to_string());
         nsql::exec(new_dep_st,
-                   std::forward_as_tuple(db_pkg_id,
-                                         dep.name.str,
-                                         iv_1.low.to_string(),
-                                         iv_1.high.to_string(),
-                                         for_kind_str(dep.for_kind)));
+                   db_pkg_id,
+                   dep.name.str,
+                   iv_1.low.to_string(),
+                   iv_1.high.to_string(),
+                   for_kind_str(dep.for_kind))
+            .throw_if_error();
     }
 }
 
@@ -217,11 +221,13 @@ void ensure_migrated(nsql::database& db) {
         CREATE TABLE IF NOT EXISTS dds_cat_meta AS
             WITH init(meta) AS (VALUES ('{"version": 0}'))
             SELECT * FROM init;
-    )");
+    )")
+        .throw_if_error();
     nsql::transaction_guard tr{db};
 
-    auto meta_st     = db.prepare("SELECT meta FROM dds_cat_meta");
-    auto [meta_json] = nsql::unpack_single<std::string>(meta_st);
+    auto meta_st     = *db.prepare("SELECT meta FROM dds_cat_meta");
+    auto [meta_json] = *nsql::unpack_next<std::string>(meta_st);
+    meta_st.reset();
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
@@ -265,7 +271,7 @@ void ensure_migrated(nsql::database& db) {
         migrate_repodb_4(db);
     }
     meta["version"] = current_database_version;
-    exec(db.prepare("UPDATE dds_cat_meta SET meta=?"), std::forward_as_tuple(meta.dump()));
+    exec(*db.prepare("UPDATE dds_cat_meta SET meta=?"), meta.dump()).throw_if_error();
     tr.commit();
 
     if (version < 3 && !getenv_bool("DDS_NO_ADD_INITIAL_REPO")) {
@@ -285,7 +291,7 @@ pkg_db pkg_db::open(const std::string& db_path) {
         fs::create_directories(pardir);
     }
     dds_log(debug, "Opening package database [{}]", db_path);
-    auto db = nsql::database::open(db_path);
+    auto db = *nsql::database::open(db_path);
     try {
         ensure_migrated(db);
     } catch (const nsql::error& e) {
@@ -321,10 +327,9 @@ result<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
         WHERE name = ?1 AND version = ?2
         ORDER BY pkg_id DESC
     )"_sql);
-    st.reset();
-    st.bindings() = std::forward_as_tuple(pk_id.name.str, ver_str);
-    auto ec       = st.step(std::nothrow);
-    if (ec == nsql::errc::done) {
+    nsql::reset_and_bind(st, pk_id.name.str, ver_str).throw_if_error();
+    auto res = st.step();
+    if (res == nsql::errc::done) {
         return new_error([&] {
             auto all_ids = this->all();
             auto id_strings
@@ -333,17 +338,17 @@ result<pkg_listing> pkg_db::get(const pkg_id& pk_id) const noexcept {
         });
     }
     neo_assert_always(invariant,
-                      ec == nsql::errc::row,
+                      res == nsql::errc::row,
                       "Failed to pull a package from the database",
-                      ec,
+                      res.errc(),
                       pk_id.to_string(),
-                      nsql::error_category().message(int(ec)));
+                      nsql::error_category().message(int(res.errc())));
 
     const auto& [pkg_id, name, version, remote_url, description]
         = st.row().unpack<std::int64_t, std::string, std::string, std::string, std::string>();
 
-    ec = st.step(std::nothrow);
-    if (ec == nsql::errc::row) {
+    res = st.step();
+    if (res == nsql::errc::row) {
         dds_log(warn,
                 "There is more than one entry for package {} in the database. One will be "
                 "chosen arbitrarily.",
@@ -375,16 +380,14 @@ auto pair_to_pkg_id = [](auto&& pair) {
 };
 
 std::vector<pkg_id> pkg_db::all() const noexcept {
-    return nsql::exec_tuples<std::string,
-                             std::string>(_stmt_cache("SELECT name, version FROM dds_pkgs"_sql),
-                                          std::tuple())
-        | neo::lref                                 //
-        | ranges::views::transform(pair_to_pkg_id)  //
+    return *nsql::exec_tuples<std::string,
+                              std::string>(_stmt_cache("SELECT name, version FROM dds_pkgs"_sql))
+        | std::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
 std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
-    return nsql::exec_tuples<std::string, std::string>(  //
+    return *nsql::exec_tuples<std::string, std::string>(  //
                _stmt_cache(
                    R"(
                 SELECT name, version
@@ -392,18 +395,18 @@ std::vector<pkg_id> pkg_db::by_name(std::string_view sv) const noexcept {
                  WHERE name = ?
                  ORDER BY pkg_id DESC
                 )"_sql),
-               std::tie(sv))                        //
-        | neo::lref                                 //
-        | ranges::views::transform(pair_to_pkg_id)  //
+               sv)
+        | std::views::transform(pair_to_pkg_id)  //
         | ranges::to_vector;
 }
 
 std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcept {
     dds_log(trace, "Lookup dependencies of {}", pkg.to_string());
-    return nsql::exec_tuples<std::string,
-                             std::string,
-                             std::string,
-                             std::string>(  //
+    auto ver_str = pkg.version.to_string();
+    return *nsql::exec_tuples<std::string,
+                              std::string,
+                              std::string,
+                              std::string>(  //
                _stmt_cache(
                    R"(
                 WITH this_pkg_id AS (
@@ -416,21 +419,20 @@ std::vector<dependency> pkg_db::dependencies_of(const pkg_id& pkg) const noexcep
                  WHERE pkg_id IN this_pkg_id
               ORDER BY dep_name
                 )"_sql),
-               std::forward_as_tuple(pkg.name.str,
-                                     pkg.version.to_string()))  //
-        | neo::lref                                             //
-        | ranges::views::transform([](auto&& pair) {
-               auto& [name, low, high, kind_] = pair;
+               pkg.name.str,
+               ver_str)
+        | std::views::transform([](auto&& tup) {
+              auto& [name, low, high, kind_] = tup;
 
-               auto kind = for_kind_from_str(kind_);
-               if (!kind) {
-                   dds_log(warn, "Unknown dep-for-kind '{}' (Defaulting to 'lib')", kind_);
-               }
-               auto dep = dependency{name,
-                                     {semver::version::parse(low), semver::version::parse(high)},
-                                     kind.value_or(dep_for_kind::lib)};
-               dds_log(trace, "  Depends: {}", dep.decl_to_string());
-               return dep;
-           })  //
+              auto kind = for_kind_from_str(kind_);
+              if (!kind) {
+                  dds_log(warn, "Unknown dep-for-kind '{}' (Defaulting to 'lib')", kind_);
+              }
+              auto dep = dependency{name,
+                                    {semver::version::parse(low), semver::version::parse(high)},
+                                    kind.value_or(dep_for_kind::lib)};
+              dds_log(trace, "  Depends: {}", dep.decl_to_string());
+              return dep;
+          })  //
         | ranges::to_vector;
 }

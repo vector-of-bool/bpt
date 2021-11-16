@@ -13,7 +13,7 @@ static int _pkg_repo_ls(const options& opts) {
     auto                       pkg_db = opts.open_pkg_db();
     neo::sqlite3::database_ref db     = pkg_db.database();
 
-    auto st   = db.prepare("SELECT name, url, db_mtime FROM dds_pkg_remotes");
+    auto st   = *db.prepare("SELECT name, url, db_mtime FROM dds_pkg_remotes");
     auto tups = neo::sqlite3::iter_tuples<std::string, std::string, std::optional<std::string>>(st);
     for (auto [name, remote_url, mtime] : tups) {
         fmt::print("Remote '{}':\n", name);

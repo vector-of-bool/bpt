@@ -14,15 +14,18 @@ TEST_CASE("Database operations") {
         INSERT INTO foo VALUES ('quux', 42);
     )"_sql);
 
-    auto tups     = dds::db_query<std::string, int>(*db, "SELECT * FROM foo"_sql);
+    auto& get_row = db->prepare("SELECT * FROM foo"_sql);
+    auto  tups    = dds::db_query<std::string, int>(get_row);
     auto [str, v] = *tups.begin();
     CHECK(str == "quux");
     CHECK(v == 42);
+    get_row.reset();
 
-    auto [str2, v2] = dds::db_single<std::string, int>(*db, "SELECT * FROM foo"_sql);
+    auto [str2, v2] = dds::db_single<std::string, int>(get_row);
     CHECK(str2 == "quux");
     CHECK(v2 == 42);
+    get_row.reset();
 
-    auto single = dds::db_cell<std::string>(*db, "SELECT bar FROM foo LIMIT 1"_sql);
+    auto single = dds::db_cell<std::string>(db->prepare("SELECT bar FROM foo LIMIT 1"_sql));
     CHECK(single == "quux");
 }

@@ -23,19 +23,17 @@ unique_database::unique_database(unique_database&&) noexcept = default;
 unique_database& unique_database::operator=(unique_database&&) noexcept = default;
 
 result<unique_database> unique_database::open(const std::string& str) noexcept {
-    std::error_code ec;
-    DDS_E_SCOPE(ec);
-    auto db = nsql::database::open(str, ec);
-    if (ec) {
-        return new_error();
+    auto db = nsql::database::open(str);
+    if (!db.has_value()) {
+        return new_error(e_db_open{nsql::make_error_code(db.errc())});
     }
-    db->exec("PRAGMA foreign_keys = 1;");
+    db->exec("PRAGMA foreign_keys = 1;").throw_if_error();
     auto p = std::make_unique<impl>(std::move(*db));
     return unique_database{std::move(p)};
 }
 
 void unique_database::exec_script(nsql::sql_string_literal script) {
-    _impl->db.exec(std::string(script.string()));
+    _impl->db.exec(std::string(script.string())).throw_if_error();
 }
 
 nsql::database_ref unique_database::raw_database() const noexcept { return _impl->db; }

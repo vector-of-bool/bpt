@@ -11,7 +11,7 @@
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
 #include <neo/sqlite3/exec.hpp>
-#include <neo/sqlite3/single.hpp>
+#include <neo/sqlite3/statement.hpp>
 #include <neo/sqlite3/transaction.hpp>
 #include <neo/tar/ustar.hpp>
 #include <neo/transform_io.hpp>
@@ -48,7 +48,8 @@ void migrate_db_1(nsql::database_ref db) {
             high TEXT NOT NULL,
             UNIQUE(package_id, dep_name)
         );
-    )");
+    )")
+        .throw_if_error();
 }
 
 void migrate_db_2(nsql::database_ref db) {
@@ -70,7 +71,8 @@ void migrate_db_2(nsql::database_ref db) {
         DROP TABLE dds_repo_package_deps;
         ALTER TABLE dds_repo_deps_1 RENAME TO dds_repo_package_deps;
         CREATE INDEX idx_deps_for_pkg ON dds_repo_package_deps (package_id);
-    )");
+    )")
+        .throw_if_error();
 }
 
 void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name) {
@@ -87,11 +89,13 @@ void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name
         INSERT INTO dds_repo_meta (version, name)
             SELECT 0, 'dds-repo-' || lower(hex(randomblob(6)))
             WHERE NOT EXISTS (SELECT 1 FROM dds_repo_meta);
-    )");
+    )")
+        .throw_if_error();
     nsql::transaction_guard tr{db};
 
-    auto meta_st   = db.prepare("SELECT version FROM dds_repo_meta");
-    auto [version] = nsql::unpack_single<int>(meta_st);
+    auto meta_st   = *db.prepare("SELECT version FROM dds_repo_meta");
+    auto [version] = *nsql::unpack_next<int>(meta_st);
+    meta_st.reset();
 
     constexpr int current_database_version = 2;
     if (version < 1) {
@@ -101,14 +105,14 @@ void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name
         migrate_db_2(db);
     }
 
-    nsql::exec(db.prepare("UPDATE dds_repo_meta SET version=?"),
-               std::tie(current_database_version));
+    nsql::exec(*db.prepare("UPDATE dds_repo_meta SET version=?"), current_database_version)
+        .throw_if_error();
     if (name) {
-        nsql::exec(db.prepare("UPDATE dds_repo_meta SET name=?"), std::tie(*name));
+        nsql::exec(*db.prepare("UPDATE dds_repo_meta SET name=?"), *name).throw_if_error();
     }
 
     tr.commit();
-    db.exec("VACUUM");
+    db.exec("VACUUM").throw_if_error();
 }
 
 }  // namespace
@@ -118,7 +122,7 @@ repo_manager repo_manager::create(path_ref directory, std::optional<std::string_
         DDS_E_SCOPE(e_init_repo{directory});
         fs::create_directories(directory);
         auto db_path = directory / "repo.db";
-        auto db      = nsql::database::open(db_path.string());
+        auto db      = *nsql::database::open(db_path.string());
         DDS_E_SCOPE(e_init_repo_db{db_path});
         DDS_E_SCOPE(e_open_repo_db{db_path});
         ensure_migrated(db, name);
@@ -137,13 +141,13 @@ repo_manager repo_manager::open(path_ref directory) {
         throw std::system_error(make_error_code(std::errc::no_such_file_or_directory),
                                 "The database file does not exist");
     }
-    auto db = nsql::database::open(db_path.string());
+    auto db = *nsql::database::open(db_path.string());
     ensure_migrated(db, std::nullopt);
     return repo_manager{fs::canonical(directory), std::move(db)};
 }
 
 std::string repo_manager::name() const noexcept {
-    auto [name] = nsql::unpack_single<std::string>(_stmts("SELECT name FROM dds_repo_meta"_sql));
+    auto [name] = *nsql::unpack_next<std::string>(_stmts("SELECT name FROM dds_repo_meta"_sql));
     return name;
 }
 
@@ -208,7 +212,9 @@ void repo_manager::delete_package(pkg_id pkg_id) {
                 WHERE name = ?
                   AND version = ?
             )"_sql),
-        std::forward_as_tuple(pkg_id.name.str, pkg_id.version.to_string()));
+        pkg_id.name.str,
+        neo::lref(pkg_id.version.to_string()))
+        .throw_if_error();
     /// XXX: Verify with _db.changes() that we actually deleted one row
 
     auto name_dir = pkg_dir() / pkg_id.name.str;
@@ -242,10 +248,11 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
             INSERT INTO dds_repo_packages (name, version, description, url)
             VALUES (?, ?, ?, ?)
         )"_sql),
-        std::forward_as_tuple(info.ident.name.str,
-                              info.ident.version.to_string(),
-                              info.description,
-                              url));
+        info.ident.name.str,
+        info.ident.version.to_string(),
+        info.description,
+        url)
+        .throw_if_error();
 
     auto package_rowid = _db.last_insert_rowid();
 
@@ -259,11 +266,12 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
         auto iv_1 = *dep.versions.iter_intervals().begin();
         dds_log(trace, "  Depends on: {}", dep.decl_to_string());
         nsql::exec(insert_dep_st,
-                   std::forward_as_tuple(package_rowid,
-                                         dep.name.str,
-                                         iv_1.low.to_string(),
-                                         iv_1.high.to_string(),
-                                         for_kind_str(dep.for_kind)));
+                   package_rowid,
+                   dep.name.str,
+                   neo::lref(iv_1.low.to_string()),
+                   neo::lref(iv_1.high.to_string()),
+                   for_kind_str(dep.for_kind))
+            .throw_if_error();
     }
 
     auto dest_dir   = pkg_dir() / info.ident.name.str / info.ident.version.to_string();
@@ -279,6 +287,6 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
 }
 
 void repo_manager::_compress() {
-    _db.exec("VACUUM");
+    _db.exec("VACUUM").throw_if_error();
     dds::compress_file_gz(_root / "repo.db", _root / "repo.db.gz").value();
 }
