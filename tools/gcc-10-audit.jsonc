@@ -16,5 +16,8 @@
         "-l:libcrypto.a",
         "-ldl",
     ],
+    "cxx_flags": [
+        "-fconcepts-diagnostics-depth=10"
+    ],
     "debug": true
 }

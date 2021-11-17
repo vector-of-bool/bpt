@@ -2,6 +2,8 @@
 
 namespace boost::leaf {
 
+class bad_result;
+
 template <typename T>
 class result;
 
@@ -9,6 +11,7 @@ class result;
 
 namespace dds {
 
+using boost::leaf::bad_result;
 using boost::leaf::result;
 
 }  // namespace dds
