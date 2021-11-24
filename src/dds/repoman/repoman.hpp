@@ -1,15 +1,16 @@
 #pragma once
 
 #include <dds/pkg/id.hpp>
-#include <dds/util/fs.hpp>
 
 #include <neo/sqlite3/database.hpp>
-#include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/statement_cache.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
+
+#include <filesystem>
 
 namespace dds {
+
+namespace fs   = std::filesystem;
+using path_ref = const fs::path&;
 
 struct pkg_listing;
 
@@ -62,16 +63,7 @@ public:
     void delete_package(pkg_id id);
     void add_pkg(const pkg_listing& info, std::string_view url);
 
-    auto all_packages() const noexcept {
-        using namespace neo::sqlite3::literals;
-        auto& st   = _stmts("SELECT name, version FROM dds_repo_packages"_sql);
-        auto  tups = neo::sqlite3::iter_tuples<std::string, std::string>(st);
-        return tups | std::views::transform([](auto pair) {
-                   auto [name, version] = pair;
-                   return pkg_id{name, semver::version::parse(version)};
-               })
-            | ranges::to_vector;
-    }
+    std::vector<pkg_id> all_packages() const noexcept;
 };
 
 }  // namespace dds

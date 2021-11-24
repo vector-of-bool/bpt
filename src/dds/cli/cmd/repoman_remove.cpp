@@ -3,7 +3,7 @@
 #include <dds/repoman/repoman.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fmt/ostream.h>
 #include <neo/sqlite3/error.hpp>
 
@@ -20,24 +20,21 @@ static int _repoman_remove(const options& opts) {
 
 int repoman_remove(const options& opts) {
     return boost::leaf::try_catch(  //
-        [&] {
-            try {
-                return _repoman_remove(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
-        [](dds::e_system_error_exc e, dds::e_repo_delete_path tgz, dds::pkg_id pkid) {
+        [&] { return _repoman_remove(opts); },
+        [](const std::system_error& e, dds::e_repo_delete_path tgz, dds::pkg_id pkid) {
             dds_log(error,
                     "Cannot delete requested package '{}' from repository {}: {}",
                     pkid.to_string(),
                     tgz.path,
-                    e.message);
+                    e.code().message());
             write_error_marker("repoman-rm-no-such-package");
             return 1;
         },
-        [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
-            dds_log(error, "Error while opening repository database {}: {}", db.path, e.message);
+        [](const std::system_error& e, dds::e_open_repo_db db) {
+            dds_log(error,
+                    "Error while opening repository database {}: {}",
+                    db.path,
+                    e.code().message());
             return 1;
         });
 }

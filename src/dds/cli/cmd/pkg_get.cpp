@@ -8,7 +8,7 @@
 #include <dds/util/http/pool.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <json5/parse_data.hpp>
 #include <neo/url.hpp>
 
@@ -18,7 +18,7 @@ static int _pkg_get(const options& opts) {
     auto cat = opts.open_pkg_db();
     for (const auto& item : opts.pkg.get.pkgs) {
         auto id   = pkg_id::parse(item);
-        auto info = *cat.get(id);
+        auto info = cat.get(id).value();
         auto tsd  = get_package_sdist(info);
         auto dest = opts.out_path.value_or(fs::current_path()) / id.to_string();
         dds_log(info, "Create sdist at {}", dest.string());
@@ -30,13 +30,7 @@ static int _pkg_get(const options& opts) {
 
 int pkg_get(const options& opts) {
     return boost::leaf::try_catch(  //
-        [&] {
-            try {
-                return _pkg_get(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
+        [&] { return _pkg_get(opts); },
         [&](neo::url_validation_error url_err, dds::e_url_string bad_url) {
             dds_log(error,
                     "Invalid package URL in the database [{}]: {}",
@@ -52,7 +46,7 @@ int pkg_get(const options& opts) {
             return 1;
         },
         [](boost::leaf::catch_<neo::sqlite3::error> e) {
-            dds_log(error, "Error accessing the package database: {}", e.value().what());
+            dds_log(error, "Error accessing the package database: {}", e.matched.what());
             return 1;
         },
         [](e_nonesuch nonesuch) -> int {
@@ -60,12 +54,12 @@ int pkg_get(const options& opts) {
             write_error_marker("pkg-get-no-pkg-id-listing");
             return 1;
         },
-        [&](dds::e_system_error_exc e, dds::network_origin conn) {
+        [&](const std::system_error& e, dds::network_origin conn) {
             dds_log(error,
                     "Error opening connection to [{}:{}]: {}",
                     conn.hostname,
                     conn.port,
-                    e.message);
+                    e.code().message());
             return 1;
         });
 }

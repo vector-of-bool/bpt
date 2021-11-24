@@ -10,7 +10,7 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fansi/styled.hpp>
 #include <libman/library.hpp>
 #include <neo/assert.hpp>
@@ -50,7 +50,7 @@ std::optional<sdist> try_open_sdist_for_directory(path_ref p) noexcept {
             dds_log(warn,
                     "Failed to load source distribution from directory '{}': {}",
                     p.string(),
-                    exc.value().what());
+                    exc.matched.what());
             return std::nullopt;
         },
         [&](e_library_manifest_path lman_path, lm::e_invalid_usage_string usage) {

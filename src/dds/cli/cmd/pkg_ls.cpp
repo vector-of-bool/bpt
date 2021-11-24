@@ -4,7 +4,7 @@
 #include <dds/sdist/dist.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <neo/assert.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/group_by.hpp>
@@ -44,17 +44,12 @@ static int _pkg_ls(const options& opts) {
 }
 
 int pkg_ls(const options& opts) {
-    return boost::leaf::try_catch(
-        [&] {
-            try {
-                return _pkg_ls(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
-        [](boost::leaf::catch_<neo::sqlite3::error> e) {
-            dds_log(error, "Unexpected database error: {}", e.value().what());
-            return 1;
-        });
+    return boost::leaf::try_catch([&] { return _pkg_ls(opts); },
+                                  [](boost::leaf::catch_<neo::sqlite3::error> e) {
+                                      dds_log(error,
+                                              "Unexpected database error: {}",
+                                              e.matched.what());
+                                      return 1;
+                                  });
 }
 }  // namespace dds::cli::cmd

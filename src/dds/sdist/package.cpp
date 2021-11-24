@@ -71,7 +71,7 @@ dependency parse_dependency(const json5::data& data) {
             },
             for_each{require_str{"Each 'use' item must be a string"},
                      put_into(std::back_inserter(uses),
-                              [](std::string s) { return *dds::name::from_string(s); })},
+                              [](std::string s) { return dds::name::from_string(s).value(); })},
         },
     };
 
@@ -88,7 +88,7 @@ dependency parse_dependency(const json5::data& data) {
 
 library_info parse_library(const json5::data& lib_data) {
     using namespace semester::walk_ops;
-    auto str_to_usage = [](const std::string& s) { return *lm::split_usage_string(s); };
+    auto str_to_usage = [](const std::string& s) { return lm::split_usage_string(s).value(); };
     auto set_usages   = [&](auto& opt_vec) {
         return [&](auto&& data) {
             opt_vec.emplace();
@@ -109,7 +109,7 @@ library_info parse_library(const json5::data& lib_data) {
                               require_str{"'name' must be a string"},
                               put_into(ret.name,
                                        [](const std::string& s) {
-                                           return *dds::name::from_string(s);
+                                           return dds::name::from_string(s).value();
                                        })},
                  if_key{"uses", set_usages(ret.uses)},
                  if_key{"test_uses", set_usages(ret.test_uses)}});
@@ -146,7 +146,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                           put_into{ret.id.name,
                                    [](std::string s) {
                                        DDS_E_SCOPE(e_pkg_name_str{s});
-                                       return *dds::name::from_string(s);
+                                       return dds::name::from_string(s).value();
                                    }}},
              required_key{"namespace",
                           "A string 'namespace' is a required ",
@@ -154,7 +154,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
                           put_into{ret.namespace_,
                                    [](std::string s) {
                                        DDS_E_SCOPE(e_pkg_namespace_str{s});
-                                       return *dds::name::from_string(s);
+                                       return dds::name::from_string(s).value();
                                    }}},
              required_key{"version",
                           "A 'version' string is required",

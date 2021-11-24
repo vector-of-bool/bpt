@@ -6,7 +6,7 @@
 #include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 #include <neo/assert.hpp>
 #include <neo/platform.hpp>
@@ -396,13 +396,7 @@ int _install_yourself(const options& opts) {
 
 int install_yourself(const options& opts) {
     return boost::leaf::try_catch(
-        [&] {
-            try {
-                return _install_yourself(opts);
-            } catch (...) {
-                capture_exception();
-            }
-        },
+        [&] { return _install_yourself(opts); },
         [](std::error_code ec, e_copy_file copy) {
             dds_log(error,
                     "Failed to copy file [.br.cyan[{}]] to .br.yellow[{}]: .bold.red[{}]"_styled,
@@ -427,8 +421,8 @@ int install_yourself(const options& opts) {
                 ec.message());
             return 1;
         },
-        [](e_system_error_exc e) {
-            dds_log(error, "Failure while installing: {}", e.message);
+        [](const std::system_error& e) {
+            dds_log(error, "Failure while installing: {}", e.code().message());
             return 1;
         });
     return 0;

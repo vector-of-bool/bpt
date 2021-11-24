@@ -4,7 +4,7 @@
 #include <dds/sdist/dist.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 #include <json5/parse_data.hpp>
 #include <neo/assert.hpp>
@@ -55,27 +55,21 @@ static int _pkg_import(const options& opts) {
 
 int pkg_import(const options& opts) {
     return boost::leaf::try_catch(
-        [&] {
-            try {
-                return _pkg_import(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
+        [&] { return _pkg_import(opts); },
         [&](const json5::parse_error& e) {
             dds_log(error, "Error parsing JSON in package archive: {}", e.what());
             return 1;
         },
         [](boost::leaf::catch_<neo::sqlite3::error> e) {
-            dds_log(error, "Unexpected database error: {}", e.value().what());
+            dds_log(error, "Unexpected database error: {}", e.matched.what());
             return 1;
         },
-        [](e_system_error_exc err, e_importing what) {
+        [](const std::system_error& err, e_importing what) {
             dds_log(
                 error,
                 "Error while importing source distribution from [.bold.red[{}]]: .br.yellow[{}]"_styled,
                 what.value,
-                err.message);
+                err.code().message());
             return 1;
         });
 }

@@ -4,7 +4,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fmt/ostream.h>
 #include <neo/sqlite3/error.hpp>
 
@@ -18,13 +18,7 @@ static int _repoman_init(const options& opts) {
 
 int repoman_init(const options& opts) {
     return boost::leaf::try_catch(  //
-        [&] {
-            try {
-                return _repoman_init(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
+        [&] { return _repoman_init(opts); },
         [](boost::leaf::catch_<neo::sqlite3::error> e,
            dds::e_init_repo                         init,
            dds::e_init_repo_db                      init_db) {
@@ -32,18 +26,21 @@ int repoman_init(const options& opts) {
                     "SQLite error while initializing repository in [{}] (SQlite database {}): {}",
                     init.path,
                     init_db.path,
-                    e.value().what());
+                    e.matched.what());
             return 1;
         },
-        [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
-            dds_log(error, "Error while opening repository database {}: {}", db.path, e.message);
+        [](const std::system_error& e, dds::e_open_repo_db db) {
+            dds_log(error,
+                    "Error while opening repository database {}: {}",
+                    db.path,
+                    e.code().message());
             return 1;
         },
         [](boost::leaf::catch_<neo::sqlite3::error> e, dds::e_init_repo init) {
             dds_log(error,
                     "SQLite error while initializing repository in [{}]: {}",
                     init.path,
-                    e.value().what());
+                    e.matched.what());
             return 1;
         });
 }

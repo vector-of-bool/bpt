@@ -6,7 +6,7 @@
 #include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/format.h>
 #include <range/v3/view/transform.hpp>
@@ -17,7 +17,7 @@ namespace dds::cli::cmd {
 
 static int _pkg_search(const options& opts) {
     auto cat     = opts.open_pkg_db();
-    auto results = *dds::pkg_search(cat.database(), opts.pkg.search.pattern);
+    auto results = dds::pkg_search(cat.database(), opts.pkg.search.pattern).value();
     for (pkg_group_search_result const& found : results.found) {
         fmt::print(
             "    Name: .bold[{}]\n"
@@ -42,13 +42,7 @@ static int _pkg_search(const options& opts) {
 
 int pkg_search(const options& opts) {
     return boost::leaf::try_catch(
-        [&] {
-            try {
-                return _pkg_search(opts);
-            } catch (...) {
-                capture_exception();
-            }
-        },
+        [&] { return _pkg_search(opts); },
         [](e_nonesuch missing) {
             missing.log_error(
                 "There are no packages that match the given pattern \".bold.red[{}]\""_styled);

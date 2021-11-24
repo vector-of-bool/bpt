@@ -21,11 +21,12 @@ TEST_CASE("Database operations") {
     CHECK(v == 42);
     get_row.reset();
 
-    auto [str2, v2] = dds::db_single<std::string, int>(get_row);
+    auto [str2, v2] = dds::db_single<std::string, int>(get_row).value();
     CHECK(str2 == "quux");
     CHECK(v2 == 42);
     get_row.reset();
 
     auto single = dds::db_cell<std::string>(db->prepare("SELECT bar FROM foo LIMIT 1"_sql));
-    CHECK(single == "quux");
+    REQUIRE(single);
+    CHECK(*single == "quux");
 }

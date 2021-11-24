@@ -3,8 +3,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/sdist/dist.hpp>
 
-#include <boost/leaf/common.hpp>
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/core.h>
 #include <neo/assert.hpp>
@@ -55,7 +54,7 @@ int pkg_create(const options& opts) {
             if (opts.if_exists == if_exists::ignore) {
                 // Satisfy the 'ignore' semantics by returning a success exit code, but still warn
                 // the user to let them know what happened.
-                dds_log(warn, "{}", exc.value().what());
+                dds_log(warn, "{}", exc.matched.what());
                 return 0;
             }
             // If if_exists::replace, we wouldn't be here (not an error). Thus, since it's not

@@ -6,7 +6,7 @@
 #include <dds/pkg/get/get.hpp>
 #include <dds/util/algo.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 
 using namespace dds;
 
@@ -55,13 +55,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
 
 int dds::cli::handle_build_error(std::function<int()> fn) {
     return boost::leaf::try_catch(  //
-        [&] {
-            try {
-                return fn();
-            } catch (...) {
-                capture_exception();
-            }
-        },
+        fn,
         [](user_error<errc::compile_failure>) -> int {
             write_error_marker("compile-failed");
             throw;

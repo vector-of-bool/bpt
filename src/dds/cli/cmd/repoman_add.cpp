@@ -7,7 +7,7 @@
 #include <dds/util/http/pool.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fmt/ostream.h>
 #include <neo/sqlite3/error.hpp>
 
@@ -31,13 +31,7 @@ static int _repoman_add(const options& opts) {
 
 int repoman_add(const options& opts) {
     return boost::leaf::try_catch(  //
-        [&] {
-            try {
-                return _repoman_add(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
+        [&] { return _repoman_add(opts); },
         [](boost::leaf::catch_<neo::sqlite3::constraint_unique_error>, dds::pkg_id pkid) {
             dds_log(error, "Package {} is already present in the repository", pkid.to_string());
             write_error_marker("dup-pkg-add");
@@ -60,11 +54,14 @@ int repoman_add(const options& opts) {
             dds_log(error,
                     "Database error while importing tar file {}: {}",
                     tgz.path,
-                    e.value().what());
+                    e.matched.what());
             return 1;
         },
-        [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
-            dds_log(error, "Error while opening repository database {}: {}", db.path, e.message);
+        [](const std::system_error& e, dds::e_open_repo_db db) {
+            dds_log(error,
+                    "Error while opening repository database {}: {}",
+                    db.path,
+                    e.code().message());
             return 1;
         });
 }

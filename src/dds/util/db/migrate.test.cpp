@@ -7,7 +7,7 @@
 using namespace neo::sqlite3::literals;
 
 struct empty_database {
-    dds::unique_database db = std::move(*dds::unique_database::open(":memory:"));
+    dds::unique_database db = std::move(dds::unique_database::open(":memory:").value());
 };
 
 TEST_CASE_METHOD(empty_database, "Run some simple migrations") {

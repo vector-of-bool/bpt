@@ -8,7 +8,7 @@
 #include <debate/debate.hpp>
 #include <debate/enum.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>

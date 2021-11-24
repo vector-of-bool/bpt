@@ -9,7 +9,7 @@ from pathlib import Path
 
 @pytest.fixture()
 def tmp_repo(tmp_path: Path, dds: DDSWrapper) -> Path:
-    dds.run(['repoman', 'init', tmp_path])
+    dds.run(['repoman', 'init', tmp_path, '--name=testing'])
     return tmp_path
 
 

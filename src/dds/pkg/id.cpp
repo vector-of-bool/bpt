@@ -17,7 +17,7 @@ pkg_id pkg_id::parse(const std::string_view s) {
             make_user_error<errc::invalid_pkg_id>("Package ID must contain an '@' symbol"));
     }
 
-    auto name    = *dds::name::from_string(s.substr(0, at_pos));
+    auto name    = dds::name::from_string(s.substr(0, at_pos)).value();
     auto ver_str = s.substr(at_pos + 1);
 
     try {

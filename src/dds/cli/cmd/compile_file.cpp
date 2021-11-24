@@ -5,7 +5,7 @@
 #include <dds/error/nonesuch.hpp>
 #include <dds/util/log.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 
 using namespace fansi::literals;
@@ -45,7 +45,7 @@ int compile_file(const options& opts) {
             return 2;
         },
         [&](boost::leaf::catch_<dds::user_error<dds::errc::compile_failure>> e) {
-            dds_log(error, e.value().what());
+            dds_log(error, e.matched.what());
             dds_log(error, "  (Refer to compiler output for more information)");
             write_error_marker("compile-file-failed");
             return 2;

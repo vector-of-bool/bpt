@@ -10,6 +10,7 @@
 #include <neo/inflate.hpp>
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
+#include <neo/ranges.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/statement.hpp>
 #include <neo/sqlite3/transaction.hpp>
@@ -289,4 +290,14 @@ void repo_manager::add_pkg(const pkg_listing& info, std::string_view url) {
 void repo_manager::_compress() {
     _db.exec("VACUUM").throw_if_error();
     dds::compress_file_gz(_root / "repo.db", _root / "repo.db.gz").value();
+}
+
+std::vector<pkg_id> repo_manager::all_packages() const noexcept {
+    auto& st   = _stmts("SELECT name, version FROM dds_repo_packages"_sql);
+    auto  tups = neo::sqlite3::iter_tuples<std::string, std::string>(st);
+    return tups | std::views::transform([](auto pair) {
+               auto [name, version] = pair;
+               return pkg_id{name, semver::version::parse(version)};
+           })
+        | neo::to_vector;
 }

@@ -4,7 +4,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fmt/ostream.h>
 
 #include <iostream>
@@ -21,15 +21,12 @@ static int _repoman_ls(const options& opts) {
 
 int repoman_ls(const options& opts) {
     return boost::leaf::try_catch(  //
-        [&] {
-            try {
-                return _repoman_ls(opts);
-            } catch (...) {
-                dds::capture_exception();
-            }
-        },
-        [](dds::e_system_error_exc e, dds::e_open_repo_db db) {
-            dds_log(error, "Error while opening repository database {}: {}", db.path, e.message);
+        [&] { return _repoman_ls(opts); },
+        [](const std::system_error& e, dds::e_open_repo_db db) {
+            dds_log(error,
+                    "Error while opening repository database {}: {}",
+                    db.path,
+                    e.code().message());
             return 1;
         });
 }

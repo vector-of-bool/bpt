@@ -2,7 +2,7 @@
 
 #include <dds/error/result.hpp>
 
-#include <boost/leaf/handle_error.hpp>
+#include <boost/leaf.hpp>
 
 #include <catch2/catch.hpp>
 

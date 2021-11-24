@@ -62,10 +62,11 @@ result<std::vector<fs::path>> file_collector::collect(path_ref dirpath) noexcept
         for (fs::path child : fs::recursive_directory_iterator{normpath}) {
             auto relpath = child.lexically_relative(normpath);
             ret.push_back(dirpath / relpath);
-            db_exec(_db.get().prepare(
-                        "INSERT INTO dds_found_files (dir_id, relpath) VALUES (?, ?)"_sql),
-                    dir_id,
-                    std::string_view(relpath.string()));
+            BOOST_LEAF_CHECK(
+                db_exec(_db.get().prepare(
+                            "INSERT INTO dds_found_files (dir_id, relpath) VALUES (?, ?)"_sql),
+                        dir_id,
+                        std::string_view(relpath.string())));
         }
     }
 
@@ -75,14 +76,15 @@ result<std::vector<fs::path>> file_collector::collect(path_ref dirpath) noexcept
 bool file_collector::has_cached(path_ref dirpath) noexcept {
     auto normpath = fs::weakly_canonical(dirpath);
     auto has_dir  =  //
-        db_cell<int>(_db.get().prepare(
-                         "VALUES (EXISTS (SELECT * FROM dds_scanned_dirs WHERE dirpath = ?))"_sql),
-                     std::string_view(normpath.string()));
-    return has_dir != 0;
+        db_cell<bool>(_db.get().prepare(
+                          "VALUES (EXISTS (SELECT * FROM dds_scanned_dirs WHERE dirpath = ?))"_sql),
+                      std::string_view(normpath.string()));
+    return has_dir && *has_dir ;
 }
 
 void file_collector::forget(path_ref dirpath) noexcept {
     auto normpath = fs::weakly_canonical(dirpath);
-    db_exec(_db.get().prepare("DELETE FROM dds_scanned_dirs WHERE dirpath = ?"_sql),
-            std::string_view(normpath.string()));
+    auto res      = db_exec(_db.get().prepare("DELETE FROM dds_scanned_dirs WHERE dirpath = ?"_sql),
+                       std::string_view(normpath.string()));
+    assert(res);
 }

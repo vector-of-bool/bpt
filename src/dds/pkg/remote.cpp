@@ -10,7 +10,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
@@ -274,14 +274,10 @@ void dds::add_init_repo(nsql::database_ref db) noexcept {
     // _Do not_ let errors stop us from continuing
     bool okay = boost::leaf::try_catch(
         [&]() -> bool {
-            try {
-                auto remote = pkg_remote::connect(init_repo);
-                remote.store(db);
-                update_all_remotes(db);
-                return true;
-            } catch (...) {
-                capture_exception();
-            }
+            auto remote = pkg_remote::connect(init_repo);
+            remote.store(db);
+            update_all_remotes(db);
+            return true;
         },
         [](http_status_error err, http_response_info resp, neo::url url) {
             dds_log(error,
@@ -297,20 +293,20 @@ void dds::add_init_repo(nsql::database_ref db) noexcept {
             dds_log(error,
                     "Error accessing remote database while adding initial repository: {}: {}",
                     url.to_string(),
-                    e.value().what());
+                    e.matched.what());
             return false;
         },
         [](boost::leaf::catch_<neo::sqlite3::error> e) {
-            dds_log(error, "Unexpected database error: {}", e.value().what());
+            dds_log(error, "Unexpected database error: {}", e.matched.what());
             return false;
         },
-        [](e_system_error_exc e, network_origin conn) {
+        [](const std::system_error& e, network_origin conn) {
             dds_log(error,
                     "Error communicating with [.br.red[{}://{}:{}]]: {}"_styled,
                     conn.protocol,
                     conn.hostname,
                     conn.port,
-                    e.message);
+                    e.code().message());
             return false;
         },
         [](boost::leaf::diagnostic_info const& diag) -> int {

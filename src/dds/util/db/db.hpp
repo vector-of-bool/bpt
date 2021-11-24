@@ -9,8 +9,16 @@
 
 namespace dds {
 
-struct e_db_open {
-    std::error_code ec;
+struct e_db_open_path {
+    std::string value;
+};
+
+struct e_db_open_ec {
+    std::error_code value;
+};
+
+struct e_sqlite3_error {
+    std::string value;
 };
 
 class unique_database {
@@ -22,13 +30,14 @@ class unique_database {
 
 public:
     [[nodiscard]] static result<unique_database> open(const std::string& str) noexcept;
+    [[nodiscard]] static result<unique_database> open_existing(const std::string& str) noexcept;
 
     ~unique_database();
     unique_database(unique_database&&) noexcept;
     unique_database& operator=(unique_database&&) noexcept;
 
     neo::sqlite3::database_ref raw_database() const noexcept;
-    neo::sqlite3::statement&   prepare(neo::sqlite3::sql_string_literal) noexcept;
+    neo::sqlite3::statement&   prepare(neo::sqlite3::sql_string_literal) const;
 
     void exec_script(neo::sqlite3::sql_string_literal);
 };

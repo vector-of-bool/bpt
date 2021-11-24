@@ -28,7 +28,7 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
     library_manifest lib;
     using namespace semester::walk_ops;
     // Helpers
-    auto str_to_usage = [](const std::string& s) { return *lm::split_usage_string(s); };
+    auto str_to_usage = [](const std::string& s) { return lm::split_usage_string(s).value(); };
     auto append_usage
         = [&](auto& usages) { return put_into(std::back_inserter(usages), str_to_usage); };
 
@@ -41,7 +41,9 @@ library_manifest library_manifest::load_from_file(path_ref fpath) {
                           "A string 'name' is required",
                           require_str{"'name' must be a string"},
                           put_into{lib.name,
-                                   [](std::string s) { return *dds::name::from_string(s); }}},
+                                   [](std::string s) {
+                                       return dds::name::from_string(s).value();
+                                   }}},
              if_key{"uses",
                     require_array{"'uses' must be an array of strings"},
                     for_each{require_str{"Each 'uses' element should be a string"},

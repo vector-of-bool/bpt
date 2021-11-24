@@ -7,6 +7,7 @@
 
 namespace dds {
 
+using boost::leaf::current_error;
 using boost::leaf::new_error;
 
 struct e_human_message {

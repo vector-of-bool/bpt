@@ -2,8 +2,7 @@
 
 #include <dds/util/log.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
-#include <boost/leaf/result.hpp>
+#include <boost/leaf.hpp>
 #include <fmt/ostream.h>
 
 using namespace dds;

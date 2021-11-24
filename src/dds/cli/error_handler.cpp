@@ -11,8 +11,7 @@
 #include <dds/util/signal.hpp>
 
 #include <boost/leaf/common.hpp>
-#include <boost/leaf/handle_error.hpp>
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <boost/leaf/result.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
@@ -35,46 +34,46 @@ auto handlers = std::tuple(  //
     [](boost::leaf::catch_<error_base> exc,
        json5::parse_error              parse_err,
        boost::leaf::e_file_name*       maybe_fpath) {
-        dds_log(error, "{}", exc.value().what());
+        dds_log(error, "{}", exc.matched.what());
         dds_log(error, "Invalid JSON5 was found: {}", parse_err.what());
         if (maybe_fpath) {
             dds_log(error, "  (While reading from [{}])", maybe_fpath->value);
         }
-        dds_log(error, "{}", exc.value().explanation());
+        dds_log(error, "{}", exc.matched.explanation());
         write_error_marker("package-json5-parse-error");
         return 1;
     },
     [](boost::leaf::catch_<error_base> exc) {
-        dds_log(error, "{}", exc.value().what());
-        dds_log(error, "{}", exc.value().explanation());
-        dds_log(error, "Refer: {}", exc.value().error_reference());
+        dds_log(error, "{}", exc.matched.what());
+        dds_log(error, "{}", exc.matched.explanation());
+        dds_log(error, "Refer: {}", exc.matched.error_reference());
         return 1;
     },
     [](user_cancelled) {
         dds_log(critical, "Operation cancelled by the user");
         return 2;
     },
-    [](e_system_error_exc e, neo::url url, http_response_info) {
+    [](const std::system_error& e, neo::url url, http_response_info) {
         dds_log(error,
                 "An error occurred while downloading [.bold.red[{}]]: {}"_styled,
                 url.to_string(),
-                e.message);
+                e.code().message());
         return 1;
     },
-    [](e_system_error_exc e, network_origin origin, neo::url* url) {
+    [](const std::system_error& e, network_origin origin, neo::url* url) {
         dds_log(error,
                 "Network error communicating with .bold.red[{}://{}:{}]: {}"_styled,
                 origin.protocol,
                 origin.hostname,
                 origin.port,
-                e.message);
+                e.code().message());
         if (url) {
             dds_log(error, "  (While accessing URL [.bold.red[{}]])"_styled, url->to_string());
         }
         return 1;
     },
-    [](e_system_error_exc err, e_loading_toolchain, e_toolchain_file* tc_file) {
-        dds_log(error, "Failed to load toolchain: .br.yellow[{}]"_styled, err.message);
+    [](const std::system_error& err, e_loading_toolchain, e_toolchain_file* tc_file) {
+        dds_log(error, "Failed to load toolchain: .br.yellow[{}]"_styled, err.code().message());
         if (tc_file) {
             dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
         }
@@ -150,11 +149,11 @@ auto handlers = std::tuple(  //
         write_error_marker("invalid-uses-spec");
         return 1;
     },
-    [](e_system_error_exc exc, boost::leaf::verbose_diagnostic_info const& diag) {
+    [](const std::system_error& exc, boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,
                 "An unhandled std::system_error arose. THIS IS A DDS BUG! Info: {}",
                 diag);
-        dds_log(critical, "Exception message from std::system_error: {}", exc.message);
+        dds_log(critical, "Exception message from std::system_error: {}", exc.code().message());
         return 42;
     },
     [](boost::leaf::verbose_diagnostic_info const& diag) {
@@ -164,13 +163,5 @@ auto handlers = std::tuple(  //
 }  // namespace
 
 int dds::handle_cli_errors(std::function<int()> fn) noexcept {
-    return boost::leaf::try_catch(
-        [&] {
-            try {
-                return fn();
-            } catch (...) {
-                capture_exception();
-            }
-        },
-        handlers);
+    return boost::leaf::try_catch(fn, handlers);
 }
