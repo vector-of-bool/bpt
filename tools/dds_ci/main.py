@@ -1,4 +1,5 @@
 import argparse
+from contextlib import contextmanager
 import multiprocessing
 import pytest
 from pathlib import Path
@@ -24,6 +25,7 @@ def make_argparser() -> argparse.ArgumentParser:
                         type=BootstrapMode,
                         default=BootstrapMode.Lazy)
     parser.add_argument('--rapid', help='Run CI for fast development iterations', action='store_true')
+    parser.add_argument('--compile-file', help='Compile the given file', type=Path, default=None)
     parser.add_argument('--test-toolchain',
                         '-TT',
                         type=Path,
@@ -66,6 +68,8 @@ class CommandArguments(Protocol):
     do_test: bool
     #: Rapid-CI is for 'dds' development purposes
     rapid: bool
+    #: Compile just the one named file
+    compile_file: Optional[Path]
 
 
 def parse_argv(argv: Sequence[str]) -> CommandArguments:
@@ -105,15 +109,21 @@ def run_pytest(dds: DDSWrapper, args: CommandArguments) -> int:
     ])
 
 
+@contextmanager
+def fixup_toolchain(args: CommandArguments) -> Iterator[Path]:
+    use_dev = args.rapid or args.compile_file
+    main_tc = args.toolchain or (
+        # If we are in rapid-dev mode, use the test toolchain, which had audit/debug enabled
+        toolchain.get_default_toolchain() if not use_dev else toolchain.get_default_audit_toolchain())
+    with toolchain.fixup_toolchain(main_tc) as new_tc:
+        yield new_tc
+
+
 def main_build(dds: DDSWrapper, args: CommandArguments) -> int:
     """
     Execute the main build of dds using the given 'dds' executable to build itself.
     """
-    main_tc = args.toolchain or (
-        # If we are in rapid-dev mode, use the test toolchain, which had audit/debug enabled
-        toolchain.get_default_toolchain() if not args.rapid else toolchain.get_default_audit_toolchain())
-    print(f'Building with toolchain: {main_tc}')
-    with toolchain.fixup_toolchain(main_tc) as new_tc:
+    with fixup_toolchain(args) as new_tc:
         try:
             dds.build(toolchain=new_tc,
                       root=paths.PROJECT_ROOT,
@@ -132,6 +142,18 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
     """
     Execute CI using the given prior 'dds' executable.
     """
+    if args.compile_file:
+        with fixup_toolchain(args) as tc:
+            try:
+                dds.compile_file([args.compile_file],
+                                 toolchain=tc,
+                                 tweaks_dir=paths.TWEAKS_DIR,
+                                 project_dir=paths.PROJECT_ROOT,
+                                 out=paths.BUILD_DIR)
+            except subprocess.CalledProcessError as err:
+                return err.returncode
+            return 0
+
     if args.clean:
         dds.clean(build_dir=paths.BUILD_DIR)
 
