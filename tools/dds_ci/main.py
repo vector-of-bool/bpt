@@ -5,7 +5,7 @@ from pathlib import Path
 from concurrent import futures
 import shutil
 import sys
-from typing import NoReturn, Sequence, Optional
+from typing import Iterator, NoReturn, Sequence, Optional, cast
 from typing_extensions import Protocol
 import subprocess
 
@@ -70,7 +70,7 @@ class CommandArguments(Protocol):
 
 def parse_argv(argv: Sequence[str]) -> CommandArguments:
     """Parse the given dds-ci command-line argument list"""
-    return make_argparser().parse_args(argv)
+    return cast(CommandArguments, make_argparser().parse_args(argv))
 
 
 def test_build(dds: DDSWrapper, args: CommandArguments) -> DDSWrapper:

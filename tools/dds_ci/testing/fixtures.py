@@ -54,7 +54,6 @@ class Library:
     """
     Utilities to access a library under libs/ for a Project.
     """
-
     def __init__(self, name: str, dirpath: Path) -> None:
         self.name = name
         self.root = dirpath
@@ -69,8 +68,7 @@ class Library:
     @library_json.setter
     def library_json(self, data: LibraryJSON) -> None:
         self.root.mkdir(exist_ok=True, parents=True)
-        self.root.joinpath('library.jsonc').write_text(
-            json.dumps(data, indent=2))
+        self.root.joinpath('library.jsonc').write_text(json.dumps(data, indent=2))
 
     def write(self, path: Pathish, content: str) -> Path:
         """
@@ -83,6 +81,7 @@ class Library:
         path.parent.mkdir(exist_ok=True, parents=True)
         path.write_text(content)
         return path
+
 
 class Project:
     """
@@ -160,13 +159,16 @@ class Project:
 
     def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
-        self.dds.run([
-            'pkg',
-            'create',
-            self.project_dir_arg,
-            f'--out={dest}' if dest else (),
-            f'--if-exists={if_exists}' if if_exists else (),
-        ], cwd=self.build_root)
+        self.dds.run(
+            [
+                'pkg',
+                'create',
+                self.project_dir_arg,
+                f'--out={dest}' if dest else (),
+                f'--if-exists={if_exists}' if if_exists else (),
+            ],
+            cwd=self.build_root,
+        )
 
     def sdist_export(self) -> None:
         self.dds.run(['sdist', 'export', self.dds.cache_dir_arg, self.project_dir_arg])
@@ -176,7 +178,7 @@ class Project:
         Write the given `content` to `path`. If `path` is relative, it will
         be resolved relative to the root directory of this project.
         """
-        self.__root_library.write(path, content)
+        return self.__root_library.write(path, content)
 
 
 @pytest.fixture()
@@ -224,7 +226,7 @@ class ProjectOpener():
 
         proj_copy = self.test_dir / '__test_project'
         if self._worker_id != 'master':
-            proj_copy = self._tmppath_fac.mktemp('test-project-') / self.test_name
+            proj_copy: Path = self._tmppath_fac.mktemp('test-project-') / self.test_name
         else:
             self._request.addfinalizer(lambda: ensure_absent(proj_copy))
 
@@ -234,7 +236,7 @@ class ProjectOpener():
         if self._worker_id == 'master':
             repo_dir = self.test_dir / '__test_repo'
         else:
-            repo_dir = self._tmppath_fac.mktemp('test-repo-') / self.test_name
+            repo_dir: Path = self._tmppath_fac.mktemp('test-repo-') / self.test_name
 
         new_dds.set_repo_scratch(repo_dir)
         new_dds.default_cwd = proj_copy
@@ -263,7 +265,7 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
     when the test completes.
     """
     if worker_id != 'master':
-        proj_dir = tmp_path_factory.mktemp('temp-project')
+        proj_dir: Path = tmp_path_factory.mktemp('temp-project')
         return project_opener.open(proj_dir)
 
     proj_dir = project_opener.test_dir / '__test_project_empty'
@@ -294,8 +296,7 @@ TmpGitRepoFactory = Callable[[Pathish], Path]
 
 
 @pytest.fixture(scope='session')
-def tmp_git_repo_factory(tmp_path_factory: TempPathFactory,
-                         pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
+def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
     """
     A temporary directory :class:`pathlib.Path` object in which a git repo will
     be initialized
@@ -306,13 +307,13 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory,
         if not dirpath.is_absolute():
             dirpath = test_dir / dirpath
 
-        tmp_path = tmp_path_factory.mktemp('tmp-git')
+        tmp_path: Path = tmp_path_factory.mktemp('tmp-git')
 
         # Could use dirs_exists_ok=True with Python 3.8, but we min dep on 3.6
         repo = tmp_path / 'r'
         shutil.copytree(dirpath, repo)
 
-        git = pytestconfig.getoption('--git-exe') or 'git'
+        git: str = pytestconfig.getoption('--git-exe') or 'git'
         check_run([git, 'init', repo])
         check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
         check_run([git, 'add', '-A'], cwd=repo)

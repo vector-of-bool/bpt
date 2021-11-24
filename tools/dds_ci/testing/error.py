@@ -3,7 +3,7 @@ Test utilities for error checking
 """
 
 from contextlib import contextmanager
-from typing import Iterator, Callable, Union
+from typing import ContextManager, Iterator, Callable, Pattern, Union
 import subprocess
 from pathlib import Path
 import tempfile
@@ -41,7 +41,7 @@ def expect_error_marker_pred(pred: Callable[[str], bool], expected: str) -> Iter
         os.environ.pop('DDS_WRITE_ERROR_MARKER')
 
 
-def expect_error_marker(expect: str):
+def expect_error_marker(expect: str) -> ContextManager[None]:
     """
     A context-manager function that should wrap a scope that causes an error
     from ``dds``.
@@ -56,7 +56,7 @@ def expect_error_marker(expect: str):
     return expect_error_marker_pred(expect.__eq__, expect)
 
 
-def expect_error_marker_re(expect: Union[str, 're.Pattern']):
+def expect_error_marker_re(expect: Union[str, Pattern[str]]) -> ContextManager[None]:
     """
     A context-manager function that should wrap a scope that causes an error
     from ``dds``.
@@ -68,5 +68,5 @@ def expect_error_marker_re(expect: Union[str, 're.Pattern']):
     After handling the exception, asserts that the subprocess wrote an
     error marker matching ``expect``.
     """
-    expect = re.compile(expect)
-    return expect_error_marker_pred(expect.search, expect.pattern)
+    expect_: Pattern[str] = re.compile(expect)
+    return expect_error_marker_pred(lambda s: (expect_.search(s) is not None), expect_.pattern)

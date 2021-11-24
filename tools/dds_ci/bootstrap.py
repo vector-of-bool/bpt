@@ -244,6 +244,10 @@ def _prev_dds_env(dds: Path) -> Mapping[str, str]:
 
 def _build_prev(dir: Path, prev_dds: Optional[Path] = None) -> None:
     build_py = dir / 'tools/build.py'
+    env: Optional[Mapping[str, str]] = None
+    if prev_dds is not None:
+        env = os.environ.copy()
+        env['DDS_BOOSTRAP_PREV_EXE'] = str(prev_dds)
     proc.check_run(
         [
             sys.executable,
@@ -252,6 +256,5 @@ def _build_prev(dir: Path, prev_dds: Optional[Path] = None) -> None:
             '--cxx=cl.exe' if platform.system() == 'Windows' else '--cxx=g++-8',
         ],
         cwd=dir,
-        env=None if prev_dds is None else os.environ.clone().update({'DDS_BOOTSTRAP_PREV_EXE',
-                                                                     str(prev_dds)}),
+        env=env,
     )

@@ -3,7 +3,7 @@ import socket
 from contextlib import contextmanager, ExitStack, closing
 import json
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-from typing import NamedTuple, Any, Iterator, Callable
+from typing import NamedTuple, Any, Iterator, Callable, cast
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import tempfile
@@ -21,7 +21,7 @@ def _unused_tcp_port() -> int:
     """Find an unused localhost TCP port from 1024-65535 and return it."""
     with closing(socket.socket()) as sock:
         sock.bind(('127.0.0.1', 0))
-        return sock.getsockname()[1]
+        return cast(int, sock.getsockname()[1])
 
 
 class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -122,7 +122,7 @@ RepoFactory = Callable[[str], Path]
 @pytest.fixture(scope='session')
 def repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> RepoFactory:
     def _make(name: str) -> Path:
-        tmpdir = tmp_path_factory.mktemp('test-repo-')
+        tmpdir = Path(tmp_path_factory.mktemp('test-repo-'))
         dds.run(['repoman', 'init', tmpdir, f'--name={name}'])
         return tmpdir
 

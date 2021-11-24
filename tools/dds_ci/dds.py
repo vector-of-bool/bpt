@@ -79,11 +79,11 @@ class DDSWrapper:
 
     def build(self,
               *,
-              root: Path,
-              toolchain: Optional[Path] = None,
-              build_root: Optional[Path] = None,
+              root: Pathish,
+              toolchain: Optional[Pathish] = None,
+              build_root: Optional[Pathish] = None,
               jobs: Optional[int] = None,
-              tweaks_dir: Optional[Path] = None,
+              tweaks_dir: Optional[Pathish] = None,
               with_tests: bool = True,
               more_args: Optional[proc.CommandLine] = None,
               timeout: Optional[int] = None) -> None:

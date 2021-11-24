@@ -1,14 +1,13 @@
 import pytest
-import subprocess
 import shutil
 from pathlib import Path
-from typing import Callable
 
 from dds_ci.testing import RepoServer, ProjectOpener, error
+from dds_ci.testing.fixtures import TmpGitRepoFactory
 
 
 @pytest.fixture(autouse=True)
-def _init_repo(tmp_git_repo_factory: Callable[[str], Path], module_http_repo: RepoServer) -> RepoServer:
+def _init_repo(tmp_git_repo_factory: TmpGitRepoFactory, module_http_repo: RepoServer) -> RepoServer:
     parent_dir = Path(__file__).parent.resolve()
     # yapf: disable
     CATALOG = {
@@ -77,7 +76,8 @@ def test_build_lib_with_failing_test_dep(project_opener: ProjectOpener, module_h
     proj.build(with_tests=False)
 
 
-def test_build_lib_with_failing_transitive_test_dep(project_opener: ProjectOpener, module_http_repo: RepoServer) -> None:
+def test_build_lib_with_failing_transitive_test_dep(project_opener: ProjectOpener,
+                                                    module_http_repo: RepoServer) -> None:
     proj = project_opener.open('with_transitive_bad_test_dep')
     proj.dds.repo_add(module_http_repo.url)
     # Even though the transitive dependency has a test-dependency that fails, we

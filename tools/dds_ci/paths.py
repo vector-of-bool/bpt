@@ -14,6 +14,7 @@ TOOLS_DIR = PROJECT_ROOT / 'tools'
 TESTS_DIR = PROJECT_ROOT / 'tests'
 #: The default build directory
 BUILD_DIR = PROJECT_ROOT / '_build'
+TWEAKS_DIR = PROJECT_ROOT / 'conf'
 #: The directory were w prebuild/bootstrapped results will go, and scratch space for the build
 PREBUILT_DIR = PROJECT_ROOT / '_prebuilt'
 #: THe suffix of executable files on this system
