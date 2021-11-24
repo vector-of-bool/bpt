@@ -117,6 +117,7 @@ class DDSWrapper:
     def compile_file(self,
                      paths: Iterable[Pathish],
                      *,
+                     tweaks_dir: Optional[Pathish] = None,
                      toolchain: Optional[Pathish] = None,
                      project_dir: Pathish,
                      out: Optional[Pathish] = None) -> None:
@@ -129,6 +130,7 @@ class DDSWrapper:
             self.pkg_db_path_arg,
             self.cache_dir_arg,
             paths,
+            f'--tweaks-dir={tweaks_dir}' if tweaks_dir else (),
             f'--toolchain={toolchain}',
             f'--project={project_dir}',
             f'--out={out}',

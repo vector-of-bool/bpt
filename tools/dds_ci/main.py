@@ -118,6 +118,7 @@ def main_build(dds: DDSWrapper, args: CommandArguments) -> int:
             dds.build(toolchain=new_tc,
                       root=paths.PROJECT_ROOT,
                       build_root=paths.BUILD_DIR,
+                      tweaks_dir=paths.TWEAKS_DIR,
                       jobs=args.jobs,
                       timeout=60 * 15)
         except subprocess.CalledProcessError as e:
