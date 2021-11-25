@@ -1,15 +1,20 @@
 #include "./meta.hpp"
 
-#include <boost/leaf/context.hpp>
-#include <boost/leaf/handle_exception.hpp>
 #include <dds/error/result.hpp>
+#include <dds/error/try_catch.hpp>
+
+#include <boost/leaf.hpp>
+#include <boost/leaf/context.hpp>
+#include <nlohmann/json.hpp>
 #include <semester/walk.hpp>
 
 #include <catch2/catch.hpp>
 
 TEST_CASE("Reject bad meta informations") {
     auto [given, expect_error] = GENERATE(Catch::Generators::table<std::string, std::string>({
-        {"f", "An object key identifier is not a valid value."},
+        {"f",
+         "JSON parse error while loading CRS meta: [json.exception.parse_error.101] parse error at "
+         "line 1, column 2: syntax error while parsing value - invalid literal; last read: 'f'"},
         {"{\"crs_version\": 1}", "A string 'name' is required"},
         {R"({"crs_version": 1, "name": "foo"})", "A 'version' string is required"},
         {R"({"crs_version": 1, "name": "foo."})",
@@ -122,6 +127,32 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [],
              "crs_version": 1
          })",
+         "A 'for' is required for each dependency"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "depends": [{
+                 "name": "bar",
+                 "for": "meow"
+             }],
+             "libraries": [],
+             "crs_version": 1
+         })",
+         "Invalid usage kind string 'meow' (Should be one of 'lib', 'app', or 'test')"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "depends": [{
+                 "name": "bar",
+                 "for": "lib"
+             }],
+             "libraries": [],
+             "crs_version": 1
+         })",
          "An array 'versions' is required for each dependency"},
         {R"({
              "name": "foo",
@@ -130,6 +161,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": 12
              }],
              "libraries": [],
@@ -143,6 +175,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [12]
              }],
              "libraries": [],
@@ -156,6 +189,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": []
              }],
              "libraries": [],
@@ -169,6 +203,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{}]
              }],
              "libraries": [],
@@ -182,6 +217,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{
                      "low": 21
                  }]
@@ -197,6 +233,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{
                      "low": "1.2."
                  }]
@@ -212,6 +249,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{
                      "low": "1.2.3"
                  }]
@@ -227,6 +265,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{
                      "low": "1.2.3",
                      "high": 12
@@ -243,6 +282,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{
                      "low": "1.2.3",
                      "high": "1.2."
@@ -259,6 +299,7 @@ TEST_CASE("Reject bad meta informations") {
              "namespace": "cat",
              "depends": [{
                  "name": "bar",
+                 "for": "lib",
                  "versions": [{
                      "low": "1.2.3",
                      "high": "1.2.3"
@@ -405,7 +446,7 @@ TEST_CASE("Reject bad meta informations") {
              }],
              "crs_version": 1
          })",
-         "Invalid 'uses' 'for' string 'dog'"},
+         "Invalid usage kind string 'dog' (Should be one of 'lib', 'app', or 'test')"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -525,18 +566,31 @@ TEST_CASE("Reject bad meta informations") {
          "Only 'crs_version' == 1 is supported"},
     }));
     INFO("Parsing data: " << given);
-    boost::leaf::context<dds::crs::e_invalid_meta_data> err_ctx;
-    err_ctx.activate();
-    auto result = dds::crs::package_meta::from_json_str(given);
-    err_ctx.deactivate();
-    CHECKED_IF(!result) {
-        err_ctx.handle_error<void>(
-            result.error(),
-            [&](dds::crs::e_invalid_meta_data e) {
-                CHECK_THAT(e.message, Catch::Matchers::EndsWith(expect_error));
-            },
-            [] { FAIL_CHECK("Bad error"); });
+    CAPTURE(expect_error);
+    dds_leaf_try {
+        dds::crs::package_meta::from_json_str(given);
+        FAIL("Expected a failure, but no failure occurred");
     }
+    dds_leaf_catch(nlohmann::json::parse_error const&,
+                   dds::crs::e_given_meta_json_str const*      json_str,
+                   dds::crs::e_invalid_meta_data               e,
+                   boost::leaf::verbose_diagnostic_info const& diag_info) {
+        CAPTURE(diag_info);
+        CHECKED_IF(json_str) { CHECK(json_str->value == given); }
+        CHECK_THAT(e.value, Catch::Matchers::EndsWith(expect_error));
+    }
+    dds_leaf_catch(dds::crs::e_given_meta_json_str const*      error_str,
+                   dds::crs::e_given_meta_json_data const*     error_data,
+                   dds::crs::e_invalid_meta_data               e,
+                   boost::leaf::verbose_diagnostic_info const& diag_info) {
+        CAPTURE(diag_info);
+        CHECKED_IF(error_str) { CHECK(error_str->value == given); }
+        CHECK(error_data);
+        CHECK_THAT(e.value, Catch::Matchers::EndsWith(expect_error));
+    }
+    dds_leaf_catch_all {  //
+        FAIL_CHECK("Bad error: " << diagnostic_info);
+    };
 }
 
 TEST_CASE("Check some valid meta JSON") {
@@ -556,11 +610,10 @@ TEST_CASE("Check some valid meta JSON") {
              }],
              "crs_version": 1
          })");
-    auto       meta  = dds::crs::package_meta::from_json_str(given);
-    CHECK(meta);
+    REQUIRE_NOTHROW(dds::crs::package_meta::from_json_str(given));
 }
 
-auto mk_name = [](std::string_view s) { return *dds::name::from_string(s); };
+auto mk_name = [](std::string_view s) { return dds::name::from_string(s).value(); };
 
 TEST_CASE("Check parse results") {
     using pkg_meta             = dds::crs::package_meta;
@@ -601,9 +654,12 @@ TEST_CASE("Check parse results") {
          }},
     }));
 
-    auto meta_ = dds::crs::package_meta::from_json_str(given);
-    REQUIRE(meta_);
-    auto meta = *meta_;
+    auto meta = dds_leaf_try { return dds::crs::package_meta::from_json_str(given); }
+    dds_leaf_catch_all->dds::noreturn_t {
+        FAIL("Unexpected error: " << diagnostic_info);
+        std::terminate();
+    };
+
     CHECK(meta.name == expect.name);
     CHECK(meta.namespace_ == expect.namespace_);
     CHECK(meta.version == expect.version);
