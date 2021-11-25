@@ -10,6 +10,13 @@ namespace dds {
 
 class unique_database;
 
+enum class db_migration_errc {
+    init_failed,
+    invalid_version_number,
+    too_new,
+    generic_error,
+};
+
 /// Error value returned when a migration fails
 struct e_migration_error {
     std::string value;

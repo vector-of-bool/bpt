@@ -157,6 +157,10 @@ struct setup {
             .name = "pkg",
             .help = "Manage packages and package remotes",
         }));
+        setup_repo_cmd(group.add_parser({
+            .name = "repo",
+            .help = "Manage a CRS package repository",
+        }));
         setup_repoman_cmd(group.add_parser({
             .name = "repoman",
             .help = "Manage a dds package repository",
@@ -394,6 +398,38 @@ struct setup {
         });
     }
 
+    void setup_repo_cmd(argument_parser& repo_cmd) noexcept {
+        auto& grp = repo_cmd.add_subparsers({
+            .valname = "<repo-subcommand>",
+            .action  = put_into(opts.repoman.subcommand),
+        });
+        setup_repoman_init_cmd(grp.add_parser({
+            .name = "init",
+            .help = "Initialize a directory as a new CRS repository",
+        }));
+        setup_repo_import_cmd(grp.add_parser({
+            .name = "import",
+            .help = "Import a directory or package into a CRS repository",
+        }));
+        auto& ls_cmd = grp.add_parser({
+            .name = "ls",
+            .help = "List the packages in a local CRS repository",
+        });
+        ls_cmd.add_argument(repoman_repo_dir_arg.dup());
+    }
+
+    void setup_repo_import_cmd(argument_parser& repo_import_cmd) {
+        repo_import_cmd.add_argument(repoman_repo_dir_arg.dup());
+        repo_import_cmd.add_argument(if_exists_arg.dup()).help
+            = "Behavior when the package already exists in the repository";
+        repo_import_cmd.add_argument({
+            .help       = "Paths of CRS directories to import",
+            .valname    = "<crs-path>",
+            .can_repeat = true,
+            .action     = push_back_onto(opts.repoman.import.files),
+        });
+    }
+
     void setup_repoman_cmd(argument_parser& repoman_cmd) {
         auto& grp = repoman_cmd.add_subparsers({
             .valname = "<repoman-subcommand>",
@@ -432,6 +468,7 @@ struct setup {
             .short_spellings = {"n"},
             .help            = "Specifiy the name of the new repository",
             .valname         = "<name>",
+            .required        = true,
             .action          = put_into(opts.repoman.init.name),
         });
     }

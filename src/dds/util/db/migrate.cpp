@@ -25,28 +25,34 @@ result<void> detail::do_migrations_1(unique_database&                           
         tablename);
     auto st = db.raw_database().prepare(init_meta_table);
     if (!st.has_value()) {
-        return new_error(e_migration_error{
-            fmt::format("Failed to prepare initialize-meta-table statement for '{}': {}: {}",
-                        tablename,
-                        nsql::make_error_code(st.errc()).message(),
-                        db.raw_database().error_message())});
+        return new_error(db_migration_errc::init_failed,
+                         st.errc(),
+                         e_migration_error{fmt::format(
+                             "Failed to prepare initialize-meta-table statement for '{}': {}: {}",
+                             tablename,
+                             nsql::make_error_code(st.errc()).message(),
+                             db.raw_database().error_message())});
     }
     auto step_rc = st->step();
     if (step_rc != neo::sqlite3::errc::done) {
-        return new_error(
-            e_migration_error{fmt::format("Failed to initialize migration meta-table '{}': {}: {}",
-                                          tablename,
-                                          nsql::make_error_code(st.errc()).message(),
-                                          db.raw_database().error_message())});
+        return new_error(db_migration_errc::init_failed,
+                         step_rc.errc(),
+                         e_migration_error{
+                             fmt::format("Failed to initialize migration meta-table '{}': {}: {}",
+                                         tablename,
+                                         nsql::make_error_code(st.errc()).message(),
+                                         db.raw_database().error_message())});
     }
 
     // Check the migration version
     BOOST_LEAF_AUTO(version, get_migration_version(db, tablename));
     if (version < 0) {
-        return new_error(e_migration_error{"Database migration value is negative"});
+        return new_error(db_migration_errc::invalid_version_number,
+                         e_migration_error{"Database migration value is negative"});
     }
     if (version > static_cast<int>(migrations.size())) {
-        return new_error(e_migration_error{"Database migration is too new"});
+        return new_error(db_migration_errc::too_new,
+                         e_migration_error{"Database migration is too new"});
     }
 
     // Wrap migrations in a transaction
@@ -59,7 +65,8 @@ result<void> detail::do_migrations_1(unique_database&                           
             (*it)->apply(db);
         } catch (const neo::sqlite3::error& err) {
             tr.rollback();
-            return new_error(e_migration_error{std::string(err.what())});
+            return new_error(db_migration_errc::generic_error,
+                             e_migration_error{std::string(err.what())});
         }
     }
 
@@ -69,11 +76,12 @@ result<void> detail::do_migrations_1(unique_database&                           
     step_rc           = st->step();
     if (step_rc != neo::sqlite3::errc::done) {
         tr.rollback();
-        return new_error(
-            e_migration_error{fmt::format("Failed to update migration version on '{}': {}: {}",
-                                          tablename,
-                                          nsql::make_error_code(step_rc.errc()).message(),
-                                          db.raw_database().error_message())});
+        return new_error(db_migration_errc::generic_error,
+                         e_migration_error{
+                             fmt::format("Failed to update migration version on '{}': {}: {}",
+                                         tablename,
+                                         nsql::make_error_code(step_rc.errc()).message(),
+                                         db.raw_database().error_message())});
     }
 
     return {};

@@ -25,7 +25,7 @@ dependency dependency::parse_depends_string(std::string_view str) {
         throw_user_error<errc::invalid_version_range_string>("Invalid dependency string '{}'", str);
     }
 
-    auto name = *dds::name::from_string(str.substr(0, sep_pos));
+    auto name = dds::name::from_string(str.substr(0, sep_pos)).value();
 
     if (str[sep_pos] != '@') {
         static bool did_warn = false;

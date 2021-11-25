@@ -127,7 +127,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
                        sp.spelling);
             return 2;
         },
-        [&](debate::missing_required err, debate::e_argument_parser p) {
+        [&](debate::invalid_arguments const& err, debate::e_argument_parser p) {
             fmt::print(std::cerr,
                        "{}\nError: {}\n",
                        p.parser.usage_string(program_name),

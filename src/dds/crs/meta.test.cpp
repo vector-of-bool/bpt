@@ -2,10 +2,10 @@
 
 #include <dds/error/result.hpp>
 #include <dds/error/try_catch.hpp>
+#include <dds/util/json5/parse.hpp>
 
 #include <boost/leaf.hpp>
 #include <boost/leaf/context.hpp>
-#include <nlohmann/json.hpp>
 #include <semester/walk.hpp>
 
 #include <catch2/catch.hpp>
@@ -571,7 +571,7 @@ TEST_CASE("Reject bad meta informations") {
         dds::crs::package_meta::from_json_str(given);
         FAIL("Expected a failure, but no failure occurred");
     }
-    dds_leaf_catch(nlohmann::json::parse_error const&,
+    dds_leaf_catch(dds::e_json_parse_error,
                    dds::crs::e_given_meta_json_str const*      json_str,
                    dds::crs::e_invalid_meta_data               e,
                    boost::leaf::verbose_diagnostic_info const& diag_info) {

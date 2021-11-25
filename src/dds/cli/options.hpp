@@ -25,6 +25,7 @@ enum class subcommand {
     compile_file,
     build_deps,
     pkg,
+    repo,
     repoman,
     install_yourself,
 };
@@ -236,7 +237,7 @@ struct options {
         /// Options for 'dds repoman init'
         struct {
             /// The name of the new repository. If not provided, a random one will be generated
-            opt_string name;
+            string name;
         } init;
 
         /// Options for 'dds repoman import'

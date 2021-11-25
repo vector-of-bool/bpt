@@ -1,0 +1,39 @@
+{
+    "crs_version": 1,
+    "name": "test-pkg",
+    "version": "1.3.0",
+    "namespace": "test",
+    "meta_version": 1,
+    "libraries": [
+        {
+            "path": ".",
+            "name": "the-main-library",
+            "uses": [
+                {
+                    "lib": "foo/ff",
+                    "for": "app"
+                }
+            ]
+        },
+        {
+            "path": "subdir/",
+            "name": "the-other-library",
+            "uses": []
+        }
+    ],
+    "depends": [
+        {
+            "name": "sqlite3",
+            "for": "lib",
+            "versions": [
+                {
+                    "low": "1.2.0",
+                    "high": "1.3.0"
+                }
+            ]
+        }
+    ],
+    "extra": {
+        "just-some-extra-stuff": 42
+    }
+}

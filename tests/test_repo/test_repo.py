@@ -1,6 +1,7 @@
 from pathlib import Path
 from dds_ci.testing.fixtures import tmp_project
 
+import tarfile
 import pytest
 import json
 import sqlite3
@@ -61,6 +62,35 @@ def test_repo_import(dds: DDSWrapper, empty_repo: Path, tmp_project: Project) ->
             }],
         }))
     dds.run(['repo', 'import', empty_repo, tmp_project.root])
+
+
+def test_repo_import1(dds: DDSWrapper, empty_repo: Path) -> None:
+    dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data/simple.crs'])
+    with tarfile.open(empty_repo / 'pkg/test-pkg/1.2.43~1/pkg.tgz') as tf:
+        names = tf.getnames()
+        assert 'src/my-file.cpp' in names
+        assert 'include/my-header.hpp' in names
+
+
+def test_repo_import2(dds: DDSWrapper, empty_repo: Path) -> None:
+    dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data/simple2.crs'])
+    with tarfile.open(empty_repo / 'pkg/test-pkg/1.3.0~1/pkg.tgz') as tf:
+        names = tf.getnames()
+        assert 'include/my-header.hpp' in names
+
+
+def test_repo_import3(dds: DDSWrapper, empty_repo: Path) -> None:
+    dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data/simple3.crs'])
+    with tarfile.open(empty_repo / 'pkg/test-pkg/1.3.0~2/pkg.tgz') as tf:
+        names = tf.getnames()
+        assert 'src/my-file.cpp' in names
+
+
+def test_repo_import4(dds: DDSWrapper, empty_repo: Path) -> None:
+    dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data/simple4.crs'])
+    with tarfile.open(empty_repo / 'pkg/test-pkg/1.3.0~3/pkg.tgz') as tf:
+        names = tf.getnames()
+        assert 'src/deeper/my-file.cpp' in names
 
 
 def test_repo_import_invalid_crs(dds: DDSWrapper, empty_repo: Path, tmp_project: Project) -> None:
@@ -132,16 +162,30 @@ def test_repo_double_import(dds: DDSWrapper, empty_repo: Path) -> None:
 def test_repo_double_import_ignore(dds: DDSWrapper, empty_repo: Path) -> None:
     crs_dir = PROJECT_ROOT / 'data/simple.crs'
     dds.run(['repo', 'import', empty_repo, crs_dir])
-    before_time = empty_repo.joinpath('pkg/test-pkg/1.2.43/pkg.tgz').stat().st_mtime
+    before_time = empty_repo.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     dds.run(['repo', 'import', '--if-exists=ignore', empty_repo, crs_dir])
-    after_time = empty_repo.joinpath('pkg/test-pkg/1.2.43/pkg.tgz').stat().st_mtime
+    after_time = empty_repo.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     assert before_time == after_time
 
 
 def test_repo_double_import_replace(dds: DDSWrapper, empty_repo: Path) -> None:
     crs_dir = PROJECT_ROOT / 'data/simple.crs'
     dds.run(['repo', 'import', empty_repo, crs_dir])
-    before_time = empty_repo.joinpath('pkg/test-pkg/1.2.43/pkg.tgz').stat().st_mtime
+    before_time = empty_repo.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     dds.run(['repo', 'import', '--if-exists=replace', empty_repo, crs_dir])
-    after_time = empty_repo.joinpath('pkg/test-pkg/1.2.43/pkg.tgz').stat().st_mtime
+    after_time = empty_repo.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     assert before_time < after_time
+
+
+def test_import_multiple_versions(dds: DDSWrapper, empty_repo: Path) -> None:
+    for name in ('simple.crs', 'simple2.crs', 'simple3.crs'):
+        dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data' / name])
+    assert empty_repo.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').is_file()
+    assert empty_repo.joinpath('pkg/test-pkg/1.3.0~1/pkg.tgz').is_file()
+    assert empty_repo.joinpath('pkg/test-pkg/1.3.0~2/pkg.tgz').is_file()
+
+    for name in ('simple.crs', 'simple2.crs', 'simple3.crs'):
+        dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data' / name, '--if-exists=ignore'])
+
+    for name in ('simple.crs', 'simple2.crs', 'simple3.crs'):
+        dds.run(['repo', 'import', empty_repo, PROJECT_ROOT / 'data' / name, '--if-exists=replace'])

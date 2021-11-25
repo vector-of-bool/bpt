@@ -3,7 +3,6 @@
 #include "./error.hpp"
 
 #include <boost/leaf/exception.hpp>
-#include <fmt/format.h>
 
 #include <charconv>
 #include <functional>
