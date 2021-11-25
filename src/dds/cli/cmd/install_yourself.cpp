@@ -215,15 +215,15 @@ void fixup_user_path(const options& opts) {
         // Move .profile back into place if we abore for any reason
         neo_defer {
             if (!fs::exists(profile_file)) {
-                safe_rename(bak_file, profile_file);
+                move_file(bak_file, profile_file).value();
             }
         };
         // Write the temporary version
         dds::write_file(tmp_file, profile_content).value();
         // Make a backup
-        safe_rename(profile_file, bak_file);
+        move_file(profile_file, bak_file).value();
         // Move the tmp over the final location
-        safe_rename(tmp_file, profile_file);
+        move_file(tmp_file, profile_file).value();
         // Okay!
         dds_log(info,
                 "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
@@ -260,15 +260,15 @@ void fixup_user_path(const options& opts) {
             bak_file += ".bak";
             neo_defer {
                 if (!fs::exists(fish_config)) {
-                    safe_rename(bak_file, fish_config);
+                    move_file(bak_file, fish_config).value();
                 }
             };
             // Write the temporary version
             dds::write_file(tmp_file, fish_config_content).value();
             // Make a backup
-            safe_rename(fish_config, bak_file);
+            move_file(fish_config, bak_file).value();
             // Move the temp over the destination
-            safe_rename(tmp_file, fish_config);
+            move_file(tmp_file, fish_config).value();
             // Okay!
             dds_log(info,
                     "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,

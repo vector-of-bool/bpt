@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <memory>
 
@@ -16,9 +16,7 @@ class temporary_dir {
 
         ~impl() {
             std::error_code ec;
-            if (fs::exists(path, ec)) {
-                fs::remove_all(path, ec);
-            }
+            fs::remove_all(path, ec);
         }
     };
 
@@ -28,7 +26,8 @@ class temporary_dir {
         : _ptr(p) {}
 
 public:
-    static temporary_dir create();
+    static temporary_dir create_in(path_ref parent);
+    static temporary_dir create() { return create_in(fs::temp_directory_path()); }
 
     path_ref path() const noexcept { return _ptr->path; }
 };

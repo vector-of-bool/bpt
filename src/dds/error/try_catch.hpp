@@ -8,8 +8,6 @@
 
 namespace dds {
 
-struct leaf_try_block_lhs {};
-
 template <typename Try, typename... Handlers>
 struct leaf_handler_seq {
     using result_type = std::invoke_result_t<Try>;
@@ -35,7 +33,13 @@ struct leaf_handler_seq {
                         return boost::leaf::try_catch(try_block, hs...);
                     }
                 } else {
-                    return boost::leaf::try_handle_some(try_block, hs...);
+                    if constexpr (boost::leaf::is_result_type<result_type>::value) {
+                        return boost::leaf::try_handle_some(try_block, hs...);
+                    } else {
+                        return boost::leaf::try_handle_some(
+                            [&]() -> boost::leaf::result<result_type> { return try_block(); },
+                            hs...);
+                    }
                 }
             },
             handlers);
@@ -85,19 +89,24 @@ struct noreturn_t {
 
 }  // namespace dds
 
+/**
+ * @brief Create a try {} block that handles all errors using Boost.LEAF
+ */
 #define dds_leaf_try                                                                               \
     ::dds::leaf_exec_try_catch_sequence<true>{} + ::dds::leaf_make_try_block{}->*[&]()
+
+/**
+ * @brief Create a try {} block that handles errors using Boost.LEAF
+ *
+ * The result is always a result type.
+ */
 #define dds_leaf_try_some                                                                          \
     ::dds::leaf_exec_try_catch_sequence<false>{} + ::dds::leaf_make_try_block{}->*[&]()
 
+/**
+ * @brief Create an error handling block for Boost.LEAF
+ */
 #define dds_leaf_catch *::dds::leaf_make_catch_block{}->*[&]
 
 #define dds_leaf_catch_all                                                                         \
     dds_leaf_catch(::boost::leaf::verbose_diagnostic_info const& diagnostic_info [[maybe_unused]])
-
-#define DDS_E_THROWING(...)                                                                        \
-    boost::leaf::try_catch([&] { return (__VA_ARGS__); },                                          \
-                           [](::boost::leaf::catch_<std::exception>) -> ::dds::noreturn_t {        \
-                               BOOST_LEAF_NEW_ERROR();                                             \
-                               throw;                                                              \
-                           })

@@ -79,7 +79,7 @@ sdist dds::create_sdist(const sdist_params& params) {
         fs::remove_all(dest);
     }
     fs::create_directories(fs::absolute(dest).parent_path());
-    safe_rename(tempdir.path(), dest);
+    move_file(tempdir.path(), dest).value();
     dds_log(info, "Source distribution created in {}", dest.string());
     return sdist::from_directory(dest);
 }

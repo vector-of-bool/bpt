@@ -23,7 +23,7 @@ static int _pkg_get(const options& opts) {
         auto dest = opts.out_path.value_or(fs::current_path()) / id.to_string();
         dds_log(info, "Create sdist at {}", dest.string());
         fs::remove_all(dest);
-        safe_rename(tsd.sdist.path, dest);
+        move_file(tsd.sdist.path, dest).value();
     }
     return 0;
 }

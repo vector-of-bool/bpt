@@ -1,5 +1,6 @@
-#ifdef _WIN32
 #include "./temp.hpp"
+
+#ifdef _WIN32
 
 #include <memory>
 
@@ -9,9 +10,7 @@
 
 using namespace dds;
 
-temporary_dir temporary_dir::create() {
-    auto base = fs::temp_directory_path();
-
+temporary_dir temporary_dir::create_in(path_ref base) {
     ::UUID uuid;
     auto   status = ::UuidCreate(&uuid);
     assert(status == RPC_S_OK || status == RPC_S_UUID_LOCAL_ONLY
