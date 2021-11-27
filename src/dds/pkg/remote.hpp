@@ -25,15 +25,15 @@ public:
 
     static pkg_remote connect(std::string_view url);
 
-    void store(neo::sqlite3::database_ref);
-    void update_pkg_db(neo::sqlite3::database_ref,
+    void store(neo::sqlite3::connection_ref);
+    void update_pkg_db(neo::sqlite3::connection_ref,
                        std::optional<std::string_view> etag          = {},
                        std::optional<std::string_view> last_modified = {});
 };
 
-void update_all_remotes(neo::sqlite3::database_ref);
+void update_all_remotes(neo::sqlite3::connection_ref);
 void remove_remote(pkg_db& db, std::string_view name);
 
-void add_init_repo(neo::sqlite3::database_ref db) noexcept;
+void add_init_repo(neo::sqlite3::connection_ref db) noexcept;
 
 }  // namespace dds

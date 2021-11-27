@@ -33,12 +33,11 @@ namespace nsql = neo::sqlite3;
 namespace {
 
 struct remote_db {
-    temporary_dir  _tempdir;
-    nsql::database db;
+    temporary_dir    _tempdir;
+    nsql::connection db;
 
-    static void patchup_db(nsql::database_ref db) {
-        auto get_ver   = *db.prepare("SELECT version FROM dds_repo_meta");
-        auto [version] = *nsql::unpack_next<int>(get_ver);
+    static void patchup_db(nsql::connection_ref db) {
+        auto version = *nsql::one_cell<int>(*db.prepare("SELECT version FROM dds_repo_meta"));
         if (version < 2) {
             dds_log(warn,
                     "Remote database uses a prior schema. We'll do an implicit upgrade, but this "
@@ -78,13 +77,11 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
     auto [client, resp] = pool.request(db_url, http_request_params{.method = "GET"});
     auto db             = remote_db::download_and_open(client, resp);
 
-    auto name_st = *db.db.prepare("SELECT name FROM dds_repo_meta");
-    auto [name]  = *nsql::unpack_next<std::string>(name_st);
-
+    auto name = *nsql::one_cell<std::string>(*db.db.prepare("SELECT name FROM dds_repo_meta"));
     return {name, url};
 }
 
-void pkg_remote::store(nsql::database_ref db) {
+void pkg_remote::store(nsql::connection_ref db) {
     auto st       = *db.prepare(R"(
         INSERT INTO dds_pkg_remotes (name, url)
             VALUES (?, ?)
@@ -95,7 +92,7 @@ void pkg_remote::store(nsql::database_ref db) {
     nsql::exec(st, _name, base_str).throw_if_error();
 }
 
-void pkg_remote::update_pkg_db(nsql::database_ref              db,
+void pkg_remote::update_pkg_db(nsql::connection_ref            db,
                                std::optional<std::string_view> etag,
                                std::optional<std::string_view> db_mtime) {
     dds_log(info,
@@ -129,7 +126,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
 
     auto rid_st          = *db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
     rid_st.bindings()[1] = _name;
-    auto [remote_id]     = *nsql::unpack_next<std::int64_t>(rid_st);
+    auto remote_id       = *nsql::one_cell<std::int64_t>(rid_st);
     rid_st.reset();
 
     dds_log(trace, "Attaching downloaded database");
@@ -226,7 +223,7 @@ void pkg_remote::update_pkg_db(nsql::database_ref              db,
     }
 }
 
-void dds::update_all_remotes(nsql::database_ref db) {
+void dds::update_all_remotes(nsql::connection_ref db) {
     dds_log(info, "Updating catalog from all remotes");
     auto repos_st = *db.prepare("SELECT name, url, db_etag, db_mtime FROM dds_pkg_remotes");
     auto tups     = nsql::iter_tuples<std::string,
@@ -250,8 +247,8 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
     nsql::transaction_guard tr{db};
     auto get_rowid_st = *db.prepare("SELECT remote_id FROM dds_pkg_remotes WHERE name = ?");
     get_rowid_st.bindings()[1] = name;
-    auto row                   = nsql::unpack_next<std::int64_t>(get_rowid_st);
-    if (!row.has_value()) {
+    auto rowid                 = nsql::one_cell<std::int64_t>(get_rowid_st);
+    if (!rowid.has_value()) {
         BOOST_LEAF_THROW_EXCEPTION(  //
             make_user_error<errc::no_catalog_remote_info>("There is no remote with name '{}'",
                                                           name),
@@ -264,12 +261,11 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
                 return e_nonesuch{name, did_you_mean(name, names)};
             });
     }
-    auto [rowid] = *row;
-    nsql::exec(*db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), rowid)
+    nsql::exec(*db.prepare("DELETE FROM dds_pkg_remotes WHERE remote_id = ?"), *rowid)
         .throw_if_error();
 }
 
-void dds::add_init_repo(nsql::database_ref db) noexcept {
+void dds::add_init_repo(nsql::connection_ref db) noexcept {
     std::string_view init_repo = "https://repo-1.dds.pizza";
     // _Do not_ let errors stop us from continuing
     bool okay = boost::leaf::try_catch(

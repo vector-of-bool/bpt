@@ -22,7 +22,7 @@ using namespace std::literals;
 
 namespace {
 
-void migrate_1(nsql::database& db) {
+void migrate_1(nsql::connection& db) {
     db.exec(R"(
         DROP TABLE IF EXISTS dds_deps;
         DROP TABLE IF EXISTS dds_file_commands;
@@ -59,7 +59,7 @@ void migrate_1(nsql::database& db) {
         .throw_if_error();
 }
 
-void ensure_migrated(nsql::database& db) {
+void ensure_migrated(nsql::connection& db) {
     db.exec(R"(
         PRAGMA foreign_keys = 1;
         DROP TABLE IF EXISTS dds_meta;
@@ -70,8 +70,8 @@ void ensure_migrated(nsql::database& db) {
         .throw_if_error();
     nsql::transaction_guard tr{db};
 
-    auto version_st    = *db.prepare("SELECT version FROM dds_meta_1");
-    auto [version_str] = *nsql::unpack_next<std::string>(version_st);
+    auto version_st  = *db.prepare("SELECT version FROM dds_meta_1");
+    auto version_str = *nsql::one_cell<std::string>(version_st);
 
     const auto cur_version = "alpha-5-dev1"sv;
     if (cur_version != version_str) {
@@ -88,7 +88,7 @@ void ensure_migrated(nsql::database& db) {
 }  // namespace
 
 database database::open(const std::string& db_path) {
-    auto db = *nsql::database::open(db_path);
+    auto db = *nsql::connection::open(db_path);
     try {
         ensure_migrated(db);
     } catch (const nsql::error& e) {
@@ -98,7 +98,7 @@ database database::open(const std::string& db_path) {
             "create a new one. The exception message is: {}",
             e.what());
         fs::remove(db_path);
-        db = *nsql::database::open(db_path);
+        db = *nsql::connection::open(db_path);
         try {
             ensure_migrated(db);
         } catch (const nsql::error& e) {
@@ -112,7 +112,7 @@ database database::open(const std::string& db_path) {
     return database(std::move(db));
 }
 
-database::database(nsql::database db)
+database::database(nsql::connection db)
     : _db(std::move(db)) {}
 
 std::int64_t database::_record_file(path_ref path_) {
@@ -131,8 +131,7 @@ std::int64_t database::_record_file(path_ref path_) {
     st.reset();
     auto str         = path.generic_string();
     st.bindings()[1] = str;
-    auto [rowid]     = *nsql::unpack_next<std::int64_t>(st);
-    return rowid;
+    return *nsql::one_cell<std::int64_t>(st);
 }
 
 void database::record_dep(path_ref input, path_ref output, fs::file_time_type input_mtime) {
@@ -231,8 +230,8 @@ std::optional<completed_compilation> database::command_of(path_ref file_) const 
     )"_sql);
     st.reset();
     st.bindings()[1] = file.generic_string();
-    auto opt_res     = nsql::unpack_next<std::string, std::string, std::int64_t, std::int64_t>(st);
-    if (!opt_res.has_value()) {
+    auto opt_res     = nsql::next<std::string, std::string, std::int64_t, std::int64_t>(st);
+    if (opt_res.errc() == nsql::errc::done) {
         return std::nullopt;
     }
     auto& [cmd, out, dur, tc_id] = *opt_res;

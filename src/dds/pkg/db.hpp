@@ -18,10 +18,10 @@ struct dependency;
 struct pkg_id;
 
 class pkg_db {
-    neo::sqlite3::database                _db;
+    neo::sqlite3::connection              _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
 
-    explicit pkg_db(neo::sqlite3::database db);
+    explicit pkg_db(neo::sqlite3::connection db);
     pkg_db(const pkg_db&) = delete;
 
 public:

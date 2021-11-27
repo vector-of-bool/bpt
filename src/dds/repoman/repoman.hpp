@@ -39,11 +39,11 @@ struct e_repo_delete_path {
 };
 
 class repo_manager {
-    neo::sqlite3::database                _db;
+    neo::sqlite3::connection              _db;
     mutable neo::sqlite3::statement_cache _stmts{_db};
     fs::path                              _root;
 
-    explicit repo_manager(path_ref root, neo::sqlite3::database db)
+    explicit repo_manager(path_ref root, neo::sqlite3::connection db)
         : _db(std::move(db))
         , _root(root) {}
 

@@ -29,10 +29,10 @@ struct input_file_info {
 };
 
 class database {
-    neo::sqlite3::database                _db;
+    neo::sqlite3::connection              _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
 
-    explicit database(neo::sqlite3::database db);
+    explicit database(neo::sqlite3::connection db);
     database(const database&) = delete;
 
     std::int64_t _record_file(path_ref p);

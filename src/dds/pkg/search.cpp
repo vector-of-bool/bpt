@@ -18,7 +18,7 @@
 using namespace dds;
 namespace nsql = neo::sqlite3;
 
-result<pkg_search_results> dds::pkg_search(nsql::database_ref              db,
+result<pkg_search_results> dds::pkg_search(nsql::connection_ref            db,
                                            std::optional<std::string_view> pattern) noexcept {
     auto search_st = *db.prepare(R"(
         SELECT pkg.name,

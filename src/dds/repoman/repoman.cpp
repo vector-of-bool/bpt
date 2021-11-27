@@ -28,7 +28,7 @@ using namespace nsql::literals;
 
 namespace {
 
-void migrate_db_1(nsql::database_ref db) {
+void migrate_db_1(nsql::connection_ref db) {
     db.exec(R"(
         CREATE TABLE dds_repo_packages (
             package_id INTEGER PRIMARY KEY,
@@ -53,7 +53,7 @@ void migrate_db_1(nsql::database_ref db) {
         .throw_if_error();
 }
 
-void migrate_db_2(nsql::database_ref db) {
+void migrate_db_2(nsql::connection_ref db) {
     db.exec(R"(
         CREATE TABLE dds_repo_deps_1 (
             dep_id INTEGER PRIMARY KEY,
@@ -76,7 +76,7 @@ void migrate_db_2(nsql::database_ref db) {
         .throw_if_error();
 }
 
-void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name) {
+void ensure_migrated(nsql::connection_ref db, std::optional<std::string_view> name) {
     db.exec(R"(
         PRAGMA busy_timeout = 6000;
         PRAGMA foreign_keys = 1;
@@ -94,9 +94,7 @@ void ensure_migrated(nsql::database_ref db, std::optional<std::string_view> name
         .throw_if_error();
     nsql::transaction_guard tr{db};
 
-    auto meta_st   = *db.prepare("SELECT version FROM dds_repo_meta");
-    auto [version] = *nsql::unpack_next<int>(meta_st);
-    meta_st.reset();
+    auto version = *nsql::one_cell<int>(*db.prepare("SELECT version FROM dds_repo_meta"));
 
     constexpr int current_database_version = 2;
     if (version < 1) {
@@ -123,7 +121,7 @@ repo_manager repo_manager::create(path_ref directory, std::optional<std::string_
         DDS_E_SCOPE(e_init_repo{directory});
         fs::create_directories(directory);
         auto db_path = directory / "repo.db";
-        auto db      = *nsql::database::open(db_path.string());
+        auto db      = *nsql::connection::open(db_path.string());
         DDS_E_SCOPE(e_init_repo_db{db_path});
         DDS_E_SCOPE(e_open_repo_db{db_path});
         ensure_migrated(db, name);
@@ -142,14 +140,13 @@ repo_manager repo_manager::open(path_ref directory) {
         throw std::system_error(make_error_code(std::errc::no_such_file_or_directory),
                                 "The database file does not exist");
     }
-    auto db = *nsql::database::open(db_path.string());
+    auto db = *nsql::connection::open(db_path.string());
     ensure_migrated(db, std::nullopt);
     return repo_manager{fs::canonical(directory), std::move(db)};
 }
 
 std::string repo_manager::name() const noexcept {
-    auto [name] = *nsql::unpack_next<std::string>(_stmts("SELECT name FROM dds_repo_meta"_sql));
-    return name;
+    return *nsql::one_cell<std::string>(_stmts("SELECT name FROM dds_repo_meta"_sql));
 }
 
 void repo_manager::import_targz(path_ref tgz_file) {

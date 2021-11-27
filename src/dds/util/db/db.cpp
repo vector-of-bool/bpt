@@ -14,7 +14,7 @@ using namespace dds;
 namespace nsql = neo::sqlite3;
 
 struct unique_database::impl {
-    nsql::database        db;
+    nsql::connection      db;
     nsql::statement_cache cache{db};
 };
 
@@ -27,7 +27,7 @@ unique_database& unique_database::operator=(unique_database&&) noexcept = defaul
 
 result<unique_database> unique_database::open(const std::string& str) noexcept {
     DDS_E_SCOPE(e_db_open_path{str});
-    auto db = nsql::database::open(str);
+    auto db = nsql::connection::open(str);
     if (!db.has_value()) {
         return new_error(e_db_open_ec{nsql::make_error_code(db.errc())});
     }
@@ -50,7 +50,7 @@ void unique_database::exec_script(nsql::sql_string_literal script) {
     _impl->db.exec(std::string(script.string())).throw_if_error();
 }
 
-nsql::database_ref unique_database::raw_database() const noexcept { return _impl->db; }
+nsql::connection_ref unique_database::raw_database() const noexcept { return _impl->db; }
 
 nsql::statement& unique_database::prepare(nsql::sql_string_literal s) const {
     try {

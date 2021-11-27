@@ -26,13 +26,13 @@ using namespace nsql::literals;
 
 namespace dds {
 
-void add_init_repo(nsql::database_ref db) noexcept;
+void add_init_repo(nsql::connection_ref db) noexcept;
 
 }  // namespace dds
 
 namespace {
 
-void migrate_repodb_1(nsql::database& db) {
+void migrate_repodb_1(nsql::connection& db) {
     db.exec(R"(
         CREATE TABLE dds_cat_pkgs (
             pkg_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,7 +77,7 @@ void migrate_repodb_1(nsql::database& db) {
         .throw_if_error();
 }
 
-void migrate_repodb_2(nsql::database& db) {
+void migrate_repodb_2(nsql::connection& db) {
     db.exec(R"(
         ALTER TABLE dds_cat_pkgs
             ADD COLUMN repo_transform TEXT NOT NULL DEFAULT '[]'
@@ -85,7 +85,7 @@ void migrate_repodb_2(nsql::database& db) {
         .throw_if_error();
 }
 
-void migrate_repodb_3(nsql::database& db) {
+void migrate_repodb_3(nsql::connection& db) {
     db.exec(R"(
         CREATE TABLE dds_pkg_remotes (
             remote_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -144,7 +144,7 @@ void migrate_repodb_3(nsql::database& db) {
         .throw_if_error();
 }
 
-void migrate_repodb_4(nsql::database_ref db) {
+void migrate_repodb_4(nsql::connection_ref db) {
     db.exec(R"(
         CREATE TABLE dds_pkg_deps_1 (
             dep_id INTEGER PRIMARY KEY,
@@ -167,7 +167,7 @@ void migrate_repodb_4(nsql::database_ref db) {
         .throw_if_error();
 }
 
-void do_store_pkg(neo::sqlite3::database&        db,
+void do_store_pkg(neo::sqlite3::connection&      db,
                   neo::sqlite3::statement_cache& st_cache,
                   const pkg_listing&             pkg) {
     dds_log(debug, "Recording package {}@{}", pkg.ident.name.str, pkg.ident.version.to_string());
@@ -215,7 +215,7 @@ void do_store_pkg(neo::sqlite3::database&        db,
     }
 }
 
-void ensure_migrated(nsql::database& db) {
+void ensure_migrated(nsql::connection& db) {
     db.exec(R"(
         PRAGMA foreign_keys = 1;
         CREATE TABLE IF NOT EXISTS dds_cat_meta AS
@@ -225,9 +225,7 @@ void ensure_migrated(nsql::database& db) {
         .throw_if_error();
     nsql::transaction_guard tr{db};
 
-    auto meta_st     = *db.prepare("SELECT meta FROM dds_cat_meta");
-    auto [meta_json] = *nsql::unpack_next<std::string>(meta_st);
-    meta_st.reset();
+    auto meta_json = *nsql::one_cell<std::string>(*db.prepare("SELECT meta FROM dds_cat_meta"));
 
     auto meta = nlohmann::json::parse(meta_json);
     if (!meta.is_object()) {
@@ -291,7 +289,7 @@ pkg_db pkg_db::open(const std::string& db_path) {
         fs::create_directories(pardir);
     }
     dds_log(debug, "Opening package database [{}]", db_path);
-    auto db = *nsql::database::open(db_path);
+    auto db = *nsql::connection::open(db_path);
     try {
         ensure_migrated(db);
     } catch (const nsql::error& e) {
@@ -305,7 +303,7 @@ pkg_db pkg_db::open(const std::string& db_path) {
     return pkg_db(std::move(db));
 }
 
-pkg_db::pkg_db(nsql::database db)
+pkg_db::pkg_db(nsql::connection db)
     : _db(std::move(db)) {}
 
 void pkg_db::store(const pkg_listing& pkg) {

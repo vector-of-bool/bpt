@@ -36,8 +36,8 @@ public:
     unique_database(unique_database&&) noexcept;
     unique_database& operator=(unique_database&&) noexcept;
 
-    neo::sqlite3::database_ref raw_database() const noexcept;
-    neo::sqlite3::statement&   prepare(neo::sqlite3::sql_string_literal) const;
+    neo::sqlite3::connection_ref raw_database() const noexcept;
+    neo::sqlite3::statement&     prepare(neo::sqlite3::sql_string_literal) const;
 
     void exec_script(neo::sqlite3::sql_string_literal);
 };
