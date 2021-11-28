@@ -2,12 +2,13 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/sdist/library/root.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/string.hpp>
 
 #include <ctre.hpp>
 #include <semester/json.hpp>
 
+#include <fstream>
 #include <string>
 #include <string_view>
 
@@ -171,7 +172,7 @@ std::string render_template(std::string_view tmpl, const library_root& lib) {
 }  // namespace
 
 void render_template_plan::render(build_env_ref env, const library_root& lib) const {
-    auto content = slurp_file(_source.path);
+    auto content = dds::read_file(_source.path);
 
     // Calculate the destination of the template rendering
     auto dest = env.output_root / _subdir / _source.relative_path();
@@ -180,14 +181,14 @@ void render_template_plan::render(build_env_ref env, const library_root& lib) co
 
     auto result = render_template(content, lib);
     if (fs::is_regular_file(dest)) {
-        auto existing_content = slurp_file(dest);
+        auto existing_content = dds::read_file(dest);
         if (result == existing_content) {
             /// The content of the file has not changed. Do not write a file.
             return;
         }
     }
 
-    auto ofile = open(dest, std::ios::binary | std::ios::out);
+    auto ofile = dds::open_file(dest, std::ios::binary | std::ios::out);
     ofile << result;
     ofile.close();  // Throw any exceptions while closing the file
 }

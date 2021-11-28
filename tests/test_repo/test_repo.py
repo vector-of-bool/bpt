@@ -101,7 +101,7 @@ def test_repo_import_invalid_crs(dds: DDSWrapper, empty_repo: Path, tmp_project:
 
 def test_repo_import_invalid_json(dds: DDSWrapper, empty_repo: Path, tmp_project: Project) -> None:
     tmp_project.write('pkg.json', 'not-json')
-    with expect_error_marker('repo-import-invalid-crs-json'):
+    with expect_error_marker('repo-import-invalid-crs-json-parse-error'):
         dds.run(['repo', 'import', empty_repo, tmp_project.root])
 
 

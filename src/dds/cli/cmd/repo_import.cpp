@@ -5,6 +5,9 @@
 #include <dds/error/marker.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/util/db/migrate.hpp>
+#include <dds/util/fs/io.hpp>
+#include <dds/util/fs/shutil.hpp>
+#include <dds/util/json5/parse.hpp>
 
 #include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
@@ -89,6 +92,15 @@ int repo_import(const options& opts) {
         }
         dds_log(error, "(It's possible that the database is invalid or corrupted)");
         write_error_marker("repo-import-db-error");
+        return 1;
+    }
+    dds_leaf_catch(dds::e_json_parse_error                parse_error,
+                   dds::crs::e_repo_importing_dir         crs_dir,
+                   dds::crs::e_given_meta_json_input_name input_name) {
+        dds_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_dir.value.string());
+        dds_log(error, "  JSON parse error in [.br.yellow[{}]]:"_styled, input_name.value);
+        dds_log(error, "    .br.red[{}]"_styled, parse_error.value);
+        write_error_marker("repo-import-invalid-crs-json-parse-error");
         return 1;
     }
     dds_leaf_catch(dds::crs::e_invalid_meta_data          error,

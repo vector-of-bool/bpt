@@ -1,7 +1,8 @@
-#ifndef _WIN32
 #include "./proc.hpp"
 
-#include <dds/util/fs.hpp>
+#ifndef _WIN32
+
+#include <dds/util/fs/path.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/signal.hpp>
 

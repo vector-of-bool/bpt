@@ -2,7 +2,7 @@
 
 #include <dds/deps.hpp>
 #include <dds/pkg/id.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 #include <dds/util/result.hpp>
 
 #include <libman/library.hpp>

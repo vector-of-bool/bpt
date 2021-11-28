@@ -5,7 +5,7 @@
 #include <dds/build/plan/template.hpp>
 #include <dds/sdist/library/root.hpp>
 #include <dds/usage_reqs.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <libman/library.hpp>
 

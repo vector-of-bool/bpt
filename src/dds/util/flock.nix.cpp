@@ -1,6 +1,8 @@
-#ifndef _WIN32
-
 #include "./flock.hpp"
+
+#include <dds/util/fs/path.hpp>
+
+#ifndef _WIN32
 
 #include <dds/util/signal.hpp>
 

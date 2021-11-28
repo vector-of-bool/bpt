@@ -2,7 +2,7 @@
 
 #include <dds/error/result_fwd.hpp>
 #include <dds/util/db/db.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <functional>
 #include <vector>

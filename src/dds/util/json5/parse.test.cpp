@@ -1,44 +1,31 @@
 #include "./parse.hpp"
 
-#include <boost/leaf.hpp>
-#include <boost/leaf/context.hpp>
+#include <dds/dds.test.hpp>
+#include <dds/error/try_catch.hpp>
+
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
-#include <dds/error/result.hpp>
-
 TEST_CASE("Test parse JSON content") {
-    boost::leaf::context<dds::e_json_parse_error> ctx;
-    ctx.activate();
-    auto result = dds::parse_json_str(R"({foo})");
-    REQUIRE_FALSE(result);
-    ctx.deactivate();
-    ctx.handle_error<void>(
-        result.error(),
-        [](dds::e_json_parse_error) {
-            // okay
-        },
-        [] { FAIL_CHECK("Incorrect error"); });
+    dds_leaf_try {
+        dds::parse_json_str(R"({foo})");
+        FAIL_CHECK("Expected an error");
+    }
+    dds_leaf_catch(dds::e_json_parse_error) {}
+    dds_leaf_catch_all { FAIL_CHECK("Incorrect error: " << diagnostic_info); };
 
-    result = dds::parse_json_str(R"({"foo": "bar"})");
-    REQUIRE(result);
-    CHECK(result->is_object());
+    auto result = REQUIRES_LEAF_NOFAIL(dds::parse_json_str(R"({"foo": "bar"})"));
+    CHECK(result.is_object());
 }
 
 TEST_CASE("Test parse JSON5 content") {
-    boost::leaf::context<dds::e_json_parse_error> ctx;
-    ctx.activate();
-    auto result = dds::parse_json5_str(R"({foo})");
-    REQUIRE_FALSE(result);
-    ctx.deactivate();
-    ctx.handle_error<void>(
-        result.error(),
-        [](dds::e_json_parse_error) {
-            // okay
-        },
-        [] { FAIL_CHECK("Incorrect error"); });
+    dds_leaf_try {
+        dds::parse_json5_str("{foo}");
+        FAIL_CHECK("Expected an error");
+    }
+    dds_leaf_catch(dds::e_json_parse_error) {}
+    dds_leaf_catch_all { FAIL_CHECK("Incorrect error: " << diagnostic_info); };
 
-    result = dds::parse_json5_str(R"({foo: 'bar'})");
-    REQUIRE(result);
-    CHECK(result->is_object());
+    auto result = REQUIRES_LEAF_NOFAIL(dds::parse_json5_str("{foo: 'bar'}"));
+    CHECK(result.is_object());
 }

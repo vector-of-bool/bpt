@@ -13,8 +13,8 @@
 TEST_CASE("Reject bad meta informations") {
     auto [given, expect_error] = GENERATE(Catch::Generators::table<std::string, std::string>({
         {"f",
-         "JSON parse error while loading CRS meta: [json.exception.parse_error.101] parse error at "
-         "line 1, column 2: syntax error while parsing value - invalid literal; last read: 'f'"},
+         "[json.exception.parse_error.101] parse error at line 1, column 2: syntax error while "
+         "parsing value - invalid literal; last read: 'f'"},
         {"{\"crs_version\": 1}", "A string 'name' is required"},
         {R"({"crs_version": 1, "name": "foo"})", "A 'version' string is required"},
         {R"({"crs_version": 1, "name": "foo."})",
@@ -571,13 +571,12 @@ TEST_CASE("Reject bad meta informations") {
         dds::crs::package_meta::from_json_str(given);
         FAIL("Expected a failure, but no failure occurred");
     }
-    dds_leaf_catch(dds::e_json_parse_error,
+    dds_leaf_catch(dds::e_json_parse_error                     err,
                    dds::crs::e_given_meta_json_str const*      json_str,
-                   dds::crs::e_invalid_meta_data               e,
                    boost::leaf::verbose_diagnostic_info const& diag_info) {
         CAPTURE(diag_info);
         CHECKED_IF(json_str) { CHECK(json_str->value == given); }
-        CHECK_THAT(e.value, Catch::Matchers::EndsWith(expect_error));
+        CHECK_THAT(err.value, Catch::Matchers::EndsWith(expect_error));
     }
     dds_leaf_catch(dds::crs::e_given_meta_json_str const*      error_str,
                    dds::crs::e_given_meta_json_data const*     error_data,

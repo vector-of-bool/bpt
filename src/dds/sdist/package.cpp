@@ -2,6 +2,7 @@
 
 #include <dds/dym.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
@@ -187,7 +188,7 @@ package_manifest parse_json(const json5::data& data, std::string_view fpath) {
 
 package_manifest package_manifest::load_from_file(const fs::path& fpath) {
     DDS_E_SCOPE(e_package_manifest_path{fpath.string()});
-    auto content = slurp_file(fpath);
+    auto content = dds::read_file(fpath);
     return load_from_json5_str(content, fpath.string());
 }
 

@@ -19,16 +19,8 @@ using namespace dds::crs;
 package_meta package_meta::from_json_str(std::string_view json, std::string_view input_name) {
     DDS_E_SCOPE(e_given_meta_json_str{std::string(json)});
     DDS_E_SCOPE(e_given_meta_json_input_name{std::string(input_name)});
-    auto data = dds_leaf_try_some { return parse_json_str(json); }
-    dds_leaf_catch(e_json_parse_error e)->noreturn_t {
-        BOOST_LEAF_THROW_EXCEPTION(current_error(),
-                                   e,
-                                   e_invalid_meta_data{
-                                       neo::ufmt("JSON parse error while loading CRS meta: {}",
-                                                 e.value)});
-    };
-    auto& d = data.value();
-    return from_json_data(nlohmann_json_as_json5(d), input_name);
+    auto data = parse_json_str(json);
+    return from_json_data(nlohmann_json_as_json5(data), input_name);
 }
 
 package_meta package_meta::from_json_data(const json5::data& data, std::string_view input) {

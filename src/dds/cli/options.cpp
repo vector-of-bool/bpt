@@ -6,6 +6,7 @@
 #include <dds/pkg/db.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/toolchain.hpp>
+#include <dds/util/fs/io.hpp>
 
 #include <debate/enum.hpp>
 #include <fansi/styled.hpp>
@@ -575,6 +576,6 @@ toolchain dds::cli::options::load_toolchain() const {
         return std::move(*tc);
     } else {
         DDS_E_SCOPE(e_toolchain_file{tc_str});
-        return parse_toolchain_json5(slurp_file(tc_str));
+        return parse_toolchain_json5(dds::read_file(tc_str));
     }
 }

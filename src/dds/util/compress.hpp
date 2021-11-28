@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./fs.hpp"
+#include "./fs/path.hpp"
 #include <dds/error/result_fwd.hpp>
 
 namespace dds {

@@ -4,7 +4,8 @@
 #include <dds/pkg/get/http.hpp>
 #include <dds/sdist/library/root.hpp>
 #include <dds/temp.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/io.hpp>
+#include <dds/util/fs/shutil.hpp>
 #include <dds/util/log.hpp>
 
 #include <libman/parse.hpp>
@@ -14,6 +15,8 @@
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
+
+#include <fstream>
 
 using namespace dds;
 
@@ -133,7 +136,7 @@ sdist sdist::from_directory(path_ref where) {
 
 temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
     neo_assertion_breadcrumbs("Expanding sdist targz file", targz_path.string());
-    auto infile = open(targz_path, std::ios::binary | std::ios::in);
+    auto infile = dds::open_file(targz_path, std::ios::binary | std::ios::in);
     return expand_sdist_from_istream(infile, targz_path.string());
 }
 

@@ -3,15 +3,13 @@
 #include <dds/error/errors.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
+#include <dds/util/json5/parse.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/string.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <ctre.hpp>
-#include <json5/parse_data.hpp>
 #include <semester/walk.hpp>
-
-#include <fmt/core.h>
 
 #include <cctype>
 #include <sstream>
@@ -49,8 +47,7 @@ dependency dependency::parse_depends_string(std::string_view str) {
 }
 
 dependency_manifest dependency_manifest::from_file(path_ref fpath) {
-    auto content = slurp_file(fpath);
-    auto data    = json5::parse_data(content);
+    auto data = dds::parse_json5_file(fpath);
 
     dependency_manifest depman;
     using namespace semester::walk_ops;

@@ -3,7 +3,7 @@
 #include "./listing.hpp"
 
 #include <dds/error/result.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>

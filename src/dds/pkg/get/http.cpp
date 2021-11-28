@@ -2,6 +2,7 @@
 
 #include <dds/error/errors.hpp>
 #include <dds/temp.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -11,6 +12,8 @@
 #include <neo/tar/util.hpp>
 #include <neo/url.hpp>
 #include <neo/url/query.hpp>
+
+#include <fstream>
 
 using namespace dds;
 

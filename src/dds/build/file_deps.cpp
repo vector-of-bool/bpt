@@ -1,19 +1,17 @@
 #include "./file_deps.hpp"
 
-#include <dds/db/database.hpp>
 #include <dds/proc.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/shlex.hpp>
 #include <dds/util/string.hpp>
 
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
+#include <neo/ranges.hpp>
 
 using namespace dds;
 
 file_deps_info dds::parse_mkfile_deps_file(path_ref where) {
-    auto content = slurp_file(where);
+    auto content = dds::read_file(where);
     return parse_mkfile_deps_str(content);
 }
 
@@ -91,7 +89,7 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
     auto& inputs        = *inputs_;
     auto  changed_files =  //
         inputs             //
-        | ranges::views::filter([](const input_file_info& input) {
+        | std::views::filter([](const input_file_info& input) {
               if (input.path.extension() == ".syncheck") {
                   // Do not consider .syncheck files, as they will always be re-written and have no
                   // interesting content
@@ -108,8 +106,8 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
               // No "new" inputs
               return false;
           })
-        | ranges::views::transform([](auto& info) { return info.path; })  //
-        | ranges::to_vector;
+        | std::views::transform([](auto& info) { return info.path; })  //
+        | neo::to_vector;
     prior_compilation ret;
     ret.newer_inputs     = std::move(changed_files);
     ret.previous_command = cmd;

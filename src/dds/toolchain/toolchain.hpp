@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/build/file_deps.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <optional>
 #include <string>

@@ -2,6 +2,7 @@
 
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
+#include <dds/util/fs/io.hpp>
 
 #include <neo/gzip_io.hpp>
 #include <neo/io/stream/buffers.hpp>

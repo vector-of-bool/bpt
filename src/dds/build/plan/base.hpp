@@ -3,14 +3,15 @@
 #include <dds/db/database.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/usage_reqs.hpp>
-#include <dds/util/fs.hpp>
+
+#include <filesystem>
 
 namespace dds {
 
 struct build_env {
-    dds::toolchain toolchain;
-    fs::path       output_root;
-    database&      db;
+    dds::toolchain        toolchain;
+    std::filesystem::path output_root;
+    database&             db;
 
     toolchain_knobs knobs;
 

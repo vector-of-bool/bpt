@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/sdist/file.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <vector>
 

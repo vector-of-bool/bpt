@@ -4,7 +4,7 @@
 #include <dds/sdist/dist.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/flock.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <neo/fwd.hpp>
 
@@ -33,9 +33,9 @@ enum class with_app_deps_t {
     without,
 };
 
-constexpr inline auto with_test_deps = with_test_deps_t::with;
+constexpr inline auto with_test_deps    = with_test_deps_t::with;
 constexpr inline auto without_test_deps = with_test_deps_t::without;
-constexpr inline auto with_app_deps = with_app_deps_t::with;
+constexpr inline auto with_app_deps     = with_app_deps_t::with;
 constexpr inline auto without_app_deps  = with_app_deps_t::without;
 
 enum class if_exists {

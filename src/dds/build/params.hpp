@@ -2,7 +2,7 @@
 
 #include <dds/sdist/dist.hpp>
 #include <dds/toolchain/toolchain.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <optional>
 

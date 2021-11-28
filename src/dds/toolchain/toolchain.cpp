@@ -3,6 +3,7 @@
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
@@ -126,7 +127,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         dds_log(trace, "Syntax check file: {}", in_file);
 
         fs::create_directories(in_file.parent_path());
-        dds::write_file(in_file, fmt::format("#include \"{}\"", spec.source_path.string())).value();
+        dds::write_file(in_file, fmt::format("#include \"{}\"", spec.source_path.string()));
     }
 
     dds_log(trace, "#include-search dirs:");
@@ -337,7 +338,7 @@ std::optional<dds::toolchain> dds::toolchain::get_default() {
         dds_log(trace, "Checking for default toolchain at [{}]", cand.string());
         if (fs::exists(cand)) {
             dds_log(debug, "Using default toolchain file: {}", cand.string());
-            return parse_toolchain_json5(slurp_file(cand));
+            return parse_toolchain_json5(dds::read_file(cand));
         }
     }
     return std::nullopt;

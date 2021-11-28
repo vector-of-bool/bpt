@@ -1,21 +1,21 @@
 #pragma once
 
-#include <dds/util/fs.hpp>
+#include <filesystem>
 
 namespace dds {
 
 class shared_file_mutex {
-    fs::path _path;
-    void*    _lock_data = nullptr;
+    std::filesystem::path _path;
+    void*                 _lock_data = nullptr;
 
 public:
-    shared_file_mutex(path_ref p);
+    shared_file_mutex(const std::filesystem::path& p);
 
     shared_file_mutex(const shared_file_mutex&) = delete;
 
     ~shared_file_mutex();
 
-    path_ref path() const noexcept { return _path; }
+    const std::filesystem::path& path() const noexcept { return _path; }
 
     bool try_lock() noexcept;
     bool try_lock_shared() noexcept;

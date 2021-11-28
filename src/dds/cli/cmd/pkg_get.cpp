@@ -5,6 +5,7 @@
 #include <dds/error/nonesuch.hpp>
 #include <dds/pkg/db.hpp>
 #include <dds/pkg/get/get.hpp>
+#include <dds/util/fs/shutil.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/result.hpp>
 

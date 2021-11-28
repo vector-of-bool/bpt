@@ -1,7 +1,8 @@
 #include "../options.hpp"
 
 #include <dds/util/env.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/io.hpp>
+#include <dds/util/fs/shutil.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
@@ -192,7 +193,7 @@ void fixup_system_path(const options& opts [[maybe_unused]]) {
 void fixup_user_path(const options& opts) {
 #if !_WIN32
     auto profile_file    = dds::user_home_dir() / ".profile";
-    auto profile_content = dds::slurp_file(profile_file);
+    auto profile_content = dds::read_file(profile_file);
     if (dds::contains(profile_content, "$HOME/.local/bin")) {
         // We'll assume that this is properly loading .local/bin for .profile
         dds_log(info, "[.br.cyan[{}]] is okay"_styled, profile_file.string());
@@ -219,7 +220,7 @@ void fixup_user_path(const options& opts) {
             }
         };
         // Write the temporary version
-        dds::write_file(tmp_file, profile_content).value();
+        dds::write_file(tmp_file, profile_content);
         // Make a backup
         move_file(profile_file, bak_file).value();
         // Move the tmp over the final location
@@ -236,7 +237,7 @@ void fixup_user_path(const options& opts) {
 
     auto fish_config = dds::user_config_dir() / "fish/config.fish";
     if (fs::exists(fish_config)) {
-        auto fish_config_content = slurp_file(fish_config);
+        auto fish_config_content = dds::read_file(fish_config);
         if (dds::contains(fish_config_content, "$HOME/.local/bin")) {
             // Assume that this is up-to-date
             dds_log(info,
@@ -264,7 +265,7 @@ void fixup_user_path(const options& opts) {
                 }
             };
             // Write the temporary version
-            dds::write_file(tmp_file, fish_config_content).value();
+            dds::write_file(tmp_file, fish_config_content);
             // Make a backup
             move_file(fish_config, bak_file).value();
             // Move the temp over the destination

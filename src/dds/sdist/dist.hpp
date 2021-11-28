@@ -4,7 +4,7 @@
 
 #include <dds/sdist/package.hpp>
 #include <dds/temp.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 namespace dds {
 

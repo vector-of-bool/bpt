@@ -5,6 +5,7 @@
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/json5/parse.hpp>
 
 #include <json5/parse_data.hpp>
 #include <semester/walk.hpp>
@@ -18,8 +19,7 @@ using require_str   = semester::require_type<std::string>;
 library_manifest library_manifest::load_from_file(path_ref fpath) {
     DDS_E_SCOPE(e_library_manifest_path{fpath.string()});
 
-    auto content = slurp_file(fpath);
-    auto data    = json5::parse_data(content);
+    auto data = dds::parse_json5_file(fpath);
 
     if (!data.is_object()) {
         throw_user_error<errc::invalid_lib_manifest>("Root value must be an object");

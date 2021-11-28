@@ -28,7 +28,7 @@
  */
 
 #include <dds/db/database.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <neo/out.hpp>
 

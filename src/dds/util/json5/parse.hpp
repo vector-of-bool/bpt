@@ -1,7 +1,5 @@
 #pragma once
 
-#include <dds/error/result_fwd.hpp>
-
 #include <json5/data.hpp>
 #include <nlohmann/json_fwd.hpp>
 
@@ -10,13 +8,21 @@
 
 namespace dds {
 
+struct e_json_string {
+    std::string value;
+};
+
+struct e_json5_string {
+    std::string value;
+};
+
 struct e_json_parse_error {
     std::string value;
 };
 
-result<nlohmann::json> parse_json_str(std::string_view) noexcept;
-result<nlohmann::json> parse_json_file(std::filesystem::path const&) noexcept;
-result<json5::data>    parse_json5_str(std::string_view) noexcept;
-result<json5::data>    parse_json5_file(std::filesystem::path const&) noexcept;
+nlohmann::json parse_json_str(std::string_view);
+nlohmann::json parse_json_file(std::filesystem::path const&);
+json5::data    parse_json5_str(std::string_view);
+json5::data    parse_json5_file(std::filesystem::path const&);
 
 }  // namespace dds
