@@ -47,6 +47,10 @@ def make_argparser() -> argparse.ArgumentParser:
                         action='store_false',
                         dest='do_test',
                         help='Skip testing and just build the final result')
+    parser.add_argument('--no-unit-tests',
+                        action='store_false',
+                        dest='do_unit_test',
+                        help='Skip building and running unit tests')
     return parser
 
 
@@ -70,6 +74,8 @@ class CommandArguments(Protocol):
     rapid: bool
     #: Compile just the one named file
     compile_file: Optional[Path]
+    #: Build+run unit tests
+    do_unit_test: bool
 
 
 def parse_argv(argv: Sequence[str]) -> CommandArguments:
@@ -129,6 +135,7 @@ def main_build(dds: DDSWrapper, args: CommandArguments) -> int:
                       root=paths.PROJECT_ROOT,
                       build_root=paths.BUILD_DIR,
                       tweaks_dir=paths.TWEAKS_DIR,
+                      with_tests=args.do_unit_test,
                       jobs=args.jobs,
                       timeout=60 * 15)
         except subprocess.CalledProcessError as e:
