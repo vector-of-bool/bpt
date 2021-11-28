@@ -258,6 +258,7 @@ void cache_db::sync_repo(const neo::url_view& url_) const {
     auto& prio_info_st
         = _prepare("SELECT etag, last_modified FROM dds_crs_remotes WHERE url=?"_sql);
     auto url_str = url.to_string();
+    neo_assertion_breadcrumbs("Pulling repository metadata", url_str);
     neo::sqlite3::reset_and_bind(prio_info_st, std::string_view(url_str)).throw_if_error();
     auto prior_info = neo::sqlite3::one_row<std::optional<std::string>, std::optional<std::string>>(
         prio_info_st);

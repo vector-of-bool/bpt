@@ -6,6 +6,8 @@
 #include <dds/error/toolchain.hpp>
 #include <dds/sdist/library/manifest.hpp>
 #include <dds/sdist/package.hpp>
+#include <dds/util/compress.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/http/error.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
@@ -152,6 +154,20 @@ auto handlers = std::tuple(  //
                 "  (While reading library manifest from [.bold.yellow[{}]])"_styled,
                 libpath.value);
         write_error_marker("invalid-uses-spec");
+        return 1;
+    },
+    [](dds::crs::e_sync_repo   sync_repo,
+       dds::e_decompress_error err,
+       dds::e_read_file_path   read_file) {
+        dds_log(error,
+                "Error while sychronizing package data from .bold.yellow[{}]"_styled,
+                sync_repo.value.to_string());
+        dds_log(
+            error,
+            "Error decompressing remote repository database [.br.yellow[{}]]: .bold.red[{}]"_styled,
+            read_file.value.string(),
+            err.value);
+        write_error_marker("repo-sync-invalid-db-gz");
         return 1;
     },
     [](catch_<neo::sqlite3::error> exc, dds::crs::e_sync_repo sync_repo) {
