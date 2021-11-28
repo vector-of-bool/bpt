@@ -149,7 +149,7 @@ struct http_client_impl {
         }
         bool disconnect = false;
         if (r.version == neo::http::version::v1_0) {
-            dds_log(trace, "HTTP/1.0 server will disconnect by default");
+            dds_log(trace, "     HTTP/1.0 server will disconnect by default");
             disconnect = true;
         } else if (r.version == neo::http::version::v1_1) {
             disconnect = r.header_value("Connection") == "close";
@@ -331,17 +331,40 @@ struct recv_plain_state : erased_message_body {
     }
 };
 
+template <typename Stream>
+struct recv_http_v1_0_state : erased_message_body {
+    Stream&         _strm;
+    client_impl_ptr _client;
+
+    explicit recv_http_v1_0_state(Stream& s, client_impl_ptr cl)
+        : _strm(s)
+        , _client(cl) {}
+
+    neo::const_buffer next(std::size_t n) override {
+        auto part = _strm.next(n);
+        if (neo::buffer_is_empty(part)) {
+            _client->_state = detail::http_client_impl::_state_t::ready;
+        }
+        return part;
+    }
+
+    void consume(std::size_t n) noexcept override { return _strm.consume(n); }
+};
+
 }  // namespace
 
 std::unique_ptr<erased_message_body> http_client::_make_body_reader(const http_response_info& res) {
+    neo_assertion_breadcrumbs("Creating a body reader for HTTP response",
+                              int(_impl->_state),
+                              _impl->origin.protocol,
+                              _impl->origin.hostname,
+                              _impl->origin.port,
+                              res.status,
+                              res.status_message);
     neo_assert(
         expects,
         _impl->_state == detail::http_client_impl::_state_t::recvd_resp_head,
-        "Invalid state to ready HTTP response body. Have not yet received the response header",
-        int(_impl->_state),
-        _impl->origin.protocol,
-        _impl->origin.hostname,
-        _impl->origin.port);
+        "Invalid state to ready HTTP response body. Have not yet received the response header");
     if (res.status < 200 || res.status == 204 || res.status == 304) {
         return std::make_unique<recv_none_state>();
     }
@@ -362,11 +385,11 @@ std::unique_ptr<erased_message_body> http_client::_make_body_reader(const http_r
             return std::make_unique<recv_plain_state<source_type>>(source,
                                                                    *res.content_length(),
                                                                    _impl);
+        } else if (res.version == neo::http::version::v1_0) {
+            dds_log(trace, "HTTP/1.0 response body");
+            return std::make_unique<recv_http_v1_0_state<source_type>>(source, _impl);
         } else {
-            neo_assert(invariant,
-                       false,
-                       "Unimplemented",
-                       res.transfer_encoding().value_or("[null]"));
+            neo_assert(invariant, false, "Unimplemented", res.transfer_encoding());
         }
     });
 }
@@ -395,6 +418,7 @@ void http_client::abort_client() noexcept {
 
 request_result http_pool::request(neo::url_view url_, http_request_params params) {
     auto url = url_.normalized();
+    neo_assertion_breadcrumbs("Issuing HTTP request", url.to_string());
     for (auto i = 0; i <= 100; ++i) {
         DDS_E_SCOPE(url);
         params.path  = url.path;
@@ -441,7 +465,17 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
                                       "'Location' header"),
                     e_http_status{resp.status});
             }
-            url = neo::url::parse(loc->value);
+            dds_log(debug,
+                    "HTTP {} {} [{}] -> [{}]",
+                    resp.status,
+                    resp.status_message,
+                    url.to_string(),
+                    loc->value);
+            if (loc->value.starts_with("/")) {
+                url.path = std::string(loc->value);
+            } else {
+                url = neo::url::parse(loc->value);
+            }
             continue;
         }
 
