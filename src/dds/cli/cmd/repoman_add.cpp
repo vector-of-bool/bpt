@@ -4,6 +4,7 @@
 #include <dds/pkg/get/get.hpp>
 #include <dds/pkg/listing.hpp>
 #include <dds/repoman/repoman.hpp>
+#include <dds/util/http/error.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/result.hpp>
 

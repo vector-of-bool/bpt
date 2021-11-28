@@ -6,6 +6,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/error/nonesuch.hpp>
 #include <dds/pkg/remote.hpp>
+#include <dds/util/http/error.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>

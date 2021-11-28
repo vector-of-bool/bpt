@@ -15,8 +15,6 @@ struct http_response_info {
 
     std::size_t head_byte_size = 0;
 
-    void throw_for_status() const;
-
     bool is_client_error() const noexcept { return status >= 400 && status < 500; }
     bool is_server_error() const noexcept { return status >= 500 && status < 600; }
     bool is_error() const noexcept { return is_client_error() || is_server_error(); }

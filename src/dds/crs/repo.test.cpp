@@ -1,5 +1,6 @@
 #include "./repo.hpp"
 
+#include <dds/crs/error.hpp>
 #include <dds/dds.test.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/temp.hpp>

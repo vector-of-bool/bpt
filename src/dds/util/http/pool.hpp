@@ -10,6 +10,7 @@
 #include <neo/url/view.hpp>
 #include <neo/utility.hpp>
 
+#include <filesystem>
 #include <memory>
 
 namespace dds {
@@ -27,16 +28,6 @@ struct erased_message_body {
     virtual ~erased_message_body()                            = default;
     virtual neo::const_buffer next(std::size_t n)             = 0;
     virtual void              consume(std::size_t n) noexcept = 0;
-};
-
-enum e_http_status : int {};
-
-class http_status_error : public std::runtime_error {
-    using runtime_error::runtime_error;
-};
-
-class http_server_error : public std::runtime_error {
-    using runtime_error::runtime_error;
 };
 
 struct network_origin {
@@ -101,6 +92,8 @@ public:
     }
 
     void discard_body(const http_response_info&);
+
+    void abort_client() noexcept;
 };
 
 struct request_result {
@@ -108,6 +101,8 @@ struct request_result {
     http_response_info resp;
 
     void discard_body() { client.discard_body(resp); }
+
+    void save_file(std::filesystem::path const&);
 };
 
 class http_pool {

@@ -1,10 +1,12 @@
 #include "./error_handler.hpp"
 #include "./options.hpp"
 
+#include <dds/crs/error.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/toolchain.hpp>
 #include <dds/sdist/library/manifest.hpp>
 #include <dds/sdist/package.hpp>
+#include <dds/util/http/error.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -17,12 +19,15 @@
 #include <fmt/ostream.h>
 #include <json5/parse_data.hpp>
 #include <neo/scope.hpp>
+#include <neo/sqlite3/error.hpp>
 #include <neo/url/parse.hpp>
 
 #include <fstream>
 
 using namespace dds;
 using namespace fansi::literals;
+
+using boost::leaf::catch_;
 
 namespace {
 
@@ -147,6 +152,48 @@ auto handlers = std::tuple(  //
                 "  (While reading library manifest from [.bold.yellow[{}]])"_styled,
                 libpath.value);
         write_error_marker("invalid-uses-spec");
+        return 1;
+    },
+    [](catch_<neo::sqlite3::error> exc, dds::crs::e_sync_repo sync_repo) {
+        dds_log(error,
+                "SQLite error while importing data from .br.yellow[{}]: .br.red[{}]"_styled,
+                sync_repo.value.to_string(),
+                exc.matched.what());
+        dds_log(error,
+                "It's possilbe that the downloaded SQLite database is corrupt, invalid, or "
+                "incompatible with this version of dds");
+        return 1;
+    },
+    [](matchv<dds::e_http_status{404}>, dds::crs::e_sync_repo sync_repo, neo::url req_url) {
+        dds_log(
+            error,
+            "Received an .bold.red[HTTP 404 Not Found] error while synchronizing a repository from .bold.yellow[{}]"_styled,
+            sync_repo.value.to_string());
+        dds_log(error,
+                "The given location might not be a valid package repository, or the URL might be "
+                "spelled incorrectly.");
+        dds_log(error,
+                "  (The missing resource URL is [.bold.yellow[{}]])"_styled,
+                req_url.to_string());
+        write_error_marker("repo-sync-http-404");
+        return 1;
+    },
+    [](catch_<dds::http_error>,
+       neo::url                req_url,
+       dds::crs::e_sync_repo   sync_repo,
+       dds::http_response_info resp) {
+        dds_log(
+            error,
+            "HTTP .br.red[{}] (.br.red[{}]) error while trying to synchronize remote package repository [.bold.yellow[{}]]"_styled,
+            resp.status,
+            resp.status_message,
+            sync_repo.value.to_string());
+        dds_log(error,
+                "  Error requesting [.bold.yellow[{}]]: .bold.red[HTTP {} {}]"_styled,
+                req_url.to_string(),
+                resp.status,
+                resp.status_message);
+        write_error_marker("repo-sync-http-error");
         return 1;
     },
     [](const std::system_error& exc, boost::leaf::verbose_diagnostic_info const& diag) {

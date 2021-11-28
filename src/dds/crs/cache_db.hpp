@@ -95,6 +95,11 @@ public:
      * @param name The name of a package.
      */
     [[nodiscard]] std::vector<package_entry> for_package(dds::name const& name) const;
+
+    /**
+     * @brief Ensure that we have up-to-date package metadata from the given remote repo
+     */
+    void sync_repo(const neo::url_view& url) const;
 };
 
 }  // namespace dds::crs

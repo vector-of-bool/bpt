@@ -102,6 +102,15 @@ struct setup {
         .action  = put_into(opts.build.tweaks_dir),
     };
 
+    argument use_repos_arg{
+        .long_spellings  = {"use-repo"},
+        .short_spellings = {"r"},
+        .help            = "Use the given repository when resolving dependencies",
+        .valname         = "<repo-url-or-domain>",
+        .can_repeat      = true,
+        .action          = push_back_onto(opts.use_repos),
+    };
+
     void do_setup(argument_parser& parser) noexcept {
         parser.add_argument({
             .long_spellings  = {"log-level"},
@@ -292,6 +301,10 @@ struct setup {
             .name = "search",
             .help = "Search for packages available to download",
         }));
+        setup_pkg_prefetch_cmd(pkg_group.add_parser({
+            .name = "prefetch",
+            .help = "Sync a remote repository into the local package listing cache",
+        }));
     }
 
     void setup_pkg_create_cmd(argument_parser& pkg_create_cmd) {
@@ -397,6 +410,11 @@ struct setup {
             .valname = "<name-or-pattern>",
             .action  = put_into(opts.pkg.search.pattern),
         });
+    }
+
+    void setup_pkg_prefetch_cmd(argument_parser& pkg_prefetch_cmd) noexcept {
+        pkg_prefetch_cmd.add_argument(use_repos_arg.dup()).help
+            = "The URLs of package repositories to pull from";
     }
 
     void setup_repo_cmd(argument_parser& repo_cmd) noexcept {

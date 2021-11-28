@@ -2,7 +2,10 @@
 
 #include <dds/crs/meta.hpp>
 #include <dds/dds.test.hpp>
-#include <dds/error/result.hpp>
+#include <dds/error/handle.hpp>
+#include <dds/error/try_catch.hpp>
+#include <dds/util/http/error.hpp>
+#include <dds/util/http/response.hpp>
 
 #include <boost/leaf.hpp>
 #include <catch2/catch.hpp>
@@ -24,4 +27,19 @@ TEST_CASE_METHOD(empty_loader, "Get a non-existent remote") {
     auto url   = neo::url::parse("http://example.com");
     auto entry = REQUIRES_LEAF_NOFAIL(cache.get_remote(url));
     CHECK_FALSE(entry.has_value());
+}
+
+TEST_CASE_METHOD(empty_loader, "Sync an invalid repo") {
+    auto url = neo::url::parse("http://example.com");
+    dds_leaf_try {
+        cache.sync_repo(url);
+        FAIL_CHECK("Expected an error to occur");
+    }
+    dds_leaf_catch(const dds::http_error&  exc,
+                   dds::http_response_info resp,
+                   dds::matchv<dds::e_http_status{404}>) {
+        CHECK(exc.status_code() == 404);
+        CHECK(resp.status == 404);
+    }
+    dds_leaf_catch_all { FAIL_CHECK("Unhandled error: " << diagnostic_info); };
 }

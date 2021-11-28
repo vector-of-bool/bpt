@@ -41,6 +41,7 @@ enum class pkg_subcommand {
     import,
     repo,
     search,
+    prefetch,
 };
 
 /**
@@ -100,6 +101,9 @@ struct options {
     log::level log_level = log::level::info;
     // Any `--dry-run` argument
     bool dry_run = false;
+
+    // All `--use-repo` arguments
+    std::vector<std::string> use_repos;
 
     // The top-most selected subcommand
     enum subcommand subcommand;

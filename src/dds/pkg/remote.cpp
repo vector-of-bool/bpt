@@ -6,6 +6,7 @@
 #include <dds/pkg/db.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/compress.hpp>
+#include <dds/util/http/error.hpp>
 #include <dds/util/http/pool.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -14,8 +15,6 @@
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
-#include <neo/io/stream/buffers.hpp>
-#include <neo/io/stream/file.hpp>
 #include <neo/ranges.hpp>
 #include <neo/scope.hpp>
 #include <neo/sqlite3/exec.hpp>
@@ -23,8 +22,6 @@
 #include <neo/sqlite3/transaction.hpp>
 #include <neo/url.hpp>
 #include <neo/utility.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/transform.hpp>
 
 using namespace dds;
 using namespace fansi::literals;
@@ -50,14 +47,11 @@ struct remote_db {
         }
     }
 
-    static remote_db download_and_open(http_client& client, const http_response_info& resp) {
+    static remote_db download_and_open(request_result& reqres) {
         auto tempdir       = temporary_dir::create();
         auto repo_db_gz_dl = tempdir.path() / "repo.db.gz";
         fs::create_directories(tempdir.path());
-        {
-            auto outfile = neo::file_stream::open(repo_db_gz_dl, neo::open_mode::write);
-            client.recv_body_into(resp, neo::stream_io_buffers(outfile));
-        }
+        reqres.save_file(repo_db_gz_dl);
         auto repo_db = tempdir.path() / "repo.db";
         dds::decompress_file_gz(repo_db_gz_dl, repo_db).value();
         auto db = *nsql::open(repo_db.string());
@@ -72,10 +66,10 @@ pkg_remote pkg_remote::connect(std::string_view url_str) {
     DDS_E_SCOPE(e_url_string{std::string(url_str)});
     const auto url = neo::url::parse(url_str);
 
-    auto&      pool     = http_pool::global_pool();
-    const auto db_url   = url / "repo.db.gz";
-    auto [client, resp] = pool.request(db_url, http_request_params{.method = "GET"});
-    auto db             = remote_db::download_and_open(client, resp);
+    auto&      pool   = http_pool::global_pool();
+    const auto db_url = url / "repo.db.gz";
+    auto       reqres = pool.request(db_url, http_request_params{.method = "GET"});
+    auto       db     = remote_db::download_and_open(reqres);
 
     auto name = *nsql::one_cell<std::string>(*db.db.prepare("SELECT name FROM dds_repo_meta"));
     return {name, url};
@@ -100,22 +94,22 @@ void pkg_remote::update_pkg_db(nsql::connection_ref            db,
             _name,
             _base_url.to_string());
 
-    auto&      pool     = http_pool::global_pool();
-    const auto db_url   = _base_url / "repo.db.gz";
-    auto [client, resp] = pool.request(db_url,
-                                       http_request_params{
-                                           .method        = "GET",
-                                           .prior_etag    = etag.value_or(""),
-                                           .last_modified = db_mtime.value_or(""),
-                                       });
-    if (resp.not_modified()) {
+    auto&      pool   = http_pool::global_pool();
+    const auto db_url = _base_url / "repo.db.gz";
+    auto       reqres = pool.request(db_url,
+                               http_request_params{
+                                   .method        = "GET",
+                                   .prior_etag    = etag.value_or(""),
+                                   .last_modified = db_mtime.value_or(""),
+                               });
+    if (reqres.resp.not_modified()) {
         // Cache hit
         dds_log(info, "Package database {} is up-to-date", _name);
-        client.discard_body(resp);
+        reqres.discard_body();
         return;
     }
 
-    auto rdb = remote_db::download_and_open(client, resp);
+    auto rdb = remote_db::download_and_open(reqres);
 
     auto base_url_str = _base_url.to_string();
     while (base_url_str.ends_with("/")) {
@@ -209,13 +203,13 @@ void pkg_remote::update_pkg_db(nsql::connection_ref            db,
     }
 
     // Save the cache info for the remote
-    if (auto new_etag = resp.etag()) {
+    if (auto new_etag = reqres.resp.etag()) {
         nsql::exec(*db.prepare("UPDATE dds_pkg_remotes SET db_etag = ? WHERE name = ?"),
                    *new_etag,
                    _name)
             .throw_if_error();
     }
-    if (auto mtime = resp.last_modified()) {
+    if (auto mtime = reqres.resp.last_modified()) {
         nsql::exec(*db.prepare("UPDATE dds_pkg_remotes SET db_mtime = ? WHERE name = ?"),
                    *mtime,
                    _name)
@@ -257,7 +251,7 @@ void dds::remove_remote(pkg_db& pkdb, std::string_view name) {
                 auto tups   = nsql::iter_tuples<std::string>(all_st);
                 auto names  = tups
                     | std::views::transform([](auto&& tup) { return tup.template get<0>(); })
-                    | ranges::to_vector;
+                    | neo::to_vector;
                 return e_nonesuch{name, did_you_mean(name, names)};
             });
     }

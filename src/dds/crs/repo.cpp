@@ -1,5 +1,7 @@
 #include "./repo.hpp"
 
+#include "./error.hpp"
+
 #include <dds/error/handle.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>

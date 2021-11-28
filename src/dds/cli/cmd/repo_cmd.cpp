@@ -1,5 +1,6 @@
 #include "../options.hpp"
 
+#include <dds/crs/error.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/error/handle.hpp>
 #include <dds/error/marker.hpp>

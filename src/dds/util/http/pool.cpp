@@ -1,5 +1,7 @@
 #include "./pool.hpp"
 
+#include "./error.hpp"
+
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -12,6 +14,7 @@
 #include <neo/http/response.hpp>
 #include <neo/io/openssl/engine.hpp>
 #include <neo/io/stream/buffers.hpp>
+#include <neo/io/stream/file.hpp>
 #include <neo/io/stream/socket.hpp>
 
 #include <map>
@@ -385,6 +388,11 @@ void http_client::_set_ready() noexcept {
     _impl->_state = detail::http_client_impl::_state_t::ready;
 }
 
+void http_client::abort_client() noexcept {
+    _impl->_peer_disconnected = true;
+    _set_ready();
+}
+
 request_result http_pool::request(neo::url_view url_, http_request_params params) {
     auto url = url_.normalized();
     for (auto i = 0; i <= 100; ++i) {
@@ -412,7 +420,8 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
 
         if (resp.is_error()) {
             client.discard_body(resp);
-            throw BOOST_LEAF_EXCEPTION(http_status_error("Received an error from HTTP"),
+            throw BOOST_LEAF_EXCEPTION(http_status_error(resp.status,
+                                                         "Received an error from HTTP"),
                                        e_http_status{resp.status});
         }
 
@@ -420,13 +429,17 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
             client.discard_body(resp);
             if (i == 100) {
                 throw BOOST_LEAF_EXCEPTION(
-                    http_server_error("Encountered over 100 HTTP redirects. Request aborted."));
+                    http_server_error(resp.status,
+                                      "Encountered over 100 HTTP redirects. Request aborted."),
+                    e_http_status{resp.status});
             }
             auto loc = resp.headers.find("Location");
             if (!loc) {
                 throw BOOST_LEAF_EXCEPTION(
-                    http_server_error("Server sent an invalid response of a 30x redirect without a "
-                                      "'Location' header"));
+                    http_server_error(resp.status,
+                                      "Server sent an invalid response of a 30x redirect without a "
+                                      "'Location' header"),
+                    e_http_status{resp.status});
             }
             url = neo::url::parse(loc->value);
             continue;
@@ -435,4 +448,9 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
         return {std::move(client), std::move(resp)};
     }
     neo::unreachable();
+}
+
+void dds::request_result::save_file(const std::filesystem::path& dest) {
+    auto out = neo::file_stream::open(dest, neo::open_mode::write);
+    client.recv_body_into(resp, neo::stream_io_buffers(out));
 }
