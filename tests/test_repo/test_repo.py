@@ -119,8 +119,8 @@ def test_repo_import_invalid_no_repo(dds: DDSWrapper, tmp_path: Path, tmp_projec
 def test_repo_import_db_too_new(dds: DDSWrapper, tmp_path: Path, tmp_project: Project) -> None:
     conn = sqlite3.connect(str(tmp_path / 'repo.db'))
     conn.executescript(r'''
-        CREATE TABLE dds_crs_repo_meta (version);
-        INSERT INTO dds_crs_repo_meta (version) VALUES (3);
+        CREATE TABLE crs_repo_meta (version);
+        INSERT INTO crs_repo_meta (version) VALUES (300);
     ''')
     with expect_error_marker('repo-import-db-too-new'):
         dds.run(['repo', 'import', tmp_path, tmp_project.root])
@@ -129,8 +129,8 @@ def test_repo_import_db_too_new(dds: DDSWrapper, tmp_path: Path, tmp_project: Pr
 def test_repo_import_db_invalid(dds: DDSWrapper, tmp_path: Path, tmp_project: Project) -> None:
     conn = sqlite3.connect(str(tmp_path / 'repo.db'))
     conn.executescript(r'''
-        CREATE TABLE dds_crs_repo_meta (version);
-        INSERT INTO dds_crs_repo_meta (version) VALUES ('eggs');
+        CREATE TABLE crs_repo_meta (version);
+        INSERT INTO crs_repo_meta (version) VALUES ('eggs');
     ''')
     with expect_error_marker('repo-import-db-invalid'):
         dds.run(['repo', 'import', tmp_path, tmp_project.root])
@@ -145,8 +145,8 @@ def test_repo_import_db_invalid2(dds: DDSWrapper, tmp_path: Path, tmp_project: P
 def test_repo_import_db_invalid3(dds: DDSWrapper, tmp_path: Path, tmp_project: Project) -> None:
     conn = sqlite3.connect(str(tmp_path / 'repo.db'))
     conn.executescript(r'''
-        CREATE TABLE dds_crs_repo_meta (version);
-        INSERT INTO dds_crs_repo_meta (version) VALUES (1);
+        CREATE TABLE crs_repo_meta (version);
+        INSERT INTO crs_repo_meta (version) VALUES (1);
     ''')
     with expect_error_marker('repo-import-db-error'):
         dds.run(['repo', 'import', tmp_path, PROJECT_ROOT / 'data/simple.crs'])

@@ -29,14 +29,14 @@ using path_ref = const std::filesystem::path&;
 namespace {
 
 void ensure_migrated(unique_database& db) {
-    apply_db_migrations(db, "dds_crs_repo_meta", [](unique_database& db) {
+    apply_db_migrations(db, "crs_repo_meta", [](unique_database& db) {
         db.exec_script(R"(
-            CREATE TABLE dds_crs_repo_self (
+            CREATE TABLE crs_repo_self (
                 rowid INTEGER PRIMARY KEY,
                 name TEXT NOT NULL
             );
 
-            CREATE TABLE dds_crs_repo_packages (
+            CREATE TABLE crs_repo_packages (
                 package_id INTEGER PRIMARY KEY,
                 meta_json TEXT NOT NULL,
                 name TEXT NOT NULL
@@ -96,8 +96,7 @@ repository repository::create(path_ref dirpath, std::string_view name) {
     auto db = unique_database::open(dirpath / "repo.db").value();
     ensure_migrated(db);
     dds_leaf_try {
-        db_exec(db.prepare("INSERT INTO dds_crs_repo_self (rowid, name) VALUES (1729, ?)"_sql),
-                name)
+        db_exec(db.prepare("INSERT INTO crs_repo_self (rowid, name) VALUES (1729, ?)"_sql), name)
             .value();
     }
     dds_leaf_catch(matchv<neo::sqlite3::errc::constraint_primary_key>) {
@@ -120,7 +119,7 @@ neo::sqlite3::statement& repository::_prepare(neo::sqlite3::sql_string_literal s
 }
 
 std::string repository::name() const {
-    return db_cell<std::string>(_prepare("SELECT name FROM dds_crs_repo_self WHERE rowid=1729"_sql))
+    return db_cell<std::string>(_prepare("SELECT name FROM crs_repo_self WHERE rowid=1729"_sql))
         .value();
 }
 
@@ -151,7 +150,7 @@ void repository::import_dir(path_ref dirpath) {
     dds_leaf_try {
         db_exec(  //
             _prepare(R"(
-                INSERT INTO dds_crs_repo_packages (meta_json)
+                INSERT INTO crs_repo_packages (meta_json)
                 VALUES (?)
             )"_sql),
             std::string_view(meta.to_json()))
@@ -170,7 +169,7 @@ void repository::import_dir(path_ref dirpath) {
 }
 
 neo::any_input_range<package_meta> repository::all_packages() const {
-    auto& q   = _prepare("SELECT meta_json FROM dds_crs_repo_packages ORDER BY package_id"_sql);
+    auto& q   = _prepare("SELECT meta_json FROM crs_repo_packages ORDER BY package_id"_sql);
     auto  rst = neo::copy_shared(q.auto_reset());
     return db_query<std::string_view>(q)
         | std::views::transform([pin = rst](auto tup) -> package_meta {
@@ -182,7 +181,7 @@ neo::any_input_range<package_meta> repository::all_packages() const {
 void repository::remove_pkg(const package_meta& meta) {
     auto to_delete = subdir_of(meta);
     db_exec(_prepare(R"(
-                DELETE FROM dds_crs_repo_packages
+                DELETE FROM crs_repo_packages
                  WHERE name = ?
                        AND version = ?
                        AND meta_version = ?

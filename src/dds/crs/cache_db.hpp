@@ -74,35 +74,6 @@ public:
     [[nodiscard]] std::optional<remote_entry> get_remote(neo::url_view const& url) const;
 
     /**
-     * @brief Determine whether the given directory has a cache entry.
-     */
-    [[nodiscard]] bool is_cached(std::filesystem::path const& dirpath);
-
-    /**
-     * @brief Create a cache entry for the given directory if it has not yet been cached.
-     */
-    void ensure_cached(std::filesystem::path const& dirpath);
-
-    /**
-     * @brief Create a cache entry for the given directory.
-     *
-     * If the directory has already been cached, the cache entry will be renewed.
-     */
-    void discover_in(std::filesystem::path const&);
-
-    /**
-     * @brief Obtain a cache entry for the given CRS directory.
-     *
-     * If the directory has not yet been cached, it will be cached and then returned.
-     */
-    package_entry for_directory(std::filesystem::path const&);
-
-    /**
-     * @brief Forget metadata for the given directory
-     */
-    void forget_directory(std::filesystem::path const&);
-
-    /**
      * @brief Forget every cached entry in the database
      */
     void forget_all();
