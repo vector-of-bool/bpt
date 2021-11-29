@@ -31,62 +31,21 @@ auto usage_kind_from_string = [](std::string s) -> usage_kind {
 
 auto lm_usage_from_string = [](std::string s) { return lm::split_usage_string(s).value(); };
 
-usage usage_from_data(const json5::data& data) {
-    usage ret;
-
+crs::intra_usage intra_usage_from_data(const json5::data& data) {
+    intra_usage ret;
     using namespace semester::walk_ops;
+
     walk(data,
-         require_obj{"Each 'uses' item must be a JSON object"},
+         require_obj{"'uses' values must be JSON objects"},
          mapping{
-             required_key{"for",
-                          "A usage 'for' is required",
-                          require_str{"Usage 'for' must be 'lib', 'app', or 'test'"},
-                          put_into(ret.kind, usage_kind_from_string)},
              required_key{"lib",
-                          "A 'lib' key is required in each 'uses' object",
-                          require_str{"'lib' must be a usage string"},
+                          "A 'lib' string is required",
+                          require_str{"'lib' must be a value usage string"},
                           put_into{ret.lib, lm_usage_from_string}},
-             if_key{"_comment", just_accept},
-         });
-    return ret;
-}
-
-library_meta library_from_data(const json5::data& data) {
-    library_meta ret;
-
-    using namespace semester::walk_ops;
-
-    walk(data,
-         require_obj{"Each library must be a JSON object"},
-         mapping{
-             required_key{"name",
-                          "A library 'name' is required",
-                          require_str{"Library 'name' must be a string"},
-                          put_into{ret.name, name_from_string}},
-             required_key{"path",
-                          "A library 'path' is required",
-                          require_str{"Library 'path' must be a string"},
-                          put_into{ret.path,
-                                   [](std::string s) {
-                                       auto p = std::filesystem::path(s).lexically_normal();
-                                       if (p.is_absolute()) {
-                                           throw semester::walk_error{
-                                               neo::
-                                                   ufmt("Library path [{}] must be a relative path",
-                                                        p.generic_string())};
-                                       }
-                                       if (p.begin() != p.end() && *p.begin() == "..") {
-                                           throw semester::walk_error{
-                                               neo::ufmt("Library path [{}] must not reach outside "
-                                                         "of the distribution directory.",
-                                                         p.generic_string())};
-                                       }
-                                       return p;
-                                   }}},
-             required_key{"uses",
-                          "A library 'uses' key is required",
-                          require_array{"Library 'uses' must be an array of usage objects"},
-                          for_each{put_into{std::back_inserter(ret.uses), usage_from_data}}},
+             required_key{"for",
+                          "A 'for' string is required",
+                          require_str{"'for' must be one of 'lib', 'app', or 'test'"},
+                          put_into{ret.kind, usage_kind_from_string}},
              if_key{"_comment", just_accept},
          });
     return ret;
@@ -136,6 +95,11 @@ crs::dependency dependency_from_data(const json5::data& data) {
                           "An array 'versions' is required for each dependency",
                           require_array{"Dependency 'versions' must be an array"},
                           for_each{put_into{std::back_inserter(ver_ranges), parse_version_range}}},
+             required_key{"uses",
+                          "A dependency 'uses' key is required",
+                          require_array{"Dependency 'uses' must be an array of usage objects"},
+                          for_each{require_str{"Each 'uses' item must be a usage string"},
+                                   put_into{std::back_inserter(ret.uses), lm_usage_from_string}}},
              if_key{"_comment", just_accept},
          });
 
@@ -148,6 +112,53 @@ crs::dependency dependency_from_data(const json5::data& data) {
             pubgrub::interval_set<semver::version>{ver.low(), ver.high()});
     }
 
+    return ret;
+}
+
+library_meta library_from_data(const json5::data& data) {
+    library_meta ret;
+
+    using namespace semester::walk_ops;
+
+    walk(data,
+         require_obj{"Each library must be a JSON object"},
+         mapping{
+             required_key{"name",
+                          "A library 'name' is required",
+                          require_str{"Library 'name' must be a string"},
+                          put_into{ret.name, name_from_string}},
+             required_key{"path",
+                          "A library 'path' is required",
+                          require_str{"Library 'path' must be a string"},
+                          put_into{ret.path,
+                                   [](std::string s) {
+                                       auto p = std::filesystem::path(s).lexically_normal();
+                                       if (p.is_absolute()) {
+                                           throw semester::walk_error{
+                                               neo::
+                                                   ufmt("Library path [{}] must be a relative path",
+                                                        p.generic_string())};
+                                       }
+                                       if (p.begin() != p.end() && *p.begin() == "..") {
+                                           throw semester::walk_error{
+                                               neo::ufmt("Library path [{}] must not reach outside "
+                                                         "of the distribution directory.",
+                                                         p.generic_string())};
+                                       }
+                                       return p;
+                                   }}},
+             required_key{"uses",
+                          "A 'uses' list is required",
+                          require_array{"A library's 'uses' must be an array of usage objects"},
+                          for_each{
+                              put_into{std::back_inserter(ret.intra_uses), intra_usage_from_data}}},
+             required_key{"depends",
+                          "A 'depends' list is required",
+                          require_array{"'depends' must be an array of dependency objects"},
+                          for_each{put_into{std::back_inserter(ret.dependencies),
+                                            dependency_from_data}}},
+             if_key{"_comment", just_accept},
+         });
     return ret;
 }
 
@@ -189,11 +200,7 @@ package_meta meta_from_data(const json5::data& data) {
                           "A string 'namespace' is required",
                           require_str{"'namespace' must be a string"},
                           put_into{ret.namespace_, name_from_string}},
-             required_key{"depends",
-                          "A 'depends' list is required",
-                          require_array{"'depends' must be an array of dependency objects"},
-                          for_each{put_into{std::back_inserter(ret.dependencies),
-                                            dependency_from_data}}},
+
              required_key{"libraries",
                           "A 'libraries' array is required",
                           require_array{"'libraries' must be an array of library objects"},

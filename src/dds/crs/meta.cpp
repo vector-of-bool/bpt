@@ -49,7 +49,6 @@ package_meta package_meta::from_json_data(const json5::data& data, std::string_v
     dds_leaf_catch(const semver::invalid_version& e)->noreturn_t {
         BOOST_LEAF_THROW_EXCEPTION(
             e_invalid_meta_data{neo::ufmt("Invalid semantic version string '{}'", e.string())});
-        throw;
     }
     dds_leaf_catch(e_name_str invalid_name, invalid_name_reason why)->noreturn_t {
         current_error().load(e_invalid_meta_data{neo::ufmt("Invalid name string '{}': {}",
@@ -64,35 +63,41 @@ package_meta package_meta::from_json_str(std::string_view json) {
 }
 
 std::string package_meta::to_json(int indent) const noexcept {
-    using json   = nlohmann::ordered_json;
-    json depends = json::array();
-    for (auto&& dep : dependencies) {
-        json versions = json::array();
-        for (auto&& ver : dep.acceptable_versions.iter_intervals()) {
-            versions.push_back(json::object({
-                {"low", ver.low.to_string()},
-                {"high", ver.high.to_string()},
-            }));
-        }
-        depends.push_back(json::object({
-            {"name", dep.name.str},
-            {"for", magic_enum::enum_name(dep.kind)},
-            {"versions", versions},
-        }));
-    }
+    using json     = nlohmann::ordered_json;
     json libraries = json::array();
     for (auto&& lib : this->libraries) {
-        json uses = json::array();
-        for (auto&& use : lib.uses) {
-            uses.push_back(json::object({
+        json lib_intra_uses = json::array();
+        for (auto&& use : lib.intra_uses) {
+            lib_intra_uses.push_back(json::object({
                 {"lib", neo::ufmt("{}/{}", use.lib.namespace_, use.lib.name)},
                 {"for", magic_enum::enum_name(use.kind)},
             }));
         }
+        json depends = json::array();
+        for (auto&& dep : lib.dependencies) {
+            json versions = json::array();
+            for (auto&& ver : dep.acceptable_versions.iter_intervals()) {
+                versions.push_back(json::object({
+                    {"low", ver.low.to_string()},
+                    {"high", ver.high.to_string()},
+                }));
+            }
+            json uses = json::array();
+            for (auto&& use : dep.uses) {
+                uses.push_back(neo::ufmt("{}/{}", use.namespace_, use.name));
+            }
+            depends.push_back(json::object({
+                {"name", dep.name.str},
+                {"for", magic_enum::enum_name(dep.kind)},
+                {"versions", versions},
+                {"uses", std::move(uses)},
+            }));
+        }
         libraries.push_back(json::object({
             {"name", lib.name.str},
-            {"uses", std::move(uses)},
             {"path", lib.path.generic_string()},
+            {"uses", std::move(lib_intra_uses)},
+            {"depends", std::move(depends)},
         }));
     }
     json data = json::object({
@@ -101,7 +106,6 @@ std::string package_meta::to_json(int indent) const noexcept {
         {"meta_version", meta_version},
         {"namespace", namespace_.str},
         {"extra", json5_as_nlohmann_json(extra)},
-        {"depends", std::move(depends)},
         {"libraries", std::move(libraries)},
         {"crs_version", 1},
     });

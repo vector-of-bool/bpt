@@ -49,29 +49,11 @@ TEST_CASE("Reject bad meta informations") {
         })",
          "A string 'namespace' is required"},
         {R"({
-            "name": "foo",
-            "version": "1.2.3",
-            "meta_version": 1,
-            "namespace": "cat",
-            "crs_version": 1
-        })",
-         "A 'depends' list is required"},
-        {R"({
-            "name": "foo",
-            "version": "1.2.3",
-            "meta_version": 1,
-            "namespace": "cat",
-            "depends": {},
-            "crs_version": 1
-        })",
-         "'depends' must be an array of dependency objects"},
-        {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
-            "crs_version": 1
+             "crs_version": 1
          })",
          "A 'libraries' array is required"},
         {R"({
@@ -79,9 +61,8 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": {},
-            "crs_version": 1
+             "crs_version": 1
          })",
          "'libraries' must be an array of library objects"},
         {R"({
@@ -89,232 +70,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [12],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "Each dependency should be a JSON object"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{}],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "A string 'name' is required for each dependency"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bad-name."
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "Invalid name string 'bad-name.': Names must not end with a punctuation character"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar"
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "A 'for' is required for each dependency"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "meow"
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "Invalid usage kind string 'meow' (Should be one of 'lib', 'app', or 'test')"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib"
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "An array 'versions' is required for each dependency"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": 12
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "Dependency 'versions' must be an array"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [12]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "'versions' elements must be objects"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": []
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "A dependency's 'versions' array may not be empty"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{}]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "'low' version is required"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{
-                     "low": 21
-                 }]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "'low' version must be a string"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{
-                     "low": "1.2."
-                 }]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "Invalid semantic version string '1.2.'"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{
-                     "low": "1.2.3"
-                 }]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "'high' version is required"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{
-                     "low": "1.2.3",
-                     "high": 12
-                 }]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "'high' version must be a string"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{
-                     "low": "1.2.3",
-                     "high": "1.2."
-                 }]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "Invalid semantic version string '1.2.'"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [{
-                 "name": "bar",
-                 "for": "lib",
-                 "versions": [{
-                     "low": "1.2.3",
-                     "high": "1.2.3"
-                 }]
-             }],
-             "libraries": [],
-             "crs_version": 1
-         })",
-         "'high' version must be strictly greater than 'low' version"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "depends": [],
              "libraries": [],
              "crs_version": 1
          })",
@@ -324,7 +79,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [12],
              "crs_version": 1
          })",
@@ -334,7 +88,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{}],
              "crs_version": 1
          })",
@@ -344,7 +97,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo"
              }],
@@ -356,7 +108,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": 12
@@ -369,7 +120,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": "/foo/bar"
@@ -382,7 +132,6 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": "../bar"
@@ -395,120 +144,392 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": "."
              }],
              "crs_version": 1
          })",
-         "A library 'uses' key is required"},
+         "A 'uses' list is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [12]
+                 "uses": []
              }],
              "crs_version": 1
          })",
-         "Each 'uses' item must be a JSON object"},
+         "A 'depends' list is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{}]
+                 "uses": [],
+                 "depends": {}
              }],
              "crs_version": 1
          })",
-         "A usage 'for' is required"},
+         "'depends' must be an array of dependency objects"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
-                     "for": "dog"
+                 "uses": [],
+                 "depends": [12]
+             }],
+             "crs_version": 1
+         })",
+         "Each dependency should be a JSON object"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{}]
+             }],
+             "crs_version": 1
+         })",
+         "A string 'name' is required for each dependency"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bad-name."
                  }]
              }],
              "crs_version": 1
          })",
-         "Invalid usage kind string 'dog' (Should be one of 'lib', 'app', or 'test')"},
+         "Invalid name string 'bad-name.': Names must not end with a punctuation character"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar"
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "A 'for' is required for each dependency"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "meow"
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "Invalid usage kind string 'meow' (Should be one of 'lib', 'app', or 'test')"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib"
                  }]
              }],
              "crs_version": 1
          })",
-         "A 'lib' key is required in each 'uses' object"},
+         "An array 'versions' is required for each dependency"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": 12
+                     "versions": 12
                  }]
              }],
              "crs_version": 1
          })",
-         "'lib' must be a usage string"},
+         "Dependency 'versions' must be an array"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": "bar"
+                     "versions": [12]
                  }]
              }],
              "crs_version": 1
          })",
-         "Invalid usage string 'bar'"},
+         "'versions' elements must be objects"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": "bar/baz"
+                     "versions": [],
+                     "uses": []
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "A dependency's 'versions' array may not be empty"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{}]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "'low' version is required"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": 21
+                     }]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "'low' version must be a string"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2."
+                     }]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "Invalid semantic version string '1.2.'"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3"
+                     }]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "'high' version is required"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": 12
+                     }]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "'high' version must be a string"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.4"
+                     }]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "A dependency 'uses' key is required"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": []
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "'high' version must be strictly greater than 'low' version"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": [12]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "Each 'uses' item must be a usage string"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": ["bleh"]
+                 }]
+             }],
+             "crs_version": 1
+         })",
+         "Invalid usage string 'bleh'"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "lib",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": []
                  }]
              }]
          })",
@@ -518,13 +539,18 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": "bar/baz"
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": []
                  }]
              }],
              "crs_version": true
@@ -535,13 +561,18 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": "bar/baz"
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": []
                  }]
              }],
              "crs_version": 1.4
@@ -552,13 +583,18 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": "bar/baz"
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.3"
+                     }],
+                     "uses": []
                  }]
              }],
              "crs_version": 3
@@ -598,14 +634,11 @@ TEST_CASE("Check some valid meta JSON") {
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
-                     "for": "lib",
-                     "lib": "bar/baz"
-                 }]
+                 "uses": [],
+                 "depends": []
              }],
              "crs_version": 1
          })");
@@ -617,20 +650,25 @@ auto mk_name = [](std::string_view s) { return dds::name::from_string(s).value()
 TEST_CASE("Check parse results") {
     using pkg_meta             = dds::crs::package_meta;
     using lib_meta             = dds::crs::library_meta;
-    using usage                = dds::crs::usage;
+    using dependency           = dds::crs::dependency;
     const auto [given, expect] = GENERATE(Catch::Generators::table<std::string, pkg_meta>({
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "meta_version": 1,
              "namespace": "cat",
-             "depends": [],
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [{
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
                      "for": "lib",
-                     "lib": "bar/baz"
+                     "versions": [{
+                         "low": "1.0.0",
+                         "high": "1.5.1"
+                     }],
+                     "uses": ["bar/bar"]
                  }]
              }],
              "crs_version": 1
@@ -640,13 +678,17 @@ TEST_CASE("Check parse results") {
              .namespace_   = mk_name("cat"),
              .version      = semver::version::parse("1.2.3"),
              .meta_version = 1,
-             .dependencies = {},
              .libraries    = {lib_meta{
-                 .name = mk_name("foo"),
-                 .path = ".",
-                 .uses = {usage{
-                     .lib  = lm::usage{"bar", "baz"},
+                 .name         = mk_name("foo"),
+                 .path         = ".",
+                 .intra_uses   = {},
+                 .dependencies = {dependency{
+                     .name = mk_name("bar"),
+                     .acceptable_versions
+                     = dds::crs::version_range_set{semver::version::parse("1.0.0"),
+                                                   semver::version::parse("1.5.1")},
                      .kind = dds::crs::usage_kind::lib,
+                     .uses = {lm::usage{"bar", "baz"}},
                  }},
              }},
              .extra        = {},
@@ -664,26 +706,26 @@ TEST_CASE("Check parse results") {
     CHECK(meta.version == expect.version);
     CHECK(meta.meta_version == expect.meta_version);
     CHECK(meta.extra == expect.extra);
-    CHECKED_IF(meta.dependencies.size() == expect.dependencies.size()) {
-        auto res_dep_it = meta.dependencies.cbegin();
-        auto exp_dep_it = meta.dependencies.cbegin();
-        for (; res_dep_it != meta.dependencies.cbegin(); ++res_dep_it, ++exp_dep_it) {
-            CHECK(res_dep_it->name == exp_dep_it->name);
-            CHECK(res_dep_it->acceptable_versions == exp_dep_it->acceptable_versions);
-        }
-    }
     CHECKED_IF(meta.libraries.size() == expect.libraries.size()) {
         auto res_lib_it = meta.libraries.cbegin();
         auto exp_lib_it = expect.libraries.cbegin();
         for (; res_lib_it != meta.libraries.cend(); ++res_lib_it, ++exp_lib_it) {
             CHECK(res_lib_it->name == exp_lib_it->name);
             CHECK(res_lib_it->path == exp_lib_it->path);
-            CHECKED_IF(res_lib_it->uses.size() == exp_lib_it->uses.size()) {
-                auto res_use_it = res_lib_it->uses.cbegin();
-                auto exp_use_it = exp_lib_it->uses.cbegin();
-                for (; res_use_it != res_lib_it->uses.cend(); ++res_use_it, ++exp_use_it) {
-                    CHECK(res_use_it->kind == exp_use_it->kind);
-                    CHECK(res_use_it->lib == exp_use_it->lib);
+            CHECKED_IF(res_lib_it->dependencies.size() == exp_lib_it->dependencies.size()) {
+                auto res_dep_it = res_lib_it->dependencies.cbegin();
+                auto exp_dep_it = res_lib_it->dependencies.cbegin();
+                for (; res_dep_it != res_lib_it->dependencies.cbegin();
+                     ++res_dep_it, ++exp_dep_it) {
+                    CHECK(res_dep_it->name == exp_dep_it->name);
+                    CHECK(res_dep_it->acceptable_versions == exp_dep_it->acceptable_versions);
+                    CHECKED_IF(res_dep_it->uses.size() == exp_dep_it->uses.size()) {
+                        auto res_use_it = res_dep_it->uses.cbegin();
+                        auto exp_use_it = exp_dep_it->uses.cbegin();
+                        for (; res_use_it != res_dep_it->uses.cend(); ++res_use_it, ++exp_use_it) {
+                            CHECK(*res_use_it == *exp_use_it);
+                        }
+                    }
                 }
             }
         }

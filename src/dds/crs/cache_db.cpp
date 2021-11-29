@@ -120,56 +120,6 @@ cache_db cache_db::open(unique_database& db) {
                             json_extract(lib.value, '$.path')
                         FROM libraries AS lib;
                 END;
-
-            CREATE TABLE dds_crs_library_usages (
-                usage_id INTEGER PRIMARY KEY,
-                lib_id INTEGER NOT NULL
-                    REFERENCES dds_crs_libraries
-                    ON DELETE CASCADE,
-                uses_name TEXT NOT NULL,
-                kind TEXT NOT NULL,
-                UNIQUE (lib_id, uses_name)
-            );
-
-            CREATE TRIGGER dds_crs_library_usages_auto_insert
-                AFTER INSERT ON dds_crs_libraries
-                FOR EACH ROW
-                BEGIN
-                    INSERT INTO dds_crs_library_usages
-                            (lib_id, uses_name, kind)
-                        SELECT
-                            new.lib_id,
-                            json_extract(use.value, '$.lib'),
-                            json_extract(use.value, '$.for')
-                        FROM
-                            dds_crs_packages AS pkgs,
-                            json_each(pkgs.json, '$.libraries') AS libs,
-                            json_each(libs.value, '$.uses') AS use
-                        WHERE
-                            pkgs.pkg_id = new.pkg_id
-                            AND json_extract(libs.value, '$.name') = new.name;
-                END;
-
-            CREATE TRIGGER dds_crs_library_usages_auto_update
-                AFTER UPDATE ON dds_crs_libraries
-                FOR EACH ROW
-                BEGIN
-                    DELETE FROM dds_crs_library_usages
-                        WHERE lib_id = new.lib_id;
-                    INSERT INTO dds_crs_library_usages
-                            (lib_id, uses_name, kind)
-                        SELECT
-                            new.lib_id,
-                            json_extract(use.value, '$.lib'),
-                            json_extract(use.value, '$.for')
-                        FROM
-                            dds_crs_packages AS pkgs,
-                            json_each(pkgs.json, '$.libraries') AS libs,
-                            json_each(libs.value, '$.uses') AS use
-                        WHERE
-                            pkgs.pkg_id = new.pkg_id
-                            AND json_extract(libs.value, '$.name') = new.name;
-                END;
         )"_sql);
     }).value();
     return cache_db{db};

@@ -47,11 +47,11 @@ def test_repo_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
             'namespace': 'test',
             'version': '1.2.3',
             'meta_version': 1,
-            'depends': [],
             'libraries': [{
                 'name': 'test',
                 'path': '.',
                 'uses': [],
+                'depends': [],
             }],
         }))
     tmp_crs_repo.import_dir(tmp_project.root)

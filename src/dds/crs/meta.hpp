@@ -40,21 +40,23 @@ struct e_invalid_usage_kind {
     std::string value;
 };
 
-struct usage {
+struct intra_usage {
     lm::usage  lib;
     usage_kind kind;
 };
 
-struct library_meta {
-    dds::name             name;
-    std::filesystem::path path;
-    std::vector<usage>    uses;
+struct dependency {
+    dds::name              name;
+    version_range_set      acceptable_versions;
+    usage_kind             kind;
+    std::vector<lm::usage> uses;
 };
 
-struct dependency {
-    dds::name         name;
-    version_range_set acceptable_versions;
-    usage_kind        kind;
+struct library_meta {
+    dds::name                name;
+    std::filesystem::path    path;
+    std::vector<intra_usage> intra_uses;
+    std::vector<dependency>  dependencies;
 };
 
 struct package_meta {
@@ -62,7 +64,6 @@ struct package_meta {
     dds::name                 namespace_;
     semver::version           version;
     int                       meta_version;
-    std::vector<dependency>   dependencies;
     std::vector<library_meta> libraries;
     json5::data               extra;
 
