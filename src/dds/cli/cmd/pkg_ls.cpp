@@ -6,6 +6,7 @@
 
 #include <boost/leaf/pred.hpp>
 #include <neo/assert.hpp>
+#include <neo/sqlite3/error.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/transform.hpp>

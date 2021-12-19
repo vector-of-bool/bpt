@@ -9,7 +9,7 @@ using namespace std::literals;
 
 TEST_CASE("Create a simple database") {
     // Just create and run migrations on an in-memory database
-    auto log_subscr = neo::subscribe(&dds::log::ev_log::print);
+    auto log_subscr = neo::listen(&dds::log::ev_log::print);
     auto repo       = dds::pkg_db::open(":memory:"s);
 }
 

@@ -17,6 +17,7 @@
 #include <neo/event.hpp>
 #include <neo/ranges.hpp>
 #include <neo/scope.hpp>
+#include <neo/sqlite3/error.hpp>
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/iter_tuples.hpp>
 #include <neo/sqlite3/transaction.hpp>

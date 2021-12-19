@@ -11,6 +11,7 @@
 
 #include <boost/leaf.hpp>
 #include <json5/parse_data.hpp>
+#include <neo/sqlite3/error.hpp>
 #include <neo/url.hpp>
 
 namespace dds::cli::cmd {

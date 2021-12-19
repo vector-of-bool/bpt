@@ -35,7 +35,7 @@ static void load_locale() {
 
 int main_fn(std::string_view program_name, const std::vector<std::string>& argv) {
     dds::log::init_logger();
-    auto log_subscr = neo::subscribe(&dds::log::ev_log::print);
+    neo::listener log_listener = &dds::log::ev_log::print;
     load_locale();
     std::setlocale(LC_CTYPE, ".utf8");
 

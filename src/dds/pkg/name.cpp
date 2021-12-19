@@ -76,3 +76,5 @@ std::ostream& dds::operator<<(std::ostream& out, invalid_name_reason r) {
     out << invalid_name_reason_str(r);
     return out;
 }
+
+void name::write_to(std::ostream& out) const noexcept { out << str; }
