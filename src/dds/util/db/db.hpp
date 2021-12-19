@@ -4,6 +4,7 @@
 
 #include <neo/sqlite3/fwd.hpp>
 #include <neo/sqlite3/literal.hpp>
+#include <neo/zstring_view.hpp>
 
 #include <memory>
 
@@ -29,8 +30,8 @@ class unique_database {
     explicit unique_database(std::unique_ptr<impl> db) noexcept;
 
 public:
-    [[nodiscard]] static result<unique_database> open(const std::string& str) noexcept;
-    [[nodiscard]] static result<unique_database> open_existing(const std::string& str) noexcept;
+    [[nodiscard]] static result<unique_database> open(neo::zstring_view str) noexcept;
+    [[nodiscard]] static result<unique_database> open_existing(neo::zstring_view str) noexcept;
 
     ~unique_database();
     unique_database(unique_database&&) noexcept;
