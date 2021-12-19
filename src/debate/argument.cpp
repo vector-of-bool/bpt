@@ -47,19 +47,19 @@ std::string argument::syntax_string() const noexcept {
     if (!required) {
         ret.push_back('[');
     }
-    if (is_positional()) {
-        ret.append(preferred_spelling());
-    } else {
-        ret.append(preferred_spelling());
-        if (nargs != 0) {
-            auto real_valname = !valname.empty()
-                ? valname
-                : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
-            ret.append(fmt::format(" {}", valname.empty() ? "<value>" : valname));
-        }
+    auto pref_spell = preferred_spelling();
+    ret.append(pref_spell);
+    if (!is_positional() && nargs != 0) {
+        auto real_valname = !valname.empty()
+            ? valname
+            : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
+
+        ret.append(fmt::format("{}{}",
+                               pref_spell.starts_with("--") ? "=" : " ",
+                               valname.empty() ? "<value>" : valname));
     }
     if (can_repeat) {
-        ret.append(" ...");
+        ret.append(" [...]");
     }
     if (!required) {
         ret.push_back(']');

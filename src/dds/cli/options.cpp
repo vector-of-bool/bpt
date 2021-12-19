@@ -417,15 +417,18 @@ struct setup {
     }
 
     void setup_pkg_prefetch_cmd(argument_parser& pkg_prefetch_cmd) noexcept {
-        pkg_prefetch_cmd.add_argument(use_repos_arg.dup()).help
-            = "The URLs of package repositories to pull from";
+        auto& use    = pkg_prefetch_cmd.add_argument(use_repos_arg.dup());
+        use.help     = "The URLs of package repositories to pull from";
+        use.required = true;
     }
 
     void setup_pkg_solve_cmd(argument_parser& pkg_solve_cmd) noexcept {
-        pkg_solve_cmd.add_argument(use_repos_arg.dup());
+        auto& use    = pkg_solve_cmd.add_argument(use_repos_arg.dup());
+        use.required = true;
         pkg_solve_cmd.add_argument({
             .help       = "List of package requirements to solve for",
             .valname    = "<requirement>",
+            .required   = true,
             .can_repeat = true,
             .action     = push_back_onto(opts.pkg.solve.reqs),
         });
