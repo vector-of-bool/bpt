@@ -24,7 +24,7 @@ struct e_repo_already_init {};
 
 struct e_repo_import_pkg_already_present {};
 
-struct e_sync_repo {
+struct e_sync_remote {
     neo::url value;
 };
 

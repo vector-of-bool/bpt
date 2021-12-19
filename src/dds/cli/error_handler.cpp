@@ -156,7 +156,7 @@ auto handlers = std::tuple(  //
         write_error_marker("invalid-uses-spec");
         return 1;
     },
-    [](dds::crs::e_sync_repo   sync_repo,
+    [](dds::crs::e_sync_remote sync_repo,
        dds::e_decompress_error err,
        dds::e_read_file_path   read_file) {
         dds_log(error,
@@ -170,7 +170,7 @@ auto handlers = std::tuple(  //
         write_error_marker("repo-sync-invalid-db-gz");
         return 1;
     },
-    [](catch_<neo::sqlite3::error> exc, dds::crs::e_sync_repo sync_repo) {
+    [](catch_<neo::sqlite3::error> exc, dds::crs::e_sync_remote sync_repo) {
         dds_log(error,
                 "SQLite error while importing data from .br.yellow[{}]: .br.red[{}]"_styled,
                 sync_repo.value.to_string(),
@@ -180,7 +180,7 @@ auto handlers = std::tuple(  //
                 "incompatible with this version of dds");
         return 1;
     },
-    [](matchv<dds::e_http_status{404}>, dds::crs::e_sync_repo sync_repo, neo::url req_url) {
+    [](matchv<dds::e_http_status{404}>, dds::crs::e_sync_remote sync_repo, neo::url req_url) {
         dds_log(
             error,
             "Received an .bold.red[HTTP 404 Not Found] error while synchronizing a repository from .bold.yellow[{}]"_styled,
@@ -196,7 +196,7 @@ auto handlers = std::tuple(  //
     },
     [](catch_<dds::http_error>,
        neo::url                req_url,
-       dds::crs::e_sync_repo   sync_repo,
+       dds::crs::e_sync_remote sync_repo,
        dds::http_response_info resp) {
         dds_log(
             error,
@@ -212,15 +212,27 @@ auto handlers = std::tuple(  //
         write_error_marker("repo-sync-http-error");
         return 1;
     },
-    [](const std::system_error& exc, boost::leaf::verbose_diagnostic_info const& diag) {
+    [](catch_<neo::sqlite3::error> exc, boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,
-                "An unhandled std::system_error arose. THIS IS A DDS BUG! Info: {}",
+                "An unhandled SQLite error arose. .bold.red[THIS IS A DDS BUG!] Info: {}"_styled,
                 diag);
-        dds_log(critical, "Exception message from std::system_error: {}", exc.code().message());
+        dds_log(critical,
+                "Exception message from neo::sqlite3::error: .bold.red[{}]"_styled,
+                exc.matched.what());
+        return 42;
+    },
+    [](const std::system_error& exc, boost::leaf::verbose_diagnostic_info const& diag) {
+        dds_log(
+            critical,
+            "An unhandled std::system_error arose. .bold.red[THIS IS A DDS BUG!] Info: {}"_styled,
+            diag);
+        dds_log(critical,
+                "Exception message from std::system_error: .bold.red[{}]",
+                exc.code().message());
         return 42;
     },
     [](boost::leaf::verbose_diagnostic_info const& diag) {
-        dds_log(critical, "An unhandled error arose. THIS IS A DDS BUG! Info: {}", diag);
+        dds_log(critical, "An unhandled error arose. .bold.red[THIS IS A DDS BUG!] Info: {}", diag);
         return 42;
     });
 }  // namespace

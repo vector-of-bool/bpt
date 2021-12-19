@@ -56,6 +56,7 @@ cache_db cache_db::open(unique_database& db) {
                 remote_id INTEGER NOT NULL
                     REFERENCES dds_crs_remotes
                     ON DELETE CASCADE,
+                remote_revno INTEGER NOT NULL,
                 name TEXT NOT NULL
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.name'))
@@ -72,7 +73,6 @@ cache_db cache_db::open(unique_database& db) {
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.meta_version'))
                     STORED,
-                remote_revno INTEGER NOT NULL,
                 UNIQUE (name, version, meta_version, remote_id)
             );
 
@@ -122,6 +122,12 @@ cache_db cache_db::open(unique_database& db) {
                 END;
         )"_sql);
     }).value();
+    db.exec_script(R"(
+        CREATE TEMPORARY TABLE IF NOT EXISTS dds_crs_enabled_remotes (
+            remote_id INTEGER NOT NULL -- references main.dds_crs_remotes
+                UNIQUE ON CONFLICT IGNORE
+        );
+    )"_sql);
     return cache_db{db};
 }
 
@@ -156,6 +162,7 @@ std::vector<cache_db::package_entry> cache_entries_for_query(neo::sqlite3::state
                    diagnostic_info);
     };
 }
+
 }  // namespace
 
 std::vector<cache_db::package_entry> cache_db::for_package(dds::name const&       name,
@@ -167,6 +174,7 @@ std::vector<cache_db::package_entry> cache_db::for_package(dds::name const&     
         SELECT pkg_id, remote_id, json
         FROM dds_crs_packages
         WHERE name = ? AND version = ?
+            AND remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes)
     )"_sql);
     db_bind(st, string_view(name.str), version.to_string()).value();
     return cache_entries_for_query(st);
@@ -178,6 +186,7 @@ std::vector<cache_db::package_entry> cache_db::for_package(dds::name const& name
         SELECT pkg_id, remote_id, json
         FROM dds_crs_packages
         WHERE name = ?
+            AND remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes)
     )"_sql);
     db_bind(st, string_view(name.str)).value();
     return cache_entries_for_query(st);
@@ -192,7 +201,7 @@ optional<cache_db::remote_entry> cache_db::get_remote(neo::url_view const& url_)
                             FROM dds_crs_remotes
                             WHERE url = ?
                        )"_sql),
-                       string_view(url_.to_string()))
+                       string_view(url.to_string()))
                        .value();
         auto [rowid, url_str, name] = row;
         return cache_db::remote_entry{rowid, neo::url::parse(url_str), name};
@@ -200,20 +209,36 @@ optional<cache_db::remote_entry> cache_db::get_remote(neo::url_view const& url_)
     dds_leaf_catch(matchv<neo::sqlite3::errc::done>) { return std::nullopt; };
 }
 
-void cache_db::sync_repo(const neo::url_view& url_) const {
+void cache_db::enable_remote(neo::url_view const& url_) {
     auto url = url_.normalized();
-    DDS_E_SCOPE(e_sync_repo{url});
+    auto res = neo::sqlite3::one_row(  //
+        _prepare(R"(
+            INSERT INTO dds_crs_enabled_remotes (remote_id)
+            SELECT remote_id
+              FROM dds_crs_remotes
+             WHERE url = ?
+            RETURNING remote_id
+        )"_sql),
+        string_view(url.to_string()));
+    if (res == neo::sqlite3::errc::done) {
+        BOOST_LEAF_THROW_EXCEPTION(e_no_such_remote_url{url.to_string()});
+    }
+}
+
+void cache_db::sync_remote(const neo::url_view& url_) const {
+    auto url = url_.normalized();
+    DDS_E_SCOPE(e_sync_remote{url});
     dds::http_request_params params;
 
     auto& prio_info_st
         = _prepare("SELECT etag, last_modified FROM dds_crs_remotes WHERE url=?"_sql);
     auto url_str = url.to_string();
-    neo_assertion_breadcrumbs("Pulling repository metadata", url_str);
+    neo_assertion_breadcrumbs("Pulling remote repository metadata", url_str);
     neo::sqlite3::reset_and_bind(prio_info_st, std::string_view(url_str)).throw_if_error();
     auto prior_info = neo::sqlite3::one_row<std::optional<std::string>, std::optional<std::string>>(
         prio_info_st);
     if (prior_info.has_value()) {
-        dds_log(debug, "Seen this repo before. Chacking for updates.");
+        dds_log(debug, "Seen this remote repository before. Checking for updates.");
         const auto& [etag, last_mod] = *prior_info;
         if (etag.has_value()) {
             params.prior_etag = *etag;

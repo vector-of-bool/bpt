@@ -1,12 +1,8 @@
 #pragma once
 
-#include <dds/pkg/name.hpp>
+#include "./dependency.hpp"
 
 #include <json5/data.hpp>
-#include <libman/library.hpp>
-#include <pubgrub/interval.hpp>
-#include <semver/range.hpp>
-#include <semver/version.hpp>
 
 #include <filesystem>
 
@@ -14,14 +10,6 @@ namespace dds::crs {
 
 struct e_invalid_meta_data {
     std::string value;
-};
-
-using version_range_set = pubgrub::interval_set<semver::version>;
-
-enum class usage_kind {
-    lib,
-    test,
-    app,
 };
 
 struct e_given_meta_json_str {
@@ -43,13 +31,6 @@ struct e_invalid_usage_kind {
 struct intra_usage {
     lm::usage  lib;
     usage_kind kind;
-};
-
-struct dependency {
-    dds::name              name;
-    version_range_set      acceptable_versions;
-    usage_kind             kind;
-    std::vector<lm::usage> uses;
 };
 
 struct library_meta {

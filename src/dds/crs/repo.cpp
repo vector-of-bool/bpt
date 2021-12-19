@@ -95,7 +95,7 @@ void repository::_vacuum_and_compress() const {
 repository repository::create(path_ref dirpath, std::string_view name) {
     DDS_E_SCOPE(e_repo_open_path{dirpath});
     std::filesystem::create_directories(dirpath);
-    auto db = unique_database::open(dirpath / "repo.db").value();
+    auto db = unique_database::open((dirpath / "repo.db").string()).value();
     ensure_migrated(db);
     dds_leaf_try {
         db_exec(db.prepare("INSERT INTO crs_repo_self (rowid, name) VALUES (1729, ?)"_sql), name)
@@ -111,7 +111,7 @@ repository repository::create(path_ref dirpath, std::string_view name) {
 
 repository repository::open_existing(path_ref dirpath) {
     DDS_E_SCOPE(e_repo_open_path{dirpath});
-    auto db = unique_database::open_existing(dirpath / "repo.db").value();
+    auto db = unique_database::open_existing((dirpath / "repo.db").string()).value();
     ensure_migrated(db);
     return repository{std::move(db), dirpath};
 }
@@ -184,9 +184,10 @@ void repository::remove_pkg(const package_meta& meta) {
     auto to_delete = subdir_of(meta);
     db_exec(_prepare(R"(
                 DELETE FROM crs_repo_packages
-                 WHERE name = ?
-                       AND version = ?
-                       AND meta_version = ?
+                 WHERE name = ?1
+                       AND version = ?2
+                       AND (meta_version = ?3
+                            OR ?3 = 0)
             )"_sql),
             meta.name.str,
             meta.version.to_string(),

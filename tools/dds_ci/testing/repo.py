@@ -31,6 +31,9 @@ class CRSRepo:
             (() if if_exists is None else f'--if-exists={if_exists}'),
         ])
 
+    def validate(self) -> None:
+        self.dds.run(['repo', 'validate', self.path, '-ldebug'])
+
 
 CRSRepoFactory = Callable[[str], CRSRepo]
 

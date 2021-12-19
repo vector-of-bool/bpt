@@ -305,6 +305,10 @@ struct setup {
             .name = "prefetch",
             .help = "Sync a remote repository into the local package listing cache",
         }));
+        setup_pkg_solve_cmd(pkg_group.add_parser({
+            .name = "solve",
+            .help = "Generate a dependency solution for the given requirements",
+        }));
     }
 
     void setup_pkg_create_cmd(argument_parser& pkg_create_cmd) {
@@ -417,6 +421,16 @@ struct setup {
             = "The URLs of package repositories to pull from";
     }
 
+    void setup_pkg_solve_cmd(argument_parser& pkg_solve_cmd) noexcept {
+        pkg_solve_cmd.add_argument(use_repos_arg.dup());
+        pkg_solve_cmd.add_argument({
+            .help       = "List of package requirements to solve for",
+            .valname    = "<requirement>",
+            .can_repeat = true,
+            .action     = push_back_onto(opts.pkg.solve.reqs),
+        });
+    }
+
     void setup_repo_cmd(argument_parser& repo_cmd) noexcept {
         auto& grp = repo_cmd.add_subparsers({
             .valname = "<repo-subcommand>",
@@ -430,11 +444,21 @@ struct setup {
             .name = "import",
             .help = "Import a directory or package into a CRS repository",
         }));
+        setup_repoman_remove_cmd(grp.add_parser({
+            .name = "remove",
+            .help = "Remove packages from a CRS repository",
+        }));
         auto& ls_cmd = grp.add_parser({
             .name = "ls",
             .help = "List the packages in a local CRS repository",
         });
         ls_cmd.add_argument(repoman_repo_dir_arg.dup());
+        auto& validate_cmd = grp.add_parser({
+            .name = "validate",
+            .help = "Check that all repository packages are valid and resolvable",
+        });
+        validate_cmd.add_argument(repoman_repo_dir_arg.dup());
+        validate_cmd.add_argument(use_repos_arg.dup());
     }
 
     void setup_repo_import_cmd(argument_parser& repo_import_cmd) {

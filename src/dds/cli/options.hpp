@@ -42,6 +42,7 @@ enum class pkg_subcommand {
     repo,
     search,
     prefetch,
+    solve,
 };
 
 /**
@@ -65,6 +66,7 @@ enum class repoman_subcommand {
     import,
     add,
     remove,
+    validate,
     ls,
 };
 
@@ -226,6 +228,14 @@ struct options {
             /// The search pattern, if provided
             opt_string pattern;
         } search;
+
+        /**
+         * @brief Paramters for 'dds pkg solve'
+         */
+        struct {
+            /// Requirements listed to solve
+            std::vector<string> reqs;
+        } solve;
     } pkg;
 
     /**

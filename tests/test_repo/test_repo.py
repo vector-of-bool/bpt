@@ -200,3 +200,75 @@ def test_pkg_prefetch_invalid(dds: DDSWrapper, tmp_path: Path, http_server_facto
     srv = http_server_factory(tmp_path)
     with expect_error_marker('repo-sync-invalid-db-gz'):
         dds.run(['-ltrace', 'pkg', 'prefetch', '-r', srv.base_url])
+
+
+def test_repo_validate_empty(tmp_crs_repo: CRSRepo) -> None:
+    tmp_crs_repo.validate()
+
+
+def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
+    tmp_path.joinpath('pkg.json').write_text(
+        json.dumps({
+            'name': 'foo',
+            'namespace': 'foo',
+            'version': '1.2.3',
+            'meta_version': 1,
+            'crs_version': 1,
+            'libraries': [{
+                'path': '.',
+                'name': 'foo',
+                'uses': [],
+                'depends': [],
+            }],
+        }))
+    tmp_crs_repo.import_dir(tmp_path)
+    tmp_crs_repo.validate()
+
+
+def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
+    # yapf: disable
+    tmp_path.joinpath('pkg.json').write_text(
+        json.dumps({
+            'name': 'foo',
+            'namespace': 'foo',
+            'version': '1.2.3',
+            'meta_version': 1,
+            'crs_version': 1,
+            'libraries': [{
+                'path': '.',
+                'name': 'foo',
+                'uses': [{'lib': 'foo/bar', 'for': 'lib'}],
+                'depends': [],
+            }, {
+                'path': 'bar',
+                'name': 'bar',
+                'uses': [],
+                'depends': [],
+            }],
+        }))
+    # yapf: enable
+    tmp_crs_repo.import_dir(tmp_path)
+    tmp_crs_repo.validate()
+
+
+def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
+    # yapf: disable
+    tmp_path.joinpath('pkg.json').write_text(
+        json.dumps({
+            'name': 'foo',
+            'namespace': 'foo',
+            'version': '1.2.3',
+            'meta_version': 1,
+            'crs_version': 1,
+            'libraries': [{
+                'path': '.',
+                'name': 'foo',
+                # There is no 'bar' library in this lib. Fail.
+                'uses': [{'lib': 'foo/bar', 'for': 'lib'}],
+                'depends': [],
+            }],
+        }))
+    # yapf: enable
+    tmp_crs_repo.import_dir(tmp_path)
+    with expect_error_marker('repo-invalid'):
+        tmp_crs_repo.validate()

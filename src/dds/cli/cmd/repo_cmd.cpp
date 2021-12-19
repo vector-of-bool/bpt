@@ -20,6 +20,8 @@ using command = int(const options&);
 command repo_init;
 command repo_import;
 command repo_ls;
+command repo_validate;
+command repo_remove;
 
 int repo_cmd(const options& opts) {
     neo_assert(invariant, opts.subcommand == subcommand::repo, "Wrong subcommand for dispatch");
@@ -31,10 +33,14 @@ int repo_cmd(const options& opts) {
             return cmd::repo_import(opts);
         case repoman_subcommand::ls:
             return cmd::repo_ls(opts);
-        default:
-        case repoman_subcommand::_none_:
-            neo::unreachable();
+        case repoman_subcommand::validate:
+            return cmd::repo_validate(opts);
+        case repoman_subcommand::remove:
+            return cmd::repo_remove(opts);
+        case repoman_subcommand::add:
+        case repoman_subcommand::_none_:;
         }
+        neo::unreachable();
     }
     dds_leaf_catch(dds::crs::e_repo_open_path db_path, matchv<db_migration_errc::too_new>) {
         dds_log(

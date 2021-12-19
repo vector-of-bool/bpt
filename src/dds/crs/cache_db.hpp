@@ -1,6 +1,7 @@
 #pragma once
 
 #include "./meta.hpp"
+#include "./pkg_id.hpp"
 
 #include <dds/error/result_fwd.hpp>
 #include <dds/util/db/db.hpp>
@@ -12,6 +13,10 @@
 #include <vector>
 
 namespace dds::crs {
+
+struct e_no_such_remote_url {
+    std::string value;
+};
 
 /**
  * @brief An interface to a cache of CRS package metadata, either local, remote, or both.
@@ -73,6 +78,9 @@ public:
 
     [[nodiscard]] std::optional<remote_entry> get_remote(neo::url_view const& url) const;
 
+    void enable_remote(neo::url_view const&);
+    void disable_remote(neo::url_view const&);
+
     /**
      * @brief Forget every cached entry in the database
      */
@@ -99,7 +107,9 @@ public:
     /**
      * @brief Ensure that we have up-to-date package metadata from the given remote repo
      */
-    void sync_repo(const neo::url_view& url) const;
+    void sync_remote(const neo::url_view& url) const;
+
+    std::optional<pkg_id> lowest_version_matching(const dependency& dep) const;
 };
 
 }  // namespace dds::crs

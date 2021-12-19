@@ -27,6 +27,7 @@ command pkg_repo_ls;
 command pkg_repo_remove;
 command pkg_search;
 command pkg_prefetch;
+command pkg_solve;
 command repo_cmd;
 command repoman_add;
 command repoman_import;
@@ -72,6 +73,8 @@ int dispatch_main(const options& opts) noexcept {
                 return cmd::pkg_search(opts);
             case pkg_subcommand::prefetch:
                 return cmd::pkg_prefetch(opts);
+            case pkg_subcommand::solve:
+                return cmd::pkg_solve(opts);
             case pkg_subcommand::_none_:;
             }
             neo::unreachable();
@@ -93,6 +96,7 @@ int dispatch_main(const options& opts) noexcept {
                 return cmd::repoman_remove(opts);
             case repoman_subcommand::ls:
                 return cmd::repoman_ls(opts);
+            case repoman_subcommand::validate:
             case repoman_subcommand::_none_:;
             }
             neo::unreachable();
