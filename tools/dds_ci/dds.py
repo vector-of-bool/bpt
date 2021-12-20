@@ -82,6 +82,9 @@ class DDSWrapper:
     def pkg_import(self, filepath: Pathish) -> None:
         self.run(['pkg', 'import', filepath, self.cache_dir_arg])
 
+    def pkg_prefetch(self, *, repos: Sequence[str], pkgs: Sequence[str] = ()) -> None:
+        self.run([self.cache_dir_arg, 'pkg', 'prefetch', (f'--use-repo={r}' for r in repos), pkgs])
+
     def build(self,
               *,
               root: Pathish,
