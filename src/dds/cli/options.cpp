@@ -122,6 +122,12 @@ struct setup {
             .action  = put_into(opts.log_level),
         });
         parser.add_argument({
+            .long_spellings = {"crs-cache-dir"},
+            .help           = "(Advanced) Override dds's CRS caching directory.",
+            .valname        = "<directory>",
+            .action         = put_into(opts.crs_cache_dir),
+        });
+        parser.add_argument({
             .long_spellings = {"data-dir"},
             .help
             = ""
@@ -420,6 +426,12 @@ struct setup {
         auto& use    = pkg_prefetch_cmd.add_argument(use_repos_arg.dup());
         use.help     = "The URLs of package repositories to pull from";
         use.required = true;
+        pkg_prefetch_cmd.add_argument({
+            .help       = "List of package IDs to prefetch",
+            .valname    = "<pkg-id>",
+            .can_repeat = true,
+            .action     = push_back_onto(opts.pkg.get.pkgs),
+        });
     }
 
     void setup_pkg_solve_cmd(argument_parser& pkg_solve_cmd) noexcept {

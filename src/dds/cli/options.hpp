@@ -99,6 +99,8 @@ struct options {
     opt_path pkg_cache_dir;
     // The `--pkg-db-dir` argument
     opt_path pkg_db_dir;
+    // The `--crs-cache-dir` argument
+    opt_path crs_cache_dir;
     // The `--log-level` argument
     log::level log_level = log::level::info;
     // Any `--dry-run` argument

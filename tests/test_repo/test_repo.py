@@ -184,9 +184,11 @@ def test_import_multiple_versions(tmp_crs_repo: CRSRepo) -> None:
         tmp_crs_repo.import_dir(PROJECT_ROOT / 'data' / name, if_exists='replace')
 
 
-def test_pkg_prefetch(dds: DDSWrapper, http_crs_repo: CRSRepoServer) -> None:
+def test_pkg_prefetch(dds: DDSWrapper, http_crs_repo: CRSRepoServer, tmp_path: Path) -> None:
     http_crs_repo.repo.import_dir(PROJECT_ROOT / 'data/simple.crs')
-    dds.run(['pkg', 'prefetch', '-r', http_crs_repo.server.base_url])
+    dds.crs_cache_dir = tmp_path
+    dds.run([dds.cache_dir_arg, 'pkg', 'prefetch', '-r', http_crs_repo.server.base_url, 'test-pkg@1.2.43'])
+    assert tmp_path.joinpath('pkgs/test-pkg@1.2.43~1/pkg.json').is_file()
 
 
 def test_pkg_prefetch_404(dds: DDSWrapper, tmp_path: Path, http_server_factory: HTTPServerFactory) -> None:
@@ -199,7 +201,7 @@ def test_pkg_prefetch_invalid(dds: DDSWrapper, tmp_path: Path, http_server_facto
     tmp_path.joinpath('repo.db.gz').write_text('lolhi')
     srv = http_server_factory(tmp_path)
     with expect_error_marker('repo-sync-invalid-db-gz'):
-        dds.run(['-ltrace', 'pkg', 'prefetch', '-r', srv.base_url])
+        dds.run(['pkg', 'prefetch', '-r', srv.base_url])
 
 
 def test_repo_validate_empty(tmp_crs_repo: CRSRepo) -> None:

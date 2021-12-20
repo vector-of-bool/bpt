@@ -3,7 +3,7 @@ import shutil
 import os
 from pathlib import Path
 import copy
-from typing import Optional, TypeVar, Iterable
+from typing import Optional, Sequence, TypeVar, Iterable
 
 from . import paths, proc, toolchain as tc_mod
 from dds_ci.util import Pathish
@@ -26,6 +26,7 @@ class DDSWrapper:
         self.repo_dir = Path(repo_dir or (paths.PREBUILT_DIR / 'ci-repo'))
         self.pkg_db_path = Path(pkg_db_path or (self.repo_dir.parent / 'ci-catalog.db'))
         self.default_cwd = default_cwd or Path.cwd()
+        self.crs_cache_dir: Optional[Path] = None
 
     def clone(self: T) -> T:
         return copy.deepcopy(self)
@@ -36,9 +37,13 @@ class DDSWrapper:
         return f'--pkg-db-path={self.pkg_db_path}'
 
     @property
-    def cache_dir_arg(self) -> str:
+    def cache_dir_arg(self) -> Sequence[str]:
         """The arguments for --repo-dir"""
-        return f'--pkg-cache-dir={self.repo_dir}'
+        default = [f'--pkg-cache-dir={self.repo_dir}']
+        if self.crs_cache_dir:
+            return [f'--crs-cache-dir={self.crs_cache_dir}'] + default
+        else:
+            return default
 
     def set_repo_scratch(self, path: Pathish) -> None:
         self.repo_dir = Path(path) / 'data'

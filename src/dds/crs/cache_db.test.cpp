@@ -50,11 +50,8 @@ TEST_CASE_METHOD(empty_loader, "Enable an invalid repo") {
         cache.enable_remote(url);
         FAIL_CHECK("Expected an error to occur");
     }
-    dds_leaf_catch(const dds::http_error&  exc,
-                   dds::http_response_info resp,
-                   dds::matchv<dds::e_http_status{404}>) {
-        CHECK(exc.status_code() == 404);
-        CHECK(resp.status == 404);
+    dds_leaf_catch(const dds::crs::e_no_such_remote_url e) {
+        CHECK(e.value == "http://example.com/");
     }
     dds_leaf_catch_all { FAIL_CHECK("Unhandled error: " << diagnostic_info); };
 }

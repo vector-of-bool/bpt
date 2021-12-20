@@ -4,6 +4,8 @@
 #include <dds/util/db/db.hpp>
 #include <dds/util/fs/path.hpp>
 
+#include <neo/any_range.hpp>
+
 #include <functional>
 #include <vector>
 
@@ -17,10 +19,10 @@ class file_collector {
 
 public:
     // Create a new collector with the given database as the cache source
-    [[nodiscard]] static result<file_collector> create(unique_database& db) noexcept;
+    [[nodiscard]] static file_collector create(unique_database& db);
 
     // Obtain a recursive listing of every descendant of the given directory
-    result<std::vector<fs::path>> collect(path_ref) noexcept;
+    neo::any_input_range<fs::path> collect(path_ref);
     // Remove the given directory from the database cache
     void forget(path_ref) noexcept;
     /// Determine whether the collector has a cache entry for the given directory

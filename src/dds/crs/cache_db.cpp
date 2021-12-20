@@ -209,6 +209,20 @@ optional<cache_db::remote_entry> cache_db::get_remote(neo::url_view const& url_)
     dds_leaf_catch(matchv<neo::sqlite3::errc::done>) { return std::nullopt; };
 }
 
+optional<cache_db::remote_entry> cache_db::get_remote_by_id(std::int64_t rowid) const {
+    auto row = neo::sqlite3::one_row<string, string>(  //
+        _prepare(R"(
+            SELECT url, unique_name
+            FROM dds_crs_remotes WHERE remote_id = ?
+        )"_sql),
+        rowid);
+    if (row.has_value()) {
+        auto [url_str, name] = *row;
+        return remote_entry{rowid, neo::url::parse(url_str), name};
+    }
+    return std::nullopt;
+}
+
 void cache_db::enable_remote(neo::url_view const& url_) {
     auto url = url_.normalized();
     auto res = neo::sqlite3::one_row(  //

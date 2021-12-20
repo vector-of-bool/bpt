@@ -19,13 +19,11 @@ struct e_no_such_remote_url {
 };
 
 /**
- * @brief An interface to a cache of CRS package metadata, either local, remote, or both.
+ * @brief An interface to a cache of CRS package metadata.
  *
- * The CRS cache records the totality of all known packages that are available to be imported
- * and included in a potential build. Every package is either *local*, *remote*, or *both*. A
- * "local" package entry exists on the local filesystem and can be directly compiled and linked into
- * a project. A remote-only package is accessible from a remote server and can be downloaded and
- * made into a locally-available package.
+ * The CRS cache records the totality of all known packages that are available to be imported and
+ * included in a potential build. Every package metadata entry corresponds to a remote package
+ * repository.
  *
  * When resolving a dependency tree, a single cache DB should be consulted to understand what
  * packages are available to generate a dependency solution, regardless of whether they are (yet)
@@ -77,6 +75,7 @@ public:
     [[nodiscard]] static cache_db open(unique_database& db);
 
     [[nodiscard]] std::optional<remote_entry> get_remote(neo::url_view const& url) const;
+    [[nodiscard]] std::optional<remote_entry> get_remote_by_id(std::int64_t) const;
 
     void enable_remote(neo::url_view const&);
     void disable_remote(neo::url_view const&);
