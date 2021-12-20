@@ -232,7 +232,9 @@ auto handlers = std::tuple(  //
         return 42;
     },
     [](boost::leaf::verbose_diagnostic_info const& diag) {
-        dds_log(critical, "An unhandled error arose. .bold.red[THIS IS A DDS BUG!] Info: {}", diag);
+        dds_log(critical,
+                "An unhandled error arose. .bold.red[THIS IS A DDS BUG!] Info: {}"_styled,
+                diag);
         return 42;
     });
 }  // namespace

@@ -53,7 +53,7 @@ int repo_cmd(const options& opts) {
     dds_leaf_catch(dds::crs::e_repo_open_path repo_path, e_migration_error error) {
         dds_log(
             error,
-            "Error while opening SQLite database for repostiory [.br.yellow[{}]]: .br.red[{}]"_styled,
+            "Error while applying database migrations when opening SQLite database for repostiory [.br.yellow[{}]]: .br.red[{}]"_styled,
             repo_path.value.string(),
             error.value);
         write_error_marker("repo-import-db-invalid");
