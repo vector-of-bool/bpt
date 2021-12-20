@@ -30,10 +30,16 @@ static result<nsql::connection> _open_db(neo::zstring_view str, nsql::openmode m
     DDS_E_SCOPE(e_db_open_path{std::string(str)});
     auto db = nsql::connection::open(str, mode);
     if (!db.has_value()) {
-        return new_error(e_db_open_ec{nsql::make_error_code(db.errc())});
+        return new_error(db.error(), e_db_open_ec{nsql::make_error_code(db.errc())});
     }
-    db->exec("PRAGMA foreign_keys = 1;").throw_if_error();
-    db->exec("PRAGMA vdbe_trace = 1;").throw_if_error();
+    auto e = db->exec(R"(
+        PRAGMA foreign_keys = 1;
+        PRAGMA vdbe_trace = 1;
+        PRAGMA busy_timeout = 60000;
+    )");
+    if (e.is_error()) {
+        return new_error(e.error(), e_db_open_ec{nsql::make_error_code(e.errc())});
+    }
     return std::move(*db);
 }
 
