@@ -84,6 +84,12 @@ enum class if_missing {
     ignore,
 };
 
+enum class repo_sync_mode {
+    always,
+    cached_okay,
+    never,
+};
+
 /**
  * @brief Complete aggregate of all dds command-line options, and some utilities
  */
@@ -105,6 +111,8 @@ struct options {
     log::level log_level = log::level::info;
     // Any `--dry-run` argument
     bool dry_run = false;
+    // A `--repo-sync-mode` argument
+    cli::repo_sync_mode repo_sync_mode = cli::repo_sync_mode::always;
 
     // All `--use-repo` arguments
     std::vector<std::string> use_repos;

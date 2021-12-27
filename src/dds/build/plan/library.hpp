@@ -7,6 +7,8 @@
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs/path.hpp>
 
+#include <dds/crs/meta.hpp>
+
 #include <libman/library.hpp>
 
 #include <optional>
@@ -19,6 +21,8 @@ namespace dds {
  * The parameters that tweak the behavior of building a library
  */
 struct library_build_params {
+    /// The root directory of the library
+    fs::path root;
     /// The subdirectory of the build root in which this library should place its files.
     fs::path out_subdir;
     /// Whether tests should be compiled and linked for this library
@@ -27,12 +31,6 @@ struct library_build_params {
     bool build_apps = false;
     /// Whether compiler warnings should be enabled for building the source files in this library.
     bool enable_warnings = false;
-
-    /// Directories that should be on the #include search path when compiling tests
-    std::vector<fs::path> test_include_dirs;
-
-    /// Libraries that are used by tests
-    std::vector<lm::usage> test_uses;
 };
 
 /**
@@ -51,8 +49,8 @@ struct library_build_params {
  * initialize all of the constructor parameters correctly.
  */
 class library_plan {
-    /// The underlying library root
-    library_root _lib;
+    std::string _name;
+    fs::path    _lib_root;
     /// The qualified name of the library
     std::string _qual_name;
     /// The library's subdirectory within the output directory
@@ -65,6 +63,8 @@ class library_plan {
     std::vector<render_template_plan> _templates;
     /// The headers that must be checked for independence
     std::vector<compile_file_plan> _headers;
+    /// Libraries used by this library
+    std::vector<lm::usage> _uses;
 
 public:
     /**
@@ -73,29 +73,23 @@ public:
      * @param ar The `create_archive_plan`, or `nullopt` for this library.
      * @param exes The `link_executable_plan` objects for this library.
      */
-    library_plan(library_root                       lib,
+    library_plan(std::string                        name,
+                 path_ref                           lib_root,
                  std::string_view                   qual_name,
                  fs::path                           subdir,
                  std::optional<create_archive_plan> ar,
                  std::vector<link_executable_plan>  exes,
                  std::vector<render_template_plan>  tmpls,
                  std::vector<compile_file_plan>     headers)
-        : _lib(std::move(lib))
+        : _name(name)
+        , _lib_root(lib_root)
         , _qual_name(qual_name)
         , _subdir(std::move(subdir))
         , _create_archive(std::move(ar))
         , _link_exes(std::move(exes))
         , _templates(std::move(tmpls))
         , _headers(std::move(headers)) {}
-
-    /**
-     * Get the underlying library object
-     */
-    auto& library_() const noexcept { return _lib; }
-    /**
-     * Get the name of the library
-     */
-    auto& name() const noexcept { return _lib.manifest().name; }
+    std::string_view name() const noexcept { return _name; }
     /**
      * Get the qualified name of the library, as if for a libman usage requirement
      */
@@ -107,7 +101,7 @@ public:
     /**
      * The directory that defines the source root of the library.
      */
-    path_ref source_root() const noexcept { return _lib.path(); }
+    path_ref source_root() const noexcept { return _lib_root; }
     /**
      * A `create_archive_plan` object, or `nullopt`, depending on if this library has compiled
      * components
@@ -128,17 +122,15 @@ public:
     /**
      * The library identifiers that are used by this library
      */
-    auto& uses() const noexcept { return _lib.manifest().uses; }
-    /**
-     * The library identifiers that are linked by this library
-     */
-    auto& links() const noexcept { return _lib.manifest().links; }
+    auto& uses() const noexcept { return _uses; }
     /**
      * The path to the directory that should be added for the #include search
      * path for this library, relative to the build root. Returns `nullopt` if
      * this library has no generated headers.
      */
     std::optional<fs::path> generated_include_dir() const noexcept;
+
+    fs::path public_include_dir() const noexcept;
 
     /**
      * Named constructor: Create a new `library_plan` automatically from some build-time parameters.
@@ -153,9 +145,10 @@ public:
      * The `lib` parameter defines the usage requirements of this library, and they are looked up in
      * the `ureqs` map. If there are any missing requirements, an exception will be thrown.
      */
-    static library_plan create(const library_root&             lib,
-                               const library_build_params&     params,
-                               std::optional<std::string_view> qual_name);
+    static library_plan create(path_ref                    pkg_base,
+                               const crs::package_meta&    pkg,
+                               const crs::library_meta&    lib,
+                               const library_build_params& params);
 };
 
 }  // namespace dds

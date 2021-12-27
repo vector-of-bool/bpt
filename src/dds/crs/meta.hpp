@@ -3,6 +3,7 @@
 #include "./dependency.hpp"
 
 #include <json5/data.hpp>
+#include <magic_enum.hpp>
 
 #include <filesystem>
 
@@ -29,8 +30,15 @@ struct e_invalid_usage_kind {
 };
 
 struct intra_usage {
-    lm::usage  lib;
+    dds::name  lib;
     usage_kind kind;
+
+    friend void do_repr(auto out, const intra_usage* self) noexcept {
+        out.type("dds::crs::intra_usage");
+        if (self) {
+            out.bracket_value("lib={}, kind={}", self->lib.str, magic_enum::enum_name(self->kind));
+        }
+    }
 };
 
 struct library_meta {
@@ -38,13 +46,24 @@ struct library_meta {
     std::filesystem::path    path;
     std::vector<intra_usage> intra_uses;
     std::vector<dependency>  dependencies;
+
+    friend void do_repr(auto out, const library_meta* self) noexcept {
+        out.type("dds::crs::library_meta");
+        if (self) {
+            out.bracket_value("name={}, path={}, intra_uses={}, dependencies={}",
+                              out.repr_value(self->name),
+                              out.repr_value(self->path),
+                              out.repr_value(self->intra_uses),
+                              out.repr_value(self->dependencies));
+        }
+    }
 };
 
 struct package_meta {
     dds::name                 name;
     dds::name                 namespace_;
     semver::version           version;
-    int                       meta_version;
+    int                       meta_version = 0;
     std::vector<library_meta> libraries;
     json5::data               extra;
 
@@ -55,6 +74,18 @@ struct package_meta {
 
     std::string to_json(int indent) const noexcept;
     std::string to_json() const noexcept { return to_json(0); }
+
+    friend void do_repr(auto out, const package_meta* self) noexcept {
+        out.type("dds::crs::package_meta");
+        if (self) {
+            out.bracket_value("name={}, namespace={}, version={}, meta_version={}, libraries={}",
+                              out.repr_value(self->name),
+                              out.repr_value(self->namespace_),
+                              out.repr_value(self->version.to_string()),
+                              out.repr_value(self->meta_version),
+                              out.repr_value(self->libraries));
+        }
+    }
 };
 
 }  // namespace dds::crs

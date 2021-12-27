@@ -2,50 +2,34 @@
 
 #include <dds/error/result.hpp>
 #include <libman/library.hpp>
-#include <magic_enum.hpp>
 #include <neo/ufmt.hpp>
 #include <semester/walk.hpp>
+
+#include <dds/util/json_walk.hpp>
 
 #include <string>
 
 using namespace dds;
 using namespace dds::crs;
+using namespace dds::walk_utils;
 
 namespace {
-
-using require_obj   = semester::require_type<json5::data::mapping_type>;
-using require_array = semester::require_type<json5::data::array_type>;
-using require_str   = semester::require_type<std::string>;
-
-auto name_from_string       = [](std::string s) { return dds::name::from_string(s).value(); };
-auto version_from_string    = [](std::string s) { return semver::version::parse(s); };
-auto usage_kind_from_string = [](std::string s) -> usage_kind {
-    auto v = magic_enum::enum_cast<usage_kind>(s);
-    if (!v) {
-        throw(semester::walk_error{
-            neo::ufmt("Invalid usage kind string '{}' (Should be one of 'lib', 'app', or 'test')",
-                      s)});
-    }
-    return *v;
-};
-
-auto lm_usage_from_string = [](std::string s) { return lm::split_usage_string(s).value(); };
 
 crs::intra_usage intra_usage_from_data(const json5::data& data) {
     intra_usage ret;
     using namespace semester::walk_ops;
 
     walk(data,
-         require_obj{"'uses' values must be JSON objects"},
+         require_mapping{"'uses' values must be JSON objects"},
          mapping{
              required_key{"lib",
                           "A 'lib' string is required",
                           require_str{"'lib' must be a value usage string"},
-                          put_into{ret.lib, lm_usage_from_string}},
+                          put_into{ret.lib, name_from_string{}}},
              required_key{"for",
                           "A 'for' string is required",
                           require_str{"'for' must be one of 'lib', 'app', or 'test'"},
-                          put_into{ret.kind, usage_kind_from_string}},
+                          put_into{ret.kind, parse_enum_str<usage_kind>}},
              if_key{"_comment", just_accept},
          });
     return ret;
@@ -56,21 +40,22 @@ crs::dependency dependency_from_data(const json5::data& data) {
 
     using namespace semester::walk_ops;
     std::vector<semver::range> ver_ranges;
+    std::vector<dds::name>     uses;
 
     auto parse_version_range = [&](const json5::data& range) {
         semver::version low;
         semver::version high;
         walk(range,
-             require_obj{"'versions' elements must be objects"},
+             require_mapping{"'versions' elements must be objects"},
              mapping{
                  required_key{"low",
                               "'low' version is required",
                               require_str{"'low' version must be a string"},
-                              put_into{low, version_from_string}},
+                              put_into{low, version_from_string{}}},
                  required_key{"high",
                               "'high' version is required",
                               require_str{"'high' version must be a string"},
-                              put_into{high, version_from_string}},
+                              put_into{high, version_from_string{}}},
                  if_key{"_comment", just_accept},
              });
         if (high <= low) {
@@ -81,16 +66,16 @@ crs::dependency dependency_from_data(const json5::data& data) {
     };
 
     walk(data,
-         require_obj{"Each dependency should be a JSON object"},
+         require_mapping{"Each dependency should be a JSON object"},
          mapping{
              required_key{"name",
                           "A string 'name' is required for each dependency",
                           require_str{"Dependency 'name' must be a string"},
-                          put_into{ret.name, name_from_string}},
+                          put_into{ret.name, name_from_string{}}},
              required_key{"for",
                           "A 'for' is required for each dependency",
                           require_str{"Dependency 'for' must be 'lib', 'app', or 'test'"},
-                          put_into{ret.kind, usage_kind_from_string}},
+                          put_into{ret.kind, parse_enum_str<usage_kind>}},
              required_key{"versions",
                           "An array 'versions' is required for each dependency",
                           require_array{"Dependency 'versions' must be an array"},
@@ -99,7 +84,7 @@ crs::dependency dependency_from_data(const json5::data& data) {
                           "A dependency 'uses' key is required",
                           require_array{"Dependency 'uses' must be an array of usage objects"},
                           for_each{require_str{"Each 'uses' item must be a usage string"},
-                                   put_into{std::back_inserter(ret.uses), lm_usage_from_string}}},
+                                   put_into{std::back_inserter(uses), name_from_string{}}}},
              if_key{"_comment", just_accept},
          });
 
@@ -112,6 +97,8 @@ crs::dependency dependency_from_data(const json5::data& data) {
             pubgrub::interval_set<semver::version>{ver.low(), ver.high()});
     }
 
+    ret.uses = explicit_uses_list{std::move(uses)};
+
     return ret;
 }
 
@@ -121,12 +108,12 @@ library_meta library_from_data(const json5::data& data) {
     using namespace semester::walk_ops;
 
     walk(data,
-         require_obj{"Each library must be a JSON object"},
+         require_mapping{"Each library must be a JSON object"},
          mapping{
              required_key{"name",
                           "A library 'name' is required",
                           require_str{"Library 'name' must be a string"},
-                          put_into{ret.name, name_from_string}},
+                          put_into{ret.name, name_from_string{}}},
              required_key{"path",
                           "A library 'path' is required",
                           require_str{"Library 'path' must be a string"},
@@ -181,17 +168,17 @@ package_meta meta_from_data(const json5::data& data) {
     using namespace semester::walk_ops;
 
     walk(data,
-         require_obj{"Root of CRS manifest must be a JSON object"},
+         require_mapping{"Root of CRS manifest must be a JSON object"},
          mapping{
              if_key{"$schema", just_accept},
              required_key{"name",
                           "A string 'name' is required",
                           require_str{"'name' must be a string"},
-                          put_into{ret.name, name_from_string}},
+                          put_into{ret.name, name_from_string{}}},
              required_key{"version",
                           "A 'version' string is required",
                           require_str{"'version' must be a string"},
-                          put_into{ret.version, version_from_string}},
+                          put_into{ret.version, version_from_string{}}},
              required_key{"meta_version",
                           "A 'meta_version' integer is required",
                           require_integer_key("meta_version"),
@@ -199,7 +186,7 @@ package_meta meta_from_data(const json5::data& data) {
              required_key{"namespace",
                           "A string 'namespace' is required",
                           require_str{"'namespace' must be a string"},
-                          put_into{ret.namespace_, name_from_string}},
+                          put_into{ret.namespace_, name_from_string{}}},
 
              required_key{"libraries",
                           "A 'libraries' array is required",

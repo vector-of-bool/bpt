@@ -1,10 +1,10 @@
-from .fixtures import Project, ProjectOpener, PackageJSON, LibraryJSON
+from .fixtures import Project, ProjectOpener, ProjectJSON, LibraryJSON
 from .http import RepoServer
 
 __all__ = (
     'Project',
     'ProjectOpener',
-    'PackageJSON',
+    'ProjectJSON',
     'LibraryJSON',
     'RepoServer',
 )

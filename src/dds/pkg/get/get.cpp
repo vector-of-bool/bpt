@@ -29,12 +29,12 @@ temporary_sdist dds::get_package_sdist(const any_remote_pkg& rpkg) {
 
 temporary_sdist dds::get_package_sdist(const pkg_listing& pkg) {
     auto tsd = get_package_sdist(pkg.remote_pkg);
-    if (!(tsd.sdist.manifest.id == pkg.ident)) {
+    if (!(tsd.sdist.id() == pkg.ident)) {
         throw_external_error<errc::sdist_ident_mismatch>(
             "The package name@version in the generated source distribution does not match the name "
             "listed in the remote listing file (expected '{}', but got '{}')",
             pkg.ident.to_string(),
-            tsd.sdist.manifest.id.to_string());
+            tsd.sdist.id().to_string());
     }
     return tsd;
 }

@@ -4,6 +4,7 @@
 #include <dds/crs/error.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/toolchain.hpp>
+#include <dds/project/project.hpp>
 #include <dds/sdist/library/manifest.hpp>
 #include <dds/sdist/package.hpp>
 #include <dds/util/compress.hpp>
@@ -87,73 +88,35 @@ auto handlers = std::tuple(  //
         write_error_marker("bad-toolchain");
         return 1;
     },
-    [](e_name_str               badname,
-       invalid_name_reason      why,
-       e_dependency_string      depstr,
-       e_package_manifest_path* pkman_path) {
+    [](e_name_str                           badname,
+       invalid_name_reason                  why,
+       e_dependency_string                  depstr,
+       e_parse_project_manifest_path const* prman_path) {
         dds_log(
             error,
             "Invalid package name '.bold.red[{}]' in dependency string '.br.red[{}]': .br.yellow[{}]"_styled,
             badname.value,
             depstr.value,
             invalid_name_reason_str(why));
-        if (pkman_path) {
+        if (prman_path) {
             dds_log(error,
-                    "  (While reading package manifest from [.bold.yellow[{}]])"_styled,
-                    pkman_path->value);
+                    "  (While reading project manifest from [.bold.yellow[{}]])"_styled,
+                    prman_path->value);
         }
         write_error_marker("invalid-pkg-dep-name");
         return 1;
     },
-    [](e_pkg_name_str,
-       e_name_str               badname,
-       invalid_name_reason      why,
-       e_package_manifest_path* pkman_path) {
+    [](e_name_str badname, invalid_name_reason why, e_parse_project_manifest_path* prman_path) {
         dds_log(error,
-                "Invalid package name '.bold.red[{}]': .br.yellow[{}]"_styled,
+                "Invalid name string '.bold.red[{}]': .br.yellow[{}]"_styled,
                 badname.value,
                 invalid_name_reason_str(why));
-        if (pkman_path) {
+        if (prman_path) {
             dds_log(error,
-                    "  (While reading package manifest from [.bold.yellow[{}]])"_styled,
-                    pkman_path->value);
+                    "  (While reading project manifest from [.bold.yellow[{}]])"_styled,
+                    prman_path->value);
         }
-        write_error_marker("invalid-pkg-name");
-        return 1;
-    },
-    [](e_pkg_namespace_str,
-       e_name_str               badname,
-       invalid_name_reason      why,
-       e_package_manifest_path* pkman_path) {
-        dds_log(error,
-                "Invalid package namespace '.bold.red[{}]': .br.yellow[{}]"_styled,
-                badname.value,
-                invalid_name_reason_str(why));
-        if (pkman_path) {
-            dds_log(error,
-                    "  (While reading package manifest from [.bold.yellow[{}]])"_styled,
-                    pkman_path->value);
-        }
-        write_error_marker("invalid-pkg-namespace-name");
-        return 1;
-    },
-    [](e_library_manifest_path libpath, invalid_name_reason why, e_name_str badname) {
-        dds_log(error,
-                "Invalid library name '.bold.red[{}]': .br.yellow[{}]"_styled,
-                badname.value,
-                invalid_name_reason_str(why));
-        dds_log(error,
-                "  (While reading library manifest from [.bold.yellow[{}]])"_styled,
-                libpath.value);
-        write_error_marker("invalid-lib-name");
-        return 1;
-    },
-    [](e_library_manifest_path libpath, lm::e_invalid_usage_string usage) {
-        dds_log(error, "Invalid 'uses' library identifier '.bold.red[{}]'"_styled, usage.value);
-        dds_log(error,
-                "  (While reading library manifest from [.bold.yellow[{}]])"_styled,
-                libpath.value);
-        write_error_marker("invalid-uses-spec");
+        write_error_marker("invalid-name");
         return 1;
     },
     [](dds::crs::e_sync_remote sync_repo,
@@ -227,7 +190,7 @@ auto handlers = std::tuple(  //
             "An unhandled std::system_error arose. .bold.red[THIS IS A DDS BUG!] Info: {}"_styled,
             diag);
         dds_log(critical,
-                "Exception message from std::system_error: .bold.red[{}]",
+                "Exception message from std::system_error: .bold.red[{}]"_styled,
                 exc.code().message());
         return 42;
     },

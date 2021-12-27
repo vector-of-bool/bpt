@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import json
 import shutil
-from typing import Sequence, cast, Optional, Callable
-from typing_extensions import TypedDict
+from typing import Sequence, Union, cast, Optional, Callable
+from typing_extensions import Literal, TypedDict
 
 from _pytest.config import Config as PyTestConfig
 from _pytest.tmpdir import TempPathFactory
@@ -32,14 +32,56 @@ def ensure_absent(path: Pathish) -> None:
         pass
 
 
-class _PackageJSONRequired(TypedDict):
+_ProjectJSONLibraryUsesItem = TypedDict('_ProjectJSONLibraryUsesItem', {
+    'lib': str,
+    'for': Literal['lib', 'app', 'test'],
+})
+
+
+class _ProjectJSONDependencyItemRequired(TypedDict):
+    dep: str
+
+
+class _VersionItem(TypedDict):
+    low: str
+    high: str
+
+
+_ProjectJSONDependencyItemOpt = TypedDict(
+    '_ProjectJSONDependencyItemOpt',
+    {
+        'versions': Sequence[_VersionItem],
+        'for': Literal['lib', 'app', 'test'],
+        'uses': Sequence[str],
+    },
+    total=False,
+)
+
+
+class _ProjectJSONDependencyItem(_ProjectJSONDependencyItemRequired, _ProjectJSONDependencyItemOpt):
+    pass
+
+
+class _ProjectJSONLibraryItemRequired(TypedDict):
     name: str
-    namespace: str
+    path: str
+
+
+class ProjectJSONLibraryItem(_ProjectJSONLibraryItemRequired, total=False):
+    uses: Sequence[Union[str, _ProjectJSONLibraryUsesItem]]
+    depends: Sequence[_ProjectJSONDependencyItem]
+
+
+class _ProjectJSONRequired(TypedDict):
+    name: str
     version: str
 
 
-class PackageJSON(_PackageJSONRequired, total=False):
-    depends: Sequence[str]
+class ProjectJSON(_ProjectJSONRequired, total=False):
+    depends: Sequence[_ProjectJSONDependencyItem]
+    lib: ProjectJSONLibraryItem
+    libs: Sequence[ProjectJSONLibraryItem]
+    namespace: str
 
 
 class _LibraryJSONRequired(TypedDict):
@@ -93,15 +135,15 @@ class Project:
         self.build_root = dirpath / '_build'
 
     @property
-    def package_json(self) -> PackageJSON:
+    def project_json(self) -> ProjectJSON:
         """
-        Get/set the content of the `package.json` file for the project.
+        Get/set the content of the `project.json` file for the project.
         """
-        return cast(PackageJSON, json.loads(self.root.joinpath('package.jsonc').read_text()))
+        return cast(ProjectJSON, json.loads(self.root.joinpath('project.jsonc').read_text()))
 
-    @package_json.setter
-    def package_json(self, data: PackageJSON) -> None:
-        self.root.joinpath('package.jsonc').write_text(json.dumps(data, indent=2))
+    @project_json.setter
+    def project_json(self, data: ProjectJSON) -> None:
+        self.root.joinpath('project.jsonc').write_text(json.dumps(data, indent=2))
 
     def lib(self, name: str) -> Library:
         return Library(name, self.root / f'libs/{name}')
@@ -134,9 +176,10 @@ class Project:
               toolchain: Optional[Pathish] = None,
               fixup_toolchain: bool = True,
               jobs: Optional[int] = None,
-              timeout: Optional[int] = None,
+              timeout: Union[float, None] = None,
               tweaks_dir: Optional[Path] = None,
-              with_tests: bool = True) -> None:
+              with_tests: bool = True,
+              log_level: Literal['info', 'debug', 'trace'] = 'trace') -> None:
         """
         Execute 'dds build' on the project
         """
@@ -151,7 +194,7 @@ class Project:
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
                            with_tests=with_tests,
-                           more_args=['-ltrace'])
+                           more_args=[f'--log-level={log_level}'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
@@ -288,7 +331,7 @@ def dds(dds_exe: Path) -> DDSWrapper:
 @pytest.fixture(scope='session')
 def dds_exe(pytestconfig: PyTestConfig) -> Path:
     """A :class:`pathlib.Path` pointing to the DDS executable under test"""
-    opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
+    opt: Path = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
     return Path(opt)
 
 

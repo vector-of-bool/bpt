@@ -23,7 +23,7 @@ pkg_id pkg_id::parse(const std::string_view s) {
     try {
         return {name, semver::version::parse(ver_str)};
     } catch (const semver::invalid_version& err) {
-        BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::invalid_pkg_id>(), err);
+        BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::invalid_pkg_id>("{}", err.what()));
     }
 }
 

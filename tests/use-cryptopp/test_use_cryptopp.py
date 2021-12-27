@@ -54,7 +54,7 @@ int main() {
 def test_get_build_use_cryptopp(test_parent_dir: Path, tmp_project: Project, http_repo: RepoServer) -> None:
     http_repo.import_json_data(CRYPTOPP_JSON)
     tmp_project.dds.repo_add(http_repo.url)
-    tmp_project.package_json = {
+    tmp_project.project_json = {
         'name': 'usr-cryptopp',
         'version': '1.0.0',
         'namespace': 'test',

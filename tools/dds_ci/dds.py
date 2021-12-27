@@ -61,7 +61,7 @@ class DDSWrapper:
         if pkg_db and self.pkg_db_path.exists():
             self.pkg_db_path.unlink()
 
-    def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None, timeout: Optional[int] = None) -> None:
+    def run(self, args: proc.CommandLine, *, cwd: Optional[Pathish] = None, timeout: Optional[float] = None) -> None:
         """Execute the 'dds' executable with the given arguments"""
         env = os.environ.copy()
         env['DDS_NO_ADD_INITIAL_REPO'] = '1'
@@ -94,7 +94,7 @@ class DDSWrapper:
               tweaks_dir: Optional[Pathish] = None,
               with_tests: bool = True,
               more_args: Optional[proc.CommandLine] = None,
-              timeout: Optional[int] = None) -> None:
+              timeout: Optional[float] = None) -> None:
         """
         Run 'dds build' with the given arguments.
 

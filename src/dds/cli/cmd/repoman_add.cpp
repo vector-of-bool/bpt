@@ -19,8 +19,8 @@ static int _repoman_add(const options& opts) {
     auto temp_sdist = get_package_sdist(rpkg);
 
     dds::pkg_listing add_info{
-        .ident       = temp_sdist.sdist.manifest.id,
-        .deps        = temp_sdist.sdist.manifest.dependencies,
+        .ident       = temp_sdist.sdist.id(),
+        .deps        = {},  //! temp_sdist.sdist.pkg.dependencies,
         .description = opts.repoman.add.description,
         .remote_pkg  = rpkg,
     };

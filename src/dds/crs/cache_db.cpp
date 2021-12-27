@@ -337,20 +337,39 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     const auto [remote_id, remote_revno]
         = *neo::sqlite3::one_row<std::int64_t, std::int64_t>(update_remote_st);
 
+    auto remote_packages =  //
+        *neo::sqlite3::exec_tuples<std::string_view>(_prepare(R"(
+            SELECT meta_json FROM remote.crs_repo_packages
+        )"_sql))
+        | std::views::transform([](auto tup) -> std::optional<package_meta> {
+              auto [json_str] = tup;
+              return dds_leaf_try->std::optional<package_meta> {
+                  return package_meta::from_json_str(json_str);
+              }
+              dds_leaf_catch(e_invalid_meta_data err) {
+                  dds_log(warn, "Remote package has an invalid JSON entry: {}", err.value);
+                  dds_log(warn, "  The corresponding package will not be available.");
+                  dds_log(debug, "  The bad JSON content is: {}", json_str);
+                  return std::nullopt;
+              };
+          });
+
     auto& update_pkg_st = _prepare(R"(
         INSERT INTO dds_crs_packages (json, remote_id, remote_revno)
-            SELECT pkg.meta_json, $remote_id, $remote_revno
-              FROM remote.crs_repo_packages AS pkg
-              WHERE 1  -- Fix parse ambiguity with upsert
+            VALUES (?1, ?2, ?3)
         ON CONFLICT(name, version, meta_version, remote_id) DO UPDATE
             SET json=excluded.json,
-                remote_revno=$remote_revno
+                remote_revno=?3
     )"_sql);
-    update_pkg_st.reset();
-    update_pkg_st.bindings()["$remote_revno"] = remote_revno;
-    update_pkg_st.bindings()["$remote_id"]    = remote_id;
-    neo::sqlite3::exec(update_pkg_st).throw_if_error();
-    const auto n_updated = _db.get().raw_database().changes();
+    int   n_updated     = 0;
+    for (auto meta : remote_packages) {
+        if (!meta.has_value()) {
+            continue;
+        }
+        neo::sqlite3::exec(update_pkg_st, meta->to_json(), remote_id, remote_revno)
+            .throw_if_error();
+        n_updated++;
+    }
 
     auto& delete_old_st = _prepare(R"(
         DELETE FROM dds_crs_packages
@@ -359,6 +378,9 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     neo::sqlite3::reset_and_bind(delete_old_st, remote_id, remote_revno).throw_if_error();
     neo::sqlite3::exec(delete_old_st).throw_if_error();
     const auto n_deleted = _db.get().raw_database().changes();
+
+    dds_log(debug, "Running integrity check");
+    _db.get().exec_script("PRAGMA main.integrity_check"_sql);
 
     dds_log(info,
             "Syncing repository .cyan[{}] Done: {} added/updated, {} deleted"_styled,

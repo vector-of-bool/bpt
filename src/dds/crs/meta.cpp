@@ -3,12 +3,16 @@
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <dds/error/try_catch.hpp>
+#include <dds/util/algo.hpp>
 #include <dds/util/json5/convert.hpp>
 #include <dds/util/json5/parse.hpp>
 
 #include <boost/leaf/on_error.hpp>
 #include <json5/data.hpp>
 #include <magic_enum.hpp>
+#include <neo/assert.hpp>
+#include <neo/overload.hpp>
+#include <neo/tl.hpp>
 #include <neo/ufmt.hpp>
 #include <nlohmann/json.hpp>
 #include <semester/walk.hpp>
@@ -69,7 +73,7 @@ std::string package_meta::to_json(int indent) const noexcept {
         json lib_intra_uses = json::array();
         for (auto&& use : lib.intra_uses) {
             lib_intra_uses.push_back(json::object({
-                {"lib", neo::ufmt("{}/{}", use.lib.namespace_, use.lib.name)},
+                {"lib", use.lib.str},
                 {"for", magic_enum::enum_name(use.kind)},
             }));
         }
@@ -83,9 +87,19 @@ std::string package_meta::to_json(int indent) const noexcept {
                 }));
             }
             json uses = json::array();
-            for (auto&& use : dep.uses) {
-                uses.push_back(neo::ufmt("{}/{}", use.namespace_, use.name));
-            }
+            dep.uses.visit(neo::overload{
+                [&](explicit_uses_list const& l) {
+                    extend(uses, l.uses | std::views::transform(NEO_TL(_1.str)));
+                },
+                [&](implicit_uses_all) {
+                    neo_assert(
+                        invariant,
+                        false,
+                        "We attempted to serialize (to_json) a CRS metadata object that contains "
+                        "an implicit dependency library uses list. This should never occur.",
+                        *this);
+                },
+            });
             depends.push_back(json::object({
                 {"name", dep.name.str},
                 {"for", magic_enum::enum_name(dep.kind)},

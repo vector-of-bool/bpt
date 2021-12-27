@@ -6,6 +6,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs/io.hpp>
+#include <dds/util/fs/path.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
@@ -38,26 +39,22 @@ void log_failure(const test_failure& fail) {
     }
 }
 
-library_plan
-prepare_library(const sdist_target& sdt, const library_root& lib, const package_manifest& pkg_man) {
+library_plan prepare_library(const sdist_target&      sdt,
+                             const crs::library_meta& lib,
+                             const crs::package_meta& pkg_man) {
     library_build_params lp;
-    lp.out_subdir      = sdt.params.subdir;
+    lp.out_subdir      = normalize_path(sdt.params.subdir / lib.path);
     lp.build_apps      = sdt.params.build_apps;
     lp.build_tests     = sdt.params.build_tests;
     lp.enable_warnings = sdt.params.enable_warnings;
-    if (lp.build_tests) {
-        extend(lp.test_uses, lib.manifest().test_uses);
-    }
-    return library_plan::create(lib,
-                                std::move(lp),
-                                pkg_man.namespace_.str + "/" + lib.manifest().name.str);
+    return library_plan::create(sdt.sd.path, pkg_man, lib, std::move(lp));
 }
 
 package_plan prepare_one(const sdist_target& sd) {
-    package_plan pkg{sd.sd.manifest.id.name.str, sd.sd.manifest.namespace_.str};
-    auto         libs = collect_libraries(sd.sd.path);
-    for (const auto& lib : libs) {
-        pkg.add_library(prepare_library(sd, lib, sd.sd.manifest));
+    auto&        man = sd.sd.pkg;
+    package_plan pkg{man.name.str, man.namespace_.str};
+    for (auto& lib : man.libraries) {
+        pkg.add_library(prepare_library(sd, lib, man));
     }
     return pkg;
 }
@@ -75,10 +72,10 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
     usage_requirement_map ureqs;
     for (const auto& pkg : plan.packages()) {
         for (const auto& lib : pkg.libraries()) {
-            auto& lib_reqs = ureqs.add(pkg.namespace_(), lib.name().str);
-            lib_reqs.include_paths.push_back(lib.library_().public_include_dir());
-            lib_reqs.uses  = lib.library_().manifest().uses;
-            lib_reqs.links = lib.library_().manifest().links;
+            auto& lib_reqs = ureqs.add({pkg.namespace_(), std::string(lib.name())});
+            lib_reqs.include_paths.push_back(lib.public_include_dir());
+            lib_reqs.uses = lib.uses();
+            //! lib_reqs.links = lib.library_().manifest().links;
             if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
             }
@@ -94,15 +91,15 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
 void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
     fs::create_directories(lml_path.parent_path());
     auto out = dds::open_file(lml_path, std::ios::binary | std::ios::out);
-    out << "Type: Library\n"
-        << "Name: " << lib.name().str << '\n'
-        << "Include-Path: " << lib.library_().public_include_dir().generic_string() << '\n';
+    //! out << "Type: Library\n"
+    //!     << "Name: " << lib.name().str << '\n'
+    //!     << "Include-Path: " << lib.library_().public_include_dir().generic_string() << '\n';
     for (auto&& use : lib.uses()) {
         out << "Uses: " << use.namespace_ << "/" << use.name << '\n';
     }
-    for (auto&& link : lib.links()) {
-        out << "Links: " << link.namespace_ << "/" << link.name << '\n';
-    }
+    //! for (auto&& link : lib.links()) {
+    //!     out << "Links: " << link.namespace_ << "/" << link.name << '\n';
+    //! }
     if (auto&& arc = lib.archive_plan()) {
         out << "Path: "
             << (env.output_root / arc->calc_archive_file_path(env.toolchain)).generic_string()
@@ -117,7 +114,7 @@ void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
         << "Name: " << pkg.name() << '\n'
         << "Namespace: " << pkg.namespace_() << '\n';
     for (const auto& lib : pkg.libraries()) {
-        auto lml_path = lmp_path.parent_path() / pkg.namespace_() / (lib.name().str + ".lml");
+        auto lml_path = lmp_path.parent_path() / (lib.qualified_name() + ".lml");
         write_lml(env, lib, lml_path);
         out << "Library: " << lml_path.generic_string() << '\n';
     }
@@ -134,13 +131,13 @@ void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, pat
     }
 }
 
-void write_lib_cmake(build_env_ref       env,
-                     std::ostream&       out,
-                     const package_plan& pkg,
+void write_lib_cmake(build_env_ref env,
+                     std::ostream& out,
+                     const package_plan& /* pkg */,
                      const library_plan& lib) {
-    fmt::print(out, "# Library {}/{}\n", pkg.namespace_(), lib.name().str);
-    auto cmake_name = fmt::format("{}::{}", pkg.namespace_(), lib.name().str);
-    auto cm_kind    = lib.archive_plan().has_value() ? "STATIC" : "INTERFACE";
+    fmt::print(out, "# Library {}\n", lib.qualified_name());
+    auto cmake_name = fmt::format("{}::{}", dds::replace(lib.qualified_name(), "/", "::"));
+    //! auto cm_kind    = lib.archive_plan().has_value() ? "STATIC" : "INTERFACE";
     fmt::print(
         out,
         "if(TARGET {0})\n"
@@ -150,13 +147,13 @@ void write_lib_cmake(build_env_ref       env,
         "  endif()\n"
         "else()\n",
         cmake_name);
-    fmt::print(out,
-               "  add_library({0} {1} IMPORTED GLOBAL)\n"
-               "  set_property(TARGET {0} PROPERTY dds_IMPORTED TRUE)\n"
-               "  set_property(TARGET {0} PROPERTY INTERFACE_INCLUDE_DIRECTORIES [[{2}]])\n",
-               cmake_name,
-               cm_kind,
-               lib.library_().public_include_dir().generic_string());
+    //! fmt::print(out,
+    //!            "  add_library({0} {1} IMPORTED GLOBAL)\n"
+    //!            "  set_property(TARGET {0} PROPERTY dds_IMPORTED TRUE)\n"
+    //!            "  set_property(TARGET {0} PROPERTY INTERFACE_INCLUDE_DIRECTORIES [[{2}]])\n",
+    //!            cmake_name,
+    //!            cm_kind,
+    //!            lib.library_().public_include_dir().generic_string());
     for (auto&& use : lib.uses()) {
         fmt::print(out,
                    "  set_property(TARGET {} APPEND PROPERTY INTERFACE_LINK_LIBRARIES {}::{})\n",
@@ -164,14 +161,14 @@ void write_lib_cmake(build_env_ref       env,
                    use.namespace_,
                    use.name);
     }
-    for (auto&& link : lib.links()) {
-        fmt::print(out,
-                   "  set_property(TARGET {} APPEND PROPERTY\n"
-                   "               INTERFACE_LINK_LIBRARIES $<LINK_ONLY:{}::{}>)\n",
-                   cmake_name,
-                   link.namespace_,
-                   link.name);
-    }
+    //! for (auto&& link : lib.links()) {
+    //!     fmt::print(out,
+    //!                "  set_property(TARGET {} APPEND PROPERTY\n"
+    //!                "               INTERFACE_LINK_LIBRARIES $<LINK_ONLY:{}::{}>)\n",
+    //!                cmake_name,
+    //!                link.namespace_,
+    //!                link.name);
+    //! }
     if (auto& arc = lib.archive_plan()) {
         fmt::print(out,
                    "  set_property(TARGET {} PROPERTY IMPORTED_LOCATION [[{}]])\n",

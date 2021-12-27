@@ -17,8 +17,7 @@
 namespace dds::cli::cmd {
 static int _pkg_ls(const options& opts) {
     auto list_contents = [&](pkg_cache repo) {
-        auto same_name
-            = [](auto&& a, auto&& b) { return a.manifest.id.name == b.manifest.id.name; };
+        auto same_name = [](auto&& a, auto&& b) { return a.id().name == b.id().name; };
 
         auto all         = repo.iter_sdists();
         auto grp_by_name = all                             //
@@ -26,13 +25,13 @@ static int _pkg_ls(const options& opts) {
             | ranges::views::transform(ranges::to_vector)  //
             | ranges::views::transform([](auto&& grp) {
                                assert(grp.size() > 0);
-                               return std::pair(grp[0].manifest.id.name, grp);
+                               return std::pair(grp[0].id().name, grp);
                            });
 
         for (const auto& [name, grp] : grp_by_name) {
             dds_log(info, "{}:", name.str);
             for (const dds::sdist& sd : grp) {
-                dds_log(info, "  - {}", sd.manifest.id.version.to_string());
+                dds_log(info, "  - {}", sd.id().version.to_string());
             }
         }
 

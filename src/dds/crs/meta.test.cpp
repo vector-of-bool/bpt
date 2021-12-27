@@ -3,6 +3,7 @@
 #include <dds/error/result.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/util/json5/parse.hpp>
+#include <dds/util/parse_enum.hpp>
 
 #include <boost/leaf.hpp>
 #include <boost/leaf/context.hpp>
@@ -238,23 +239,6 @@ TEST_CASE("Reject bad meta informations") {
              "crs_version": 1
          })",
          "A 'for' is required for each dependency"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "meta_version": 1,
-             "namespace": "cat",
-             "libraries": [{
-                 "name": "foo",
-                 "path": ".",
-                 "uses": [],
-                 "depends": [{
-                     "name": "bar",
-                     "for": "meow"
-                 }]
-             }],
-             "crs_version": 1
-         })",
-         "Invalid usage kind string 'meow' (Should be one of 'lib', 'app', or 'test')"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -507,12 +491,12 @@ TEST_CASE("Reject bad meta informations") {
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": ["bleh"]
+                     "uses": ["baz/quux"]
                  }]
              }],
              "crs_version": 1
          })",
-         "Invalid usage string 'bleh'"},
+         "Invalid name string 'baz/quux'"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -612,7 +596,7 @@ TEST_CASE("Reject bad meta informations") {
                    boost::leaf::verbose_diagnostic_info const& diag_info) {
         CAPTURE(diag_info);
         CHECKED_IF(json_str) { CHECK(json_str->value == given); }
-        CHECK_THAT(err.value, Catch::Matchers::EndsWith(expect_error));
+        CHECK_THAT(err.value, Catch::Matchers::Contains(expect_error));
     }
     dds_leaf_catch(dds::crs::e_given_meta_json_str const*      error_str,
                    dds::crs::e_given_meta_json_data const*     error_data,
@@ -621,11 +605,38 @@ TEST_CASE("Reject bad meta informations") {
         CAPTURE(diag_info);
         CHECKED_IF(error_str) { CHECK(error_str->value == given); }
         CHECK(error_data);
-        CHECK_THAT(e.value, Catch::Matchers::EndsWith(expect_error));
+        CHECK_THAT(e.value, Catch::Matchers::Contains(expect_error));
     }
     dds_leaf_catch_all {  //
-        FAIL_CHECK("Bad error: " << diagnostic_info);
+        FAIL_CHECK("Unexpected error: " << diagnostic_info);
     };
+
+    dds_leaf_try {
+        dds::crs::package_meta::from_json_str(R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "meta_version": 1,
+             "namespace": "cat",
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "uses": [],
+                 "depends": [{
+                     "name": "bar",
+                     "for": "meow"
+                 }]
+             }],
+             "crs_version": 1
+         })");
+        FAIL_CHECK("Expected an error, but non occurred");
+    }
+    dds_leaf_catch(dds::e_invalid_enum<dds::crs::usage_kind>,
+                   dds::e_invalid_enum_str bad_str,
+                   dds::e_enum_options     opts) {
+        CHECK(bad_str.value == "meow");
+        CHECK(opts.value == R"("lib", "test", "app")");
+    }
+    dds_leaf_catch_all { FAIL_CHECK("Unexpected error: " << diagnostic_info); };
 }
 
 TEST_CASE("Check some valid meta JSON") {
@@ -668,7 +679,7 @@ TEST_CASE("Check parse results") {
                          "low": "1.0.0",
                          "high": "1.5.1"
                      }],
-                     "uses": ["bar/bar"]
+                     "uses": ["bar"]
                  }]
              }],
              "crs_version": 1
@@ -688,7 +699,7 @@ TEST_CASE("Check parse results") {
                      = dds::crs::version_range_set{semver::version::parse("1.0.0"),
                                                    semver::version::parse("1.5.1")},
                      .kind = dds::crs::usage_kind::lib,
-                     .uses = {lm::usage{"bar", "baz"}},
+                     .uses = dds::crs::explicit_uses_list{{dds::name{"baz"}}},
                  }},
              }},
              .extra        = {},
@@ -719,13 +730,7 @@ TEST_CASE("Check parse results") {
                      ++res_dep_it, ++exp_dep_it) {
                     CHECK(res_dep_it->name == exp_dep_it->name);
                     CHECK(res_dep_it->acceptable_versions == exp_dep_it->acceptable_versions);
-                    CHECKED_IF(res_dep_it->uses.size() == exp_dep_it->uses.size()) {
-                        auto res_use_it = res_dep_it->uses.cbegin();
-                        auto exp_use_it = exp_dep_it->uses.cbegin();
-                        for (; res_use_it != res_dep_it->uses.cend(); ++res_use_it, ++exp_use_it) {
-                            CHECK(*res_use_it == *exp_use_it);
-                        }
-                    }
+                    CHECK(res_dep_it->uses == exp_dep_it->uses);
                 }
             }
         }

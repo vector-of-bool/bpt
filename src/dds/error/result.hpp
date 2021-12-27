@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./human.hpp"
 #include "./result_fwd.hpp"
 
 #include <boost/leaf/error.hpp>
@@ -9,9 +10,5 @@ namespace dds {
 
 using boost::leaf::current_error;
 using boost::leaf::new_error;
-
-struct e_human_message {
-    std::string value;
-};
 
 }  // namespace dds

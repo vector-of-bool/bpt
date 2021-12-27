@@ -39,6 +39,13 @@ struct name {
         self.write_to(o);
         return o;
     }
+
+    friend void do_repr(auto out, const name* self) {
+        out.type("dds::name");
+        if (self) {
+            out.value("{}", out.repr_value(self->str));
+        }
+    }
 };
 
 }  // namespace dds

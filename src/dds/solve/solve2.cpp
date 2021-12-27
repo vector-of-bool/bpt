@@ -10,6 +10,7 @@
 
 #include <boost/leaf/exception.hpp>
 #include <fmt/ostream.h>
+#include <neo/overload.hpp>
 #include <neo/ranges.hpp>
 #include <neo/tl.hpp>
 #include <pubgrub/failure.hpp>
@@ -23,6 +24,7 @@
 #include <tuple>
 
 using namespace dds;
+using namespace dds::crs;
 
 namespace {
 
@@ -43,7 +45,10 @@ struct requirement {
 
     explicit requirement(crs::dependency d)
         : dep(std::move(d)) {
-        std::ranges::sort(d.uses);
+        d.uses.visit(neo::overload{
+            [](explicit_uses_list& l) { std::ranges::sort(l.uses); },
+            [](implicit_uses_all) {},
+        });
     }
 
     std::string key() const noexcept { return dep.name.str; }
@@ -64,14 +69,34 @@ struct requirement {
         return versions().disjoint(other.versions());
     }
 
+    dependency_uses union_usages(dependency_uses const& l,
+                                 dependency_uses const& r) const noexcept {
+        return l.visit(neo::overload{
+            [&](explicit_uses_list const& left) -> dependency_uses {
+                return r.visit(neo::overload{
+                    [&](explicit_uses_list const& right) -> dependency_uses {
+                        explicit_uses_list uses_union;
+                        std::ranges::set_union(left.uses,
+                                               right.uses,
+                                               std::back_inserter(uses_union.uses));
+                        return uses_union;
+                    },
+                    [](implicit_uses_all a) -> dependency_uses { return a; },
+                });
+            },
+            [&](implicit_uses_all a) -> dependency_uses { return a; },
+        });
+    }
+
     std::optional<requirement> intersection(const requirement& other) const noexcept {
         auto range = versions().intersection(other.versions());
         if (range.empty()) {
             return std::nullopt;
         }
-        std::vector<lm::usage> uses_union;
-        std::ranges::set_union(dep.uses, other.dep.uses, std::back_inserter(uses_union));
-        return requirement{crs::dependency{dep.name, std::move(range), dep.kind, uses_union}};
+        return requirement{crs::dependency{dep.name,
+                                           std::move(range),
+                                           dep.kind,
+                                           union_usages(dep.uses, other.dep.uses)}};
     }
 
     std::optional<requirement> union_(const requirement& other) const noexcept {
@@ -79,9 +104,10 @@ struct requirement {
         if (range.empty()) {
             return std::nullopt;
         }
-        std::vector<lm::usage> uses_union;
-        std::ranges::set_union(dep.uses, other.dep.uses, std::back_inserter(uses_union));
-        return requirement{crs::dependency{dep.name, std::move(range), dep.kind, uses_union}};
+        return requirement{crs::dependency{dep.name,
+                                           std::move(range),
+                                           dep.kind,
+                                           union_usages(dep.uses, other.dep.uses)}};
     }
 
     std::optional<requirement> difference(const requirement& other) const noexcept {
@@ -106,7 +132,7 @@ struct metadata_provider {
     std::optional<requirement> best_candidate(const requirement& req) const {
         dds::cancellation_point();
         auto found = pkgs_by_name.find(req.dep.name.str);
-        dds_log(trace, "Prospective selection {}@[...]", req.dep.name.str);
+        dds_log(trace, "Find best candidate of {}", req.dep.decl_to_string());
         if (found == pkgs_by_name.end()) {
             found = pkgs_by_name  //
                         .emplace(req.dep.name.str, cache_db.for_package(req.dep.name))
@@ -160,22 +186,25 @@ struct metadata_provider {
         DDS_E_SCOPE(pkg);
         DDS_E_SCOPE(req.dep);
 
-        std::set<lm::usage> use_from_pkg{req.dep.uses.cbegin(), req.dep.uses.cend()};
-
-        if (use_from_pkg.empty()) {
-            extend(use_from_pkg,
-                   pkg.libraries
-                       | std::views::transform(NEO_TL(lm::usage{pkg.namespace_.str, _1.name.str})));
-        }
+        std::set<dds::name> use_from_pkg = req.dep.uses.visit(neo::overload{
+            [&](implicit_uses_all) {
+                std::set<dds::name> r;
+                extend(r, pkg.libraries | std::views::transform(NEO_TL(_1.name)));
+                return r;
+            },
+            [&](explicit_uses_list const& seq) {
+                return std::set<dds::name>{seq.uses.cbegin(), seq.uses.cend()};
+            },
+        });
 
         while (true) {
-            std::set<lm::usage> use_more;
+            std::set<dds::name> use_more;
             for (auto&& use : use_from_pkg) {
                 dds_log(trace, "  Uses library: {}", use);
                 DDS_E_SCOPE(use);
                 /** Find the library meta for the used library */
-                auto dep_lib = std::ranges::find_if(pkg.libraries, NEO_TL(_1.name.str == use.name));
-                if (dep_lib == pkg.libraries.cend() || use.namespace_ != pkg.namespace_.str) {
+                auto dep_lib = std::ranges::find_if(pkg.libraries, NEO_TL(_1.name == use));
+                if (dep_lib == pkg.libraries.cend()) {
                     BOOST_LEAF_THROW_EXCEPTION(e_usage_no_such_lib{});
                 }
                 dds::extend(use_more,
@@ -188,20 +217,18 @@ struct metadata_provider {
             }
             dds_log(trace,
                     "  Use: {}",
-                    dds::joinstr(", ", use_from_pkg | std::views::transform(NEO_TL(_1.name))));
+                    dds::joinstr(", ", use_from_pkg | std::views::transform(NEO_TL(_1.str))));
             extend(use_from_pkg, use_more);
             use_more.clear();
         }
 
         std::vector<requirement> ret;
-        for (lm::usage intra_used : use_from_pkg) {
-            auto dep_lib
-                = std::ranges::find_if(pkg.libraries, NEO_TL(_1.name.str == intra_used.name));
+        for (dds::name intra_used : use_from_pkg) {
+            auto dep_lib = std::ranges::find_if(pkg.libraries, NEO_TL(_1.name == intra_used));
             neo_assert(invariant,
                        dep_lib != pkg.libraries.end(),
                        "Invalid intra-package usage was uncaught",
-                       intra_used.name,
-                       intra_used.namespace_,
+                       intra_used.str,
                        pkg.name.str);
             dds::extend(ret,
                         dep_lib->dependencies

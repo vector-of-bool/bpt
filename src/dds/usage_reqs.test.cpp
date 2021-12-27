@@ -45,15 +45,15 @@ TEST_CASE("Cyclic dependencies are rejected") {
         for (int i = 0; i < 10; ++i) {
             std::string dep_name = fmt::format("dep{}", i + 10);
 
-            reqs.add(dep_name, dep_name, lm::library{.name = dep_name, .uses = previous});
+            reqs.add({dep_name, dep_name}, lm::library{.name = dep_name, .uses = previous});
 
             previous.push_back(lm::usage{dep_name, dep_name});
         }
     }
 
-    reqs.add("dep1", "dep1", lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
-    reqs.add("dep2", "dep2", lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
-    reqs.add("dep3", "dep3", lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
+    reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
+    reqs.add({"dep2", "dep2"}, lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
+    reqs.add({"dep3", "dep3"}, lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
 
     REQUIRE_THROWS_WITH(dds::usage_requirements(reqs),
                         Contains("'dep1/dep1' uses 'dep2/dep2' uses 'dep3/dep3' uses 'dep1/dep1'"));
@@ -62,14 +62,14 @@ TEST_CASE("Cyclic dependencies are rejected") {
 TEST_CASE("Self-referential `uses` are rejected") {
     dds::usage_requirement_map reqs;
 
-    reqs.add("dep1", "dep1", lm::library{.name = "dep1", .uses = {lm::usage{"dep1", "dep1"}}});
+    reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep1", "dep1"}}});
 
     REQUIRE_THROWS_WITH(dds::usage_requirements(reqs), Contains("'dep1/dep1' uses 'dep1/dep1'"));
 }
 
 TEST_CASE("Cyclic dependencies can be found - Self-referential") {
     dds::usage_requirement_map reqs;
-    reqs.add("dep1", "dep1", lm::library{.name = "dep1", .uses = {lm::usage{"dep1", "dep1"}}});
+    reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep1", "dep1"}}});
 
     auto cycle = reqs.find_usage_cycle();
     REQUIRE(cycle.has_value());
@@ -78,9 +78,9 @@ TEST_CASE("Cyclic dependencies can be found - Self-referential") {
 
 TEST_CASE("Cyclic dependencies can be found - Longer loops") {
     dds::usage_requirement_map reqs;
-    reqs.add("dep1", "dep1", lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
-    reqs.add("dep2", "dep2", lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
-    reqs.add("dep3", "dep3", lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
+    reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
+    reqs.add({"dep2", "dep2"}, lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
+    reqs.add({"dep3", "dep3"}, lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
 
     auto cycle = reqs.find_usage_cycle();
     REQUIRE(cycle.has_value());
@@ -98,15 +98,15 @@ TEST_CASE("Cyclic dependencies can be found - larger case") {
         for (int i = 0; i < 10; ++i) {
             std::string dep_name = fmt::format("dep{}", i + 10);
 
-            reqs.add(dep_name, dep_name, lm::library{.name = dep_name, .uses = previous});
+            reqs.add({dep_name, dep_name}, lm::library{.name = dep_name, .uses = previous});
 
             previous.push_back(lm::usage{dep_name, dep_name});
         }
     }
 
-    reqs.add("dep1", "dep1", lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
-    reqs.add("dep2", "dep2", lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
-    reqs.add("dep3", "dep3", lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
+    reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
+    reqs.add({"dep2", "dep2"}, lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
+    reqs.add({"dep3", "dep3"}, lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
 
     auto cycle = reqs.find_usage_cycle();
     REQUIRE(cycle.has_value());

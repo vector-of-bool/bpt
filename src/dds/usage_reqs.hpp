@@ -42,11 +42,8 @@ public:
     using const_iterator = _reqs_map_type::const_iterator;
 
     const lm::library* get(const lm::usage& key) const noexcept;
-    const lm::library* get(std::string ns, std::string name) const noexcept {
-        return get({ns, name});
-    }
-    lm::library& add(std::string ns, std::string name);
-    void         add(std::string ns, std::string name, lm::library lib) { add(ns, name) = lib; }
+    lm::library&       add(lm::usage u);
+    void               add(lm::usage u, lm::library lib) { add(u) = lib; }
 
     std::vector<fs::path> link_paths(const lm::usage&) const;
     std::vector<fs::path> include_paths(const lm::usage& req) const;

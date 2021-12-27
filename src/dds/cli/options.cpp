@@ -111,6 +111,22 @@ struct setup {
         .action          = push_back_onto(opts.use_repos),
     };
 
+    argument repo_sync_arg{
+        .long_spellings = {"repo-sync"},
+        .help
+        = "Mode for repository synchronization. Default is 'always'.\n"
+          "\n"
+          "always:\n  Attempt to pull repository metadata. If that fails, fail immediately and "
+          "unconditionally.\n\n"
+          "cached-okay:\n  Attempt to pull repository metadata. If a low-level network error "
+          "occurs and \n  we have cached metadata for the failing repitory, ignore the error and "
+          "continue.\n\n"
+          "never:\n  Do not attempt to pull repository metadata. This option requires that there "
+          "be a local cache of the repository metadata.",
+        .valname = "{always,cached-okay,never}",
+        .action  = put_into(opts.repo_sync_mode),
+    };
+
     void do_setup(argument_parser& parser) noexcept {
         parser.add_argument({
             .long_spellings  = {"log-level"},
@@ -190,6 +206,8 @@ struct setup {
     void setup_build_cmd(argument_parser& build_cmd) {
         build_cmd.add_argument(toolchain_arg.dup());
         build_cmd.add_argument(project_arg.dup());
+        build_cmd.add_argument(use_repos_arg.dup());
+        build_cmd.add_argument(repo_sync_arg.dup());
         build_cmd.add_argument({
             .long_spellings = {"no-tests"},
             .help           = "Do not build and run project tests",
@@ -236,6 +254,8 @@ struct setup {
         compile_file_cmd.add_argument(lm_index_arg.dup());
         compile_file_cmd.add_argument(out_arg.dup());
         compile_file_cmd.add_argument(tweaks_dir_arg.dup());
+        compile_file_cmd.add_argument(use_repos_arg.dup());
+        compile_file_cmd.add_argument(repo_sync_arg.dup());
         compile_file_cmd.add_argument({
             .help       = "One or more source files to compile",
             .valname    = "<source-files>",
@@ -250,6 +270,8 @@ struct setup {
         build_deps_cmd.add_argument(out_arg.dup());
         build_deps_cmd.add_argument(lm_index_arg.dup()).help
             = "Destination path for the generated libman index file";
+        build_deps_cmd.add_argument(use_repos_arg.dup());
+        build_deps_cmd.add_argument(repo_sync_arg.dup());
         build_deps_cmd.add_argument({
             .long_spellings  = {"deps-file"},
             .short_spellings = {"d"},
@@ -437,6 +459,7 @@ struct setup {
     void setup_pkg_solve_cmd(argument_parser& pkg_solve_cmd) noexcept {
         auto& use    = pkg_solve_cmd.add_argument(use_repos_arg.dup());
         use.required = true;
+        pkg_solve_cmd.add_argument(repo_sync_arg.dup());
         pkg_solve_cmd.add_argument({
             .help       = "List of package requirements to solve for",
             .valname    = "<requirement>",
@@ -474,6 +497,7 @@ struct setup {
         });
         validate_cmd.add_argument(repoman_repo_dir_arg.dup());
         validate_cmd.add_argument(use_repos_arg.dup());
+        validate_cmd.add_argument(repo_sync_arg.dup());
     }
 
     void setup_repo_import_cmd(argument_parser& repo_import_cmd) {

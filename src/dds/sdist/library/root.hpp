@@ -23,16 +23,13 @@ class library_root {
     fs::path _path_namespace;
     // The sources that are part of this library
     source_list _sources;
-    // The library manifest associated with this library (may be generated)
-    library_manifest _man;
 
     // Private constructor. Use named constructor `from_directory`, which will build
     // the construct arguments approperiately
-    library_root(path_ref dir, path_ref path_namespace, source_list&& src, library_manifest&& man)
+    library_root(path_ref dir, path_ref path_namespace, source_list&& src)
         : _path(dir)
         , _path_namespace(path_namespace)
-        , _sources(std::move(src))
-        , _man(std::move(man)) {}
+        , _sources(std::move(src)) {}
 
 public:
     /**
@@ -41,11 +38,6 @@ public:
      * return the resulting library object.
      */
     static library_root from_directory(path_ref lib_dir, path_ref path_namespace);
-
-    /**
-     * Obtain the manifest for this library
-     */
-    const library_manifest& manifest() const noexcept { return _man; }
 
     /**
      * The `src/` directory for this library.

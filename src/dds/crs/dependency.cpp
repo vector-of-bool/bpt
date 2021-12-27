@@ -1,5 +1,7 @@
 #include "./dependency.hpp"
 
+#include <sstream>
+
 namespace {
 
 std::string iv_string(const pubgrub::interval_set<semver::version>::interval_type& iv) {

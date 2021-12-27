@@ -2,7 +2,6 @@
 
 #include <dds/crs/cache.hpp>
 #include <dds/crs/repo.hpp>
-#include <dds/error/result.hpp>
 #include <dds/util/url.hpp>
 
 namespace dds::cli::cmd {
@@ -16,6 +15,7 @@ int pkg_prefetch(const options& opts) {
         meta_db.sync_remote(url);
         meta_db.enable_remote(url);
     }
+
     for (auto& pkg_str : opts.pkg.get.pkgs) {
         auto pid = crs::pkg_id::parse_str(pkg_str);
         cache.prefetch(pid);

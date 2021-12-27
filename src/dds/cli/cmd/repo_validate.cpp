@@ -31,9 +31,8 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
         .name                = pkg.name,
         .acceptable_versions = crs::version_range_set{pkg.version, pkg.version.next_after()},
         .kind                = crs::usage_kind::lib,
-        .uses                = pkg.libraries
-            | std::views::transform(NEO_TL(lm::usage{pkg.namespace_.str, _1.name.str}))
-            | neo::to_vector,
+        .uses = crs::explicit_uses_list{pkg.libraries | std::views::transform(NEO_TL(_1.name))
+                                        | neo::to_vector},
     }};
     return dds_leaf_try {
         fmt::print("Validate package .br.cyan[{}@{}~{}] ..."_styled,
@@ -45,26 +44,6 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
         dds::solve2(cache, dep);
         return true;
     }
-    // dds_leaf_catch(e_usage_namespace_mismatch,
-    //                lm::usage bad_usage,
-    //                crs::dependency,
-    //                crs::package_meta dep_pkg) {
-    //     dds_log(error,
-    //             "Package .bold.red[{}@{}~{}] is not valid:"_styled,
-    //             pkg.name.str,
-    //             pkg.version.to_string(),
-    //             pkg.meta_version);
-    //     dds_log(error,
-    //             "  It requests usage of library .br.red[{}] from .br.yellow[{}@{}],"_styled,
-    //             bad_usage,
-    //             dep_pkg.name.str,
-    //             dep_pkg.version.to_string());
-    //     dds_log(error,
-    //             "  but that package's namespace is .br.yellow[{}], not .br.red[{}]"_styled,
-    //             dep_pkg.namespace_.str,
-    //             bad_usage.namespace_);
-    //     return false;
-    // }
     dds_leaf_catch(e_usage_no_such_lib,
                    lm::usage bad_usage,
                    crs::dependency,

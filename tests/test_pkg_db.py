@@ -1,7 +1,6 @@
 import json
 
-from dds_ci.dds import DDSWrapper
-from dds_ci.testing import Project, RepoServer, PackageJSON
+from dds_ci.testing import Project, RepoServer
 from dds_ci.testing.error import expect_error_marker
 from dds_ci.testing.http import HTTPRepoServerFactory, RepoServer
 

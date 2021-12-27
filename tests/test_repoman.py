@@ -47,7 +47,7 @@ def test_pkg_http(http_repo: RepoServer, tmp_project: Project) -> None:
         'https://github.com/vector-of-bool/neo-fun/archive/0.4.0.tar.gz?__dds_strpcmp=1'
     ])
     tmp_project.dds.repo_add(http_repo.url)
-    tmp_project.package_json = {
+    tmp_project.project_json = {
         'name': 'test',
         'version': '1.2.3',
         'depends': ['neo-fun@0.4.0'],

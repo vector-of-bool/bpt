@@ -57,8 +57,8 @@ static int _build_deps(const options& opts) {
                 auto sdist_ptr = repo.find(pk);
                 assert(sdist_ptr);
                 dds::sdist_build_params deps_params;
-                deps_params.subdir = sdist_ptr->manifest.id.to_string();
-                dds_log(info, "Dependency: {}", sdist_ptr->manifest.id.to_string());
+                deps_params.subdir = sdist_ptr->id().to_string();
+                dds_log(info, "Dependency: {}", sdist_ptr->id().to_string());
                 bd.add(*sdist_ptr, deps_params);
             }
         });

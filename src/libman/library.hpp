@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./usage.hpp"
 #include <dds/error/result_fwd.hpp>
 #include <libman/util.hpp>
 
@@ -10,19 +11,6 @@
 #include <fmt/core.h>
 
 namespace lm {
-
-struct usage {
-    std::string namespace_;
-    std::string name;
-
-    auto operator<=>(const usage&) const noexcept = default;
-};
-
-struct e_invalid_usage_string {
-    std::string value;
-};
-
-dds::result<usage> split_usage_string(std::string_view);
 
 class library {
 public:

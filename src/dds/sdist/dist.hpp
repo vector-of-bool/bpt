@@ -2,6 +2,7 @@
 
 #include <tuple>
 
+#include <dds/crs/meta.hpp>
 #include <dds/sdist/package.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs/path.hpp>
@@ -17,14 +18,16 @@ struct sdist_params {
 };
 
 struct sdist {
-    package_manifest manifest;
-    fs::path         path;
+    crs::package_meta pkg;
+    fs::path          path;
 
-    sdist(package_manifest man, path_ref path_)
-        : manifest(std::move(man))
-        , path(path_) {}
+    sdist(crs::package_meta pkg_, path_ref path_) noexcept
+        : pkg{pkg_}
+        , path{path_} {}
 
     static sdist from_directory(path_ref p);
+
+    pkg_id id() const noexcept { return pkg_id{pkg.name, pkg.version}; }
 };
 
 struct temporary_sdist {
@@ -33,11 +36,9 @@ struct temporary_sdist {
 };
 
 inline constexpr struct sdist_compare_t {
-    bool operator()(const sdist& lhs, const sdist& rhs) const {
-        return lhs.manifest.id < rhs.manifest.id;
-    }
-    bool operator()(const sdist& lhs, const pkg_id& rhs) const { return lhs.manifest.id < rhs; }
-    bool operator()(const pkg_id& lhs, const sdist& rhs) const { return lhs < rhs.manifest.id; }
+    bool operator()(const sdist& lhs, const sdist& rhs) const { return lhs.id() < rhs.id(); }
+    bool operator()(const sdist& lhs, const pkg_id& rhs) const { return lhs.id() < rhs; }
+    bool operator()(const pkg_id& lhs, const sdist& rhs) const { return lhs < rhs.id(); }
     using is_transparent = int;
 } sdist_compare;
 

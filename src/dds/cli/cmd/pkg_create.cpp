@@ -22,8 +22,8 @@ int pkg_create(const options& opts) {
     };
     return boost::leaf::try_catch(
         [&] {
-            auto pkg_man = package_manifest::load_from_directory(params.project_dir).value();
-            auto default_filename = fmt::format("{}.tar.gz", pkg_man.id.to_string());
+            auto sd               = sdist::from_directory(params.project_dir);
+            auto default_filename = fmt::format("{}.tar.gz", sd.id().to_string());
             auto filepath         = opts.out_path.value_or(fs::current_path() / default_filename);
             create_sdist_targz(filepath, params);
             dds_log(info,

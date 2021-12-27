@@ -60,20 +60,7 @@ library_root library_root::from_directory(path_ref lib_dir, path_ref path_namesp
     assert(lib_dir.is_absolute());
     auto sources = collect_pf_sources(lib_dir);
 
-    library_manifest man;
-    auto             found = library_manifest::find_in_directory(lib_dir);
-    if (found) {
-        man = library_manifest::load_from_file(*found);
-    } else {
-        auto name_from_dir = dds::name::from_string(lib_dir.filename().string());
-        if (!name_from_dir) {
-            man.name.str = "unnamed";
-        } else {
-            man.name = *name_from_dir;
-        }
-    }
-
-    auto lib = library_root(lib_dir, path_namespace, std::move(sources), std::move(man));
+    auto lib = library_root(lib_dir, path_namespace, std::move(sources));
 
     return lib;
 }
