@@ -73,8 +73,6 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "unknown-usage.html";
     case errc::cyclic_usage:
         return "cyclic-usage.html";
-    case errc::template_error:
-        return "template-error.html";
     case errc::none:
         break;
     }
@@ -263,8 +261,6 @@ A cyclic dependency was detected among the libraries' `uses` fields. The cycle
 must be removed. If no cycle is apparent, check that the `uses` field for the
 library does not refer to the library itself.
 )";
-    case errc::template_error:
-        return R"(dds encountered a problem while rendering a file template and cannot continue.)";
     case errc::none:
         break;
     }
@@ -340,8 +336,6 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "A `uses` or `links` field names a library that isn't recognized.";
     case errc::cyclic_usage:
         return "A cyclic dependency was detected among the libraries' `uses` fields.";
-    case errc::template_error:
-        return "There was an error while rendering a template file." BUG_STRING_SUFFIX;
     case errc::none:
         break;
     }

@@ -12,5 +12,4 @@ TEST_CASE("Infer source kind") {
     CHECK_FALSE(infer_source_kind("foo.txt"));  // Not a source file extension
 
     CHECK(infer_source_kind("foo.hh") == source_kind::header);
-    CHECK(infer_source_kind("foo.config.hpp") == source_kind::header_template);
 }

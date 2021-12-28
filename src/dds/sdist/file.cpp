@@ -43,10 +43,6 @@ std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
     };
 
     if (is_in(header_exts, p.extension())) {
-        auto stem = p.stem();
-        if (stem.extension() == ".config") {
-            return source_kind::header_template;
-        }
         return source_kind::header;
     }
 

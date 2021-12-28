@@ -2,7 +2,6 @@
 
 #include <dds/build/plan/archive.hpp>
 #include <dds/build/plan/exe.hpp>
-#include <dds/build/plan/template.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs/path.hpp>
 
@@ -58,8 +57,6 @@ class library_plan {
     std::optional<create_archive_plan> _create_archive;
     /// The executables that should be linked as part of this library's build
     std::vector<link_executable_plan> _link_exes;
-    /// The templates that must be rendered for this library
-    std::vector<render_template_plan> _templates;
     /// The headers that must be checked for independence
     std::vector<compile_file_plan> _headers;
     /// Libraries used by this library
@@ -78,7 +75,6 @@ public:
                  fs::path                           subdir,
                  std::optional<create_archive_plan> ar,
                  std::vector<link_executable_plan>  exes,
-                 std::vector<render_template_plan>  tmpls,
                  std::vector<compile_file_plan>     headers,
                  std::vector<lm::usage>             lib_uses)
         : _name(name)
@@ -87,7 +83,6 @@ public:
         , _subdir(std::move(subdir))
         , _create_archive(std::move(ar))
         , _link_exes(std::move(exes))
-        , _templates(std::move(tmpls))
         , _headers(std::move(headers))
         , _lib_uses(std::move(lib_uses)) {}
     std::string_view name() const noexcept { return _name; }
@@ -109,10 +104,6 @@ public:
      */
     auto& archive_plan() const noexcept { return _create_archive; }
     /**
-     * The template rendering plans for this library.
-     */
-    auto& templates() const noexcept { return _templates; }
-    /**
      * The executables that should be created by this library
      */
     auto& executables() const noexcept { return _link_exes; }
@@ -125,12 +116,8 @@ public:
      */
     auto& lib_uses() const noexcept { return _lib_uses; }
     /**
-     * The path to the directory that should be added for the #include search
-     * path for this library, relative to the build root. Returns `nullopt` if
-     * this library has no generated headers.
+     * @brief The public header source root directory for this library
      */
-    std::optional<fs::path> generated_include_dir() const noexcept;
-
     fs::path public_include_dir() const noexcept;
 
     /**

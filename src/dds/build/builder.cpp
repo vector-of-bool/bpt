@@ -79,10 +79,6 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
             if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
             }
-            auto gen_incdir_opt = lib.generated_include_dir();
-            if (gen_incdir_opt) {
-                lib_reqs.include_paths.push_back(out_root / *gen_incdir_opt);
-            }
         }
     }
     return usage_requirements(std::move(ureqs));
@@ -251,8 +247,6 @@ void with_build_plan(const build_params&              params,
     if (params.generate_compdb) {
         generate_compdb(plan, env);
     }
-
-    plan.render_all(env);
 
     fn(std::move(env), std::move(plan));
 }

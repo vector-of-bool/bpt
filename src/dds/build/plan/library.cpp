@@ -4,6 +4,7 @@
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 
+#include <fansi/styled.hpp>
 #include <libman/usage.hpp>
 #include <neo/ranges.hpp>
 #include <neo/tl.hpp>
@@ -18,20 +19,7 @@
 #include <string>
 
 using namespace dds;
-
-namespace {
-
-const std::string gen_dir_qual = "__dds/gen";
-
-fs::path rebase_gen_incdir(path_ref subdir) { return gen_dir_qual / subdir; }
-}  // namespace
-
-std::optional<fs::path> library_plan::generated_include_dir() const noexcept {
-    if (_templates.empty()) {
-        return std::nullopt;
-    }
-    return rebase_gen_incdir(output_subdirectory());
-}
+using namespace fansi::literals;
 
 library_plan library_plan::create(path_ref                    pkg_base,
                                   const crs::package_meta&    pkg,
@@ -44,7 +32,6 @@ library_plan library_plan::create(path_ref                    pkg_base,
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
-    std::vector<source_file> template_sources;
     std::vector<source_file> header_sources;
     std::vector<source_file> public_header_sources;
 
@@ -62,8 +49,6 @@ library_plan library_plan::create(path_ref                    pkg_base,
                 app_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::source) {
                 lib_sources.push_back(sfile);
-            } else if (sfile.kind == source_kind::header_template) {
-                template_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::header) {
                 header_sources.push_back(sfile);
             } else {
@@ -77,10 +62,10 @@ library_plan library_plan::create(path_ref                    pkg_base,
         auto all_sources = include_dir.collect_sources();
         for (const auto& sfile : all_sources) {
             if (!is_header(sfile.kind)) {
-                dds_log(warn,
-                        "Public include/ should only contain header or header template files."
-                        " Not a header: {}",
-                        sfile.path.string());
+                dds_log(
+                    warn,
+                    "Public include/ should only contain header files. Not a header: [.br.yellow[{}]]"_styled,
+                    sfile.path.string());
             } else if (sfile.kind == source_kind::header) {
                 public_header_sources.push_back(sfile);
             }
@@ -128,12 +113,6 @@ library_plan library_plan::create(path_ref                    pkg_base,
     compile_rules.include_dirs().push_back(pub_inc);
     compile_rules.enable_warnings() = params.enable_warnings;
     extend(compile_rules.uses(), lib_uses);
-
-    const auto codegen_subdir = rebase_gen_incdir(out_dir);
-
-    if (!template_sources.empty()) {
-        compile_rules.include_dirs().push_back(codegen_subdir);
-    }
 
     auto public_header_compile_rules          = compile_rules.clone();
     public_header_compile_rules.syntax_only() = true;
@@ -220,11 +199,6 @@ library_plan library_plan::create(path_ref                    pkg_base,
         link_executables.emplace_back(std::move(exe));
     }
 
-    std::vector<render_template_plan> render_templates;
-    for (const auto& sf : template_sources) {
-        render_templates.emplace_back(sf, codegen_subdir);
-    }
-
     // Done!
     return library_plan{lib.name.str,
                         pkg_base / lib.path,
@@ -232,7 +206,6 @@ library_plan library_plan::create(path_ref                    pkg_base,
                         out_dir,
                         std::move(archive_plan),
                         std::move(link_executables),
-                        std::move(render_templates),
                         std::move(header_indep_plan),
                         std::move(lib_uses)};
 }

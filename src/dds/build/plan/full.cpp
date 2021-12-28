@@ -34,18 +34,6 @@ decltype(auto) pair_up(T& left, Range& right) {
 
 }  // namespace
 
-void build_plan::render_all(build_env_ref env) const {
-    auto templates = _packages                                //
-        | ranges::views::transform(&package_plan::libraries)  //
-        | ranges::views::join                                 //
-        | ranges::views::transform(
-                         [](const auto& lib) { return pair_up(lib, lib.templates()); })  //
-        | ranges::views::join;
-    for (const auto& [lib, tmpl] : templates) {
-        tmpl.render(env, lib.library_());
-    }
-}
-
 void build_plan::compile_all(const build_env& env, int njobs) const {
     auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
     if (!okay) {
