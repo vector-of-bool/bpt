@@ -67,9 +67,9 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
             if_key{"for",
                    require_str{"Dependency 'for' must be a string"},
                    put_into{dep_kind, parse_enum_str<crs::usage_kind>}},
-            if_key{"use",
-                   require_array{"Dependency 'use' must be an array"},
-                   for_each{require_str{"Each dependency 'use' item must be a string"},
+            if_key{"uses",
+                   require_array{"Dependency 'uses' must be an array"},
+                   for_each{require_str{"Each dependency 'uses' item must be a string"},
                             [&](auto&&) {
                                 got_uses_key = true;
                                 return walk.pass;
