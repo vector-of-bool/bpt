@@ -233,7 +233,8 @@ library_plan library_plan::create(path_ref                    pkg_base,
                         std::move(archive_plan),
                         std::move(link_executables),
                         std::move(render_templates),
-                        std::move(header_indep_plan)};
+                        std::move(header_indep_plan),
+                        std::move(lib_uses)};
 }
 
 fs::path library_plan::public_include_dir() const noexcept {

@@ -20,22 +20,7 @@ class usage_requirement_map {
 
     using library_key = lm::usage;
 
-    struct library_key_compare {
-        bool operator()(const library_key& lhs, const library_key& rhs) const noexcept {
-            if (lhs.namespace_ < rhs.namespace_) {
-                return true;
-            }
-            if (lhs.namespace_ > rhs.namespace_) {
-                return false;
-            }
-            if (lhs.name < rhs.name) {
-                return true;
-            }
-            return false;
-        }
-    };
-
-    using _reqs_map_type = std::map<library_key, lm::library, library_key_compare>;
+    using _reqs_map_type = std::map<library_key, lm::library>;
     _reqs_map_type _reqs;
 
 public:

@@ -74,7 +74,7 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
         for (const auto& lib : pkg.libraries()) {
             auto& lib_reqs = ureqs.add({pkg.namespace_(), std::string(lib.name())});
             lib_reqs.include_paths.push_back(lib.public_include_dir());
-            lib_reqs.uses = lib.uses();
+            lib_reqs.uses = lib.lib_uses();
             //! lib_reqs.links = lib.library_().manifest().links;
             if (const auto& arc = lib.archive_plan()) {
                 lib_reqs.linkable_path = out_root / arc->calc_archive_file_path(toolchain);
@@ -94,7 +94,7 @@ void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
     //! out << "Type: Library\n"
     //!     << "Name: " << lib.name().str << '\n'
     //!     << "Include-Path: " << lib.library_().public_include_dir().generic_string() << '\n';
-    for (auto&& use : lib.uses()) {
+    for (auto&& use : lib.lib_uses()) {
         out << "Uses: " << use.namespace_ << "/" << use.name << '\n';
     }
     //! for (auto&& link : lib.links()) {
@@ -154,7 +154,7 @@ void write_lib_cmake(build_env_ref env,
     //!            cmake_name,
     //!            cm_kind,
     //!            lib.library_().public_include_dir().generic_string());
-    for (auto&& use : lib.uses()) {
+    for (auto&& use : lib.lib_uses()) {
         fmt::print(out,
                    "  set_property(TARGET {} APPEND PROPERTY INTERFACE_LINK_LIBRARIES {}::{})\n",
                    cmake_name,

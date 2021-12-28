@@ -63,7 +63,7 @@ class library_plan {
     /// The headers that must be checked for independence
     std::vector<compile_file_plan> _headers;
     /// Libraries used by this library
-    std::vector<lm::usage> _uses;
+    std::vector<lm::usage> _lib_uses;
 
 public:
     /**
@@ -79,7 +79,8 @@ public:
                  std::optional<create_archive_plan> ar,
                  std::vector<link_executable_plan>  exes,
                  std::vector<render_template_plan>  tmpls,
-                 std::vector<compile_file_plan>     headers)
+                 std::vector<compile_file_plan>     headers,
+                 std::vector<lm::usage>             lib_uses)
         : _name(name)
         , _lib_root(lib_root)
         , _qual_name(qual_name)
@@ -87,7 +88,8 @@ public:
         , _create_archive(std::move(ar))
         , _link_exes(std::move(exes))
         , _templates(std::move(tmpls))
-        , _headers(std::move(headers)) {}
+        , _headers(std::move(headers))
+        , _lib_uses(std::move(lib_uses)) {}
     std::string_view name() const noexcept { return _name; }
     /**
      * Get the qualified name of the library, as if for a libman usage requirement
@@ -121,7 +123,7 @@ public:
     /**
      * The library identifiers that are used by this library
      */
-    auto& uses() const noexcept { return _uses; }
+    auto& lib_uses() const noexcept { return _lib_uses; }
     /**
      * The path to the directory that should be added for the #include search
      * path for this library, relative to the build root. Returns `nullopt` if

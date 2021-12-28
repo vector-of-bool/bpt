@@ -144,7 +144,7 @@ std::optional<lm::usage> find_cycle(const usage_requirement_map&                
 std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() const {
     // Performs the setup of the DFS and hands off to ::find_cycle() to search particular vertices.
 
-    std::map<lm::usage, vertex_info, library_key_compare> vertices;
+    std::map<lm::usage, vertex_info> vertices;
     // Default construct each.
     for (const auto& [usage, lib] : _reqs) {
         vertices[usage];

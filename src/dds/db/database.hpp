@@ -25,7 +25,7 @@ struct completed_compilation {
 
 struct input_file_info {
     fs::path           path;
-    fs::file_time_type last_mtime;
+    fs::file_time_type prev_mtime;
 };
 
 class database {
