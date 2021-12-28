@@ -25,18 +25,10 @@ dependency dependency::parse_depends_string(std::string_view str) {
 
     auto name = dds::name::from_string(str.substr(0, sep_pos)).value();
 
-    if (str[sep_pos] != '@') {
-        static bool did_warn = false;
-        if (!did_warn) {
-            dds_log(warn,
-                    "Dependency version ranges are deprecated. All are treated as "
-                    "same-major-version. (Parsing dependency '{}')",
-                    str);
-        }
-        did_warn = true;
+    auto range_str = std::string(str.substr(sep_pos));
+    if (range_str.front() == '@') {
+        range_str[0] = '^';
     }
-
-    auto range_str = "^" + std::string(str.substr(sep_pos + 1));
     try {
         auto rng = semver::range::parse_restricted(range_str);
         return dependency{name, {rng.low(), rng.high()}, dep_for_kind::lib};
