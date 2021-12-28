@@ -71,7 +71,7 @@ void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps
     db.forget_inputs_of(deps.output);
     for (auto&& inp : deps.inputs) {
         auto mtime = fs::last_write_time(inp);
-        db.record_dep(inp, deps.output, mtime);
+        db.record_dep(inp, deps.output, (std::min)(mtime, deps.compile_start_time));
     }
 }
 
@@ -99,7 +99,7 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
                   // The input does not exist, so consider it out-of-date
                   return true;
               }
-              if (fs::last_write_time(input.path) != input.last_mtime) {
+              if (fs::last_write_time(input.path) != input.prev_mtime) {
                   // The input has been modified since our last execution
                   return true;
               }

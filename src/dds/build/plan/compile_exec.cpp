@@ -102,6 +102,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
 
     // Do it!
     dds_log(info, msg);
+    auto start_time = fs::file_time_type::clock::now();
     auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(compile.command.command); });
     auto nth = counter.n.fetch_add(1);
@@ -175,6 +176,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
 
     if (ret_deps_info) {
         ret_deps_info->command.toolchain_hash = env.toolchain.hash();
+        ret_deps_info->compile_start_time     = start_time;
     }
 
     // MSVC prints the filename of the source file. Remove it from the output.
