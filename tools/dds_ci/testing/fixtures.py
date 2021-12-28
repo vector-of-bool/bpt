@@ -67,9 +67,15 @@ class _ProjectJSONLibraryItemRequired(TypedDict):
     path: str
 
 
-class ProjectJSONLibraryItem(_ProjectJSONLibraryItemRequired, total=False):
+class _ProjectJSONLibraryItem(_ProjectJSONLibraryItemRequired, total=False):
     uses: Sequence[Union[str, _ProjectJSONLibraryUsesItem]]
     depends: Sequence[_ProjectJSONDependencyItem]
+
+
+class _MainProjectLibraryItem(TypedDict, total=False):
+    name: str
+    depends: Sequence[_ProjectJSONDependencyItem]
+    uses: Sequence[Union[str, _ProjectJSONLibraryUsesItem]]
 
 
 class _ProjectJSONRequired(TypedDict):
@@ -79,17 +85,9 @@ class _ProjectJSONRequired(TypedDict):
 
 class ProjectJSON(_ProjectJSONRequired, total=False):
     depends: Sequence[_ProjectJSONDependencyItem]
-    lib: ProjectJSONLibraryItem
-    libs: Sequence[ProjectJSONLibraryItem]
+    lib: _MainProjectLibraryItem
+    libs: Sequence[_ProjectJSONLibraryItem]
     namespace: str
-
-
-class _LibraryJSONRequired(TypedDict):
-    name: str
-
-
-class LibraryJSON(_LibraryJSONRequired, total=False):
-    uses: Sequence[str]
 
 
 class Library:
@@ -99,18 +97,6 @@ class Library:
     def __init__(self, name: str, dirpath: Path) -> None:
         self.name = name
         self.root = dirpath
-
-    @property
-    def library_json(self) -> LibraryJSON:
-        """
-        Get/set the content of the `library.json` file for the library.
-        """
-        return cast(LibraryJSON, json.loads(self.root.joinpath('library.jsonc').read_text()))
-
-    @library_json.setter
-    def library_json(self, data: LibraryJSON) -> None:
-        self.root.mkdir(exist_ok=True, parents=True)
-        self.root.joinpath('library.jsonc').write_text(json.dumps(data, indent=2))
 
     def write(self, path: Pathish, content: str) -> Path:
         """
@@ -154,17 +140,6 @@ class Project:
         The root/default library for this project
         """
         return Library('<default>', self.root)
-
-    @property
-    def library_json(self) -> LibraryJSON:
-        """
-        Get/set the content of the `library.json` file for the project.
-        """
-        return self.__root_library.library_json
-
-    @library_json.setter
-    def library_json(self, data: LibraryJSON) -> None:
-        self.__root_library.library_json = data
 
     @property
     def project_dir_arg(self) -> str:

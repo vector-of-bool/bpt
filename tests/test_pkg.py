@@ -65,8 +65,6 @@ def test_import_sdist_archive(_test_pkg: Tuple[Path, Project]) -> None:
     project.dds.pkg_import(sdist)
     assert repo_content_path.is_dir(), \
         'The package did not appear in the local cache'
-    assert repo_content_path.joinpath('library.jsonc').is_file(), \
-        'The package\'s library.jsonc did not get imported'
     # Excluded file will not be in the sdist:
     assert not repo_content_path.joinpath('other-file.txt').is_file(), \
         'Non-package content appeared in the package cache'
@@ -107,8 +105,6 @@ def test_import_sdist_dir(test_project: Project) -> None:
 def _check_import(repo_content_path: Path) -> None:
     assert repo_content_path.is_dir(), \
         'The package did not appear in the local cache'
-    assert repo_content_path.joinpath('library.jsonc').is_file(), \
-        'The package\'s library.jsonc did not get imported'
     # Excluded file will not be in the sdist:
     assert not repo_content_path.joinpath('other-file.txt').is_file(), \
         'Non-package content appeared in the package cache'
