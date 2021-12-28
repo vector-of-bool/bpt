@@ -21,9 +21,9 @@
         "fmt^6.2.1",
         "neo-http^0.2.0",
         "neo-io^0.2.2",
-        "boost.leaf^1.77.0",
-        "magic_enum+0.0.0",
-        "sqlite3^3.35.2"
+        "boost.leaf^1.78.0",
+        "magic_enum+0.7.3",
+        "sqlite3^3.35.2",
     ],
     "test_driver": "Catch-Main"
 }
