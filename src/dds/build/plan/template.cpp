@@ -1,7 +1,6 @@
 #include <dds/build/plan/template.hpp>
 
 #include <dds/error/errors.hpp>
-#include <dds/sdist/library/root.hpp>
 #include <dds/util/fs/io.hpp>
 #include <dds/util/string.hpp>
 
@@ -128,19 +127,13 @@ std::pair<std::string, std::string_view> eval_primary_expr(std::string_view in,
     return {"nope", in};
 }
 
-std::string render_template(std::string_view tmpl, const library_root& lib) {
+std::string render_template(std::string_view tmpl, const library_root&) {
     std::string      acc;
     std::string_view MARKER_STRING = "__dds";
 
     // Fill out a data structure that will be exposed to the template
     json_data dat = json_data::mapping_type({
-        {
-            "lib",
-            json_data::mapping_type{
-                {"name", lib.manifest().name.str},
-                {"root", lib.path().string()},
-            },
-        },
+
     });
 
     while (!tmpl.empty()) {

@@ -1,9 +1,10 @@
 #include "./dist.hpp"
 
+#include <dds/sdist/root.hpp>
+
 #include <dds/error/errors.hpp>
 #include <dds/pkg/get/http.hpp>
 #include <dds/project/project.hpp>
-#include <dds/sdist/library/root.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs/io.hpp>
 #include <dds/util/fs/shutil.hpp>
@@ -13,7 +14,9 @@
 #include <libman/parse.hpp>
 
 #include <neo/assert.hpp>
+#include <neo/ranges.hpp>
 #include <neo/tar/util.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
@@ -32,28 +35,23 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     fs::copy(filepath, dest);
 }
 
-void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_params& params) {
-    auto sources_to_keep =  //
-        lib.all_sources()   //
-        | ranges::views::filter([&](const source_file& sf) {
-              if (sf.kind == source_kind::app && params.include_apps) {
-                  return true;
-              }
-              if (sf.kind == source_kind::source || is_header(sf.kind)) {
-                  return true;
-              }
-              if (sf.kind == source_kind::test && params.include_tests) {
-                  return true;
-              }
-              return false;
-          })  //
-        | ranges::to_vector;
+void sdist_copy_library(path_ref                 out_root,
+                        const sdist&             sd,
+                        const crs::library_meta& lib,
+                        const sdist_params&      params) {
+    auto lib_dir = dds::resolve_path_strong(sd.path / lib.path).value();
+    auto inc_dir = source_root{lib_dir / "include"};
+    auto src_dir = source_root{lib_dir / "src"};
 
-    ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
+    auto inc_sources = inc_dir.exists() ? inc_dir.collect_sources() : std::vector<source_file>{};
+    auto src_sources = src_dir.exists() ? src_dir.collect_sources() : std::vector<source_file>{};
 
-    dds_log(info, "sdist: Export library from {}", lib.path().string());
+    using namespace std::views;
+    auto all_arr = std::array{all(inc_sources), all(src_sources)};
+
+    dds_log(info, "sdist: Export library from {}", lib_dir.string());
     fs::create_directories(out_root);
-    for (const auto& source : sources_to_keep) {
+    for (const auto& source : all_arr | join) {
         sdist_export_file(out_root, params.project_dir, source.path);
     }
 }
@@ -97,9 +95,8 @@ void dds::create_sdist_targz(path_ref filepath, const sdist_params& params) {
 
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto in_sd = sdist::from_directory(params.project_dir);
-    auto libs  = collect_libraries(params.project_dir);
-    for (const library_root& lib : libs) {
-        sdist_copy_library(out, lib, params);
+    for (const crs::library_meta& lib : in_sd.pkg.libraries) {
+        sdist_copy_library(out, in_sd, lib, params);
     }
 
     fs::create_directories(out);

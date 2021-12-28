@@ -44,6 +44,4 @@ struct source_file {
     fs::path relative_path() const noexcept { return fs::relative(path, basis_path); }
 };
 
-using source_list = std::vector<source_file>;
-
 }  // namespace dds

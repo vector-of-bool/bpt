@@ -1,5 +1,6 @@
 #include "./library.hpp"
 
+#include <dds/sdist/root.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 

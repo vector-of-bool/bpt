@@ -5,7 +5,6 @@
 #include <dds/error/errors.hpp>
 #include <dds/error/toolchain.hpp>
 #include <dds/project/project.hpp>
-#include <dds/sdist/library/manifest.hpp>
 #include <dds/sdist/package.hpp>
 #include <dds/util/compress.hpp>
 #include <dds/util/fs/io.hpp>

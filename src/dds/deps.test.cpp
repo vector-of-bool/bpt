@@ -12,9 +12,9 @@ TEST_CASE("Parse dependency strings") {
 
     auto cur = GENERATE(Catch::Generators::values<case_>({
         {"foo@1.2.3", "foo", "1.2.3", "2.0.0"},
-        {"foo=1.2.3", "foo", "1.2.3", "2.0.0"},
+        {"foo=1.2.3", "foo", "1.2.3", "1.2.4"},
         {"foo^1.2.3", "foo", "1.2.3", "2.0.0"},
-        {"foo~1.2.3", "foo", "1.2.3", "2.0.0"},
+        {"foo~1.2.3", "foo", "1.2.3", "1.3.0"},
     }));
 
     auto dep = dds::dependency::parse_depends_string(cur.depstr);

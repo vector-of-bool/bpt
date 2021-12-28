@@ -149,55 +149,7 @@ std::string repo_manager::name() const noexcept {
     return *nsql::one_cell<std::string>(_stmts("SELECT name FROM dds_repo_meta"_sql));
 }
 
-void repo_manager::import_targz(path_ref tgz_file) {
-    neo_assertion_breadcrumbs("Importing targz file", tgz_file.string());
-    DDS_E_SCOPE(e_repo_import_targz{tgz_file});
-    dds_log(info, "Importing sdist archive [{}]", tgz_file.string());
-    neo::ustar_reader tar{
-        neo::buffer_transform_source{neo::stream_io_buffers{
-                                         neo::file_stream::open(tgz_file, neo::open_mode::read)},
-                                     neo::gzip_decompressor{neo::inflate_decompressor{}}}};
-
-    std::optional<package_manifest> man;
-
-    for (auto mem : tar) {
-        if (fs::path(mem.filename_str()).lexically_normal()
-            == neo::oper::none_of("package.jsonc", "package.json5", "package.json")) {
-            continue;
-        }
-
-        auto content        = tar.all_data();
-        auto synth_filename = tgz_file / mem.filename_str();
-        man                 = package_manifest::load_from_json5_str(std::string_view(content),
-                                                    synth_filename.string());
-        break;
-    }
-
-    if (!man) {
-        dds_log(critical,
-                "Given archive [{}] does not contain a package manifest file",
-                tgz_file.string());
-        throw std::runtime_error("Invalid package archive");
-    }
-
-    DDS_E_SCOPE(man->id);
-
-    neo::sqlite3::transaction_guard tr{_db};
-    dds_log(debug, "Recording package {}", man->id.to_string());
-    dds::pkg_listing info{.ident       = man->id,
-                          .deps        = man->dependencies,
-                          .description = "[No description]",
-                          .remote_pkg  = {}};
-    auto             rel_url = fmt::format("dds:{}", man->id.to_string());
-    add_pkg(info, rel_url);
-
-    auto dest_path = pkg_dir() / man->id.name.str / man->id.version.to_string() / "sdist.tar.gz";
-    fs::create_directories(dest_path.parent_path());
-    fs::copy(tgz_file, dest_path);
-
-    tr.commit();
-    _compress();
-}
+void repo_manager::import_targz(path_ref /* tgz_file */) {}
 
 void repo_manager::delete_package(pkg_id pkg_id) {
     neo::sqlite3::transaction_guard tr{_db};

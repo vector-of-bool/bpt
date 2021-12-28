@@ -14,11 +14,9 @@ namespace dds::cli::cmd {
 
 int pkg_create(const options& opts) {
     dds::sdist_params params{
-        .project_dir   = opts.project_dir,
-        .dest_path     = {},
-        .force         = opts.if_exists == if_exists::replace,
-        .include_apps  = true,
-        .include_tests = true,
+        .project_dir = opts.project_dir,
+        .dest_path   = {},
+        .force       = opts.if_exists == if_exists::replace,
     };
     return boost::leaf::try_catch(
         [&] {

@@ -12,9 +12,7 @@ namespace dds {
 struct sdist_params {
     fs::path project_dir;
     fs::path dest_path;
-    bool     force         = false;
-    bool     include_apps  = false;
-    bool     include_tests = false;
+    bool     force = false;
 };
 
 struct sdist {
