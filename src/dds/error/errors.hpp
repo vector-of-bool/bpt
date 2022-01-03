@@ -11,17 +11,11 @@ enum class errc {
     none = 0,
     invalid_builtin_toolchain,
     no_default_toolchain,
-    no_such_catalog_package,
     git_url_ref_mutual_req,
     test_failure,
     compile_failure,
     archive_failure,
     link_failure,
-
-    catalog_too_new,
-    corrupted_catalog_db,
-    invalid_catalog_json,
-    no_catalog_remote_info,
 
     git_clone_failure,
     invalid_remote_url,

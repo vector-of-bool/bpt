@@ -5,8 +5,6 @@
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
 #include <dds/crs/cache.hpp>
-#include <dds/pkg/cache.hpp>
-#include <dds/pkg/get/get.hpp>
 #include <dds/project/dependency.hpp>
 #include <dds/solve/solve2.hpp>
 

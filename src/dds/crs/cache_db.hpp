@@ -7,6 +7,7 @@
 
 #include <neo/any_range_fwd.hpp>
 #include <neo/ref_member.hpp>
+#include <neo/sqlite3/fwd.hpp>
 #include <neo/url/url.hpp>
 
 namespace dds::crs {
@@ -103,6 +104,8 @@ public:
     void sync_remote(const neo::url_view& url) const;
 
     std::optional<pkg_id> lowest_version_matching(const dependency& dep) const;
+
+    neo::sqlite3::connection_ref sqlite3_db() const noexcept;
 };
 
 }  // namespace dds::crs

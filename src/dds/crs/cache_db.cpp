@@ -434,3 +434,7 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
             n_updated,
             n_deleted);
 }
+
+neo::sqlite3::connection_ref cache_db::sqlite3_db() const noexcept {
+    return _db.get().raw_database();
+}

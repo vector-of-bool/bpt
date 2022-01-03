@@ -18,7 +18,7 @@ int pkg_prefetch(const options& opts) {
         meta_db.enable_remote(url);
     }
 
-    for (auto& pkg_str : opts.pkg.get.pkgs) {
+    for (auto& pkg_str : opts.pkg.prefetch.pkgs) {
         auto pid = crs::pkg_id::parse_str(pkg_str);
         cache.prefetch(pid);
     }

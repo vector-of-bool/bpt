@@ -3,7 +3,6 @@
 #include <dds/error/errors.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/toolchain.hpp>
-#include <dds/pkg/db.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/fs/io.hpp>
@@ -143,28 +142,6 @@ struct setup {
             .valname        = "<directory>",
             .action         = put_into(opts.crs_cache_dir),
         });
-        parser.add_argument({
-            .long_spellings = {"data-dir"},
-            .help
-            = ""
-              "(Advanced) "
-              "Override dds's data directory. This is used for various caches and databases.\n"
-              "The default is a user-local directory that differs depending on platform.",
-            .valname = "<directory>",
-            .action  = put_into(opts.data_dir),
-        });
-        parser.add_argument({
-            .long_spellings = {"pkg-cache-dir"},
-            .help           = "(Advanced) Override dds's local package cache directory.",
-            .valname        = "<directory>",
-            .action         = put_into(opts.pkg_cache_dir),
-        });
-        parser.add_argument({
-            .long_spellings = {"pkg-db-path"},
-            .help           = "(Advanced) Override dds's default package database path.",
-            .valname        = "<database-path>",
-            .action         = put_into(opts.pkg_db_dir),
-        });
 
         setup_main_commands(parser.add_subparsers({
             .description = "The operation to perform",
@@ -219,22 +196,6 @@ struct setup {
         build_cmd.add_argument(no_warn_arg.dup());
         build_cmd.add_argument(out_arg.dup()).help = "Directory where dds will write build results";
 
-        build_cmd.add_argument({
-            .long_spellings = {"add-repo"},
-            .help           = ""
-                    "Add remote repositories to the package database before building\n"
-                    "(Implies --update-repos)",
-            .valname    = "<repo-url>",
-            .can_repeat = true,
-            .action     = debate::push_back_onto(opts.build.add_repos),
-        });
-        build_cmd.add_argument({
-            .long_spellings  = {"update-repos"},
-            .short_spellings = {"U"},
-            .help            = "Update package repositories before building",
-            .nargs           = 0,
-            .action          = debate::store_true(opts.build.update_repos),
-        });
         build_cmd.add_argument(lm_index_arg.dup()).help
             = "Path to a libman index file to use for loading project dependencies";
         build_cmd.add_argument(jobs_arg.dup());
@@ -297,10 +258,6 @@ struct setup {
             .valname = "<pkg-subcommand>",
             .action  = put_into(opts.pkg.subcommand),
         });
-        setup_pkg_init_db_cmd(pkg_group.add_parser({
-            .name = "init-db",
-            .help = "Initialize a new package database file (Path specified with '--pkg-db-path')",
-        }));
         pkg_group.add_parser({
             .name = "ls",
             .help = "List locally available packages",
@@ -308,18 +265,6 @@ struct setup {
         setup_pkg_create_cmd(pkg_group.add_parser({
             .name = "create",
             .help = "Create a source distribution archive of a project",
-        }));
-        setup_pkg_get_cmd(pkg_group.add_parser({
-            .name = "get",
-            .help = "Obtain a copy of a package from a remote",
-        }));
-        setup_pkg_import_cmd(pkg_group.add_parser({
-            .name = "import",
-            .help = "Import a source distribution archive into the local package cache",
-        }));
-        setup_pkg_repo_cmd(pkg_group.add_parser({
-            .name = "repo",
-            .help = "Manage package repositories",
         }));
         setup_pkg_search_cmd(pkg_group.add_parser({
             .name = "search",
@@ -345,91 +290,11 @@ struct setup {
             = "What to do if the destination names an existing file";
     }
 
-    void setup_pkg_get_cmd(argument_parser& pkg_get_cmd) {
-        pkg_get_cmd.add_argument({
-            .valname    = "<pkg-id>",
-            .can_repeat = true,
-            .action     = push_back_onto(opts.pkg.get.pkgs),
-        });
-        pkg_get_cmd.add_argument(out_arg.dup()).help
-            = "Directory where obtained packages will be placed.\n"
-              "Default is the current working directory.";
-    }
-
-    void setup_pkg_init_db_cmd(argument_parser& pkg_init_db_cmd) {
-        pkg_init_db_cmd.add_argument(if_exists_arg.dup()).help
-            = "What to do if the database file already exists";
-    }
-
-    void setup_pkg_import_cmd(argument_parser& pkg_import_cmd) noexcept {
-        pkg_import_cmd.add_argument({
-            .long_spellings = {"stdin"},
-            .help           = "Import a source distribution archive from standard input",
-            .nargs          = 0,
-            .action         = debate::store_true(opts.pkg.import.from_stdin),
-        });
-        pkg_import_cmd.add_argument(if_exists_arg.dup()).help
-            = "What to do if the package already exists in the local cache";
-        pkg_import_cmd.add_argument({
-            .help       = "One or more paths/URLs to source distribution archives to import",
-            .valname    = "<path-or-url>",
-            .can_repeat = true,
-            .action     = debate::push_back_onto(opts.pkg.import.items),
-        });
-    }
-
-    void setup_pkg_repo_cmd(argument_parser& pkg_repo_cmd) noexcept {
-        auto& pkg_repo_grp = pkg_repo_cmd.add_subparsers({
-            .valname = "<pkg-repo-subcommand>",
-            .action  = put_into(opts.pkg.repo.subcommand),
-        });
-        setup_pkg_repo_add_cmd(pkg_repo_grp.add_parser({
-            .name = "add",
-            .help = "Add a package repository",
-        }));
-        setup_pkg_repo_remove_cmd(pkg_repo_grp.add_parser({
-            .name = "remove",
-            .help = "Remove one or more package repositories",
-        }));
-
-        pkg_repo_grp.add_parser({
-            .name = "update",
-            .help = "Update package repository information",
-        });
-        pkg_repo_grp.add_parser({
-            .name = "ls",
-            .help = "List locally registered package repositories",
-        });
-    }
-
-    void setup_pkg_repo_add_cmd(argument_parser& pkg_repo_add_cmd) noexcept {
-        pkg_repo_add_cmd.add_argument({
-            .help     = "URL of a repository to add",
-            .valname  = "<url>",
-            .required = true,
-            .action   = debate::put_into(opts.pkg.repo.add.url),
-        });
-        pkg_repo_add_cmd.add_argument({
-            .long_spellings = {"no-update"},
-            .help           = "Do not immediately update for the new package repository",
-            .nargs          = 0,
-            .action         = debate::store_false(opts.pkg.repo.add.update),
-        });
-    }
-
-    void setup_pkg_repo_remove_cmd(argument_parser& pkg_repo_remove_cmd) noexcept {
-        pkg_repo_remove_cmd.add_argument({
-            .help       = "Name of one or more repositories to remove",
-            .valname    = "<repo-name>",
-            .can_repeat = true,
-            .action     = push_back_onto(opts.pkg.repo.remove.names),
-        });
-        pkg_repo_remove_cmd.add_argument(if_missing_arg.dup()).help
-            = "What to do if any of the named repositories do not exist";
-    }
-
-    void setup_pkg_search_cmd(argument_parser& pkg_repo_search_cmd) noexcept {
-        pkg_repo_search_cmd.add_argument({
+    void setup_pkg_search_cmd(argument_parser& pkg_search_cmd) noexcept {
+        auto& use    = pkg_search_cmd.add_argument(use_repos_arg.dup());
+        use.required = true;
+        pkg_search_cmd.add_argument(repo_sync_arg.dup());
+        pkg_search_cmd.add_argument({
             .help
             = "A name or glob-style pattern. Only matching packages will be returned. \n"
               "Searching is case-insensitive. Only the .italic[name] will be matched (not the \n"
@@ -448,7 +313,7 @@ struct setup {
             .help       = "List of package IDs to prefetch",
             .valname    = "<pkg-id>",
             .can_repeat = true,
-            .action     = push_back_onto(opts.pkg.get.pkgs),
+            .action     = push_back_onto(opts.pkg.prefetch.pkgs),
         });
     }
 
@@ -568,10 +433,6 @@ struct setup {
 
 void cli::options::setup_parser(debate::argument_parser& parser) noexcept {
     setup{*this}.do_setup(parser);
-}
-
-pkg_db dds::cli::options::open_pkg_db() const {
-    return pkg_db::open(this->pkg_db_dir.value_or(pkg_db::default_path()));
 }
 
 toolchain dds::cli::options::load_toolchain() const {

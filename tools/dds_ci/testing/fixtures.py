@@ -257,14 +257,13 @@ class ProjectOpener():
         new_dds = self.dds.clone()
 
         if self._worker_id == 'master':
-            repo_dir = self.test_dir / '__test_repo'
+            crs_dir = self.test_dir / '__test_crs'
         else:
-            repo_dir: Path = self._tmppath_fac.mktemp('test-repo-') / self.test_name
+            crs_dir: Path = self._tmppath_fac.mktemp('test-crs-') / self.test_name
 
-        new_dds.set_repo_scratch(repo_dir)
+        new_dds.crs_cache_dir = crs_dir
         new_dds.default_cwd = proj_copy
-        new_dds.crs_cache_dir = proj_copy / '_crs'
-        self._request.addfinalizer(lambda: ensure_absent(repo_dir))
+        self._request.addfinalizer(lambda: ensure_absent(crs_dir))
 
         return Project(proj_copy, new_dds)
 

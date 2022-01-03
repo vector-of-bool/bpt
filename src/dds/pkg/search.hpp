@@ -14,8 +14,7 @@ namespace dds {
 struct pkg_group_search_result {
     std::string                  name;
     std::vector<semver::version> versions;
-    std::string                  description;
-    std::string                  remote_name;
+    std::string                  remote_url;
 };
 
 struct pkg_search_results {

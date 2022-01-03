@@ -18,13 +18,6 @@ command build;
 command compile_file;
 command install_yourself;
 command pkg_create;
-command pkg_get;
-command pkg_import;
-command pkg_ls;
-command pkg_repo_add;
-command pkg_repo_update;
-command pkg_repo_ls;
-command pkg_repo_remove;
 command pkg_search;
 command pkg_prefetch;
 command pkg_solve;
@@ -41,29 +34,8 @@ int dispatch_main(const options& opts) noexcept {
         case subcommand::pkg: {
             DDS_E_SCOPE(opts.pkg.subcommand);
             switch (opts.pkg.subcommand) {
-            case pkg_subcommand::ls:
-                return cmd::pkg_ls(opts);
             case pkg_subcommand::create:
                 return cmd::pkg_create(opts);
-            case pkg_subcommand::get:
-                return cmd::pkg_get(opts);
-            case pkg_subcommand::import:
-                return cmd::pkg_import(opts);
-            case pkg_subcommand::repo: {
-                DDS_E_SCOPE(opts.pkg.repo.subcommand);
-                switch (opts.pkg.repo.subcommand) {
-                case pkg_repo_subcommand::add:
-                    return cmd::pkg_repo_add(opts);
-                case pkg_repo_subcommand::update:
-                    return cmd::pkg_repo_update(opts);
-                case pkg_repo_subcommand::ls:
-                    return cmd::pkg_repo_ls(opts);
-                case pkg_repo_subcommand::remove:
-                    return cmd::pkg_repo_remove(opts);
-                case pkg_repo_subcommand::_none_:;
-                }
-                neo::unreachable();
-            }
             case pkg_subcommand::search:
                 return cmd::pkg_search(opts);
             case pkg_subcommand::prefetch:

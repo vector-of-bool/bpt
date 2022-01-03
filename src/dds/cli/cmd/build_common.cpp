@@ -6,9 +6,6 @@
 #include <dds/crs/error.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/try_catch.hpp>
-#include <dds/pkg/cache.hpp>
-#include <dds/pkg/db.hpp>
-#include <dds/pkg/get/get.hpp>
 #include <dds/project/project.hpp>
 #include <dds/solve/solve2.hpp>
 #include <dds/util/algo.hpp>

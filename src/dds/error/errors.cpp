@@ -15,8 +15,6 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "invalid-builtin-toolchain.html";
     case errc::no_default_toolchain:
         return "no-default-toolchain.html";
-    case errc::no_such_catalog_package:
-        return "no-such-catalog-package.html";
     case errc::git_url_ref_mutual_req:
         return "git-url-ref-mutual-req.html";
     case errc::test_failure:
@@ -27,14 +25,6 @@ std::string error_url_suffix(dds::errc ec) noexcept {
         return "archive-failure.html";
     case errc::link_failure:
         return "link-failure.html";
-    case errc::catalog_too_new:
-        return "catalog-too-new.html";
-    case errc::corrupted_catalog_db:
-        return "corrupted-catalog-db.html";
-    case errc::invalid_catalog_json:
-        return "invalid-catalog-json.html";
-    case errc::no_catalog_remote_info:
-        return "no-pkg-remote.html";
     case errc::git_clone_failure:
         return "git-clone-failure.html";
     case errc::invalid_remote_url:
@@ -104,11 +94,6 @@ will not perform a "best-guess" at a default toolchain. You may either pass the
 name of a built-in toolchain, or write a "default toolchain" file to one of the
 supported filepaths. Refer to the documentation for more information.
 )";
-    case errc::no_such_catalog_package:
-        return R"(
-The installation of a package was requested, but the given package ID was not
-able to be found in the package catalog. Check the spelling and version number.
-)";
     case errc::git_url_ref_mutual_req:
         return R"(
 Creating a Git-based catalog entry requires both a URL to clone from and a Git
@@ -137,19 +122,6 @@ fail. Refer to the output of the archiving tool.
 Linking a runtime binary file failed. There are a variety of possible causes
 for this error. Refer to the documentation for more information.
 )";
-    case errc::catalog_too_new:
-        return R"(
-The catalog database file contains a schema that will automatically be upgraded
-by dds when it is opened/modified. It appears that the given catalog database
-has had a migration beyond a version that we support. Has the catalog been
-modified by a newer version of dds?
-)";
-    case errc::corrupted_catalog_db:
-        return R"(
-The catalog database schema doesn't match what dds expects. This indicates that
-the database file has been modified in a way that dds cannot automatically fix
-and handle.
-)";
     case errc::invalid_lib_manifest:
         return R"(
 A library manifest is malformed Refer to the documentation and above error
@@ -159,15 +131,6 @@ message for more details.
         return R"(
 The package manifest is malformed. Refer to the documentation and above error
 message for more details.
-)";
-    case errc::invalid_catalog_json:
-        return R"(
-The catalog JSON that was provided does not match the format that was expected.
-Check the JSON schema and try your submission again.
-)";
-    case errc::no_catalog_remote_info:
-        return R"(
-There is no package remote with the given name
 )";
     case errc::git_clone_failure:
         return R"(
@@ -276,8 +239,6 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "The built-in toolchain name is invalid";
     case errc::no_default_toolchain:
         return "Unable to find a default toolchain to use for the build";
-    case errc::no_such_catalog_package:
-        return "The catalog has no entry for the given package ID";
     case errc::git_url_ref_mutual_req:
         return "Git requires both a URL and a ref to clone";
     case errc::test_failure:
@@ -288,14 +249,6 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
         return "Creating a static library archive failed";
     case errc::link_failure:
         return "Linking a runtime binary (executable/shared library/DLL) failed";
-    case errc::catalog_too_new:
-        return "The catalog appears to be from a newer version of dds.";
-    case errc::corrupted_catalog_db:
-        return "The catalog database appears to be corrupted or invalid";
-    case errc::invalid_catalog_json:
-        return "The given catalog JSON data is not valid";
-    case errc::no_catalog_remote_info:
-        return "Tne named remote does not exist." BUG_STRING_SUFFIX;
     case errc::git_clone_failure:
         return "A git-clone operation failed.";
     case errc::invalid_remote_url:

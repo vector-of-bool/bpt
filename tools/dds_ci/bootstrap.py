@@ -9,7 +9,7 @@ import platform
 import shutil
 
 from . import paths, proc
-from .dds import DDSWrapper
+from .dds import PriorDDSWrapper
 from .paths import new_tempdir
 
 
@@ -70,7 +70,7 @@ def pin_exe(fpath: Path) -> Iterator[Path]:
 
 
 @contextmanager
-def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[DDSWrapper]:
+def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[PriorDDSWrapper]:
     """Context manager that yields a DDSWrapper around a prior 'dds' executable"""
     if mode is BootstrapMode.Lazy:
         f = paths.PREBUILT_DDS
@@ -84,7 +84,7 @@ def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[DDSWrapper]:
         f = paths.PREBUILT_DDS
 
     with pin_exe(f) as dds:
-        yield DDSWrapper(dds)
+        yield PriorDDSWrapper(dds)
 
 
 def _do_bootstrap_build() -> Path:

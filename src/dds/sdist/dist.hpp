@@ -28,11 +28,6 @@ struct sdist {
     pkg_id id() const noexcept { return pkg_id{pkg.name, pkg.version}; }
 };
 
-struct temporary_sdist {
-    temporary_dir tmpdir;
-    struct sdist  sdist;
-};
-
 inline constexpr struct sdist_compare_t {
     bool operator()(const sdist& lhs, const sdist& rhs) const { return lhs.id() < rhs.id(); }
     bool operator()(const sdist& lhs, const pkg_id& rhs) const { return lhs.id() < rhs; }
@@ -43,9 +38,5 @@ inline constexpr struct sdist_compare_t {
 sdist create_sdist(const sdist_params&);
 sdist create_sdist_in_dir(path_ref, const sdist_params&);
 void  create_sdist_targz(path_ref, const sdist_params&);
-
-temporary_sdist expand_sdist_targz(path_ref targz);
-temporary_sdist expand_sdist_from_istream(std::istream&, std::string_view input_name);
-temporary_sdist download_expand_sdist_targz(std::string_view);
 
 }  // namespace dds

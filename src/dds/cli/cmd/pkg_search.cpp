@@ -1,7 +1,9 @@
 #include "../options.hpp"
 
+#include "./build_common.hpp"
+#include <dds/crs/cache.hpp>
+#include <dds/crs/cache_db.hpp>
 #include <dds/error/nonesuch.hpp>
-#include <dds/pkg/db.hpp>
 #include <dds/pkg/search.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
@@ -16,18 +18,18 @@ using namespace fansi::literals;
 namespace dds::cli::cmd {
 
 static int _pkg_search(const options& opts) {
-    auto cat     = opts.open_pkg_db();
-    auto results = dds::pkg_search(cat.database(), opts.pkg.search.pattern).value();
+    auto cache = open_ready_cache(opts);
+
+    auto results
+        = dds::pkg_search(cache.metadata_db().sqlite3_db(), opts.pkg.search.pattern).value();
     for (pkg_group_search_result const& found : results.found) {
         fmt::print(
             "    Name: .bold[{}]\n"
             "Versions: .bold[{}]\n"
-            "    From: .bold[{}]\n"
-            "          .bold[{}]\n\n"_styled,
+            "    From: .bold[{}]\n\n"_styled,
             found.name,
             joinstr(", ", found.versions | ranges::views::transform(&semver::version::to_string)),
-            found.remote_name,
-            found.description);
+            found.remote_url);
     }
 
     if (results.found.empty()) {

@@ -295,16 +295,14 @@ _dds_complete_pkg_create()
   _dds_complete_command
 } &&
 
-# dds pkg get
-_dds_complete_pkg_get()
+# dds pkg prefetch
+_dds_complete_pkg_prefetch()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
 
   SUBCOMMANDS=()
-  FLAGS=(
-    [--output]='directory'
-  )
+  FLAGS=()
   POSITIONAL=(
     # <pkg-id> ... # No completion implemented
   )
@@ -312,80 +310,6 @@ _dds_complete_pkg_get()
   _dds_complete_command
 } &&
 
-# dds pkg import
-_dds_complete_pkg_import()
-{
-  local RESULT_WORDS POSITIONAL
-  declare -A SUBCOMMANDS FLAGS
-
-  SUBCOMMANDS=()
-  FLAGS=(
-    [--stdin]=''
-    [--if-exists]='replace ignore fail'
-  )
-  POSITIONAL=(
-    'repeat:file' # <path-or-url> ...
-  )
-
-  _dds_complete_command
-} &&
-
-# dds pkg repo add
-_dds_complete_pkg_repo_add()
-{
-  local RESULT_WORDS POSITIONAL
-  declare -A SUBCOMMANDS FLAGS
-
-  SUBCOMMANDS=()
-  FLAGS=(
-    [--no-update]=''
-  )
-  POSITIONAL=(
-    # <url> # No completion implemented
-  )
-
-  _dds_complete_command
-} &&
-
-# dds pkg repo remove
-_dds_complete_pkg_repo_remove()
-{
-  local RESULT_WORDS POSITIONAL REPOS
-  declare -A SUBCOMMANDS FLAGS
-
-  if [[ -x "$(command -v dds)" ]]; then
-    REPOS=$(dds pkg repo ls | grep Remote | sed -E "s/^\s*Remote '(.*)':/\1/g")
-  else
-    REPOS=""
-  fi
-
-  SUBCOMMANDS=()
-  FLAGS=(
-    [--if-missing]='fail ignore'
-  )
-  POSITIONAL=(
-    "$REPOS" # <repo-name> ...
-  )
-
-  _dds_complete_command
-} &&
-
-# dds pkg repo
-_dds_complete_pkg_repo()
-{
-  local RESULT_WORDS POSITIONAL
-  declare -A SUBCOMMANDS FLAGS
-  SUBCOMMANDS=(
-    [add]=_dds_complete_pkg_repo_add
-    [remove]=_dds_complete_pkg_repo_remove
-    [update]=:
-    [ls]=:
-  )
-  FLAGS=()
-  POSITIONAL=()
-
-  _dds_complete_command
-} &&
 
 # dds pkg search
 _dds_complete_pkg_search()
@@ -416,9 +340,7 @@ _dds_complete_pkg()
     [init-db]=:
     [ls]=:
     [create]=_dds_complete_pkg_create
-    [get]=_dds_complete_pkg_get
-    [import]=_dds_complete_pkg_import
-    [repo]=_dds_complete_pkg_repo
+    [prefetch]=_dds_complete_pkg_prefetch
     [search]=_dds_complete_pkg_search
   )
   FLAGS=()
@@ -544,9 +466,7 @@ _dds_complete_impl()
   )
   FLAGS=(
     [--log-level]='trace debug info warn error critical silent'
-    [--data-dir]='directory'
-    [--pkg-cache-dir]='directory'
-    [--pkg-db-path]='file'
+    [--crs-cache-dir]='directory'
   )
   POSITIONAL=()
 

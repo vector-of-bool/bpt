@@ -4,7 +4,6 @@
 #include <dds/sdist/root.hpp>
 
 #include <dds/error/errors.hpp>
-#include <dds/pkg/get/http.hpp>
 #include <dds/project/project.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs/io.hpp>
@@ -127,29 +126,4 @@ sdist sdist::from_directory(path_ref where) {
         meta = proj.manifest->as_crs_package_meta();
     }
     return sdist{meta, where};
-}
-
-temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
-    neo_assertion_breadcrumbs("Expanding sdist targz file", targz_path.string());
-    auto infile = dds::open_file(targz_path, std::ios::binary | std::ios::in);
-    return expand_sdist_from_istream(infile, targz_path.string());
-}
-
-temporary_sdist dds::expand_sdist_from_istream(std::istream& is, std::string_view input_name) {
-    auto tempdir = temporary_dir::create();
-    dds_log(debug,
-            "Expanding source distribution content from [{}] into [{}]",
-            input_name,
-            tempdir.path().string());
-    fs::create_directories(tempdir.path());
-    neo::expand_directory_targz({.destination_directory = tempdir.path(), .input_name = input_name},
-                                is);
-    return {tempdir, sdist::from_directory(tempdir.path())};
-}
-
-temporary_sdist dds::download_expand_sdist_targz(std::string_view url_str) {
-    auto remote  = http_remote_pkg::from_url(neo::url::parse(url_str));
-    auto tempdir = temporary_dir::create();
-    remote.get_raw_directory(tempdir.path());
-    return {tempdir, sdist::from_directory(tempdir.path())};
 }

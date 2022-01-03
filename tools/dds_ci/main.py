@@ -169,7 +169,7 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
     if args.clean:
         dds.clean(build_dir=paths.BUILD_DIR)
 
-    dds.run(['pkg', 'repo', 'add', dds.pkg_db_path_arg, 'https://repo-1.dds.pizza'])
+    dds.run(['pkg', 'repo', 'add', 'https://repo-1.dds.pizza'])
 
     if args.rapid:
         return main_build(dds, args)

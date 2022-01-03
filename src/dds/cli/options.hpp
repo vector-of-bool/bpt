@@ -11,7 +11,6 @@
 namespace dds {
 
 namespace fs = std::filesystem;
-class pkg_db;
 class toolchain;
 
 namespace cli {
@@ -34,11 +33,7 @@ enum class subcommand {
  */
 enum class pkg_subcommand {
     _none_,
-    ls,
-    get,
     create,
-    import,
-    repo,
     search,
     prefetch,
     solve,
@@ -97,12 +92,6 @@ struct options {
     using string     = std::string;
     using opt_string = std::optional<std::string>;
 
-    // The `--data-dir` argument
-    opt_path data_dir;
-    // The `--pkg-cache-dir' argument
-    opt_path pkg_cache_dir;
-    // The `--pkg-db-dir` argument
-    opt_path pkg_db_dir;
     // The `--crs-cache-dir` argument
     opt_path crs_cache_dir;
     // The `--log-level` argument
@@ -135,11 +124,6 @@ struct options {
     cli::if_missing if_missing = cli::if_missing::fail;
 
     /**
-     * @brief Open the package pkg_db based on the user-specified options.
-     * @return pkg_db
-     */
-    pkg_db open_pkg_db() const;
-    /**
      * @brief Load a dds toolchain as specified by the user, or a default.
      * @return dds::toolchain
      */
@@ -149,12 +133,10 @@ struct options {
      * @brief Parameters specific to 'dds build'
      */
     struct {
-        bool                want_tests = true;
-        bool                want_apps  = true;
-        opt_path            lm_index;
-        std::vector<string> add_repos;
-        bool                update_repos = false;
-        opt_path            tweaks_dir;
+        bool     want_tests = true;
+        bool     want_apps  = true;
+        opt_path lm_index;
+        opt_path tweaks_dir;
     } build;
 
     /**
@@ -186,48 +168,12 @@ struct options {
         pkg_subcommand subcommand;
 
         /**
-         * @brief Parameters for 'dds pkg import'
-         */
-        struct {
-            /// File paths or URLs of packages to import
-            std::vector<string> items;
-            /// Allow piping a package tarball in through stdin
-            bool from_stdin = false;
-        } import;
-
-        /**
-         * @brief Parameters for 'dds pkg repo'
-         */
-        struct {
-            /// The 'pkg repo' subcommand
-            pkg_repo_subcommand subcommand;
-
-            /**
-             * @brief Parameters of 'dds pkg repo add'
-             */
-            struct {
-                /// The repository URL
-                string url;
-                /// Whether we should update repo data after adding the repository
-                bool update = true;
-            } add;
-
-            /**
-             * @brief Parameters of 'dds pkg repo remove'
-             */
-            struct {
-                /// Repositories to remove (by name)
-                std::vector<string> names;
-            } remove;
-        } repo;
-
-        /**
-         * @brief Paramters for 'dds pkg get'
+         * @brief Paramters for 'dds pkg prefetch'
          */
         struct {
             /// Package IDs to download
             std::vector<string> pkgs;
-        } get;
+        } prefetch;
 
         /**
          * @brief Parameters for 'dds pkg search'

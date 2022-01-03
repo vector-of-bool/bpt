@@ -1,12 +1,10 @@
 import pytest
 from pathlib import Path
 from typing import Tuple
-import subprocess
 import platform
 
-from dds_ci import proc
 from dds_ci.dds import DDSWrapper
-from dds_ci.testing import ProjectOpener, Project, error
+from dds_ci.testing import ProjectOpener, Project, error, CRSRepo
 
 
 @pytest.fixture()
@@ -59,57 +57,6 @@ def _test_pkg(test_project: Project) -> Tuple[Path, Project]:
     return test_project.build_root / 'foo@1.2.3.tar.gz', test_project
 
 
-def test_import_sdist_archive(_test_pkg: Tuple[Path, Project]) -> None:
-    sdist, project = _test_pkg
-    repo_content_path = project.dds.repo_dir / 'foo@1.2.3'
-    project.dds.pkg_import(sdist)
-    assert repo_content_path.is_dir(), \
-        'The package did not appear in the local cache'
-    # Excluded file will not be in the sdist:
-    assert not repo_content_path.joinpath('other-file.txt').is_file(), \
-        'Non-package content appeared in the package cache'
-
-
-@pytest.mark.skipif(platform.system() == 'Windows',
-                    reason='Windows has trouble reading packages from stdin. Need to investigate.')
-def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
-    sdist, project = _test_pkg
-    pipe = subprocess.Popen(
-        list(proc.flatten_cmd([
-            project.dds.path,
-            project.dds.cache_dir_arg,
-            'pkg',
-            'import',
-            '--stdin',
-        ])),
-        stdin=subprocess.PIPE,
-    )
-    assert pipe.stdin
-    with sdist.open('rb') as sdist_bin:
-        buf = sdist_bin.read(1024)
-        while buf:
-            pipe.stdin.write(buf)
-            buf = sdist_bin.read(1024)
-        pipe.stdin.close()
-
-    rc = pipe.wait()
-    assert rc == 0, 'Subprocess failed'
-    _check_import(project.dds.repo_dir / 'foo@1.2.3')
-
-
-def test_import_sdist_dir(test_project: Project) -> None:
-    test_project.dds.run(['pkg', 'import', test_project.dds.cache_dir_arg, test_project.root])
-    _check_import(test_project.dds.repo_dir / 'foo@1.2.3')
-
-
-def _check_import(repo_content_path: Path) -> None:
-    assert repo_content_path.is_dir(), \
-        'The package did not appear in the local cache'
-    # Excluded file will not be in the sdist:
-    assert not repo_content_path.joinpath('other-file.txt').is_file(), \
-        'Non-package content appeared in the package cache'
-
-
 def test_sdist_invalid_project(tmp_project: Project) -> None:
     with error.expect_error_marker('no-pkg-meta-files'):
         tmp_project.pkg_create()
@@ -125,3 +72,15 @@ def test_sdist_invalid_json5(tmp_project: Project) -> None:
     tmp_project.write('project.json5', 'bogus json5')
     with error.expect_error_marker('package-json5-parse-error'):
         tmp_project.pkg_create()
+
+
+def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
+    with error.expect_error_marker('pkg-search-no-result'):
+        tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
+    tmp_project.project_json = {
+        'name': 'test-pkg',
+        'version': '0.1.2',
+    }
+    tmp_crs_repo.import_dir(tmp_project.root)
+    # No error now:
+    tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
