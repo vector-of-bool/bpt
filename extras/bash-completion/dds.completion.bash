@@ -427,8 +427,8 @@ _dds_complete_pkg()
   _dds_complete_command
 } &&
 
-# dds repoman init
-_dds_complete_repoman_init()
+# dds repo init
+_dds_complete_repo_init()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -445,8 +445,8 @@ _dds_complete_repoman_init()
   _dds_complete_command
 } &&
 
-# dds repoman ls
-_dds_complete_repoman_ls()
+# dds repo ls
+_dds_complete_repo_ls()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -460,26 +460,9 @@ _dds_complete_repoman_ls()
   _dds_complete_command
 } &&
 
-# dds repoman add
-_dds_complete_repoman_add()
-{
-  local RESULT_WORDS POSITIONAL
-  declare -A SUBCOMMANDS FLAGS
 
-  SUBCOMMANDS=()
-  FLAGS=(
-    [--description]=' '
-  )
-  POSITIONAL=(
-    'directory' # <repo-dir>
-    # <url> # No completion implemented
-  )
-
-  _dds_complete_command
-} &&
-
-# dds repoman import
-_dds_complete_repoman_import()
+# dds repo import
+_dds_complete_repo_import()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -495,8 +478,8 @@ _dds_complete_repoman_import()
   _dds_complete_command
 } &&
 
-# dds repoman remove
-_dds_complete_repoman_remove()
+# dds repo remove
+_dds_complete_repo_remove()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -510,18 +493,17 @@ _dds_complete_repoman_remove()
   _dds_complete_command
 } &&
 
-# dds repoman
-_dds_complete_repoman()
+# dds repo
+_dds_complete_repo()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
   local RESULT_WORDS
   SUBCOMMANDS=(
-    [init]=_dds_complete_repoman_init
-    [ls]=_dds_complete_repoman_ls
-    [add]=_dds_complete_repoman_add
-    [import]=_dds_complete_repoman_import
-    [remove]=_dds_complete_repoman_remove
+    [init]=_dds_complete_repo_init
+    [ls]=_dds_complete_repo_ls
+    [import]=_dds_complete_repo_import
+    [remove]=_dds_complete_repo_remove
   )
   FLAGS=()
   POSITIONAL=()
@@ -557,7 +539,7 @@ _dds_complete_impl()
     [compile-file]=_dds_complete_compile_file
     [build-deps]=_dds_complete_build_deps
     [pkg]=_dds_complete_pkg
-    [repoman]=_dds_complete_repoman
+    [repo]=_dds_complete_repo
     [install-yourself]=_dds_complete_install_yourself
   )
   FLAGS=(

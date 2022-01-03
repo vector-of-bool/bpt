@@ -12,7 +12,7 @@
 namespace dds::cli::cmd {
 
 int repo_ls(const options& opts) {
-    auto repo = dds::crs::repository::open_existing(opts.repoman.repo_dir);
+    auto repo = dds::crs::repository::open_existing(opts.repo.repo_dir);
     for (auto pkg : repo.all_packages()) {
         fmt::print(std::cout,
                    "{}@{}~{}\n",

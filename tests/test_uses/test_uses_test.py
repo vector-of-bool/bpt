@@ -2,8 +2,7 @@ import pytest
 import shutil
 from pathlib import Path
 
-from dds_ci.testing import RepoServer, ProjectOpener, error, CRSRepo, CRSRepoFactory
-from dds_ci.testing.fixtures import TmpGitRepoFactory, FixtureRequest
+from dds_ci.testing import ProjectOpener, CRSRepo, CRSRepoFactory
 
 
 @pytest.fixture(scope='module')

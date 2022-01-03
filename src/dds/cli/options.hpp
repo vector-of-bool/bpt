@@ -26,7 +26,6 @@ enum class subcommand {
     build_deps,
     pkg,
     repo,
-    repoman,
     install_yourself,
 };
 
@@ -57,14 +56,13 @@ enum class pkg_repo_subcommand {
 };
 
 /**
- * @brief 'dds repoman' subcommands
+ * @brief 'dds repo' subcommands
  *
  */
-enum class repoman_subcommand {
+enum class repo_subcommand {
     _none_,
     init,
     import,
-    add,
     remove,
     validate,
     ls,
@@ -249,39 +247,33 @@ struct options {
     } pkg;
 
     /**
-     * @brief Parameters for 'dds repoman'
+     * @brief Parameters for 'dds repo'
      */
     struct {
-        /// Shared parameter between repoman subcommands: The directory we are acting upon
+        /// Shared parameter between repo subcommands: The directory we are acting upon
         path repo_dir;
 
         /// The actual operation we are performing on the repository dir
-        repoman_subcommand subcommand;
+        repo_subcommand subcommand;
 
-        /// Options for 'dds repoman init'
+        /// Options for 'dds repo init'
         struct {
             /// The name of the new repository. If not provided, a random one will be generated
             string name;
         } init;
 
-        /// Options for 'dds repoman import'
+        /// Options for 'dds repo import'
         struct {
             /// sdist tarball file paths to import into the repository
             std::vector<fs::path> files;
         } import;
 
-        /// Options for 'dds repoman add'
-        struct {
-            std::string url_str;
-            std::string description;
-        } add;
-
-        /// Options for 'dds repoman remove'
+        /// Options for 'dds repo remove'
         struct {
             /// Package IDs of packages to remove
             std::vector<string> pkgs;
         } remove;
-    } repoman;
+    } repo;
 
     struct {
         enum where_e {

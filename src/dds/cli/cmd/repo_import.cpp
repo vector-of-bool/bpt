@@ -26,7 +26,7 @@ namespace {
 void _import_file(dds::crs::repository& repo, path_ref dirpath) { repo.import_dir(dirpath); }
 
 int _repo_import(const options& opts) {
-    auto repo = dds::crs::repository::open_existing(opts.repoman.repo_dir);
+    auto repo = dds::crs::repository::open_existing(opts.repo.repo_dir);
     NEO_SUBSCRIBE(dds::crs::ev_repo_imported_package imported) {
         dds_log(info,
                 "[{}]: Imported .bold.cyan[{}@{}] from [.br.cyan[{}]]"_styled,
@@ -35,7 +35,7 @@ int _repo_import(const options& opts) {
                 imported.pkg_meta.version.to_string(),
                 imported.from_path.string());
     };
-    for (auto& path : opts.repoman.import.files) {
+    for (auto& path : opts.repo.import.files) {
         dds_leaf_try {
             dds_log(debug, "Importing CRS package from [.br.cyan[{}]]"_styled, path.string());
             _import_file(repo, path);

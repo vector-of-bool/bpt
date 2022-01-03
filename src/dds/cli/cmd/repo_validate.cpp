@@ -88,7 +88,7 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
 }
 
 int repo_validate(const options& opts) {
-    auto repo     = dds::crs::repository::open_existing(opts.repoman.repo_dir);
+    auto repo     = dds::crs::repository::open_existing(opts.repo.repo_dir);
     auto db       = dds::unique_database::open("").value();
     auto cache    = dds::crs::cache_db::open(db);
     int  n_errors = 0;

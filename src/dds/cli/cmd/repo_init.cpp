@@ -12,7 +12,7 @@ namespace {
 
 int _repo_init(const options& opts) {
     auto try_create = [&] {
-        auto repo = dds::crs::repository::create(opts.repoman.repo_dir, opts.repoman.init.name);
+        auto repo = dds::crs::repository::create(opts.repo.repo_dir, opts.repo.init.name);
         dds_log(info,
                 "Created a new CRS repository '{}' in [{}]",
                 repo.name(),
@@ -25,13 +25,13 @@ int _repo_init(const options& opts) {
         case if_exists::ignore:
             dds_log(info,
                     "Directory [{}] already contains a CRS repository",
-                    opts.repoman.repo_dir.string());
+                    opts.repo.repo_dir.string());
             return 0;
         case if_exists::replace:
             dds_log(info,
                     "Removing existing repository database [{}]",
-                    opts.repoman.repo_dir.string());
-            dds::ensure_absent(opts.repoman.repo_dir / "repo.db").value();
+                    opts.repo.repo_dir.string());
+            dds::ensure_absent(opts.repo.repo_dir / "repo.db").value();
             return try_create();
         case if_exists::fail:
             throw;

@@ -84,11 +84,11 @@ struct setup {
         .action          = put_into(opts.jobs),
     };
 
-    argument repoman_repo_dir_arg{
+    argument repo_repo_dir_arg{
         .help     = "The directory of the repository to manage",
         .valname  = "<repo-dir>",
         .required = true,
-        .action   = put_into(opts.repoman.repo_dir),
+        .action   = put_into(opts.repo.repo_dir),
     };
 
     argument tweaks_dir_arg{
@@ -192,10 +192,6 @@ struct setup {
         setup_repo_cmd(group.add_parser({
             .name = "repo",
             .help = "Manage a CRS package repository",
-        }));
-        setup_repoman_cmd(group.add_parser({
-            .name = "repoman",
-            .help = "Manage a dds package repository",
         }));
         setup_install_yourself_cmd(group.add_parser({
             .name = "install-yourself",
@@ -472,9 +468,9 @@ struct setup {
     void setup_repo_cmd(argument_parser& repo_cmd) noexcept {
         auto& grp = repo_cmd.add_subparsers({
             .valname = "<repo-subcommand>",
-            .action  = put_into(opts.repoman.subcommand),
+            .action  = put_into(opts.repo.subcommand),
         });
-        setup_repoman_init_cmd(grp.add_parser({
+        setup_repo_init_cmd(grp.add_parser({
             .name = "init",
             .help = "Initialize a directory as a new CRS repository",
         }));
@@ -482,7 +478,7 @@ struct setup {
             .name = "import",
             .help = "Import a directory or package into a CRS repository",
         }));
-        setup_repoman_remove_cmd(grp.add_parser({
+        setup_repo_remove_cmd(grp.add_parser({
             .name = "remove",
             .help = "Remove packages from a CRS repository",
         }));
@@ -490,105 +486,49 @@ struct setup {
             .name = "ls",
             .help = "List the packages in a local CRS repository",
         });
-        ls_cmd.add_argument(repoman_repo_dir_arg.dup());
+        ls_cmd.add_argument(repo_repo_dir_arg.dup());
         auto& validate_cmd = grp.add_parser({
             .name = "validate",
             .help = "Check that all repository packages are valid and resolvable",
         });
-        validate_cmd.add_argument(repoman_repo_dir_arg.dup());
+        validate_cmd.add_argument(repo_repo_dir_arg.dup());
         validate_cmd.add_argument(use_repos_arg.dup());
         validate_cmd.add_argument(repo_sync_arg.dup());
     }
 
     void setup_repo_import_cmd(argument_parser& repo_import_cmd) {
-        repo_import_cmd.add_argument(repoman_repo_dir_arg.dup());
+        repo_import_cmd.add_argument(repo_repo_dir_arg.dup());
         repo_import_cmd.add_argument(if_exists_arg.dup()).help
             = "Behavior when the package already exists in the repository";
         repo_import_cmd.add_argument({
             .help       = "Paths of CRS directories to import",
             .valname    = "<crs-path>",
             .can_repeat = true,
-            .action     = push_back_onto(opts.repoman.import.files),
+            .action     = push_back_onto(opts.repo.import.files),
         });
     }
 
-    void setup_repoman_cmd(argument_parser& repoman_cmd) {
-        auto& grp = repoman_cmd.add_subparsers({
-            .valname = "<repoman-subcommand>",
-            .action  = put_into(opts.repoman.subcommand),
-        });
-
-        setup_repoman_init_cmd(grp.add_parser({
-            .name = "init",
-            .help = "Initialize a directory as a new repository",
-        }));
-        auto& ls_cmd = grp.add_parser({
-            .name = "ls",
-            .help = "List the contents of a package repository directory",
-        });
-        ls_cmd.add_argument(repoman_repo_dir_arg.dup());
-        setup_repoman_add_cmd(grp.add_parser({
-            .name = "add",
-            .help = "Add a package listing to the repository by URL",
-        }));
-        setup_repoman_import_cmd(grp.add_parser({
-            .name = "import",
-            .help = "Import a source distribution into the repository",
-        }));
-        setup_repoman_remove_cmd(grp.add_parser({
-            .name = "remove",
-            .help = "Remove packages from a package repository",
-        }));
-    }
-
-    void setup_repoman_init_cmd(argument_parser& repoman_init_cmd) {
-        repoman_init_cmd.add_argument(repoman_repo_dir_arg.dup());
-        repoman_init_cmd.add_argument(if_exists_arg.dup()).help
+    void setup_repo_init_cmd(argument_parser& repn_init_cmd) {
+        repn_init_cmd.add_argument(repo_repo_dir_arg.dup());
+        repn_init_cmd.add_argument(if_exists_arg.dup()).help
             = "What to do if the directory exists and is already repository";
-        repoman_init_cmd.add_argument({
+        repn_init_cmd.add_argument({
             .long_spellings  = {"name"},
             .short_spellings = {"n"},
             .help            = "Specifiy the name of the new repository",
             .valname         = "<name>",
             .required        = true,
-            .action          = put_into(opts.repoman.init.name),
+            .action          = put_into(opts.repo.init.name),
         });
     }
 
-    void setup_repoman_import_cmd(argument_parser& repoman_import_cmd) {
-        repoman_import_cmd.add_argument(repoman_repo_dir_arg.dup());
-        repoman_import_cmd.add_argument(if_exists_arg.dup()).help
-            = "Behavior when the package already exists in the repository";
-        repoman_import_cmd.add_argument({
-            .help       = "Paths to source distribution archives to import",
-            .valname    = "<sdist-file-path>",
-            .can_repeat = true,
-            .action     = push_back_onto(opts.repoman.import.files),
-        });
-    }
-
-    void setup_repoman_add_cmd(argument_parser& repoman_add_cmd) {
-        repoman_add_cmd.add_argument(repoman_repo_dir_arg.dup());
-        repoman_add_cmd.add_argument({
-            .help     = "URL to add to the repository",
-            .valname  = "<url>",
-            .required = true,
-            .action   = put_into(opts.repoman.add.url_str),
-        });
-        repoman_add_cmd.add_argument({
-            .long_spellings  = {"description"},
-            .short_spellings = {"d"},
-            .action          = put_into(opts.repoman.add.description),
-        });
-    }
-
-    void setup_repoman_remove_cmd(argument_parser& repoman_remove_cmd) {
-        repoman_remove_cmd.add_argument(repoman_repo_dir_arg.dup());
-        repoman_remove_cmd.add_argument({
+    void setup_repo_remove_cmd(argument_parser& repo_remove_cmd) {
+        repo_remove_cmd.add_argument(repo_repo_dir_arg.dup());
+        repo_remove_cmd.add_argument({
             .help       = "One or more identifiers of packages to remove",
             .valname    = "<pkg-id>",
             .can_repeat = true,
-            .action     = push_back_onto(opts.repoman.remove.pkgs),
+            .action     = push_back_onto(opts.repo.remove.pkgs),
         });
     }
 

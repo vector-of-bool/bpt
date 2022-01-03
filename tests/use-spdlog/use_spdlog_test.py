@@ -1,11 +1,10 @@
-import subprocess
 import json
 import pytest
 from pathlib import Path
 
-from dds_ci.testing import RepoServer, ProjectOpener, error, CRSRepo, CRSRepoFactory
+from dds_ci.testing import ProjectOpener, error, CRSRepo, CRSRepoFactory
 from dds_ci import proc, paths, toolchain
-from dds_ci.testing.fs import DirRenderer, TempPathFactory, render_into
+from dds_ci.testing.fs import DirRenderer, render_into
 from dds_ci.testing.repo import make_simple_crs
 
 

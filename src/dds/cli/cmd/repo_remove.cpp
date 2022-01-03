@@ -13,8 +13,8 @@
 namespace dds::cli::cmd {
 
 int repo_remove(const options& opts) {
-    auto repo = dds::crs::repository::open_existing(opts.repoman.repo_dir);
-    for (auto pkg : opts.repoman.remove.pkgs) {
+    auto repo = dds::crs::repository::open_existing(opts.repo.repo_dir);
+    for (auto pkg : opts.repo.remove.pkgs) {
         auto pkg_id = dds::pkg_id::parse(pkg);
         /// We only need the name and version info to do the removal
         dds::crs::package_meta meta;

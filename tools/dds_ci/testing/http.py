@@ -12,9 +12,6 @@ import subprocess
 
 import pytest
 from _pytest.fixtures import FixtureRequest
-from _pytest.tmpdir import TempPathFactory
-
-from dds_ci.dds import DDSWrapper
 
 
 def _unused_tcp_port() -> int:
@@ -80,81 +77,3 @@ def http_server_factory(request: FixtureRequest) -> HTTPServerFactory:
         return server
 
     return _make
-
-
-class RepoServer:
-    """
-    A fixture handle to a dds HTTP repository, including a path and URL.
-    """
-    def __init__(self, dds_exe: Path, info: ServerInfo, repo_name: str) -> None:
-        self.repo_name = repo_name
-        self.server = info
-        self.url = info.base_url
-        self.dds_exe = dds_exe
-
-    def import_json_data(self, data: Any) -> None:
-        """
-        Import some packages into the repo for the given JSON data. Uses
-        mkrepo.py
-        """
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            f.write(json.dumps(data).encode())
-            f.close()
-            self.import_json_file(Path(f.name))
-            Path(f.name).unlink()
-
-    def import_json_file(self, fpath: Path) -> None:
-        """
-        Import some package into the repo for the given JSON file. Uses mkrepo.py
-        """
-        subprocess.check_call([
-            sys.executable,
-            str(Path.cwd() / 'tools/mkrepo.py'),
-            f'--dds-exe={self.dds_exe}',
-            f'--dir={self.server.root}',
-            f'--spec={fpath}',
-        ])
-
-
-RepoFactory = Callable[[str], Path]
-
-
-@pytest.fixture(scope='session')
-def repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> RepoFactory:
-    def _make(name: str) -> Path:
-        tmpdir = Path(tmp_path_factory.mktemp('test-repo-'))
-        dds.run(['repoman', 'init', tmpdir, f'--name={name}'])
-        return tmpdir
-
-    return _make
-
-
-HTTPRepoServerFactory = Callable[[str], RepoServer]
-
-
-@pytest.fixture(scope='session')
-def http_repo_factory(dds_exe: Path, repo_factory: RepoFactory,
-                      http_server_factory: HTTPServerFactory) -> HTTPRepoServerFactory:
-    """
-    Fixture factory that creates new repositories with an HTTP server for them.
-    """
-    def _make(name: str) -> RepoServer:
-        repo_dir = repo_factory(name)
-        server = http_server_factory(repo_dir)
-        return RepoServer(dds_exe, server, name)
-
-    return _make
-
-
-@pytest.fixture(scope='module')
-def module_http_repo(http_repo_factory: HTTPRepoServerFactory, request: FixtureRequest) -> RepoServer:
-    return http_repo_factory(f'module-repo-{request.module.__name__}')
-
-
-@pytest.fixture()
-def http_repo(http_repo_factory: HTTPRepoServerFactory, request: FixtureRequest) -> RepoServer:
-    """
-    Fixture that creates a new empty dds repository and an HTTP server to serve
-    it.
-    """
-    return http_repo_factory(f'test-repo-{request.function.__name__}')

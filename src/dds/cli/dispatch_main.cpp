@@ -29,11 +29,6 @@ command pkg_search;
 command pkg_prefetch;
 command pkg_solve;
 command repo_cmd;
-command repoman_add;
-command repoman_import;
-command repoman_init;
-command repoman_ls;
-command repoman_remove;
 
 }  // namespace cmd
 
@@ -80,26 +75,8 @@ int dispatch_main(const options& opts) noexcept {
             neo::unreachable();
         }
         case subcommand::repo: {
-            DDS_E_SCOPE(opts.repoman.subcommand);
+            DDS_E_SCOPE(opts.repo.subcommand);
             return cmd::repo_cmd(opts);
-        }
-        case subcommand::repoman: {
-            DDS_E_SCOPE(opts.repoman.subcommand);
-            switch (opts.repoman.subcommand) {
-            case repoman_subcommand::import:
-                return cmd::repoman_import(opts);
-            case repoman_subcommand::add:
-                return cmd::repoman_add(opts);
-            case repoman_subcommand::init:
-                return cmd::repoman_init(opts);
-            case repoman_subcommand::remove:
-                return cmd::repoman_remove(opts);
-            case repoman_subcommand::ls:
-                return cmd::repoman_ls(opts);
-            case repoman_subcommand::validate:
-            case repoman_subcommand::_none_:;
-            }
-            neo::unreachable();
         }
         case subcommand::compile_file:
             return cmd::compile_file(opts);

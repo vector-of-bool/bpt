@@ -26,19 +26,18 @@ command repo_remove;
 int repo_cmd(const options& opts) {
     neo_assert(invariant, opts.subcommand == subcommand::repo, "Wrong subcommand for dispatch");
     return dds_leaf_try {
-        switch (opts.repoman.subcommand) {
-        case repoman_subcommand::init:
+        switch (opts.repo.subcommand) {
+        case repo_subcommand::init:
             return cmd::repo_init(opts);
-        case repoman_subcommand::import:
+        case repo_subcommand::import:
             return cmd::repo_import(opts);
-        case repoman_subcommand::ls:
+        case repo_subcommand::ls:
             return cmd::repo_ls(opts);
-        case repoman_subcommand::validate:
+        case repo_subcommand::validate:
             return cmd::repo_validate(opts);
-        case repoman_subcommand::remove:
+        case repo_subcommand::remove:
             return cmd::repo_remove(opts);
-        case repoman_subcommand::add:
-        case repoman_subcommand::_none_:;
+        case repo_subcommand::_none_:;
         }
         neo::unreachable();
     }
