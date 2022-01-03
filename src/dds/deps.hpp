@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dds/pkg/name.hpp>
+#include <dds/project/dependency.hpp>
 #include <dds/util/fs/path.hpp>
 
 #include <neo/assert.hpp>
@@ -55,7 +56,7 @@ struct dependency {
  * Represents a dependency listing file, which is a subset of a package manifest
  */
 struct dependency_manifest {
-    std::vector<dependency> dependencies;
+    std::vector<project_dependency> dependencies;
 
     static dependency_manifest from_file(path_ref where);
 };

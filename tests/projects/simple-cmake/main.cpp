@@ -1,3 +1,3 @@
 #include <foo.hpp>
 
-int main() { say_hello(); }
+int main() { foo_fun(); }

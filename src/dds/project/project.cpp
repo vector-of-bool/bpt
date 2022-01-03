@@ -1,5 +1,7 @@
 #include "./project.hpp"
 
+#include "./error.hpp"
+
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <dds/error/try_catch.hpp>
@@ -59,6 +61,8 @@ crs::package_meta project_manifest::as_crs_package_meta() const noexcept {
             .intra_uses   = {},
             .dependencies = {},
         });
+        extend(ret.libraries.back().dependencies,
+               root_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
     }
     return ret;
 }

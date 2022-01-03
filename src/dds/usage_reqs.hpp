@@ -15,6 +15,14 @@ namespace dds {
 
 class shared_compile_file_rules;
 
+struct e_nonesuch_library {
+    lm::usage value;
+};
+
+struct e_dup_library_id {
+    lm::usage value;
+};
+
 // The underlying map used by the usage requirements
 class usage_requirement_map {
 

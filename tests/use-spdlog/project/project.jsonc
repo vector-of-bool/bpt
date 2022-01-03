@@ -1,8 +1,7 @@
 {
     "name": "test",
     "version": "0.0.0",
-    "namespace": "test",
     "depends": [
-        "spdlog@1.4.2"
+        "spdlog@1.4.2 uses spdlog for lib"
     ],
 }

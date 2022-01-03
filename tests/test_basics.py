@@ -1,11 +1,10 @@
-from subprocess import CalledProcessError
 import time
+from subprocess import CalledProcessError
 
 import pytest
-
 from dds_ci import paths
-from dds_ci.testing.error import expect_error_marker
 from dds_ci.testing import Project, ProjectJSON
+from dds_ci.testing.error import expect_error_marker
 
 
 def test_build_empty(tmp_project: Project) -> None:
@@ -86,7 +85,7 @@ def test_invalid_names(tmp_project: Project) -> None:
         tmp_project.build()
     with expect_error_marker('invalid-pkg-dep-name'):
         tmp_project.pkg_create()
-    with expect_error_marker('invalid-pkg-dep-name'):
+    with expect_error_marker('invalid-dep-shorthand'):
         tmp_project.dds.build_deps(['invalid name@1.2.3'])
 
     tmp_project.project_json = {
@@ -134,17 +133,3 @@ def test_empty_sdist_create(tmp_project: Project) -> None:
     tmp_project.pkg_create()
     assert tmp_project.build_root.joinpath('test-pkg@0.2.2.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'
-
-
-def test_new_format(tmp_project: Project) -> None:
-    tmp_project.project_json = {
-        'name': 'test-pkg',
-        'version': '1.2.3',
-        'namespace': 'testing',
-        'libs': [{
-            'name': 'test',
-            'path': '.',
-            'uses': ['bar'],
-        }]
-    }
-    tmp_project.pkg_create()

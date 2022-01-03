@@ -7,6 +7,9 @@
     "warning_flags": [
         "-Werror",
     ],
+    "cxx_flags": [
+        "-fcoroutines",
+    ],
     "flags": [
         "-I/usr/local/opt/openssl@1.1/include",
     ],

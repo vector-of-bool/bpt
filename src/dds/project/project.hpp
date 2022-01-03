@@ -14,14 +14,6 @@
 
 namespace dds {
 
-struct e_parse_project_manifest_path {
-    std::filesystem::path value;
-};
-
-struct e_parse_project_manifest_data {
-    json5::data value;
-};
-
 struct project_manifest {
     dds::name       name;
     semver::version version;
@@ -33,10 +25,6 @@ struct project_manifest {
     static project_manifest from_json_data(const json5::data& data);
 
     crs::package_meta as_crs_package_meta() const noexcept;
-};
-
-struct e_open_project {
-    std::filesystem::path value;
 };
 
 struct project {

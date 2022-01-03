@@ -2,13 +2,15 @@
 
 #include <dds/crs/error.hpp>
 #include <dds/crs/repo.hpp>
+#include <dds/error/errors.hpp>
 #include <dds/error/handle.hpp>
 #include <dds/error/marker.hpp>
 #include <dds/error/try_catch.hpp>
+#include <dds/project/error.hpp>
 #include <dds/util/db/migrate.hpp>
 #include <dds/util/fs/io.hpp>
 #include <dds/util/fs/shutil.hpp>
-#include <dds/util/json5/parse.hpp>
+#include <dds/util/json5/error.hpp>
 
 #include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
@@ -95,24 +97,47 @@ int repo_import(const options& opts) {
         write_error_marker("repo-import-db-error");
         return 1;
     }
-    dds_leaf_catch(dds::e_json_parse_error                parse_error,
-                   dds::crs::e_repo_importing_dir         crs_dir,
-                   dds::crs::e_given_meta_json_input_name input_name) {
+    dds_leaf_catch(dds::e_json_parse_error        parse_error,
+                   dds::crs::e_repo_importing_dir crs_dir,
+                   dds::crs::e_pkg_json_path      pkg_json_path) {
         dds_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_dir.value.string());
-        dds_log(error, "  JSON parse error in [.br.yellow[{}]]:"_styled, input_name.value);
+        dds_log(error,
+                "  JSON parse error in [.br.yellow[{}]]:"_styled,
+                pkg_json_path.value.string());
         dds_log(error, "    .br.red[{}]"_styled, parse_error.value);
         write_error_marker("repo-import-invalid-crs-json-parse-error");
         return 1;
     }
-    dds_leaf_catch(dds::crs::e_invalid_meta_data          error,
-                   dds::crs::e_repo_importing_dir         crs_dir,
-                   dds::crs::e_given_meta_json_input_name crs_json_file) {
+    dds_leaf_catch(dds::crs::e_invalid_meta_data  error,
+                   dds::crs::e_repo_importing_dir crs_dir,
+                   dds::crs::e_pkg_json_path      pkg_json_path) {
         dds_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_dir.value.string());
         dds_log(error,
                 "CRS data in [.br.yellow[{}]] is invalid: .br.red[{}]"_styled,
-                crs_json_file.value,
+                pkg_json_path.value.string(),
                 error.value);
         write_error_marker("repo-import-invalid-crs-json");
+        return 1;
+    }
+    dds_leaf_catch(dds::crs::e_invalid_meta_data  error,
+                   dds::crs::e_repo_importing_dir proj_dir,
+                   dds::e_open_project,
+                   dds::e_parse_project_manifest_path proj_json_path) {
+        dds_log(error, "Error while importing [.br.yellow[{}]]"_styled, proj_dir.value.string());
+        dds_log(error,
+                "Project data in [.br.yellow[{}]] is invalid: .br.red[{}]"_styled,
+                proj_json_path.value.string(),
+                error.value);
+        write_error_marker("repo-import-invalid-proj-json");
+        return 1;
+    }
+    dds_leaf_catch(user_error<errc::invalid_pkg_filesystem> const& exc,
+                   crs::e_repo_importing_dir                       crs_dir) {
+        dds_log(error,
+                "Error while importing [.br.yellow[{}]]: .br.red[{}]"_styled,
+                crs_dir.value.string(),
+                exc.what());
+        write_error_marker("repo-import-noent");
         return 1;
     }
     dds_leaf_catch(dds::crs::e_repo_importing_dir crs_dir,

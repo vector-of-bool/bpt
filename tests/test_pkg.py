@@ -111,17 +111,17 @@ def _check_import(repo_content_path: Path) -> None:
 
 
 def test_sdist_invalid_project(tmp_project: Project) -> None:
-    with error.expect_error_marker('no-package-json5'):
+    with error.expect_error_marker('no-pkg-meta-files'):
         tmp_project.pkg_create()
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='We know this fails on Linux')
 def test_sdist_unreadable_dir(dds: DDSWrapper) -> None:
-    with error.expect_error_marker('failed-package-json5-scan'):
+    with error.expect_error_marker('sdist-open-fail-generic'):
         dds.run(['pkg', 'create', '--project=/root'])
 
 
 def test_sdist_invalid_json5(tmp_project: Project) -> None:
-    tmp_project.write('package.json5', 'bogus json5')
+    tmp_project.write('project.json5', 'bogus json5')
     with error.expect_error_marker('package-json5-parse-error'):
         tmp_project.pkg_create()

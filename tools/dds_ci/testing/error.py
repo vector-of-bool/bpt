@@ -2,6 +2,7 @@
 Test utilities for error checking
 """
 
+import shutil
 from contextlib import contextmanager
 from typing import ContextManager, Iterator, Callable, Pattern, Union
 import subprocess
@@ -27,18 +28,24 @@ def expect_error_marker_pred(pred: Callable[[str], bool], expected: str) -> Iter
     """
     tdir = Path(tempfile.mkdtemp())
     err_file = tdir / 'error'
+    env_key = 'DDS_WRITE_ERROR_MARKER'
+    prev = os.environ.get(env_key)
     try:
-        os.environ['DDS_WRITE_ERROR_MARKER'] = str(err_file)
+        os.environ[env_key] = str(err_file)
         yield
         assert False, 'dds subprocess did not raise CallProcessError'
     except subprocess.CalledProcessError:
         assert err_file.exists(), \
-            f'No error marker file was generated, but dds exited with an error (Expected "{expected}")'
+            f'No error marker file [{err_file}] was generated, but dds exited with an error (Expected "{expected}")'
         marker = err_file.read_text().strip()
         assert pred(marker), \
             f'dds did not produce the expected error (Expected {expected}, got {marker})'
     finally:
-        os.environ.pop('DDS_WRITE_ERROR_MARKER')
+        shutil.rmtree(tdir)
+        if prev:
+            os.environ[env_key] = prev
+        else:
+            os.environ.pop(env_key)
 
 
 def expect_error_marker(expect: str) -> ContextManager[None]:

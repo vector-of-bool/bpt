@@ -1,4 +1,0 @@
-{
-    name: 'test',
-    test_uses: ['catch2/catch2']
-}

@@ -1,0 +1,10 @@
+{
+    "name": "with_bad_test_dep",
+    "namespace": "test1",
+    "version": "0.0.0",
+    "depends": [
+        // This dependency cannot compile. We will therefore fail to build
+        // if we build with tests
+        "unbuildable@0.0.0 uses fails_to_build for test"
+    ]
+}

@@ -28,11 +28,11 @@ TEST_CASE("Parse a shorthand") {
             .expect = {{"foo"}, simple_ver_range("1.2.3", "1.2.4")},
         },
         {
-            .given  = "foo@1.2.3; for: test",
+            .given  = "foo@1.2.3 for test",
             .expect = {"foo", simple_ver_range("1.2.3", "2.0.0"), dds::crs::usage_kind::test},
         },
         {
-            .given  = "foo@1.2.3; for: test; use: bar , baz",
+            .given  = "foo@1.2.3 uses bar , baz for test",
             .expect = {"foo",
                        simple_ver_range("1.2.3", "2.0.0"),
                        dds::crs::usage_kind::test,

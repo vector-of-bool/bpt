@@ -9,9 +9,11 @@
 #include <dds/util/string.hpp>
 
 #include <boost/leaf/exception.hpp>
+#include <magic_enum.hpp>
 #include <neo/assert.hpp>
 #include <neo/ranges.hpp>
 #include <neo/tl.hpp>
+#include <neo/utility.hpp>
 
 using namespace dds;
 
@@ -36,50 +38,79 @@ project_dependency project_dependency::parse_dep_range_shorthand(std::string_vie
     return ret;
 }
 
-project_dependency project_dependency::from_shorthand_string(std::string_view sv) {
-    DDS_E_SCOPE(e_invalid_shorthand_string{std::string(sv)});
-    auto split = split_view(sv, "; ");
-    if (split.empty()) {
-        BOOST_LEAF_THROW_EXCEPTION(e_human_message{"Invalid empty dependnency specifier"});
+static std::string_view next_token(std::string_view sv) noexcept {
+    sv = trim_view(sv);
+    if (sv.empty()) {
+        return sv;
+    }
+    auto it = sv.begin();
+    if (*it == ',') {
+        return sv.substr(0, 1);
+    }
+    while (it != sv.end() && !std::isspace(*it) && *it != ',') {
+        ++it;
+    }
+    auto len = it - sv.begin();
+    return sv.substr(0, len);
+}
+
+project_dependency project_dependency::from_shorthand_string(const std::string_view sv) {
+    DDS_E_SCOPE(e_parse_dep_shorthand_string{std::string(sv)});
+    std::string_view remain    = sv;
+    std::string_view tok       = remain.substr(0, 0);
+    auto             adv_token = [&] {
+        auto off   = tok.end() - remain.begin();
+        remain     = remain.substr(off);
+        return tok = next_token(remain);
+    };
+
+    adv_token();
+    if (tok.empty()) {
+        BOOST_LEAF_THROW_EXCEPTION(e_human_message{"Invalid empty dependency specifier"});
     }
 
-    auto front = trim_view(split[0]);
-    auto ret   = parse_dep_range_shorthand(front);
+    auto ret = parse_dep_range_shorthand(tok);
 
-    std::optional<crs::usage_kind>        kind;
-    std::optional<std::vector<dds::name>> use_names;
+    adv_token();
+    if (tok.empty()) {
+        return ret;
+    }
 
-    auto it = split.cbegin() + 1;
-    for (; it != split.cend(); ++it) {
-        std::string_view part = trim_view(*it);
-        if (part.starts_with("for:")) {
-            auto tail = trim_view(part.substr(4));
-            if (kind.has_value()) {
+    if (tok != neo::oper::any_of("for", "uses", "")) {
+        BOOST_LEAF_THROW_EXCEPTION(
+            e_human_message{"Expected 'for' or 'uses' following dependency name and range"});
+    }
+
+    if (tok == "uses") {
+        ret.explicit_uses.emplace();
+        while (1) {
+            adv_token();
+            if (tok == ",") {
                 BOOST_LEAF_THROW_EXCEPTION(
-                    e_human_message{"Double-specified 'for' in dependency shorthand"});
+                    e_human_message{"Unexpected extra comma in dependency specifier"});
             }
-            kind = parse_enum_str<crs::usage_kind>(std::string(tail));
-        } else if (part.starts_with("use:")) {
-            auto tail = trim_view(part.substr(4));
-            if (use_names.has_value()) {
-                BOOST_LEAF_THROW_EXCEPTION(
-                    e_human_message{"Doubule-specified 'use' in dependency shorthand"});
+            ret.explicit_uses->emplace_back(*dds::name::from_string(tok));
+            if (adv_token() != ",") {
+                break;
             }
-            use_names = split_view(tail, ", ") | neo::lref
-                | std::views::transform(NEO_TL(trim_view(_1)))
-                | std::views::transform(NEO_TL(name{name::from_string(_1).value()}))  //
-                | neo::to_vector;
-        } else {
-            BOOST_LEAF_THROW_EXCEPTION(
-                e_human_message{neo::ufmt("Unknown part of shorthand string '{}'", part)});
         }
     }
 
-    if (kind) {
-        ret.kind = *kind;
+    if (tok == "for") {
+        tok      = adv_token();
+        ret.kind = parse_enum_str<crs::usage_kind>(std::string(tok));
+        tok      = adv_token();
     }
-    if (use_names) {
-        ret.explicit_uses = use_names;
+
+    if (tok == "uses") {
+        BOOST_LEAF_THROW_EXCEPTION(
+            e_human_message{"'uses' must appear before 'for' in dependency shorthand string"});
     }
+
+    if (!tok.empty()) {
+        BOOST_LEAF_THROW_EXCEPTION(e_human_message{
+            neo::ufmt("Unexpected trailing string in dependency string \"{}\"", remain)});
+    }
+
     return ret;
 }

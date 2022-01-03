@@ -5,6 +5,7 @@ import pytest
 from _pytest.config import Config as PyTestConfig
 
 # Ensure the fixtures are registered with PyTest:
+from dds_ci.testing.fs import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from dds_ci.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from dds_ci.testing.http import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from dds_ci.testing.repo import *  # pylint: disable=wildcard-import,unused-wildcard-import

@@ -4,15 +4,18 @@
 #include "./remote.hpp"
 #include <dds/error/result.hpp>
 #include <dds/util/fs/dirscan.hpp>
+#include <dds/util/log.hpp>
 #include <dds/util/paths.hpp>
 
 #include <boost/leaf/exception.hpp>
+#include <fansi/styled.hpp>
 
 #include <neo/memory.hpp>
 
 using namespace dds;
 using namespace dds::crs;
 using namespace neo::sqlite3::literals;
+using namespace fansi::literals;
 
 struct cache::impl {
     fs::path        root_dir;
@@ -31,26 +34,23 @@ cache cache::open(path_ref dirpath) {
     return cache{dirpath};
 }
 
-cache cache::open_default() { return open(default_path()); }
-
 cache::cache(path_ref dirpath)
     : _impl(std::make_shared<impl>(dirpath)) {}
 
 cache_db& cache::metadata_db() noexcept { return _impl->metadata_db; }
 
-fs::path cache::pkgs_dir_path() const noexcept { return _impl->root_dir / "pkgs"; }
-
 fs::path cache::prefetch(const pkg_id& pid_) {
     auto pid     = pid_;
     auto entries = metadata_db().for_package(pid.name, pid.version);
-    if (entries.empty()) {
+    auto it      = entries.begin();
+    if (it == entries.end()) {
         BOOST_LEAF_THROW_EXCEPTION(e_no_such_pkg{pid});
     }
-    auto remote = metadata_db().get_remote_by_id(entries.front().remote_id);
+    auto remote = metadata_db().get_remote_by_id(it->remote_id);
     if (pid.meta_version == 0) {
-        pid.meta_version = entries.front().pkg.meta_version;
+        pid.meta_version = it->pkg.meta_version;
     }
-    auto pkg_dir = pkgs_dir_path() / pid.to_string();
+    auto pkg_dir = _impl->root_dir / "pkgs" / pid.to_string();
     if (fs::exists(pkg_dir)) {
         return pkg_dir;
     }
@@ -58,6 +58,7 @@ fs::path cache::prefetch(const pkg_id& pid_) {
                remote.has_value(),
                "Unable to get the remote of a just-obtained package entry",
                pid.to_string());
+    dds_log(info, "Fetching package .br.cyan[{}]"_styled, pid.to_string());
     crs::pull_pkg_from_remote(pkg_dir, remote->url, pid);
     return pkg_dir;
 }

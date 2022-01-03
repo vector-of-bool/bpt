@@ -1,5 +1,7 @@
 #include "./project.hpp"
 
+#include "./error.hpp"
+
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <dds/util/json_walk.hpp>
@@ -54,5 +56,6 @@ project_manifest project_manifest::from_json_data(const json5::data& data) {
              if_key{"$schema", just_accept},
          });
 
+    ret.as_crs_package_meta().throw_if_invalid();
     return ret;
 }

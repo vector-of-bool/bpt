@@ -135,7 +135,8 @@ struct metadata_provider {
         dds_log(trace, "Find best candidate of {}", req.dep.decl_to_string());
         if (found == pkgs_by_name.end()) {
             found = pkgs_by_name  //
-                        .emplace(req.dep.name.str, cache_db.for_package(req.dep.name))
+                        .emplace(req.dep.name.str,
+                                 cache_db.for_package(req.dep.name) | neo::to_vector)
                         .first;
             std::ranges::sort(found->second,
                               std::less<>{},
@@ -176,66 +177,18 @@ struct metadata_provider {
                 sole_version(req.dep.acceptable_versions).to_string());
         const auto& version = sole_version(req.dep.acceptable_versions);
         auto        metas   = cache_db.for_package(req.dep.name, version);
+        auto        it      = std::ranges::begin(metas);
         neo_assert(invariant,
-                   !metas.empty(),
+                   it != std::ranges::end(metas),
                    "Unexpected empty metadata for requirements of package {}@{}",
                    req.dep.name.str,
                    version.to_string());
-        // The package that is required:
-        auto& pkg = metas.front().pkg;
-        DDS_E_SCOPE(pkg);
-        DDS_E_SCOPE(req.dep);
-
-        std::set<dds::name> use_from_pkg = req.dep.uses.visit(neo::overload{
-            [&](implicit_uses_all) {
-                std::set<dds::name> r;
-                extend(r, pkg.libraries | std::views::transform(NEO_TL(_1.name)));
-                return r;
-            },
-            [&](explicit_uses_list const& seq) {
-                return std::set<dds::name>{seq.uses.cbegin(), seq.uses.cend()};
-            },
-        });
-
-        while (true) {
-            std::set<dds::name> use_more;
-            for (auto&& use : use_from_pkg) {
-                dds_log(trace, "  Uses library: {}", use);
-                DDS_E_SCOPE(use);
-                /** Find the library meta for the used library */
-                auto dep_lib = std::ranges::find_if(pkg.libraries, NEO_TL(_1.name == use));
-                if (dep_lib == pkg.libraries.cend()) {
-                    BOOST_LEAF_THROW_EXCEPTION(e_usage_no_such_lib{});
-                }
-                dds::extend(use_more,
-                            dep_lib->intra_uses
-                                | std::views::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-                                | std::views::transform(NEO_TL(_1.lib)));
-            }
-            if (std::ranges::includes(use_from_pkg, use_more)) {
-                break;
-            }
-            dds_log(trace,
-                    "  Use: {}",
-                    dds::joinstr(", ", use_from_pkg | std::views::transform(NEO_TL(_1.str))));
-            extend(use_from_pkg, use_more);
-            use_more.clear();
-        }
-
-        std::vector<requirement> ret;
-        for (dds::name intra_used : use_from_pkg) {
-            auto dep_lib = std::ranges::find_if(pkg.libraries, NEO_TL(_1.name == intra_used));
-            neo_assert(invariant,
-                       dep_lib != pkg.libraries.end(),
-                       "Invalid intra-package usage was uncaught",
-                       intra_used.str,
-                       pkg.name.str);
-            dds::extend(ret,
-                        dep_lib->dependencies
-                            | std::views::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-                            | std::views::transform(NEO_TL(requirement{_1})));
-        }
-        return ret;
+        return it->pkg.libraries                              //
+            | std::views::transform(NEO_TL(_1.dependencies))  //
+            | std::views::join                                //
+            | std::views::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
+            | std::views::transform(NEO_TL(requirement{_1}))  //
+            | neo::to_vector;
     }
 };
 
@@ -289,7 +242,6 @@ struct fail_explainer {
 
 dds::e_dependency_solve_failure_explanation
 generate_failure_explanation(const solve_failure_exception& exc) {
-    // TODO: Implement a new explainer
     fail_explainer explain;
     pubgrub::generate_explaination(exc, explain);
     return e_dependency_solve_failure_explanation{explain.strm.str()};

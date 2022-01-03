@@ -25,7 +25,7 @@ class DDSWrapper:
         self.path = path
         self.repo_dir = Path(repo_dir or (paths.PREBUILT_DIR / 'ci-repo'))
         self.pkg_db_path = Path(pkg_db_path or (self.repo_dir.parent / 'ci-catalog.db'))
-        self.default_cwd = default_cwd or Path.cwd()
+        self.default_cwd = Path(default_cwd or Path.cwd())
         self.crs_cache_dir: Optional[Path] = None
 
     def clone(self: T) -> T:
@@ -70,8 +70,8 @@ class DDSWrapper:
     def pkg_get(self, what: str) -> None:
         self.run(['pkg', 'get', self.pkg_db_path_arg, what])
 
-    def repo_add(self, url: str) -> None:
-        self.run(['pkg', 'repo', 'add', self.pkg_db_path_arg, url])
+    # def repo_add(self, url: str) -> None:
+    #     self.run(['pkg', 'repo', 'add', self.pkg_db_path_arg, url])
 
     def repo_remove(self, name: str) -> None:
         self.run(['pkg', 'repo', 'remove', self.pkg_db_path_arg, name])
@@ -82,7 +82,7 @@ class DDSWrapper:
     def pkg_import(self, filepath: Pathish) -> None:
         self.run(['pkg', 'import', filepath, self.cache_dir_arg])
 
-    def pkg_prefetch(self, *, repos: Sequence[str], pkgs: Sequence[str] = ()) -> None:
+    def pkg_prefetch(self, *, repos: Sequence[Pathish], pkgs: Sequence[str] = ()) -> None:
         self.run([self.cache_dir_arg, 'pkg', 'prefetch', (f'--use-repo={r}' for r in repos), pkgs])
 
     def build(self,
@@ -93,6 +93,7 @@ class DDSWrapper:
               jobs: Optional[int] = None,
               tweaks_dir: Optional[Pathish] = None,
               with_tests: bool = True,
+              repos: Sequence[Pathish] = (),
               more_args: Optional[proc.CommandLine] = None,
               timeout: Optional[float] = None) -> None:
         """
@@ -112,6 +113,7 @@ class DDSWrapper:
                 f'--toolchain={toolchain}',
                 self.cache_dir_arg,
                 self.pkg_db_path_arg,
+                (f'--use-repo={r}' for r in repos),
                 f'--jobs={jobs}',
                 f'--project={root}',
                 f'--out={build_root}',
@@ -144,12 +146,18 @@ class DDSWrapper:
             f'--out={out}',
         ])
 
-    def build_deps(self, args: proc.CommandLine, *, toolchain: Optional[Path] = None) -> None:
+    def build_deps(self,
+                   args: proc.CommandLine,
+                   *,
+                   repos: Sequence[Pathish] = (),
+                   toolchain: Optional[Pathish] = None) -> None:
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         self.run([
             'build-deps',
+            '-ltrace',
             f'--toolchain={toolchain}',
             self.pkg_db_path_arg,
             self.cache_dir_arg,
+            (f'--use-repo={r}' for r in repos),
             args,
         ])

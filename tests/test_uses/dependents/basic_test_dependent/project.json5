@@ -2,7 +2,5 @@
     name: 'test',
     namespace: 'test',
     version: '0.0.0',
-    depends: [{
-        dep: 'the_test_lib@0.0.0',
-    }]
+    depends: ['the_test_lib@0.0.0 for test']
 }

@@ -31,10 +31,6 @@ struct e_url_string {
     std::string value;
 };
 
-struct e_missing_file {
-    std::filesystem::path path;
-};
-
 void write_error_marker(std::string_view error) noexcept;
 
 }  // namespace dds

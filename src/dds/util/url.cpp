@@ -10,6 +10,11 @@ using namespace dds;
 
 neo::url dds::guess_url_from_string(std::string_view sv) {
     /// We can probably be a lot smarter about this...
+    std::filesystem::path as_path{sv};
+    if (as_path.is_absolute()) {
+        return neo::url::parse("file://" + std::string(sv));
+    }
+
     if (sv.find("://") == sv.npos) {
         std::string s   = "https://" + std::string(sv);
         auto        url = neo::url::parse(s);
@@ -30,7 +35,6 @@ neo::url dds::guess_url_from_string(std::string_view sv) {
         return std::get<neo::url>(parsed);
     }
 
-    std::filesystem::path as_path{sv};
     if (as_path.begin() != as_path.end()) {
         auto first = as_path.begin()->string();
         host       = neo::url::host_t::parse(first);

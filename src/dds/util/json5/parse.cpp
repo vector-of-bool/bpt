@@ -1,5 +1,7 @@
 #include "./parse.hpp"
 
+#include "./error.hpp"
+
 #include <dds/error/on_error.hpp>
 
 #include <dds/util/fs/io.hpp>

@@ -1,5 +1,4 @@
 from pathlib import Path
-from dds_ci.testing.fixtures import tmp_project
 
 import tarfile
 import pytest
@@ -11,7 +10,7 @@ from dds_ci.paths import PROJECT_ROOT
 from dds_ci.testing.http import HTTPServerFactory
 from dds_ci.testing import Project
 from dds_ci.testing.error import expect_error_marker
-from dds_ci.testing.repo import CRSRepo, CRSRepoServer
+from dds_ci.testing.repo import CRSRepo, CRSRepoFactory
 
 
 def test_repo_init(tmp_crs_repo: CRSRepo) -> None:
@@ -58,7 +57,7 @@ def test_repo_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
 
 
 def test_repo_import1(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple.crs')
+    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple.crs', validate=False)
     with tarfile.open(tmp_crs_repo.path / 'pkg/test-pkg/1.2.43~1/pkg.tgz') as tf:
         names = tf.getnames()
         assert 'src/my-file.cpp' in names
@@ -66,21 +65,21 @@ def test_repo_import1(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
 
 
 def test_repo_import2(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple2.crs')
+    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple2.crs', validate=False)
     with tarfile.open(tmp_crs_repo.path / 'pkg/test-pkg/1.3.0~1/pkg.tgz') as tf:
         names = tf.getnames()
         assert 'include/my-header.hpp' in names
 
 
 def test_repo_import3(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple3.crs')
+    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple3.crs', validate=False)
     with tarfile.open(tmp_crs_repo.path / 'pkg/test-pkg/1.3.0~2/pkg.tgz') as tf:
         names = tf.getnames()
         assert 'src/my-file.cpp' in names
 
 
 def test_repo_import4(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple4.crs')
+    tmp_crs_repo.import_dir(PROJECT_ROOT / 'data/simple4.crs', validate=False)
     with tarfile.open(tmp_crs_repo.path / 'pkg/test-pkg/1.3.0~3/pkg.tgz') as tf:
         names = tf.getnames()
         assert 'src/deeper/my-file.cpp' in names
@@ -145,49 +144,44 @@ def test_repo_import_db_invalid3(dds: DDSWrapper, tmp_path: Path, tmp_project: P
         dds.run(['repo', 'import', tmp_path, PROJECT_ROOT / 'data/simple.crs'])
 
 
-def test_repo_double_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    crs_dir = PROJECT_ROOT / 'data/simple.crs'
-    tmp_crs_repo.import_dir(crs_dir)
+@pytest.fixture(scope='session')
+def simple_repo(crs_repo_factory: CRSRepoFactory) -> CRSRepo:
+    repo = crs_repo_factory('simple')
+    for name in ('simple.crs', 'simple2.crs', 'simple3.crs', 'simple4.crs'):
+        repo.import_dir(PROJECT_ROOT / 'data' / name, validate=False)
+    return repo
+
+
+def test_repo_double_import(dds: DDSWrapper, simple_repo: CRSRepo) -> None:
     with expect_error_marker('repo-import-pkg-already-exists'):
-        tmp_crs_repo.import_dir(crs_dir)
+        simple_repo.import_dir(PROJECT_ROOT / 'data/simple.crs')
 
 
-def test_repo_double_import_ignore(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    crs_dir = PROJECT_ROOT / 'data/simple.crs'
-    tmp_crs_repo.import_dir(crs_dir)
-    before_time = tmp_crs_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
-    tmp_crs_repo.import_dir(crs_dir, if_exists='ignore')
-    after_time = tmp_crs_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
+def test_repo_double_import_ignore(dds: DDSWrapper, simple_repo: CRSRepo) -> None:
+    before_time = simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
+    simple_repo.import_dir(PROJECT_ROOT / 'data/simple.crs', if_exists='ignore', validate=False)
+    after_time = simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     assert before_time == after_time
 
 
-def test_repo_double_import_replace(dds: DDSWrapper, tmp_crs_repo: CRSRepo) -> None:
-    crs_dir = PROJECT_ROOT / 'data/simple.crs'
-    tmp_crs_repo.import_dir(crs_dir)
-    before_time = tmp_crs_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
-    tmp_crs_repo.import_dir(crs_dir, if_exists='replace')
-    after_time = tmp_crs_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
+def test_repo_double_import_replace(dds: DDSWrapper, simple_repo: CRSRepo) -> None:
+    before_time = simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
+    simple_repo.import_dir(PROJECT_ROOT / 'data/simple.crs', if_exists='replace', validate=False)
+    after_time = simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     assert before_time < after_time
 
 
-def test_import_multiple_versions(tmp_crs_repo: CRSRepo) -> None:
-    for name in ('simple.crs', 'simple2.crs', 'simple3.crs'):
-        tmp_crs_repo.import_dir(PROJECT_ROOT / 'data' / name)
-    assert tmp_crs_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').is_file()
-    assert tmp_crs_repo.path.joinpath('pkg/test-pkg/1.3.0~1/pkg.tgz').is_file()
-    assert tmp_crs_repo.path.joinpath('pkg/test-pkg/1.3.0~2/pkg.tgz').is_file()
-
-    for name in ('simple.crs', 'simple2.crs', 'simple3.crs'):
-        tmp_crs_repo.import_dir(PROJECT_ROOT / 'data' / name, if_exists='ignore')
-
-    for name in ('simple.crs', 'simple2.crs', 'simple3.crs'):
-        tmp_crs_repo.import_dir(PROJECT_ROOT / 'data' / name, if_exists='replace')
-
-
-def test_pkg_prefetch(dds: DDSWrapper, http_crs_repo: CRSRepoServer, tmp_path: Path) -> None:
-    http_crs_repo.repo.import_dir(PROJECT_ROOT / 'data/simple.crs')
+def test_pkg_prefetch_http_url(dds: DDSWrapper, simple_repo: CRSRepo, http_server_factory: HTTPServerFactory,
+                               tmp_path: Path) -> None:
+    srv = http_server_factory(simple_repo.path)
     dds.crs_cache_dir = tmp_path
-    dds.pkg_prefetch(repos=[http_crs_repo.server.base_url], pkgs=['test-pkg@1.2.43'])
+    dds.pkg_prefetch(repos=[srv.base_url], pkgs=['test-pkg@1.2.43'])
+    assert tmp_path.joinpath('pkgs/test-pkg@1.2.43~1/pkg.json').is_file()
+
+
+def test_pkg_prefetch_file_url(dds: DDSWrapper, tmp_path: Path, simple_repo: CRSRepo) -> None:
+    dds.crs_cache_dir = tmp_path
+    dds.pkg_prefetch(repos=[str(simple_repo.path)], pkgs=['test-pkg@1.2.43'])
     assert tmp_path.joinpath('pkgs/test-pkg@1.2.43~1/pkg.json').is_file()
 
 
@@ -198,7 +192,7 @@ def test_pkg_prefetch_404(dds: DDSWrapper, tmp_path: Path, http_server_factory: 
         dds.pkg_prefetch(repos=[srv.base_url])
 
 
-def test_pkg_prefetch_invalid(dds: DDSWrapper, tmp_path: Path, http_server_factory: HTTPServerFactory) -> None:
+def test_pkg_prefetch_invalid_tgz(dds: DDSWrapper, tmp_path: Path, http_server_factory: HTTPServerFactory) -> None:
     tmp_path.joinpath('repo.db.gz').write_text('lolhi')
     srv = http_server_factory(tmp_path)
     dds.crs_cache_dir = tmp_path
@@ -241,7 +235,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
-                'uses': [{'lib': 'foo/bar', 'for': 'lib'}],
+                'uses': [{'lib': 'bar', 'for': 'lib'}],
                 'depends': [],
             }, {
                 'path': 'bar',
@@ -255,24 +249,15 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
     tmp_crs_repo.validate()
 
 
-def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
-    # yapf: disable
-    tmp_path.joinpath('pkg.json').write_text(
-        json.dumps({
+def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
+    tmp_project.project_json = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'libs': [{
+            'path': '.',
             'name': 'foo',
-            'namespace': 'foo',
-            'version': '1.2.3',
-            'meta_version': 1,
-            'crs_version': 1,
-            'libraries': [{
-                'path': '.',
-                'name': 'foo',
-                # There is no 'bar' library in this lib. Fail.
-                'uses': [{'lib': 'foo/bar', 'for': 'lib'}],
-                'depends': [],
-            }],
-        }))
-    # yapf: enable
-    tmp_crs_repo.import_dir(tmp_path)
-    with expect_error_marker('repo-invalid'):
-        tmp_crs_repo.validate()
+            'uses': ['bar'],
+        }],
+    }
+    with expect_error_marker('repo-import-invalid-proj-json'):
+        tmp_crs_repo.import_dir(tmp_project.root)

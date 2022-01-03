@@ -17,8 +17,8 @@ struct e_given_meta_json_str {
     std::string value;
 };
 
-struct e_given_meta_json_input_name {
-    std::string value;
+struct e_pkg_json_path {
+    std::filesystem::path value;
 };
 
 struct e_given_meta_json_data {
@@ -68,9 +68,10 @@ struct package_meta {
     json5::data               extra;
 
     static package_meta from_json_data_v1(const json5::data&);
-    static package_meta from_json_data(const json5::data&, std::string_view input_name);
-    static package_meta from_json_str(std::string_view json, std::string_view input_name);
+    static package_meta from_json_data(const json5::data&);
     static package_meta from_json_str(std::string_view json);
+
+    void throw_if_invalid() const;
 
     std::string to_json(int indent) const noexcept;
     std::string to_json() const noexcept { return to_json(0); }

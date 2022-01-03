@@ -3,15 +3,17 @@ Test fixtures and utilities for creating and using CRS repositories
 """
 
 from pathlib import Path
-from typing import Callable, NamedTuple
+from typing import Any, Callable, NamedTuple
+import shutil
 from typing_extensions import Literal
 
 import pytest
-from _pytest.tmpdir import TempPathFactory
+from _pytest.tmpdir import TempPathFactory, tmp_path
 from _pytest.fixtures import FixtureRequest
 
 from dds_ci.dds import DDSWrapper
 from .http import HTTPServerFactory, ServerInfo
+from .fs import TempCloner
 
 
 class CRSRepo:
@@ -22,14 +24,21 @@ class CRSRepo:
         self.path = path
         self.dds = dds
 
-    def import_dir(self, path: Path, *, if_exists: Literal[None, 'replace', 'ignore', 'fail'] = None) -> None:
+    def import_dir(self,
+                   path: Path,
+                   *,
+                   if_exists: Literal[None, 'replace', 'ignore', 'fail'] = None,
+                   validate: bool = True) -> None:
         self.dds.run([
+            '-ldebug',
             'repo',
             'import',
             self.path,
             path,
             (() if if_exists is None else f'--if-exists={if_exists}'),
         ])
+        if validate:
+            self.validate()
 
     def validate(self) -> None:
         self.dds.run(['repo', 'validate', self.path, '-ldebug'])
@@ -48,9 +57,26 @@ def crs_repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> CRSR
     return _make
 
 
+@pytest.fixture(scope='session')
+def session_empty_crs_repo(crs_repo_factory: CRSRepoFactory) -> CRSRepo:
+    return crs_repo_factory('session-empty')
+
+
+RepoCloner = Callable[[CRSRepo], CRSRepo]
+
+
+@pytest.fixture(scope='session')
+def clone_repo(tmp_clone_dir: TempCloner) -> RepoCloner:
+    def _clone(repo: CRSRepo) -> CRSRepo:
+        clone = tmp_clone_dir('repo', repo.path)
+        return CRSRepo(clone, repo.dds)
+
+    return _clone
+
+
 @pytest.fixture()
-def tmp_crs_repo(crs_repo_factory: CRSRepoFactory, request: FixtureRequest) -> CRSRepo:
-    return crs_repo_factory(str(request.function.__name__))
+def tmp_crs_repo(session_empty_crs_repo: CRSRepo, clone_repo: RepoCloner) -> CRSRepo:
+    return clone_repo(session_empty_crs_repo)
 
 
 class CRSRepoServer(NamedTuple):
@@ -65,3 +91,19 @@ class CRSRepoServer(NamedTuple):
 def http_crs_repo(tmp_crs_repo: CRSRepo, http_server_factory: HTTPServerFactory) -> CRSRepoServer:
     server = http_server_factory(tmp_crs_repo.path)
     return CRSRepoServer(tmp_crs_repo, server)
+
+
+def make_simple_crs(name: str, version: str) -> Any:
+    return {
+        'crs_version': 1,
+        'name': name,
+        'version': version,
+        'meta_version': 1,
+        'namespace': name,
+        'libraries': [{
+            'path': '.',
+            'name': name,
+            'uses': [],
+            'depends': [],
+        }]
+    }

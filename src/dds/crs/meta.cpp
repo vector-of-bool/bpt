@@ -20,15 +20,13 @@
 using namespace dds;
 using namespace dds::crs;
 
-package_meta package_meta::from_json_str(std::string_view json, std::string_view input_name) {
+package_meta package_meta::from_json_str(std::string_view json) {
     DDS_E_SCOPE(e_given_meta_json_str{std::string(json)});
-    DDS_E_SCOPE(e_given_meta_json_input_name{std::string(input_name)});
     auto data = parse_json_str(json);
-    return from_json_data(nlohmann_json_as_json5(data), input_name);
+    return from_json_data(nlohmann_json_as_json5(data));
 }
 
-package_meta package_meta::from_json_data(const json5::data& data, std::string_view input) {
-    DDS_E_SCOPE(e_given_meta_json_input_name{std::string(input)});
+package_meta package_meta::from_json_data(const json5::data& data) {
     DDS_E_SCOPE(e_given_meta_json_data{data});
     return dds_leaf_try {
         if (!data.is_object()) {
@@ -60,10 +58,6 @@ package_meta package_meta::from_json_data(const json5::data& data, std::string_v
                                                            invalid_name_reason_str(why))});
         throw;
     };
-}
-
-package_meta package_meta::from_json_str(std::string_view json) {
-    return from_json_str(json, "<json>");
 }
 
 std::string package_meta::to_json(int indent) const noexcept {
@@ -125,4 +119,17 @@ std::string package_meta::to_json(int indent) const noexcept {
     });
 
     return indent ? data.dump(indent) : data.dump();
+}
+
+void package_meta::throw_if_invalid() const {
+    for (auto& lib : libraries) {
+        for (auto&& uses : lib.intra_uses) {
+            if (std::ranges::find_if(libraries, NEO_TL(_1.name == uses.lib)) == libraries.end()) {
+                BOOST_LEAF_THROW_EXCEPTION(e_invalid_meta_data{
+                    neo::ufmt("Library '{}' uses non-existent sibling library '{}'",
+                              lib.name.str,
+                              uses.lib.str)});
+            }
+        }
+    }
 }

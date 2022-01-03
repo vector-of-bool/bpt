@@ -3,14 +3,11 @@
 #include "./meta.hpp"
 #include "./pkg_id.hpp"
 
-#include <dds/error/result_fwd.hpp>
 #include <dds/util/db/db.hpp>
 
+#include <neo/any_range_fwd.hpp>
+#include <neo/ref_member.hpp>
 #include <neo/url/url.hpp>
-
-#include <filesystem>
-#include <functional>
-#include <vector>
 
 namespace dds::crs {
 
@@ -28,12 +25,9 @@ struct e_no_such_remote_url {
  * When resolving a dependency tree, a single cache DB should be consulted to understand what
  * packages are available to generate a dependency solution, regardless of whether they are (yet)
  * locally available packages.
- *
- * When downloading the metadata from a remote repository, the contents of that remote repository
- * are available as a set of CRS packages that can be imported into the local repository.
  */
 class cache_db {
-    std::reference_wrapper<dds::unique_database> _db;
+    neo::ref_member<dds::unique_database> _db;
 
     explicit cache_db(dds::unique_database& db) noexcept
         : _db(db) {}
@@ -91,8 +85,8 @@ public:
      * @param name The name of a package
      * @param version The version of the package
      */
-    [[nodiscard]] std::vector<package_entry> for_package(dds::name const&       name,
-                                                         semver::version const& version) const;
+    [[nodiscard]] neo::any_input_range<package_entry>
+    for_package(dds::name const& name, semver::version const& version) const;
 
     /**
      * @brief Obtain a list of package entries for the given name.
@@ -101,7 +95,7 @@ public:
      *
      * @param name The name of a package.
      */
-    [[nodiscard]] std::vector<package_entry> for_package(dds::name const& name) const;
+    [[nodiscard]] neo::any_input_range<package_entry> for_package(dds::name const& name) const;
 
     /**
      * @brief Ensure that we have up-to-date package metadata from the given remote repo

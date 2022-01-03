@@ -11,7 +11,7 @@
 
 namespace dds {
 
-struct e_invalid_shorthand_string {
+struct e_parse_dep_shorthand_string {
     std::string value;
 };
 

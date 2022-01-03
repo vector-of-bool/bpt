@@ -2,7 +2,7 @@
 
 #include <dds/error/result.hpp>
 #include <dds/error/try_catch.hpp>
-#include <dds/util/json5/parse.hpp>
+#include <dds/util/json5/error.hpp>
 #include <dds/util/parse_enum.hpp>
 
 #include <boost/leaf.hpp>

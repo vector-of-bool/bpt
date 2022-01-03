@@ -4,12 +4,15 @@
 #include <dds/crs/error.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/toolchain.hpp>
-#include <dds/project/project.hpp>
+#include <dds/project/error.hpp>
+#include <dds/sdist/error.hpp>
 #include <dds/sdist/package.hpp>
+#include <dds/usage_reqs.hpp>
 #include <dds/util/compress.hpp>
 #include <dds/util/fs/io.hpp>
 #include <dds/util/http/error.hpp>
 #include <dds/util/http/pool.hpp>
+#include <dds/util/json5/error.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
@@ -50,10 +53,18 @@ auto handlers = std::tuple(  //
         write_error_marker("package-json5-parse-error");
         return 1;
     },
-    [](boost::leaf::catch_<error_base> exc) {
-        dds_log(error, "{}", exc.matched.what());
-        dds_log(error, "{}", exc.matched.explanation());
-        dds_log(error, "Refer: {}", exc.matched.error_reference());
+    [](e_sdist_from_directory       sdist_dirpath,
+       e_json_parse_error           error,
+       const std::filesystem::path* maybe_fpath) {
+        dds_log(
+            error,
+            "Invalid metadata file while opening source distribution/project in [.bold.yellow[{}]]"_styled,
+            sdist_dirpath.value.string());
+        dds_log(error, "Invalid JSON/JSON5 file: .bold.red[{}]"_styled, error.value);
+        if (maybe_fpath) {
+            dds_log(error, "  (While reading from [{}])", maybe_fpath->string());
+        }
+        write_error_marker("package-json5-parse-error");
         return 1;
     },
     [](user_cancelled) {
@@ -118,6 +129,37 @@ auto handlers = std::tuple(  //
         write_error_marker("invalid-name");
         return 1;
     },
+    [](e_parse_dep_shorthand_string         given,
+       e_dependency_string                  depstr,
+       e_parse_project_manifest_path const* proj_man) {
+        dds_log(
+            error,
+            "Invalid dependency name+range '.bold.red[{}]' in shorthand string '.bold.yellow[{}]'"_styled,
+            depstr.value,
+            given.value);
+        if (proj_man) {
+            dds_log(error,
+                    "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
+                    proj_man->value);
+        }
+        write_error_marker("invalid-dep-shorthand");
+        return 1;
+    },
+    [](e_parse_dep_shorthand_string         given,
+       e_human_message                      msg,
+       e_parse_project_manifest_path const* proj_man) {
+        dds_log(error,
+                "Invalid dependency shorthand string '.bold.red[{}]': .bold.yellow[{}]"_styled,
+                given.value,
+                msg.value);
+        if (proj_man) {
+            dds_log(error,
+                    "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
+                    proj_man->value);
+        }
+        write_error_marker("invalid-dep-shorthand");
+        return 1;
+    },
     [](dds::crs::e_sync_remote sync_repo,
        dds::e_decompress_error err,
        dds::e_read_file_path   read_file) {
@@ -174,6 +216,11 @@ auto handlers = std::tuple(  //
         write_error_marker("repo-sync-http-error");
         return 1;
     },
+    [](e_nonesuch_library missing_lib) {
+        dds_log(error, "No such library .bold.red[{}]"_styled, missing_lib.value);
+        write_error_marker("no-such-library");
+        return 1;
+    },
     [](catch_<neo::sqlite3::error> exc, boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,
                 "An unhandled SQLite error arose. .bold.red[THIS IS A DDS BUG!] Info: {}"_styled,
@@ -192,6 +239,13 @@ auto handlers = std::tuple(  //
                 "Exception message from std::system_error: .bold.red[{}]"_styled,
                 exc.code().message());
         return 42;
+    },
+    [](error_base const& exc, boost::leaf::verbose_diagnostic_info const& diag) {
+        dds_log(error, "{}", exc.what());
+        dds_log(error, "{}", exc.explanation());
+        dds_log(error, "Refer: {}", exc.error_reference());
+        dds_log(debug, "Additional diagnostic details:\n.br.blue[{}]"_styled, diag);
+        return 1;
     },
     [](boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,

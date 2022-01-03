@@ -72,7 +72,7 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
     usage_requirement_map ureqs;
     for (const auto& pkg : plan.packages()) {
         for (const auto& lib : pkg.libraries()) {
-            auto& lib_reqs = ureqs.add({pkg.namespace_(), std::string(lib.name())});
+            auto& lib_reqs = ureqs.add({pkg.name(), std::string(lib.name())});
             lib_reqs.include_paths.push_back(lib.public_include_dir());
             lib_reqs.uses = lib.lib_uses();
             //! lib_reqs.links = lib.library_().manifest().links;
@@ -132,8 +132,8 @@ void write_lib_cmake(build_env_ref env,
                      const package_plan& /* pkg */,
                      const library_plan& lib) {
     fmt::print(out, "# Library {}\n", lib.qualified_name());
-    auto cmake_name = fmt::format("{}::{}", dds::replace(lib.qualified_name(), "/", "::"));
-    //! auto cm_kind    = lib.archive_plan().has_value() ? "STATIC" : "INTERFACE";
+    auto cmake_name = fmt::format("{}", dds::replace(lib.qualified_name(), "/", "::"));
+    auto cm_kind    = lib.archive_plan().has_value() ? "STATIC" : "INTERFACE";
     fmt::print(
         out,
         "if(TARGET {0})\n"
@@ -143,13 +143,13 @@ void write_lib_cmake(build_env_ref env,
         "  endif()\n"
         "else()\n",
         cmake_name);
-    //! fmt::print(out,
-    //!            "  add_library({0} {1} IMPORTED GLOBAL)\n"
-    //!            "  set_property(TARGET {0} PROPERTY dds_IMPORTED TRUE)\n"
-    //!            "  set_property(TARGET {0} PROPERTY INTERFACE_INCLUDE_DIRECTORIES [[{2}]])\n",
-    //!            cmake_name,
-    //!            cm_kind,
-    //!            lib.library_().public_include_dir().generic_string());
+    fmt::print(out,
+               "  add_library({0} {1} IMPORTED GLOBAL)\n"
+               "  set_property(TARGET {0} PROPERTY dds_IMPORTED TRUE)\n"
+               "  set_property(TARGET {0} PROPERTY INTERFACE_INCLUDE_DIRECTORIES [[{2}]])\n",
+               cmake_name,
+               cm_kind,
+               lib.public_include_dir().generic_string());
     for (auto&& use : lib.lib_uses()) {
         fmt::print(out,
                    "  set_property(TARGET {} APPEND PROPERTY INTERFACE_LINK_LIBRARIES {}::{})\n",

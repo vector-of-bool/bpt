@@ -6,6 +6,7 @@
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <dds/error/try_catch.hpp>
+#include <dds/sdist/dist.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/compress.hpp>
 #include <dds/util/db/migrate.hpp>
@@ -132,18 +133,17 @@ fs::path repository::subdir_of(const package_meta& pkg) const noexcept {
 
 void repository::import_dir(path_ref dirpath) {
     DDS_E_SCOPE(e_repo_importing_dir{dirpath});
-    auto json_filepath = dirpath / "pkg.json";
-    auto crs_content   = dds::read_file(json_filepath);
-    auto meta          = package_meta::from_json_str(crs_content, json_filepath.string());
-    DDS_E_SCOPE(e_repo_importing_package{meta});
-    auto dest_dir = subdir_of(meta);
+    auto  sd  = sdist::from_directory(dirpath);
+    auto& pkg = sd.pkg;
+    DDS_E_SCOPE(e_repo_importing_package{pkg});
+    auto dest_dir = subdir_of(pkg);
     fs::create_directories(dest_dir);
 
     // Copy the package into a temporary directory
     auto prep_dir = dds::temporary_dir::create_in(dest_dir);
-    archive_package_libraries(dirpath, prep_dir.path(), meta);
+    archive_package_libraries(dirpath, prep_dir.path(), pkg);
     fs::create_directories(prep_dir.path());
-    dds::write_file(prep_dir.path() / "pkg.json", meta.to_json(2));
+    dds::write_file(prep_dir.path() / "pkg.json", pkg.to_json(2));
 
     auto tmp_tgz = pkg_dir() / "tmp.tgz";
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
@@ -155,7 +155,7 @@ void repository::import_dir(path_ref dirpath) {
                 INSERT INTO crs_repo_packages (meta_json)
                 VALUES (?)
             )"_sql),
-            std::string_view(meta.to_json()))
+            std::string_view(pkg.to_json()))
             .value();
     }
     dds_leaf_catch(matchv<neo::sqlite3::errc::constraint_unique>) {
@@ -167,7 +167,7 @@ void repository::import_dir(path_ref dirpath) {
     tr.commit();
     _vacuum_and_compress();
 
-    NEO_EMIT(ev_repo_imported_package{*this, dirpath, meta});
+    NEO_EMIT(ev_repo_imported_package{*this, dirpath, pkg});
 }
 
 neo::any_input_range<package_meta> repository::all_packages() const {

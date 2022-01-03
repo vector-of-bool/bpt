@@ -1,5 +1,0 @@
-{
-    name: 'the_test_dependency',
-    version: '0.0.0',
-    namespace: 'dds',
-}

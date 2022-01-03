@@ -4,6 +4,7 @@
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <dds/util/json5/parse.hpp>
+#include <dds/util/json_walk.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/string.hpp>
 
@@ -41,32 +42,24 @@ dependency dependency::parse_depends_string(std::string_view str) {
 dependency_manifest dependency_manifest::from_file(path_ref fpath) {
     auto data = dds::parse_json5_file(fpath);
 
-    dependency_manifest depman;
-    using namespace semester::walk_ops;
-    // Helpers
-    using require_array  = require_type<json5::data::array_type>;
-    using require_string = require_type<std::string>;
-    auto str_as_dep = [](const std::string& str) { return dependency::parse_depends_string(str); };
-    auto append_dep = [&](auto& deps) { return put_into(std::back_inserter(deps), str_as_dep); };
+    dependency_manifest ret;
+    using namespace dds::walk_utils;
 
     // Parse and validate
-    auto res = walk.try_walk(  //
+    walk(  //
         data,
-        require_type<json5::data::mapping_type>{
-            "The root of a dependency manifest must be a JSON object"},
+        require_mapping{"The root of a dependency manifest must be a JSON object"},
         mapping{
             required_key{
                 "depends",
                 "A 'depends' key is required",
                 require_array{"'depends' must be an array of strings"},
-                for_each{require_string{"Each dependency should be a string"},
-                         append_dep(depman.dependencies)},
+                for_each{put_into{std::back_inserter(ret.dependencies),
+                                  project_dependency::from_json_data}},
             },
         });
 
-    res.throw_if_rejected<user_error<errc::invalid_pkg_manifest>>();
-
-    return depman;
+    return ret;
 }
 
 namespace {

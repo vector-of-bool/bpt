@@ -1,5 +1,7 @@
 #include "../options.hpp"
 
+#include "./build_common.hpp"
+
 #include <dds/crs/cache.hpp>
 #include <dds/crs/dependency.hpp>
 #include <dds/crs/repo.hpp>
@@ -19,14 +21,7 @@ using namespace fansi::literals;
 namespace dds::cli::cmd {
 
 static int _pkg_solve(const options& opts) {
-    auto cache
-        = dds::crs::cache::open(opts.crs_cache_dir.value_or(dds::crs::cache::default_path()));
-    auto& meta_db = cache.metadata_db();
-    for (auto& r : opts.use_repos) {
-        auto url = dds::guess_url_from_string(r);
-        meta_db.sync_remote(url);
-        meta_db.enable_remote(url);
-    }
+    auto cache = open_ready_cache(opts);
 
     auto deps =              //
         opts.pkg.solve.reqs  //
@@ -34,7 +29,7 @@ static int _pkg_solve(const options& opts) {
               return project_dependency::from_shorthand_string(s).as_crs_dependency();
           });
 
-    auto sln = dds::solve2(meta_db, deps);
+    auto sln = dds::solve2(cache.metadata_db(), deps);
     for (auto&& pkg : sln) {
         dds_log(info, "Require: {}@{}~{}", pkg.name.str, pkg.version.to_string(), pkg.meta_version);
     }

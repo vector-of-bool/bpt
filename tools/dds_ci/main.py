@@ -92,7 +92,12 @@ def test_build(dds: DDSWrapper, args: CommandArguments) -> DDSWrapper:
     print(f'Test build is building with toolchain: {test_tc}')
     build_dir = paths.BUILD_DIR
     with toolchain.fixup_toolchain(test_tc) as new_tc:
-        dds.build(toolchain=new_tc, root=paths.PROJECT_ROOT, build_root=build_dir, jobs=args.jobs, timeout=60 * 15)
+        dds.build(toolchain=new_tc,
+                  root=paths.PROJECT_ROOT,
+                  build_root=build_dir,
+                  jobs=args.jobs,
+                  tweaks_dir=paths.TWEAKS_DIR,
+                  timeout=60 * 15)
     return DDSWrapper(build_dir / ('dds' + paths.EXE_SUFFIX))
 
 
@@ -164,7 +169,7 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
     if args.clean:
         dds.clean(build_dir=paths.BUILD_DIR)
 
-    dds.repo_add('https://repo-1.dds.pizza')
+    dds.run(['pkg', 'repo', 'add', dds.pkg_db_path_arg, 'https://repo-1.dds.pizza'])
 
     if args.rapid:
         return main_build(dds, args)

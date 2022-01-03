@@ -1,6 +1,8 @@
 #include "../options.hpp"
 
 #include <dds/crs/cache.hpp>
+#include <dds/crs/cache_db.hpp>
+#include <dds/crs/pkg_id.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/util/url.hpp>
 

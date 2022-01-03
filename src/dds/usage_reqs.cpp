@@ -28,9 +28,7 @@ lm::library& usage_requirement_map::add(lm::usage ident) {
     auto pair                   = std::pair(ident, lm::library{});
     auto [inserted, did_insert] = _reqs.try_emplace(ident, lm::library());
     if (!did_insert) {
-        throw_user_error<errc::dup_lib_name>("More than one library is registered as `{}/{}'",
-                                             ident.namespace_,
-                                             ident.name);
+        BOOST_LEAF_THROW_EXCEPTION(e_dup_library_id{ident});
     }
     return inserted->second;
 }
@@ -39,7 +37,7 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
     usage_requirement_map ret;
     for (const auto& pkg : idx.packages) {
         for (const auto& lib : pkg.libraries) {
-            ret.add(lm::usage{pkg.namespace_, lib.name}, lib);
+            ret.add(lm::usage{pkg.name, lib.name}, lib);
         }
     }
     return ret;
@@ -48,7 +46,7 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
 std::vector<fs::path> usage_requirement_map::link_paths(const lm::usage& key) const {
     auto req = get(key);
     if (!req) {
-        throw_user_error<errc::unknown_usage_name>("Unable to find linking requirement {}", key);
+        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{key});
     }
     std::vector<fs::path> ret;
     if (req->linkable_path) {
@@ -67,8 +65,7 @@ std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usag
     std::vector<fs::path> ret;
     auto                  lib = get(usage);
     if (!lib) {
-        throw_user_error<
-            errc::unknown_usage_name>("Cannot find non-existent usage requirements for {}", usage);
+        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{usage});
     }
     extend(ret, lib->include_paths);
     for (const auto& transitive : lib->uses) {
@@ -121,11 +118,11 @@ std::optional<lm::usage> find_cycle(const usage_requirement_map&                
         info.next                   = next;
         const lm::library* next_lib = reqs.get(next);
 
-        neo_assert(invariant,
-                   next_lib,
-                   "Missing library for lib in `uses`.",
-                   next.namespace_,
-                   next.name);
+        if (!next_lib) {
+            // This is a missing library. This will be an error at a later point, but for now we
+            // simply ignore it.
+            continue;
+        }
 
         // Recursively search each child vertex.
         if (auto cycle = find_cycle(reqs, vertices, next, *next_lib)) {

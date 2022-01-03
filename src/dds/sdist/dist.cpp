@@ -1,5 +1,6 @@
 #include "./dist.hpp"
 
+#include "./error.hpp"
 #include <dds/sdist/root.hpp>
 
 #include <dds/error/errors.hpp>
@@ -7,6 +8,7 @@
 #include <dds/project/project.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs/io.hpp>
+#include <dds/util/fs/op.hpp>
 #include <dds/util/fs/shutil.hpp>
 #include <dds/util/json5/parse.hpp>
 #include <dds/util/log.hpp>
@@ -105,17 +107,22 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 }
 
 sdist sdist::from_directory(path_ref where) {
+    DDS_E_SCOPE(e_sdist_from_directory{where});
     crs::package_meta meta;
 
     auto pkg_json = where / "pkg.json";
-    if (fs::exists(pkg_json)) {
+    if (dds::file_exists(pkg_json)) {
+        DDS_E_SCOPE(crs::e_pkg_json_path{pkg_json});
         auto data = dds::parse_json5_file(pkg_json);
-        meta      = crs::package_meta::from_json_data(data, pkg_json.string());
+        meta      = crs::package_meta::from_json_data(data);
     } else {
         auto proj = project::open_directory(where);
         if (!proj.manifest.has_value()) {
-            BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::invalid_pkg_filesystem>(
-                "No pkg.json nor project manifest in the project directory"));
+            BOOST_LEAF_THROW_EXCEPTION(
+                make_user_error<errc::invalid_pkg_filesystem>(
+                    "No pkg.json nor project manifest in the project directory"),
+                e_missing_pkg_json{pkg_json},
+                e_missing_project_json5{where / "project.json5"});
         }
         meta = proj.manifest->as_crs_package_meta();
     }

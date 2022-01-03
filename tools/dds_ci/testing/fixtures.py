@@ -58,8 +58,11 @@ _ProjectJSONDependencyItemOpt = TypedDict(
 )
 
 
-class _ProjectJSONDependencyItem(_ProjectJSONDependencyItemRequired, _ProjectJSONDependencyItemOpt):
+class _ProjectJSONDependencyItemMap(_ProjectJSONDependencyItemRequired, _ProjectJSONDependencyItemOpt):
     pass
+
+
+_ProjectJSONDependencyItem = Union[str, _ProjectJSONDependencyItemMap]
 
 
 class _ProjectJSONLibraryItemRequired(TypedDict):
@@ -154,6 +157,7 @@ class Project:
               timeout: Union[float, None] = None,
               tweaks_dir: Optional[Path] = None,
               with_tests: bool = True,
+              repos: Sequence[Pathish] = (),
               log_level: Literal['info', 'debug', 'trace'] = 'trace') -> None:
         """
         Execute 'dds build' on the project
@@ -169,6 +173,7 @@ class Project:
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
                            with_tests=with_tests,
+                           repos=repos,
                            more_args=[f'--log-level={log_level}'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
@@ -199,7 +204,7 @@ class Project:
         return self.__root_library.write(path, content)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module')
 def test_parent_dir(request: FixtureRequest) -> Path:
     """
     :class:`pathlib.Path` fixture pointing to the parent directory of the file
@@ -258,6 +263,7 @@ class ProjectOpener():
 
         new_dds.set_repo_scratch(repo_dir)
         new_dds.default_cwd = proj_copy
+        new_dds.crs_cache_dir = proj_copy / '_crs'
         self._request.addfinalizer(lambda: ensure_absent(repo_dir))
 
         return Project(proj_copy, new_dds)
