@@ -63,6 +63,9 @@ class DDSWrapper:
     def pkg_prefetch(self, *, repos: Sequence[Pathish], pkgs: Sequence[str] = ()) -> None:
         self.run(['pkg', 'prefetch', (f'--use-repo={r}' for r in repos), pkgs])
 
+    def pkg_solve(self, *, repos: Sequence[Pathish], pkgs: Sequence[str]) -> None:
+        self.run(['pkg', 'solve', (f'--use-repo={r}' for r in repos), pkgs])
+
     def build(self,
               *,
               root: Pathish,

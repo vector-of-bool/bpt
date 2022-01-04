@@ -42,9 +42,11 @@ semver::version sole_version(const crs::version_range_set& versions) {
 
 struct requirement {
     crs::dependency dep;
+    int             meta_version;
 
-    explicit requirement(crs::dependency d)
-        : dep(std::move(d)) {
+    explicit requirement(crs::dependency d, int mversion)
+        : dep(std::move(d))
+        , meta_version{mversion} {
         d.uses.visit(neo::overload{
             [](explicit_uses_list& l) { std::ranges::sort(l.uses); },
             [](implicit_uses_all) {},
@@ -96,7 +98,8 @@ struct requirement {
         return requirement{crs::dependency{dep.name,
                                            std::move(range),
                                            dep.kind,
-                                           union_usages(dep.uses, other.dep.uses)}};
+                                           union_usages(dep.uses, other.dep.uses)},
+                           0};
     }
 
     std::optional<requirement> union_(const requirement& other) const noexcept {
@@ -107,7 +110,8 @@ struct requirement {
         return requirement{crs::dependency{dep.name,
                                            std::move(range),
                                            dep.kind,
-                                           union_usages(dep.uses, other.dep.uses)}};
+                                           union_usages(dep.uses, other.dep.uses)},
+                           0};
     }
 
     std::optional<requirement> difference(const requirement& other) const noexcept {
@@ -115,7 +119,7 @@ struct requirement {
         if (range.empty()) {
             return std::nullopt;
         }
-        return requirement{crs::dependency{dep.name, std::move(range), dep.kind, dep.uses}};
+        return requirement{crs::dependency{dep.name, std::move(range), dep.kind, dep.uses}, 0};
     }
 
     friend std::ostream& operator<<(std::ostream& out, const requirement& self) noexcept {
@@ -154,12 +158,15 @@ struct metadata_provider {
                 "  Best candidate: {}@{}",
                 cand->pkg.name.str,
                 cand->pkg.version.to_string());
-        return requirement{crs::dependency{
-            cand->pkg.name,
-            {cand->pkg.version, cand->pkg.version.next_after()},
-            req.dep.kind,
-            req.dep.uses,
-        }};
+        return requirement{
+            crs::dependency{
+                cand->pkg.name,
+                {cand->pkg.version, cand->pkg.version.next_after()},
+                req.dep.kind,
+                req.dep.uses,
+            },
+            cand->pkg.meta_version,
+        };
     }
 
     /**
@@ -187,7 +194,7 @@ struct metadata_provider {
             | std::views::transform(NEO_TL(_1.dependencies))  //
             | std::views::join                                //
             | std::views::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-            | std::views::transform(NEO_TL(requirement{_1}))  //
+            | std::views::transform(NEO_TL(requirement{_1, 0}))  //
             | neo::to_vector;
     }
 };
@@ -250,8 +257,8 @@ generate_failure_explanation(const solve_failure_exception& exc) {
 }  // namespace
 
 std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
-                                     neo::any_input_range<crs::dependency> deps_) {
-    auto deps = deps_ | std::views::transform(NEO_TL(requirement{_1})) | neo::to_vector;
+                                    neo::any_input_range<crs::dependency> deps_) {
+    auto deps = deps_ | std::views::transform(NEO_TL(requirement{_1, 0})) | neo::to_vector;
     metadata_provider provider{cache};
     auto              sln = dds_leaf_try { return pubgrub::solve(deps, provider); }
     dds_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
@@ -262,7 +269,7 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
         | std::views::transform(NEO_TL(crs::pkg_id{
             .name         = _1.dep.name,
             .version      = sole_version(_1.dep.acceptable_versions),
-            .meta_version = 0,
+            .meta_version = _1.meta_version,
         }))
         | neo::to_vector;
 }
