@@ -1,5 +1,6 @@
 #include <dds/util/fs/path.hpp>
 
+#if !__dds_header_check
 #include <catch2/catch.hpp>
 
 #include <boost/leaf/pred.hpp>
@@ -32,3 +33,5 @@ constexpr auto leaf_handle_nofail(Fn&& fn) {
     (::dds::testing::leaf_handle_nofail([&] { return (__VA_ARGS__); }))
 
 }  // namespace dds::testing
+
+#endif

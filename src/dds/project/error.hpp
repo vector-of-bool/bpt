@@ -1,5 +1,7 @@
 #pragma once
 
+#include <json5/data.hpp>
+
 #include <filesystem>
 
 namespace dds {
