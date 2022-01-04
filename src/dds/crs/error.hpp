@@ -24,6 +24,10 @@ struct e_repo_already_init {};
 
 struct e_repo_import_pkg_already_present {};
 
+struct e_repo_import_invalid_meta_version {
+    std::string value;
+};
+
 struct e_sync_remote {
     neo::url value;
 };

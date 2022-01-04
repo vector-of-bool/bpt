@@ -390,7 +390,17 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
         | std::views::transform([](auto tup) -> std::optional<package_meta> {
               auto [json_str] = tup;
               return dds_leaf_try->std::optional<package_meta> {
-                  return package_meta::from_json_str(json_str);
+                  auto meta = package_meta::from_json_str(json_str);
+                  if (meta.meta_version < 1) {
+                      dds_log(warn,
+                              "Remote package {} has an invalid 'meta_version' of {}.",
+                              meta.id().to_string(),
+                              meta.meta_version);
+                      dds_log(warn, "  The corresponding package will not be available.");
+                      dds_log(debug, "  The bad JSON content is: {}", json_str);
+                      return std::nullopt;
+                  }
+                  return meta;
               }
               dds_leaf_catch(e_invalid_meta_data err) {
                   dds_log(warn, "Remote package has an invalid JSON entry: {}", err.value);

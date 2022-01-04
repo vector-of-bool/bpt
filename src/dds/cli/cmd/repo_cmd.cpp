@@ -46,7 +46,7 @@ int repo_cmd(const options& opts) {
             error,
             "Repository [.br.yellow[{}]] is from a newer dds version. We don't know how to handle it."_styled,
             db_path.value.string());
-        write_error_marker("repo-import-db-too-new");
+        write_error_marker("repo-db-too-new");
         return 1;
     }
     dds_leaf_catch(dds::crs::e_repo_open_path repo_path, e_migration_error error) {
@@ -55,7 +55,7 @@ int repo_cmd(const options& opts) {
             "Error while applying database migrations when opening SQLite database for repostiory [.br.yellow[{}]]: .br.red[{}]"_styled,
             repo_path.value.string(),
             error.value);
-        write_error_marker("repo-import-db-invalid");
+        write_error_marker("repo-db-invalid");
         return 1;
     }
     dds_leaf_catch(dds::crs::e_repo_open_path, dds::e_db_open_path db_path, dds::e_db_open_ec ec) {
@@ -63,7 +63,7 @@ int repo_cmd(const options& opts) {
                 "Error opening repository database [.br.yellow[{}]]: {}"_styled,
                 db_path.value,
                 ec.value.message());
-        write_error_marker("repo-import-repo-open-fails");
+        write_error_marker("repo-repo-open-fails");
         return 1;
     };
 }

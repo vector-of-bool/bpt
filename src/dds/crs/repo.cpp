@@ -148,6 +148,12 @@ void repository::import_dir(path_ref dirpath) {
     auto tmp_tgz = pkg_dir() / "tmp.tgz";
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
 
+    if (pkg.meta_version < 1) {
+        BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_meta_version{
+            "Package meta_version must be a positive non-zero integer in order to be imported into "
+            "a repository"});
+    }
+
     neo::sqlite3::transaction_guard tr{_db.raw_database()};
     dds_leaf_try {
         db_exec(  //
