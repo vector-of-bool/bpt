@@ -1,8 +1,8 @@
 #include "./file_deps.hpp"
 
-#include <dds/proc.hpp>
 #include <dds/util/fs/io.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/proc.hpp>
 #include <dds/util/shlex.hpp>
 #include <dds/util/string.hpp>
 

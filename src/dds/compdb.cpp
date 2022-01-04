@@ -1,8 +1,8 @@
 #include "./compdb.hpp"
 
 #include <dds/build/iter_compilations.hpp>
-#include <dds/proc.hpp>
 #include <dds/util/fs/io.hpp>
+#include <dds/util/proc.hpp>
 
 #include <fstream>
 #include <nlohmann/json.hpp>

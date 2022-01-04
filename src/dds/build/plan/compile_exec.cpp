@@ -2,9 +2,9 @@
 
 #include <dds/build/file_deps.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/proc.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
+#include <dds/util/proc.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
 #include <dds/util/string.hpp>

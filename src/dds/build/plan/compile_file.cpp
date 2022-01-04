@@ -1,7 +1,7 @@
 #include "./compile_file.hpp"
 
-#include <dds/proc.hpp>
 #include <dds/util/algo.hpp>
+#include <dds/util/proc.hpp>
 #include <dds/util/signal.hpp>
 #include <dds/util/time.hpp>
 

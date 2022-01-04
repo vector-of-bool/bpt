@@ -1,6 +1,6 @@
 #include <dds/toolchain/from_json.hpp>
 
-#include <dds/proc.hpp>
+#include <dds/util/proc.hpp>
 
 #include <catch2/catch.hpp>
 
