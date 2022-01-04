@@ -158,3 +158,7 @@ def test_solve_upgrade_meta_version(make_quick_repo: QuickRepoFactory, tmp_proje
     repo.import_dir(new_foo)
     tmp_project.build(repos=[repo.path])
 
+
+# def test_solve_2(solve_repo_1: CRSRepo, tmp_project: Project) -> None:
+#     with error.expect_error_marker('no-dependency-solution'):
+#         tmp_project.dds.pkg_solve(repos=[solve_repo_1.path], pkgs=['foo@1.3.1 uses no-such-lib'])

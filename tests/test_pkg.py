@@ -15,7 +15,7 @@ def test_project(project_opener: ProjectOpener) -> Project:
 def test_create_pkg(test_project: Project, tmp_path: Path) -> None:
     # Create in the default location
     test_project.pkg_create()
-    sd_dir = test_project.build_root / 'foo@1.2.3~0.tar.gz'
+    sd_dir = test_project.build_root / 'foo@1.2.3~1.tar.gz'
     assert sd_dir.is_file(), 'Did not create an sdist in the default location'
     # Create in a different location
     dest = tmp_path / 'dummy.tar.gz'
@@ -41,7 +41,7 @@ def test_create_pkg_already_exists_succeeds_with_ignore(test_project: Project) -
 
 
 def test_create_pkg_already_exists_succeeds_with_replace(test_project: Project) -> None:
-    sd_path: Path = test_project.build_root / 'foo@1.2.3~0.tar.gz'
+    sd_path: Path = test_project.build_root / 'foo@1.2.3~1.tar.gz'
     test_project.build_root.mkdir(exist_ok=True, parents=True)
     sd_path.touch()
     test_project.pkg_create(if_exists='replace')
@@ -50,11 +50,11 @@ def test_create_pkg_already_exists_succeeds_with_replace(test_project: Project) 
 
 @pytest.fixture()
 def _test_pkg(test_project: Project) -> Tuple[Path, Project]:
-    repo_content_path = test_project.dds.repo_dir / 'foo@1.2.3~0'
+    repo_content_path = test_project.dds.repo_dir / 'foo@1.2.3~1'
     assert not repo_content_path.is_dir()
     test_project.pkg_create()
     assert not repo_content_path.is_dir()
-    return test_project.build_root / 'foo@1.2.3~0.tar.gz', test_project
+    return test_project.build_root / 'foo@1.2.3~1.tar.gz', test_project
 
 
 def test_sdist_invalid_project(tmp_project: Project) -> None:
