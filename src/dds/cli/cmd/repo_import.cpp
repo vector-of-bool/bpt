@@ -29,10 +29,9 @@ int _repo_import(const options& opts) {
     auto repo = dds::crs::repository::open_existing(opts.repo.repo_dir);
     NEO_SUBSCRIBE(dds::crs::ev_repo_imported_package imported) {
         dds_log(info,
-                "[{}]: Imported .bold.cyan[{}@{}] from [.br.cyan[{}]]"_styled,
+                "[{}]: Imported .bold.cyan[{}] from [.br.cyan[{}]]"_styled,
                 imported.into_repo.name(),
-                imported.pkg_meta.name.str,
-                imported.pkg_meta.version.to_string(),
+                imported.pkg_meta.id().to_string(),
                 imported.from_path.string());
     };
     for (auto& path : opts.repo.import.files) {

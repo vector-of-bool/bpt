@@ -139,7 +139,6 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
 
         auto sln = dds::solve(meta_db, crs_deps);
         for (auto&& pkg : sln) {
-            dds_log(debug, "Loading package '{}' for build", pkg.to_string());
             auto dep_meta = fetch_cache_load_dependency(cache, pkg, builder, "_deps");
             resolve_implicit_usages(proj_sd.pkg, dep_meta);
         }
