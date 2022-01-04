@@ -5,7 +5,7 @@
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs/path.hpp>
 
-#include <dds/crs/meta.hpp>
+#include <dds/crs/meta/package.hpp>
 
 #include <libman/library.hpp>
 

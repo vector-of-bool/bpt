@@ -1,6 +1,7 @@
 #pragma once
 
-#include "./dependency.hpp"
+#include "./library.hpp"
+#include "./pkg_id.hpp"
 
 #include <json5/data.hpp>
 #include <magic_enum.hpp>
@@ -29,36 +30,6 @@ struct e_invalid_usage_kind {
     std::string value;
 };
 
-struct intra_usage {
-    dds::name  lib;
-    usage_kind kind;
-
-    friend void do_repr(auto out, const intra_usage* self) noexcept {
-        out.type("dds::crs::intra_usage");
-        if (self) {
-            out.bracket_value("lib={}, kind={}", self->lib.str, magic_enum::enum_name(self->kind));
-        }
-    }
-};
-
-struct library_meta {
-    dds::name                name;
-    std::filesystem::path    path;
-    std::vector<intra_usage> intra_uses;
-    std::vector<dependency>  dependencies;
-
-    friend void do_repr(auto out, const library_meta* self) noexcept {
-        out.type("dds::crs::library_meta");
-        if (self) {
-            out.bracket_value("name={}, path={}, intra_uses={}, dependencies={}",
-                              out.repr_value(self->name),
-                              out.repr_value(self->path),
-                              out.repr_value(self->intra_uses),
-                              out.repr_value(self->dependencies));
-        }
-    }
-};
-
 struct package_meta {
     dds::name                 name;
     dds::name                 namespace_;
@@ -75,6 +46,8 @@ struct package_meta {
 
     std::string to_json(int indent) const noexcept;
     std::string to_json() const noexcept { return to_json(0); }
+
+    pkg_id id() const noexcept { return pkg_id{name, version, meta_version}; }
 
     friend void do_repr(auto out, const package_meta* self) noexcept {
         out.type("dds::crs::package_meta");

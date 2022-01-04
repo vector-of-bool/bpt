@@ -1,16 +1,29 @@
 #pragma once
 
-#include <dds/deps.hpp>
-#include <dds/pkg/id.hpp>
+#include <dds/crs/meta/pkg_id.hpp>
 
-#include <functional>
+#include <libman/library.hpp>
+#include <neo/any_range.hpp>
+
+#include <vector>
 
 namespace dds {
 
-using pkg_id_provider_fn = std::function<std::vector<pkg_id>(std::string_view)>;
-using deps_provider_fn   = std::function<std::vector<dependency>(const pkg_id& pk)>;
+namespace crs {
 
-std::vector<pkg_id>
-solve(const std::vector<dependency>& deps, pkg_id_provider_fn, deps_provider_fn);
+class cache_db;
+struct dependency;
+
+}  // namespace crs
+
+struct e_usage_namespace_mismatch {};
+struct e_usage_no_such_lib {};
+
+struct e_dependency_solve_failure {};
+struct e_dependency_solve_failure_explanation {
+    std::string value;
+};
+
+std::vector<crs::pkg_id> solve(crs::cache_db const&, neo::any_input_range<crs::dependency>);
 
 }  // namespace dds

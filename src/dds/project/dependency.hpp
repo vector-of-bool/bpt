@@ -1,7 +1,7 @@
 #pragma once
 
-#include <dds/crs/dependency.hpp>
-#include <dds/pkg/name.hpp>
+#include <dds/crs/meta/dependency.hpp>
+#include <dds/util/name.hpp>
 
 #include <json5/data.hpp>
 #include <libman/usage.hpp>

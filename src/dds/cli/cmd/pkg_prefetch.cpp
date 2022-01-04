@@ -2,7 +2,7 @@
 
 #include <dds/crs/cache.hpp>
 #include <dds/crs/cache_db.hpp>
-#include <dds/crs/pkg_id.hpp>
+#include <dds/crs/meta/pkg_id.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/util/url.hpp>
 
@@ -19,7 +19,7 @@ int pkg_prefetch(const options& opts) {
     }
 
     for (auto& pkg_str : opts.pkg.prefetch.pkgs) {
-        auto pid = crs::pkg_id::parse_str(pkg_str);
+        auto pid = crs::pkg_id::parse(pkg_str);
         cache.prefetch(pid);
     }
     return 0;

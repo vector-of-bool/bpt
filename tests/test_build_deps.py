@@ -96,7 +96,7 @@ def bd_project(tmp_project: Project) -> Project:
 
 def test_cli(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     bd_project.dds.build_deps(['foo@1.2.3'], repos=[bd_test_repo.path])
-    assert bd_project.root.joinpath('_deps/foo@1.2.3').is_dir()
+    assert bd_project.root.joinpath('_deps/foo@1.2.3~1').is_dir()
     assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
     assert bd_project.root.joinpath('_deps/_libman/foo/foo.lml').is_file()
     assert bd_project.root.joinpath('INDEX.lmi').is_file()
@@ -111,7 +111,7 @@ def test_from_file(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     """build-deps using a file listing deps"""
     bd_project.write('deps.json5', json.dumps({'depends': ['foo+0.3.0']}))
     bd_project.dds.build_deps(['-d', 'deps.json5'], repos=[bd_test_repo.path])
-    assert bd_project.root.joinpath('_deps/foo@1.2.3').is_dir()
+    assert bd_project.root.joinpath('_deps/foo@1.2.3~1').is_dir()
     assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
     assert bd_project.root.joinpath('_deps/_libman/foo/foo.lml').is_file()
     assert bd_project.root.joinpath('INDEX.lmi').is_file()
@@ -126,7 +126,7 @@ def test_from_file_missing(bd_project: Project) -> None:
 def test_multiple_deps(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     """build-deps with multiple deps resolves to a single version"""
     bd_project.dds.build_deps(['foo@1.2.3', 'foo@1.2.6'], repos=[bd_test_repo.path])
-    assert bd_project.root.joinpath('_deps/foo@1.2.8').is_dir()
+    assert bd_project.root.joinpath('_deps/foo@1.2.8~1').is_dir()
     assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
     assert bd_project.root.joinpath('_deps/_libman/foo/foo.lml').is_file()
     assert bd_project.root.joinpath('INDEX.lmi').is_file()

@@ -2,6 +2,7 @@
 
 #include "./build_common.hpp"
 #include <dds/error/errors.hpp>
+#include <dds/error/marker.hpp>
 #include <dds/error/nonesuch.hpp>
 #include <dds/util/log.hpp>
 

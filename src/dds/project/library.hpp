@@ -1,8 +1,8 @@
 #pragma once
 
 #include "./dependency.hpp"
-#include <dds/crs/meta.hpp>
-#include <dds/pkg/name.hpp>
+#include <dds/crs/meta/library.hpp>
+#include <dds/util/name.hpp>
 
 #include <json5/data.hpp>
 

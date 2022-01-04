@@ -1,8 +1,8 @@
 #pragma once
 
-#include <dds/pkg/name.hpp>
 #include <dds/project/dependency.hpp>
 #include <dds/util/fs/path.hpp>
+#include <dds/util/name.hpp>
 
 #include <neo/assert.hpp>
 #include <pubgrub/interval.hpp>

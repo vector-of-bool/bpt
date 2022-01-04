@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./meta.hpp"
-#include "./pkg_id.hpp"
+#include "./meta/package.hpp"
+#include "./meta/pkg_id.hpp"
 
 #include <dds/util/db/db.hpp>
 

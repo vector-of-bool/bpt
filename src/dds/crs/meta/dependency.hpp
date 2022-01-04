@@ -1,11 +1,11 @@
 #pragma once
 
-#include <dds/pkg/name.hpp>
+#include <dds/util/name.hpp>
 #include <dds/util/wrap_var.hpp>
 
+#include <json5/data.hpp>
 #include <libman/usage.hpp>
 #include <pubgrub/interval.hpp>
-#include <semver/range.hpp>
 #include <semver/version.hpp>
 
 #include <string>
@@ -44,6 +44,8 @@ struct dependency {
     version_range_set acceptable_versions;
     usage_kind        kind;
     dependency_uses   uses;
+
+    static dependency from_data(const json5::data&);
 
     std::string decl_to_string() const noexcept;
 

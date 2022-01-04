@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./meta.hpp"
+#include "./meta/package.hpp"
 
 #include <dds/util/db/db.hpp>
 

@@ -3,12 +3,12 @@
 #include "./build_common.hpp"
 
 #include <dds/crs/cache.hpp>
-#include <dds/crs/dependency.hpp>
+#include <dds/crs/meta/dependency.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/deps.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/project/dependency.hpp>
-#include <dds/solve/solve2.hpp>
+#include <dds/solve/solve.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/url.hpp>
 
@@ -29,7 +29,7 @@ static int _pkg_solve(const options& opts) {
               return project_dependency::from_shorthand_string(s).as_crs_dependency();
           });
 
-    auto sln = dds::solve2(cache.metadata_db(), deps);
+    auto sln = dds::solve(cache.metadata_db(), deps);
     for (auto&& pkg : sln) {
         dds_log(info, "Require: {}@{}~{}", pkg.name.str, pkg.version.to_string(), pkg.meta_version);
     }

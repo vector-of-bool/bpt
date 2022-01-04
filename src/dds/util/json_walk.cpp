@@ -2,7 +2,7 @@
 
 #include <dds/error/result.hpp>
 
-#include <dds/pkg/name.hpp>
+#include <dds/util/name.hpp>
 #include <semver/version.hpp>
 
 dds::name dds::walk_utils::name_from_string::operator()(std::string s) {

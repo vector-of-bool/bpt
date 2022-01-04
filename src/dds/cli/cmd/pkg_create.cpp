@@ -1,6 +1,7 @@
 #include "../options.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/error/marker.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/sdist/dist.hpp>
 #include <dds/sdist/error.hpp>
@@ -23,7 +24,7 @@ int pkg_create(const options& opts) {
     };
     return dds_leaf_try {
         auto sd               = sdist::from_directory(params.project_dir);
-        auto default_filename = fmt::format("{}.tar.gz", sd.id().to_string());
+        auto default_filename = fmt::format("{}.tar.gz", sd.pkg.id().to_string());
         auto filepath         = opts.out_path.value_or(fs::current_path() / default_filename);
         create_sdist_targz(filepath, params);
         dds_log(info,

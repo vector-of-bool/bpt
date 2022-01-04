@@ -4,7 +4,7 @@
 #include <dds/crs/repo.hpp>
 #include <dds/error/marker.hpp>
 #include <dds/error/try_catch.hpp>
-#include <dds/solve/solve2.hpp>
+#include <dds/solve/solve.hpp>
 #include <dds/util/signal.hpp>
 #include <dds/util/url.hpp>
 
@@ -41,7 +41,7 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
                    pkg.meta_version);
         std::cout.flush();
         neo_defer { fmt::print("\r\x1b[K"); };
-        dds::solve2(cache, dep);
+        dds::solve(cache, dep);
         return true;
     }
     dds_leaf_catch(e_usage_no_such_lib,

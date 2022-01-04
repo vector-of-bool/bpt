@@ -4,6 +4,8 @@
 #include <dds/sdist/root.hpp>
 
 #include <dds/error/errors.hpp>
+#include <dds/error/on_error.hpp>
+#include <dds/error/result.hpp>
 #include <dds/project/project.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/fs/io.hpp>
@@ -12,8 +14,8 @@
 #include <dds/util/json5/parse.hpp>
 #include <dds/util/log.hpp>
 
+#include <boost/leaf/exception.hpp>
 #include <libman/parse.hpp>
-
 #include <neo/assert.hpp>
 #include <neo/ranges.hpp>
 #include <neo/tar/util.hpp>

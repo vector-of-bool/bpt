@@ -2,11 +2,12 @@
 #include "./options.hpp"
 
 #include <dds/crs/error.hpp>
+#include <dds/deps.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/toolchain.hpp>
+#include <dds/project/dependency.hpp>
 #include <dds/project/error.hpp>
 #include <dds/sdist/error.hpp>
-#include <dds/sdist/package.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/compress.hpp>
 #include <dds/util/fs/io.hpp>

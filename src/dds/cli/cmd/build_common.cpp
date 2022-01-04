@@ -2,12 +2,14 @@
 
 #include <dds/crs/cache.hpp>
 #include <dds/crs/cache_db.hpp>
-#include <dds/crs/dependency.hpp>
 #include <dds/crs/error.hpp>
+#include <dds/crs/meta/dependency.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/marker.hpp>
+#include <dds/error/on_error.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/project/project.hpp>
-#include <dds/solve/solve2.hpp>
+#include <dds/solve/solve.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/fs/io.hpp>
 #include <dds/util/http/error.hpp>
@@ -135,7 +137,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
         auto crs_deps = proj_sd.pkg.libraries | std::views::transform(NEO_TL(_1.dependencies))
             | std::views::join;
 
-        auto sln = dds::solve2(meta_db, crs_deps);
+        auto sln = dds::solve(meta_db, crs_deps);
         for (auto&& pkg : sln) {
             dds_log(debug, "Loading package '{}' for build", pkg.to_string());
             auto dep_meta = fetch_cache_load_dependency(cache, pkg, builder, "_deps");
@@ -159,7 +161,7 @@ crs::package_meta dds::cli::fetch_cache_load_dependency(crs::cache&        cache
 
     dds::sdist         sd{crs_meta, local_dir};
     sdist_build_params params;
-    params.subdir = subdir_base / sd.id().to_string();
+    params.subdir = subdir_base / sd.pkg.id().to_string();
     builder.add(sd, params);
     return crs_meta;
 }

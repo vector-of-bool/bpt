@@ -1,6 +1,11 @@
-#include <dds/pkg/id.hpp>
+#include "./pkg_id.hpp"
 
 #include <catch2/catch.hpp>
+
+TEST_CASE("Parse a pkg_id string") {
+    auto pid = dds::crs::pkg_id::parse("foo@1.2.3");
+    CHECK(pid.name.str == "foo");
+}
 
 TEST_CASE("Package package ID strings") {
     struct case_ {
@@ -9,12 +14,12 @@ TEST_CASE("Package package ID strings") {
         std::string_view expect_version;
     };
     auto [id_str, exp_name, exp_ver] = GENERATE(Catch::Generators::values<case_>({
-        {"foo@1.2.3", "foo", "1.2.3"},
-        {"foo@1.2.3-beta", "foo", "1.2.3-beta"},
-        {"foo@1.2.3-alpha", "foo", "1.2.3-alpha"},
+        {"foo@1.2.3~0", "foo", "1.2.3"},
+        {"foo@1.2.3-beta~0", "foo", "1.2.3-beta"},
+        {"foo@1.2.3-alpha~0", "foo", "1.2.3-alpha"},
     }));
 
-    auto pk_id = dds::pkg_id::parse(id_str);
+    auto pk_id = dds::crs::pkg_id::parse(id_str);
     CHECK(pk_id.to_string() == id_str);
     CHECK(pk_id.name.str == exp_name);
     CHECK(pk_id.version.to_string() == exp_ver);
@@ -44,8 +49,8 @@ TEST_CASE("Package ordering") {
         {"foo@0.1.2-alpha", less_than, "foo@1.0.0"},
     }));
 
-    auto lhs = dds::pkg_id::parse(lhs_str);
-    auto rhs = dds::pkg_id::parse(rhs_str);
+    auto lhs = dds::crs::pkg_id::parse(lhs_str);
+    auto rhs = dds::crs::pkg_id::parse(rhs_str);
 
     if (ord == less_than) {
         CHECK(lhs < rhs);

@@ -5,8 +5,9 @@
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
 #include <dds/crs/cache.hpp>
+#include <dds/deps.hpp>
 #include <dds/project/dependency.hpp>
-#include <dds/solve/solve2.hpp>
+#include <dds/solve/solve.hpp>
 
 #include <neo/ranges.hpp>
 #include <neo/tl.hpp>
@@ -51,7 +52,7 @@ static int _build_deps(const options& opts) {
     neo::ranges::range_of<crs::dependency> auto all_deps
         = ranges::views::concat(file_deps, cli_deps);
 
-    auto sln = dds::solve2(cache.metadata_db(), all_deps);
+    auto sln = dds::solve(cache.metadata_db(), all_deps);
     for (auto&& pkg : sln) {
         fetch_cache_load_dependency(cache, pkg, builder, ".");
     }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./pkg_id.hpp"
+#include "./meta/pkg_id.hpp"
 
 #include <dds/util/fs/path.hpp>
 #include <neo/url/view.hpp>

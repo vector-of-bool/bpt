@@ -2,8 +2,8 @@
 
 #include "./library.hpp"
 
-#include <dds/crs/meta.hpp>
-#include <dds/pkg/name.hpp>
+#include <dds/crs/meta/package.hpp>
+#include <dds/util/name.hpp>
 
 #include <json5/data.hpp>
 #include <neo/any_range.hpp>
@@ -30,8 +30,6 @@ struct project_manifest {
 struct project {
     std::filesystem::path           path;
     std::optional<project_manifest> manifest;
-
-    project_manifest get_manifest_or_default() const noexcept;
 
     static project open_directory(const std::filesystem::path&);
 };
