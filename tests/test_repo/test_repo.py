@@ -10,7 +10,7 @@ from dds_ci.paths import PROJECT_ROOT
 from dds_ci.testing.http import HTTPServerFactory
 from dds_ci.testing import Project
 from dds_ci.testing.error import expect_error_marker
-from dds_ci.testing.repo import CRSRepo, CRSRepoFactory
+from dds_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
 
 
 def test_repo_init(tmp_crs_repo: CRSRepo) -> None:
@@ -104,7 +104,7 @@ def test_repo_import_invalid_nodir(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_p
 
 def test_repo_import_invalid_no_repo(dds: DDSWrapper, tmp_path: Path, tmp_project: Project) -> None:
     tmp_project.write('pkg.json', json.dumps({}))
-    with expect_error_marker('repo-import-repo-open-fails'):
+    with expect_error_marker('repo-repo-open-fails'):
         dds.run(['repo', 'import', tmp_path, tmp_project.root])
 
 
@@ -114,7 +114,7 @@ def test_repo_import_db_too_new(dds: DDSWrapper, tmp_path: Path, tmp_project: Pr
         CREATE TABLE crs_repo_meta (version);
         INSERT INTO crs_repo_meta (version) VALUES (300);
     ''')
-    with expect_error_marker('repo-import-db-too-new'):
+    with expect_error_marker('repo-db-too-new'):
         dds.run(['repo', 'import', tmp_path, tmp_project.root])
 
 
@@ -124,13 +124,13 @@ def test_repo_import_db_invalid(dds: DDSWrapper, tmp_path: Path, tmp_project: Pr
         CREATE TABLE crs_repo_meta (version);
         INSERT INTO crs_repo_meta (version) VALUES ('eggs');
     ''')
-    with expect_error_marker('repo-import-db-invalid'):
+    with expect_error_marker('repo-db-invalid'):
         dds.run(['repo', 'import', tmp_path, tmp_project.root])
 
 
 def test_repo_import_db_invalid2(dds: DDSWrapper, tmp_path: Path, tmp_project: Project) -> None:
     tmp_path.joinpath('repo.db').write_bytes(b'not-a-sqlite3-database')
-    with expect_error_marker('repo-import-db-invalid'):
+    with expect_error_marker('repo-db-invalid'):
         dds.run(['repo', 'import', tmp_path, tmp_project.root])
 
 
@@ -261,3 +261,46 @@ def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Pr
     }
     with expect_error_marker('repo-import-invalid-proj-json'):
         tmp_crs_repo.import_dir(tmp_project.root)
+
+
+def test_repo_invalid_meta_version_zero(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
+    tmp_path.joinpath('pkg.json').write_text(json.dumps(make_simple_crs('foo', '1.2.3', meta_version=0)))
+    with expect_error_marker('repo-import-invalid-meta_version'):
+        tmp_crs_repo.import_dir(tmp_path)
+
+
+def test_repo_no_use_invalid_meta_version(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
+    '''
+    Check that DDS refuses to acknowledge remote packages that have an invalid (<1) meta version.
+
+    The 'repo import' utility will refuse to import them, but a hostile server could still
+    serve them.
+    '''
+    tmp_project.project_json = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'lib': {
+            'name': 'main',
+            'depends': ['bar@1.2.3']
+        },
+    }
+    db_path = tmp_crs_repo.path / 'repo.db'
+    db_path.unlink()
+    db = sqlite3.connect(str(db_path))
+    db.executescript(r'''
+        CREATE TABLE crs_repo_self(rowid INTEGER PRIMARY KEY, name TEXT NOT NULL);
+        INSERT INTO crs_repo_self VALUES(1729, 'test');
+        CREATE TABLE crs_repo_packages(
+            package_id INTEGER PRIMARY KEY,
+            meta_json TEXT NOT NULL
+        );
+    ''')
+    db.execute(r'INSERT INTO crs_repo_packages(meta_json) VALUES(?)',
+               [json.dumps(make_simple_crs('bar', '1.2.3', meta_version=1))])
+    db.commit()
+    tmp_project.dds.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])
+    db.execute('UPDATE crs_repo_packages SET meta_json=?',
+               [json.dumps(make_simple_crs('bar', '1.2.3', meta_version=0))])
+    db.commit()
+    with expect_error_marker('no-dependency-solution'):
+        tmp_project.dds.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])
