@@ -6,6 +6,7 @@
 #include <dds/crs/meta/dependency.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/deps.hpp>
+#include <dds/error/marker.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/project/dependency.hpp>
 #include <dds/solve/solve.hpp>
@@ -42,7 +43,8 @@ int pkg_solve(const options& opts) {
         dds_log(error,
                 "No solution is possible with the known package information: \n{}"_styled,
                 explain.value);
-        return false;
+        write_error_marker("no-dependency-solution");
+        return 1;
     }
     dds_leaf_catch(e_usage_namespace_mismatch,
                    crs::dependency   dep,
