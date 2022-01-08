@@ -26,6 +26,9 @@
 using namespace dds;
 using namespace dds::crs;
 
+namespace sr   = std::ranges;
+namespace stdv = std::views;
+
 namespace {
 
 /**
@@ -41,34 +44,49 @@ semver::version sole_version(const crs::version_range_set& versions) {
 }
 
 struct requirement {
-    crs::dependency dep;
-    int             meta_version;
+    dds::name              name;
+    crs::version_range_set versions;
+    dependency_uses        uses;
+    std::optional<int>     meta_version;
 
-    explicit requirement(crs::dependency d, int mversion)
-        : dep(std::move(d))
-        , meta_version{mversion} {
-        d.uses.visit(neo::overload{
-            [](explicit_uses_list& l) { std::ranges::sort(l.uses); },
+    explicit requirement(dds::name              name,
+                         crs::version_range_set vrs,
+                         dependency_uses        u,
+                         std::optional<int>     mv)
+        : name{std::move(name)}
+        , versions{std::move(vrs)}
+        , uses{std::move(u)}
+        , meta_version{mv} {
+        uses.visit(neo::overload{
+            [](explicit_uses_list& l) { sr::sort(l.uses); },
             [](implicit_uses_all) {},
         });
     }
 
-    std::string key() const noexcept { return dep.name.str; }
-
-    auto tie() const noexcept { return std::tie(dep.name, dep.acceptable_versions, dep.uses); }
-
-    friend bool operator==(const requirement& lhs, const requirement& rhs) noexcept {
-        return lhs.tie() == rhs.tie();
+    static requirement from_crs_dep(const crs::dependency& dep) noexcept {
+        return requirement{dep.name, dep.acceptable_versions, dep.uses, std::nullopt};
     }
 
-    auto& versions() const noexcept { return dep.acceptable_versions; }
+    auto& key() const noexcept { return name; }
 
     bool implied_by(const requirement& other) const noexcept {
-        return versions().contains(other.versions());
+        if (!versions.contains(other.versions)) {
+            return false;
+        }
+
+        if (uses.is<crs::implicit_uses_all>() || other.uses.is<crs::implicit_uses_all>()) {
+            return true;
+        }
+        auto& my_uses    = uses.as<crs::explicit_uses_list>().uses;
+        auto& other_uses = other.uses.as<crs::explicit_uses_list>().uses;
+        if (sr::includes(other_uses, my_uses)) {
+            return true;
+        }
+        return false;
     }
 
     bool excludes(const requirement& other) const noexcept {
-        return versions().disjoint(other.versions());
+        return versions.disjoint(other.versions);
     }
 
     dependency_uses union_usages(dependency_uses const& l,
@@ -78,95 +96,139 @@ struct requirement {
                 return r.visit(neo::overload{
                     [&](explicit_uses_list const& right) -> dependency_uses {
                         explicit_uses_list uses_union;
-                        std::ranges::set_union(left.uses,
-                                               right.uses,
-                                               std::back_inserter(uses_union.uses));
+                        sr::set_union(left.uses, right.uses, std::back_inserter(uses_union.uses));
                         return uses_union;
                     },
                     [](implicit_uses_all a) -> dependency_uses { return a; },
                 });
             },
-            [&](implicit_uses_all a) -> dependency_uses { return a; },
+            [&](implicit_uses_all) -> dependency_uses { return r; },
         });
     }
 
+    dependency_uses intersect_usages(dependency_uses const& l,
+                                     dependency_uses const& r) const noexcept {
+        return l.visit(neo::overload{
+            [&](explicit_uses_list const& left) -> dependency_uses {
+                return r.visit(neo::overload{
+                    [&](explicit_uses_list const& right) -> dependency_uses {
+                        explicit_uses_list uses_intersection;
+                        sr::set_intersection(left.uses,
+                                             right.uses,
+                                             std::back_inserter(uses_intersection.uses));
+                        return uses_intersection;
+                    },
+                    [&](implicit_uses_all) -> dependency_uses { return l; },
+                });
+            },
+            [&](implicit_uses_all) -> dependency_uses { return r; },
+        });
+    }
+
+    bool uses_is_empty(dependency_uses const& u) const noexcept {
+        return u.visit(neo::overload([](implicit_uses_all) { return true; },
+                                     [](explicit_uses_list const& e) { return e.uses.empty(); }));
+    }
+
     std::optional<requirement> intersection(const requirement& other) const noexcept {
-        auto range = versions().intersection(other.versions());
+        auto range = versions.intersection(other.versions);
         if (range.empty()) {
             return std::nullopt;
         }
-        return requirement{crs::dependency{dep.name,
-                                           std::move(range),
-                                           dep.kind,
-                                           union_usages(dep.uses, other.dep.uses)},
-                           0};
+        return requirement{name, std::move(range), union_usages(uses, other.uses), std::nullopt};
     }
 
     std::optional<requirement> union_(const requirement& other) const noexcept {
-        auto range = versions().union_(other.versions());
+        auto range      = versions.union_(other.versions);
+        auto uses_isect = intersect_usages(uses, other.uses);
         if (range.empty()) {
             return std::nullopt;
         }
-        return requirement{crs::dependency{dep.name,
-                                           std::move(range),
-                                           dep.kind,
-                                           union_usages(dep.uses, other.dep.uses)},
-                           0};
+        return requirement{name, std::move(range), std::move(uses_isect), std::nullopt};
     }
 
     std::optional<requirement> difference(const requirement& other) const noexcept {
-        auto range = versions().difference(other.versions());
-        if (range.empty()) {
+        auto range = versions.difference(other.versions);
+        if (range.empty() and uses_is_empty(uses)) {
             return std::nullopt;
         }
-        return requirement{crs::dependency{dep.name, std::move(range), dep.kind, dep.uses}, 0};
+        return requirement{name, std::move(range), uses, std::nullopt};
+    }
+
+    std::string decl_to_string() const noexcept {
+        return crs::dependency{name, versions, crs::usage_kind::lib, uses}.decl_to_string();
     }
 
     friend std::ostream& operator<<(std::ostream& out, const requirement& self) noexcept {
-        out << self.dep.decl_to_string();
+        out << self.decl_to_string();
         return out;
+    }
+
+    friend void do_repr(auto out, const requirement* self) noexcept {
+        out.type("dds-requirement");
+        if (self) {
+            out.value(self->decl_to_string());
+        }
     }
 };
 
 struct metadata_provider {
     crs::cache_db const& cache_db;
 
-    mutable std::map<std::string, std::vector<crs::cache_db::package_entry>> pkgs_by_name{};
+    mutable std::map<std::string, std::vector<crs::cache_db::package_entry>, std::less<>>
+        pkgs_by_name{};
+
+    const std::vector<crs::cache_db::package_entry>&
+    packages_for_name(std::string_view name) const {
+        auto found = pkgs_by_name.find(name);
+        if (found == pkgs_by_name.end()) {
+            found
+                = pkgs_by_name
+                      .emplace(std::string(name),
+                               cache_db.for_package(dds::name{std::string(name)}) | neo::to_vector)
+                      .first;
+            sr::sort(found->second,
+                     std::less<>{},
+                     NEO_TL(std::tuple(_1.pkg.version, -_1.pkg.meta_version)));
+        }
+        return found->second;
+    }
 
     std::optional<requirement> best_candidate(const requirement& req) const {
         dds::cancellation_point();
-        auto found = pkgs_by_name.find(req.dep.name.str);
-        dds_log(trace, "Find best candidate of {}", req.dep.decl_to_string());
-        if (found == pkgs_by_name.end()) {
-            found = pkgs_by_name  //
-                        .emplace(req.dep.name.str,
-                                 cache_db.for_package(req.dep.name) | neo::to_vector)
-                        .first;
-            std::ranges::sort(found->second,
-                              std::less<>{},
-                              NEO_TL(std::tuple(_1.pkg.version, -_1.pkg.meta_version)));
-        }
-        auto cand
-            = std::ranges::find_if(found->second,
-                                   NEO_TL(req.dep.acceptable_versions.contains(_1.pkg.version)));
+        auto& pkgs = packages_for_name(req.name.str);
+        dds_log(debug, "Find best candidate of {}", req.decl_to_string());
+        auto cand = sr::find_if(pkgs, [&](auto&& entry) {
+            if (!req.versions.contains(entry.pkg.version)) {
+                return false;
+            }
+            return req.uses.visit(neo::overload{
+                [&](crs::implicit_uses_all) { return true; },
+                [&](crs::explicit_uses_list const& u) {
+                    bool has_all_libraries = sr::all_of(u.uses, [&](auto&& uses_name) {
+                        return sr::any_of(entry.pkg.libraries, NEO_TL(uses_name == _1.name));
+                    });
+                    if (!has_all_libraries) {
+                        dds_log(debug,
+                                "  Near match: {} (missing one or more required libraries)",
+                                entry.pkg.id().to_string());
+                    }
+                    return has_all_libraries;
+                },
+            });
+        });
 
-        if (cand == found->second.cend()) {
-            dds_log(trace, "  (No candidate)");
+        if (cand == pkgs.cend()) {
+            dds_log(debug, "  (No candidate)");
             return std::nullopt;
         }
-        dds_log(trace,
-                "  Best candidate: {}@{}",
-                cand->pkg.name.str,
-                cand->pkg.version.to_string());
-        return requirement{
-            crs::dependency{
-                cand->pkg.name,
-                {cand->pkg.version, cand->pkg.version.next_after()},
-                req.dep.kind,
-                req.dep.uses,
-            },
-            cand->pkg.meta_version,
-        };
+
+        dds_log(debug, "  Best candidate: {}", cand->pkg.id().to_string());
+
+        return requirement{cand->pkg.name,
+                           {cand->pkg.version, cand->pkg.version.next_after()},
+                           req.uses,
+                           cand->pkg.meta_version};
     }
 
     /**
@@ -178,25 +240,62 @@ struct metadata_provider {
      */
     std::vector<requirement> requirements_of(const requirement& req) const {
         dds::cancellation_point();
-        dds_log(trace,
-                "Lookup dependencies of {}@{}",
-                req.dep.name.str,
-                sole_version(req.dep.acceptable_versions).to_string());
-        const auto& version = sole_version(req.dep.acceptable_versions);
-        auto        metas   = cache_db.for_package(req.dep.name, version);
-        auto        it      = std::ranges::begin(metas);
+        dds_log(trace, "Lookup dependencies of {}", req.decl_to_string());
+        const auto& version = sole_version(req.versions);
+        auto        metas   = cache_db.for_package(req.name, version);
+        auto        it      = sr::begin(metas);
         neo_assert(invariant,
-                   it != std::ranges::end(metas),
+                   it != sr::end(metas),
                    "Unexpected empty metadata for requirements of package {}@{}",
-                   req.dep.name.str,
+                   req.name.str,
                    version.to_string());
-        return it->pkg.libraries                              //
-            | std::views::transform(NEO_TL(_1.dependencies))  //
-            | std::views::join                                //
-            | std::views::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-            | std::views::transform(NEO_TL(requirement{_1, 0}))  //
+        auto pkg = it->pkg;
+
+        std::set<dds::name> uses;
+        req.uses.visit(
+            neo::overload{[&](crs::explicit_uses_list const& u) { extend(uses, u.uses); },
+                          [&](crs::implicit_uses_all) {
+                              extend(uses, pkg.libraries | stdv::transform(NEO_TL(_1.name)));
+                          }});
+
+        std::set<dds::name> more_uses;
+        while (1) {
+            more_uses = uses;
+            for (auto& used : uses) {
+                auto lib_it = sr::find_if(pkg.libraries, NEO_TL(_1.name == used));
+                neo_assert(invariant,
+                           lib_it != sr::end(pkg.libraries),
+                           "Invalid 'uses' on non-existent requirement library",
+                           used,
+                           pkg);
+                extend(more_uses,
+                       lib_it->intra_uses
+                           | stdv::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
+                           | stdv::transform(NEO_TL(_1.lib)));
+            }
+            if (sr::includes(uses, more_uses)) {
+                break;
+            }
+            uses = more_uses;
+        }
+
+        auto reqs = pkg.libraries                           //
+            | stdv::filter(NEO_TL(uses.contains(_1.name)))  //
+            | stdv::transform(NEO_TL(_1.dependencies))      //
+            | stdv::join                                    //
+            | stdv::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
+            | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))  //
             | neo::to_vector;
+        for (auto&& r : reqs) {
+            dds_log(trace, "  Requires: {}", r.decl_to_string());
+        }
+        if (reqs.empty()) {
+            dds_log(trace, "  (No dependencies)");
+        }
+        return reqs;
     }
+
+    void debug(std::string_view sv) const noexcept { dds_log(trace, "pubgrub: {}", sv); }
 };
 
 using solve_failure_exception = pubgrub::solve_failure_type_t<requirement>;
@@ -226,6 +325,10 @@ struct fail_explainer {
 
     void put(pubgrub::explain::disallowed<requirement> dis) {
         fmt::print(part, "{} cannot be used", dis.requirement);
+    }
+
+    void put(pubgrub::explain::compromise<requirement> cmpr) {
+        fmt::print(part, "{} and {} agree on {}", cmpr.left, cmpr.right, cmpr.result);
     }
 
     template <typename T>
@@ -258,18 +361,18 @@ generate_failure_explanation(const solve_failure_exception& exc) {
 
 std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
                                     neo::any_input_range<crs::dependency> deps_) {
-    auto deps = deps_ | std::views::transform(NEO_TL(requirement{_1, 0})) | neo::to_vector;
     metadata_provider provider{cache};
-    auto              sln = dds_leaf_try { return pubgrub::solve(deps, provider); }
+    auto deps = deps_ | stdv::transform(NEO_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
+    auto sln  = dds_leaf_try { return pubgrub::solve(deps, provider); }
     dds_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
         BOOST_LEAF_THROW_EXCEPTION(dds::e_dependency_solve_failure{},
                                    DDS_E_ARG(generate_failure_explanation(exc.matched)));
     };
     return sln
-        | std::views::transform(NEO_TL(crs::pkg_id{
-            .name         = _1.dep.name,
-            .version      = sole_version(_1.dep.acceptable_versions),
-            .meta_version = _1.meta_version,
+        | stdv::transform(NEO_TL(crs::pkg_id{
+            .name         = _1.name,
+            .version      = sole_version(_1.versions),
+            .meta_version = _1.meta_version.value(),
         }))
         | neo::to_vector;
 }

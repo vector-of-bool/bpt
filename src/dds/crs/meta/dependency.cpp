@@ -2,6 +2,7 @@
 
 #include <dds/util/json_walk.hpp>
 
+#include <neo/overload.hpp>
 #include <semver/range.hpp>
 
 #include <sstream>
@@ -48,36 +49,39 @@ std::string dds::crs::dependency::decl_to_string() const noexcept {
         auto iv = *acceptable_versions.iter_intervals().begin();
         if (iv.high == iv.low.next_after()) {
             strm << "@" << iv.low.to_string();
-            return strm.str();
-        }
-        if (iv.high == next_major(iv.low)) {
+        } else if (iv.high == next_major(iv.low)) {
             strm << "^" << iv.low.to_string();
-            return strm.str();
-        }
-        if (iv.high == next_minor(iv.low)) {
+        } else if (iv.high == next_minor(iv.low)) {
             strm << "~" << iv.low.to_string();
-            return strm.str();
+        } else if (iv.low == semver::version() && iv.high == semver::version::max_version()) {
+            strm << "+" << iv.low.to_string();
+        } else {
+            strm << "@[" << iv_string(iv) << "]";
         }
-        strm << "@";
-        if (iv.low == semver::version() && iv.high == semver::version::max_version()) {
-            return name.str;
+    } else {
+        strm << "@[";
+        auto       iv_it = acceptable_versions.iter_intervals();
+        auto       it    = iv_it.begin();
+        const auto stop  = iv_it.end();
+        if (it == stop) {
+            // An empty version range is unsatisfiable.
+            strm << "⊥";
         }
-        strm << "@[" << iv_string(iv) << "]";
-        return strm.str();
+        while (it != stop) {
+            strm << "(" << iv_string(*it) << ")";
+            ++it;
+            if (it != stop) {
+                strm << " || ";
+            }
+        }
+        strm << "]";
     }
-
-    strm << "@[";
-    auto       iv_it = acceptable_versions.iter_intervals();
-    auto       it    = iv_it.begin();
-    const auto stop  = iv_it.end();
-    while (it != stop) {
-        strm << "(" << iv_string(*it) << ")";
-        ++it;
-        if (it != stop) {
-            strm << " || ";
-        }
-    }
-    strm << "]";
+    uses.visit(neo::overload{
+        [&](implicit_uses_all) { strm << "/*"; },
+        [&](explicit_uses_list const& u) {
+            strm << '/' << joinstr(",", u.uses | std::views::transform(NEO_TL(_1.str)));
+        },
+    });
     return strm.str();
 }
 

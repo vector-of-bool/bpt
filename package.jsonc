@@ -14,7 +14,7 @@
         "neo-compress^0.3.0",
         "neo-url^0.2.4",
         "semver@0.2.2",
-        "pubgrub@0.2.1",
+        "pubgrub@0.3.0",
         "vob-json5@0.1.6",
         "vob-semester@0.3.1",
         "ctre@2.8.1",

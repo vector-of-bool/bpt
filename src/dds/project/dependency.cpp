@@ -1,6 +1,5 @@
 #include "./dependency.hpp"
 
-#include <dds/deps.hpp>
 #include <dds/error/human.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
@@ -9,11 +8,9 @@
 #include <dds/util/string.hpp>
 
 #include <boost/leaf/exception.hpp>
-#include <magic_enum.hpp>
 #include <neo/assert.hpp>
-#include <neo/ranges.hpp>
-#include <neo/tl.hpp>
 #include <neo/utility.hpp>
+#include <semver/range.hpp>
 
 using namespace dds;
 
@@ -27,14 +24,26 @@ crs::dependency project_dependency::as_crs_dependency() const noexcept {
     };
 }
 
-project_dependency project_dependency::parse_dep_range_shorthand(std::string_view s) {
-    auto               legacy = dds::dependency::parse_depends_string(s);
+project_dependency project_dependency::parse_dep_range_shorthand(std::string_view const sv) {
+    DDS_E_SCOPE(e_parse_dep_range_shorthand_string{std::string(sv)});
+
     project_dependency ret;
-    ret.dep_name            = legacy.name;
-    ret.acceptable_versions = legacy.versions;
-    // These are numeric compatible:
-    ret.kind = static_cast<crs::usage_kind>(static_cast<int>(legacy.for_kind));
-    neo_assert(invariant, !legacy.uses.has_value(), "What");
+
+    auto sep_pos = sv.find_first_of("=@^~+");
+    if (sep_pos == sv.npos) {
+        BOOST_LEAF_THROW_EXCEPTION(
+            e_human_message{"Expected an one of '=@^~+' in name+version shorthand"});
+    }
+
+    ret.dep_name = dds::name::from_string(sv.substr(0, sep_pos)).value();
+
+    auto range_str = std::string(sv.substr(sep_pos));
+    if (range_str.front() == '@') {
+        range_str[0] = '^';
+    }
+    const semver::range rng = semver::range::parse_restricted(range_str);
+
+    ret.acceptable_versions = {rng.low(), rng.high()};
     return ret;
 }
 

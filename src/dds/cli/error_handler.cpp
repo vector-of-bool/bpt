@@ -101,7 +101,7 @@ auto handlers = std::tuple(  //
     },
     [](e_name_str                           badname,
        invalid_name_reason                  why,
-       e_dependency_string                  depstr,
+       e_parse_dep_range_shorthand_string   depstr,
        e_parse_project_manifest_path const* prman_path) {
         dds_log(
             error,
@@ -130,34 +130,24 @@ auto handlers = std::tuple(  //
         write_error_marker("invalid-name");
         return 1;
     },
-    [](e_parse_dep_shorthand_string         given,
-       e_dependency_string                  depstr,
-       e_parse_project_manifest_path const* proj_man) {
-        dds_log(
-            error,
-            "Invalid dependency name+range '.bold.red[{}]' in shorthand string '.bold.yellow[{}]'"_styled,
-            depstr.value,
-            given.value);
-        if (proj_man) {
-            dds_log(error,
-                    "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
-                    proj_man->value);
-        }
-        write_error_marker("invalid-dep-shorthand");
-        return 1;
-    },
-    [](e_parse_dep_shorthand_string         given,
-       e_human_message                      msg,
-       e_parse_project_manifest_path const* proj_man) {
+    [](e_parse_dep_shorthand_string              given,
+       e_parse_dep_range_shorthand_string const* range_part,
+       e_human_message                           msg,
+       e_parse_project_manifest_path const*      proj_man) {
         dds_log(error,
-                "Invalid dependency shorthand string '.bold.red[{}]': .bold.yellow[{}]"_styled,
-                given.value,
-                msg.value);
+                "Invalid dependency shorthand string '.bold.yellow[{}]'"_styled,
+                given.value);
+        if (range_part) {
+            dds_log(error,
+                    "  (While parsing name+range string '.bold.yellow[{}]')"_styled,
+                    range_part->value);
+        }
         if (proj_man) {
             dds_log(error,
                     "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
                     proj_man->value);
         }
+        dds_log(error, "  Error: .bold.red[{}]"_styled, msg.value);
         write_error_marker("invalid-dep-shorthand");
         return 1;
     },

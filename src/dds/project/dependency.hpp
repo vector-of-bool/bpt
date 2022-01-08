@@ -4,7 +4,6 @@
 #include <dds/util/name.hpp>
 
 #include <json5/data.hpp>
-#include <libman/usage.hpp>
 
 #include <optional>
 #include <vector>
@@ -12,6 +11,10 @@
 namespace dds {
 
 struct e_parse_dep_shorthand_string {
+    std::string value;
+};
+
+struct e_parse_dep_range_shorthand_string {
     std::string value;
 };
 

@@ -32,7 +32,7 @@ static int _pkg_solve(const options& opts) {
 
     auto sln = dds::solve(cache.metadata_db(), deps);
     for (auto&& pkg : sln) {
-        dds_log(info, "Require: {}@{}~{}", pkg.name.str, pkg.version.to_string(), pkg.meta_version);
+        dds_log(info, "Require: {}", pkg.to_string());
     }
     return 0;
 }

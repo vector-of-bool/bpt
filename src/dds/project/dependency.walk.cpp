@@ -5,6 +5,7 @@
 #include <neo/ranges.hpp>
 
 #include <dds/util/json_walk.hpp>
+#include <semver/range.hpp>
 
 using namespace dds;
 using namespace dds::walk_utils;
