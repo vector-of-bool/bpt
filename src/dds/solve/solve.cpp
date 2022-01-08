@@ -149,10 +149,10 @@ struct requirement {
 
     std::optional<requirement> difference(const requirement& other) const noexcept {
         auto range = versions.difference(other.versions);
-        if (range.empty() and uses_is_empty(uses)) {
+        if (range.empty() and (uses_is_empty(uses) or uses == other.uses)) {
             return std::nullopt;
         }
-        return requirement{name, std::move(range), uses, std::nullopt};
+        return requirement{name, std::move(range), union_usages(uses, other.uses), std::nullopt};
     }
 
     std::string decl_to_string() const noexcept {

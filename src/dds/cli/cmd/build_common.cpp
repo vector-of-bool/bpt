@@ -9,6 +9,7 @@
 #include <dds/error/on_error.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/project/project.hpp>
+#include <dds/sdist/error.hpp>
 #include <dds/solve/solve.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/fs/io.hpp>
@@ -116,9 +117,8 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     auto  cache   = open_ready_cache(opts);
     auto& meta_db = cache.metadata_db();
 
-    auto              project = dds::project::open_directory(opts.project_dir);
-    crs::package_meta proj_crs_meta;
-    if (!project.manifest) {
+    sdist proj_sd = dds_leaf_try { return sdist::from_directory(opts.project_dir); }
+    dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_json5) {
         crs::package_meta default_meta;
         default_meta.name.str       = "anon";
         default_meta.namespace_.str = "anon";
@@ -126,11 +126,8 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
         crs::library_meta default_library;
         default_library.name.str = "anon";
         default_meta.libraries.push_back(default_library);
-        proj_crs_meta = default_meta;
-    } else {
-        proj_crs_meta = project.manifest->as_crs_package_meta();
-    }
-    sdist proj_sd{proj_crs_meta, project.path};
+        return sdist{std::move(default_meta), opts.project_dir};
+    };
 
     builder builder;
     if (!opts.build.lm_index.has_value()) {

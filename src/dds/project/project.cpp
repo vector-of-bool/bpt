@@ -19,7 +19,7 @@ using namespace dds;
 project project::open_directory(path_ref path_) {
     DDS_E_SCOPE(e_open_project{path_});
     auto path = resolve_path_strong(path_).value();
-    for (auto cand_fname : {"project.json", "project.jsonc", "project.json5", "pkg.json"}) {
+    for (auto cand_fname : {"project.json", "project.jsonc", "project.json5"}) {
         auto cand = path / cand_fname;
         if (!fs::exists(cand)) {
             continue;
