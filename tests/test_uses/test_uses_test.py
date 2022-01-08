@@ -2,7 +2,8 @@ import pytest
 import shutil
 from pathlib import Path
 
-from dds_ci.testing import ProjectOpener, CRSRepo, CRSRepoFactory
+from dds_ci.testing import ProjectOpener, CRSRepo, CRSRepoFactory, error, fs
+from dds_ci.testing.fixtures import Project
 
 
 @pytest.fixture(scope='module')
@@ -65,3 +66,56 @@ def test_build_dependent_with_multiple_libs(test_parent_dir: Path, project_opene
     shutil.copytree(test_parent_dir / 'dependents/src', proj.root / 'libs/uses_for_tests/src/test_uses')
     shutil.copy(test_parent_dir / 'dependents/dependent_no_dep.test.cpp', proj.root / 'libs/uses_for_tests/src')
     proj.build(repos=[ut_repo.path])
+
+
+def test_uses_sibling_lib(tmp_project: Project) -> None:
+    fs.render_into(
+        tmp_project.root, {
+            'main': {
+                'src': {
+                    'foo.cpp': b'int number() { return 42; }\n',
+                    'foo.h': 'extern int number();\n',
+                }
+            },
+            'there': {
+                'src': {
+                    't.test.cpp':
+                    r'''
+                        #include <foo.h>
+                        #include <cassert>
+
+                        int main () { assert(number() == 42); }
+                    '''
+                }
+            }
+        })
+
+    # Missing the 'uses'
+    tmp_project.project_json = {
+        'name': 'testing',
+        'version': '1.2.3',
+        'libs': [{
+            'name': 'main',
+            'path': 'main',
+        }, {
+            'name': 'other',
+            'path': 'there',
+        }]
+    }
+    with error.expect_error_marker('compile-failed'):
+        tmp_project.build()
+
+    # Now add the missing 'uses'
+    tmp_project.project_json = {
+        'name': 'testing',
+        'version': '1.2.3',
+        'libs': [{
+            'name': 'main',
+            'path': 'main',
+        }, {
+            'name': 'other',
+            'path': 'there',
+            'uses': ['main']
+        }]
+    }
+    tmp_project.build()
