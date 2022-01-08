@@ -7,11 +7,11 @@ Types from pytest
 These types are defined by pytest, but are used extensively within the testing
 scripts.
 
-.. class:: _pytest.fixtures.FixtureRequest
+.. class:: FixtureRequest
 
   .. seealso:: :class:`pytest.FixtureRequest`
 
-.. class:: _pytest.tmpdir.TempPathFactory
+.. class:: TempPathFactory
 
   .. seealso:: :class:`pytest.TempPathFactory`
 

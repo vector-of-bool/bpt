@@ -3,15 +3,13 @@ Test fixtures and utilities for creating and using CRS repositories
 """
 
 from pathlib import Path
-from typing import Any, Callable, NamedTuple
-import shutil
+from typing import Any, Callable, Iterable, NamedTuple, Union
 from typing_extensions import Literal
 
 import pytest
-from _pytest.tmpdir import TempPathFactory, tmp_path
-from _pytest.fixtures import FixtureRequest
 
 from dds_ci.dds import DDSWrapper
+from dds_ci.testing.fixtures import TempPathFactory
 from .http import HTTPServerFactory, ServerInfo
 from .fs import TempCloner
 
@@ -24,11 +22,13 @@ class CRSRepo:
         self.path = path
         self.dds = dds
 
-    def import_dir(self,
-                   path: Path,
-                   *,
-                   if_exists: Literal[None, 'replace', 'ignore', 'fail'] = None,
-                   validate: bool = True) -> None:
+    def import_(self,
+                path: Union[Path, Iterable[Path]],
+                *,
+                if_exists: Literal[None, 'replace', 'ignore', 'fail'] = None,
+                validate: bool = True) -> None:
+        if isinstance(path, Path):
+            path = [path]
         self.dds.run([
             '-ldebug',
             'repo',

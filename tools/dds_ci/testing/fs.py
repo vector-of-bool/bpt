@@ -8,7 +8,7 @@ import base64
 import json
 import shutil
 
-from _pytest.tmpdir import TempPathFactory
+from dds_ci.testing.fixtures import TempPathFactory
 
 from ..util import Pathish
 from ..paths import PROJECT_ROOT
@@ -42,6 +42,7 @@ class GetResult(NamedTuple):
     final_dest: Path
 
     def commit(self) -> Path:
+        assert self.prep_path
         shutil.copytree(self.prep_path, self.final_dest)
         return self.final_dest
 

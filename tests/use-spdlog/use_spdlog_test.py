@@ -23,7 +23,7 @@ def spdlog_v1_4_2(dir_renderer: DirRenderer) -> Path:
 @pytest.fixture(scope='module')
 def repo_with_spdlog(crs_repo_factory: CRSRepoFactory, spdlog_v1_4_2: Path) -> CRSRepo:
     repo = crs_repo_factory('with-spdlog')
-    repo.import_dir(spdlog_v1_4_2)
+    repo.import_(spdlog_v1_4_2)
     return repo
 
 
@@ -46,5 +46,5 @@ def test_invalid_uses_specifier(project_opener: ProjectOpener, toolchain_path: P
         'version': '0.0.0',
         'depends': ['spdlog@1.4.2 uses no-such-library'],
     }
-    with error.expect_error_marker('no-such-library'):
+    with error.expect_error_marker('no-dependency-solution'):
         proj.build(toolchain=toolchain_path, repos=[repo_with_spdlog.path])

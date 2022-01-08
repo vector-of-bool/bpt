@@ -11,8 +11,7 @@ from typing import Sequence, Union, cast, Optional, Callable
 from typing_extensions import Literal, TypedDict
 
 from _pytest.config import Config as PyTestConfig
-from _pytest.tmpdir import TempPathFactory
-from _pytest.fixtures import FixtureRequest
+from pytest import FixtureRequest, TempPathFactory
 
 from dds_ci import toolchain, paths
 from ..dds import DDSWrapper

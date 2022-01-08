@@ -12,14 +12,15 @@ from dds_ci import proc
 @pytest.fixture(scope='session')
 def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) -> CRSRepo:
     repo = crs_repo_factory('bd-repo')
-    pkg_1 = dir_renderer.get_or_render(
-        'pkg_1', {
-            'pkg.json': json.dumps(make_simple_crs('foo', '1.2.3')),
-            'src': {
-                'foo.hpp':
-                '#pragma once\nextern void foo_fun();',
-                'foo.cpp':
-                r'''
+    repo.import_([
+        dir_renderer.get_or_render(
+            'pkg_1', {
+                'pkg.json': json.dumps(make_simple_crs('foo', '1.2.3')),
+                'src': {
+                    'foo.hpp':
+                    '#pragma once\nextern void foo_fun();',
+                    'foo.cpp':
+                    r'''
                     #include <iostream>
 
                     #include "./foo.hpp"
@@ -28,17 +29,16 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                         std::cout << "Hello, from foo library!\n";
                     }
                 '''
-            }
-        })
-    repo.import_dir(pkg_1)
-    pkg_2 = dir_renderer.get_or_render(
-        'pkg_2', {
-            'pkg.json': json.dumps(make_simple_crs('foo', '2.0.0')),
-            'src': {
-                'foo.hpp':
-                '#pragma once\n extern void bar_fun();',
-                'foo.cpp':
-                r'''
+                }
+            }),
+        dir_renderer.get_or_render(
+            'pkg_2', {
+                'pkg.json': json.dumps(make_simple_crs('foo', '2.0.0')),
+                'src': {
+                    'foo.hpp':
+                    '#pragma once\n extern void bar_fun();',
+                    'foo.cpp':
+                    r'''
                     #include <iostream>
                     #include "./foo.hpp"
 
@@ -46,17 +46,16 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                         std::cout << "New foo libary!\n";
                     }
                 '''
-            }
-        })
-    repo.import_dir(pkg_2)
-    pkg_3 = dir_renderer.get_or_render(
-        'pkg_3', {
-            'pkg.json': json.dumps(make_simple_crs('foo', '1.2.8')),
-            'src': {
-                'foo.hpp':
-                '#pragma once\n extern void foo_fun();',
-                'foo.cpp':
-                r'''
+                }
+            }),
+        dir_renderer.get_or_render(
+            'pkg_3', {
+                'pkg.json': json.dumps(make_simple_crs('foo', '1.2.8')),
+                'src': {
+                    'foo.hpp':
+                    '#pragma once\n extern void foo_fun();',
+                    'foo.cpp':
+                    r'''
                     #include <iostream>
                     #include "./foo.hpp"
 
@@ -64,17 +63,16 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                         std::cout << "foo 1.2.8!\n";
                     }
                 '''
-            }
-        })
-    repo.import_dir(pkg_3)
-    pkg_4 = dir_renderer.get_or_render(
-        'pkg_4', {
-            'pkg.json': json.dumps(make_simple_crs('foo', '1.3.4')),
-            'src': {
-                'foo.hpp':
-                '#pragma once\n extern void foo_fun();',
-                'foo.cpp':
-                r'''
+                }
+            }),
+        dir_renderer.get_or_render(
+            'pkg_4', {
+                'pkg.json': json.dumps(make_simple_crs('foo', '1.3.4')),
+                'src': {
+                    'foo.hpp':
+                    '#pragma once\n extern void foo_fun();',
+                    'foo.cpp':
+                    r'''
                     #include <iostream>
                     #include "./foo.hpp"
 
@@ -82,9 +80,9 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                         std::cout << "foo 1.3.4!\n";
                     }
                 '''
-            }
-        })
-    repo.import_dir(pkg_4)
+                }
+            }),
+    ])
     return repo
 
 
@@ -215,8 +213,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
         },
     )
     # yapf: enable
-    tmp_crs_repo.import_dir(libs / 'foo')
-    tmp_crs_repo.import_dir(libs / 'bar')
+    tmp_crs_repo.import_((libs / 'foo',libs / 'bar'))
 
     bd_project.write(
         'CMakeLists.txt', r'''

@@ -1,17 +1,13 @@
-from pathlib import Path
 import socket
-from contextlib import contextmanager, ExitStack, closing
-import json
-from http.server import SimpleHTTPRequestHandler, HTTPServer
-from typing import NamedTuple, Any, Iterator, Callable, cast
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack, closing, contextmanager
 from functools import partial
-import tempfile
-import sys
-import subprocess
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
+from typing import Any, Callable, Iterator, NamedTuple, cast
 
 import pytest
-from _pytest.fixtures import FixtureRequest
+from pytest import FixtureRequest
 
 
 def _unused_tcp_port() -> int:

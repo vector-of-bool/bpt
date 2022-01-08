@@ -81,6 +81,6 @@ def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
         'name': 'test-pkg',
         'version': '0.1.2',
     }
-    tmp_crs_repo.import_dir(tmp_project.root)
+    tmp_crs_repo.import_(tmp_project.root)
     # No error now:
     tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])

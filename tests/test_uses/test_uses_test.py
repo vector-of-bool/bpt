@@ -8,10 +8,8 @@ from dds_ci.testing import ProjectOpener, CRSRepo, CRSRepoFactory
 @pytest.fixture(scope='module')
 def ut_repo(crs_repo_factory: CRSRepoFactory, test_parent_dir: Path) -> CRSRepo:
     repo = crs_repo_factory('uses-test')
-    repo.import_dir(test_parent_dir / 'the_test_dependency')
-    repo.import_dir(test_parent_dir / 'the_test_lib')
-    repo.import_dir(test_parent_dir / 'unbuildable')
-    repo.import_dir(test_parent_dir / 'with_bad_test_dep')
+    names = ('the_test_dependency', 'the_test_lib', 'unbuildable', 'with_bad_test_dep')
+    repo.import_((test_parent_dir / name for name in names))
     return repo
 
 
