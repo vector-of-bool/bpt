@@ -118,7 +118,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     auto& meta_db = cache.metadata_db();
 
     sdist proj_sd = dds_leaf_try { return sdist::from_directory(opts.project_dir); }
-    dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_json5) {
+    dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_yaml) {
         crs::package_meta default_meta;
         default_meta.name.str       = "anon";
         default_meta.namespace_.str = "anon";

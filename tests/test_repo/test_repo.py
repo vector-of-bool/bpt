@@ -7,7 +7,6 @@ import sqlite3
 
 from dds_ci.dds import DDSWrapper
 from dds_ci.paths import PROJECT_ROOT
-from dds_ci.testing.fixtures import _ProjectJSONDependencyItemMap
 from dds_ci.testing.http import HTTPServerFactory
 from dds_ci.testing import Project
 from dds_ci.testing.error import expect_error_marker
@@ -252,7 +251,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
 
 
 def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
-    tmp_project.project_json = {
+    tmp_project.pkg_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'libs': [{
@@ -294,7 +293,7 @@ def test_repo_no_use_invalid_meta_version(tmp_crs_repo: CRSRepo, tmp_project: Pr
         db.execute(r'INSERT INTO crs_repo_packages(meta_json) VALUES(?)',
                    [json.dumps(make_simple_crs('bar', '1.2.3', meta_version=1))])
 
-    tmp_project.project_json = {
+    tmp_project.pkg_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'lib': {

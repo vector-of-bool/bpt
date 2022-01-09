@@ -17,6 +17,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
+#include <dds/util/yaml/errors.hpp>
 
 #include <boost/leaf/common.hpp>
 #include <boost/leaf/pred.hpp>
@@ -42,18 +43,6 @@ auto handlers = std::tuple(  //
         dds_log(error, "Invalid URL '{}': {}", bad_url.value, exc.what());
         return 1;
     },
-    [](boost::leaf::catch_<error_base> exc,
-       json5::parse_error              parse_err,
-       boost::leaf::e_file_name*       maybe_fpath) {
-        dds_log(error, "{}", exc.matched.what());
-        dds_log(error, "Invalid JSON5 was found: {}", parse_err.what());
-        if (maybe_fpath) {
-            dds_log(error, "  (While reading from [{}])", maybe_fpath->value);
-        }
-        dds_log(error, "{}", exc.matched.explanation());
-        write_error_marker("package-json5-parse-error");
-        return 1;
-    },
     [](e_sdist_from_directory       sdist_dirpath,
        e_json_parse_error           error,
        const std::filesystem::path* maybe_fpath) {
@@ -66,6 +55,20 @@ auto handlers = std::tuple(  //
             dds_log(error, "  (While reading from [{}])", maybe_fpath->string());
         }
         write_error_marker("package-json5-parse-error");
+        return 1;
+    },
+    [](e_sdist_from_directory       sdist_dirpath,
+       sbs::e_yaml_parse_error      error,
+       const std::filesystem::path* maybe_fpath) {
+        dds_log(
+            error,
+            "Invalid metadata file while opening source distribution/project in [.bold.yellow[{}]]"_styled,
+            sdist_dirpath.value.string());
+        dds_log(error, "Invalid YAML file: .bold.red[{}]"_styled, error.value);
+        if (maybe_fpath) {
+            dds_log(error, "  (While reading from [{}])", maybe_fpath->string());
+        }
+        write_error_marker("package-yaml-parse-error");
         return 1;
     },
     [](user_cancelled) {

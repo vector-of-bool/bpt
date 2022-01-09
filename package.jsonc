@@ -24,6 +24,7 @@
         "boost.leaf^1.78.0",
         "magic_enum+0.7.3",
         "sqlite3^3.35.2",
+        "yaml-cpp@0.7.0",
     ],
     "test_driver": "Catch-Main"
 }

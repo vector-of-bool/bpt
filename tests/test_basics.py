@@ -3,7 +3,7 @@ from subprocess import CalledProcessError
 
 import pytest
 from dds_ci import paths
-from dds_ci.testing import Project, ProjectJSON
+from dds_ci.testing import Project, PkgYAML
 from dds_ci.testing.error import expect_error_marker
 
 
@@ -43,7 +43,7 @@ def test_simple_lib(tmp_project: Project) -> None:
     the manifest files will affect the output name.
     """
     tmp_project.write('src/foo.cpp', 'int the_answer() { return 42; }')
-    tmp_project.project_json = {
+    tmp_project.pkg_yaml = {
         'name': 'test-project',
         'version': '0.0.0',
         'lib': {
@@ -73,7 +73,7 @@ def test_error_enoent_toolchain(tmp_project: Project) -> None:
 
 
 def test_invalid_names(tmp_project: Project) -> None:
-    tmp_project.project_json = {
+    tmp_project.pkg_yaml = {
         'name': 'test',
         'version': '1.2.3',
         'namespace': 'test',
@@ -88,8 +88,8 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-dep-shorthand'):
         tmp_project.dds.build_deps(['invalid name@1.2.3'])
 
-    tmp_project.project_json = {
-        **tmp_project.project_json,
+    tmp_project.pkg_yaml = {
+        **tmp_project.pkg_yaml,
         'name': 'invalid name',
         'depends': [],
     }
@@ -98,8 +98,8 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-name'):
         tmp_project.pkg_create()
 
-    tmp_project.project_json = {
-        **tmp_project.project_json,
+    tmp_project.pkg_yaml = {
+        **tmp_project.pkg_yaml,
         'name': 'simple_name',
         'namespace': 'invalid namespace',
     }
@@ -108,7 +108,7 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-name'):
         tmp_project.pkg_create()
 
-    tmp_project.project_json = {
+    tmp_project.pkg_yaml = {
         'name': 'test',
         'version': '1.2.3',
         'namespace': 'test',
@@ -116,7 +116,7 @@ def test_invalid_names(tmp_project: Project) -> None:
     }
 
 
-TEST_PACKAGE: ProjectJSON = {
+TEST_PACKAGE: PkgYAML = {
     'name': 'test-pkg',
     'version': '0.2.2',
     'namespace': 'test',
@@ -124,12 +124,12 @@ TEST_PACKAGE: ProjectJSON = {
 
 
 def test_empty_with_pkg_json(tmp_project: Project) -> None:
-    tmp_project.project_json = TEST_PACKAGE
+    tmp_project.pkg_yaml = TEST_PACKAGE
     tmp_project.build()
 
 
 def test_empty_sdist_create(tmp_project: Project) -> None:
-    tmp_project.project_json = TEST_PACKAGE
+    tmp_project.pkg_yaml = TEST_PACKAGE
     tmp_project.pkg_create()
     assert tmp_project.build_root.joinpath('test-pkg@0.2.2~1.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'

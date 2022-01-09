@@ -1,4 +1,0 @@
-{
-    name: 'test',
-    uses: ['dds/the_test_lib']
-}

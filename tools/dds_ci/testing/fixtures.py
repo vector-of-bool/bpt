@@ -31,13 +31,13 @@ def ensure_absent(path: Pathish) -> None:
         pass
 
 
-_ProjectJSONLibraryUsesItem = TypedDict('_ProjectJSONLibraryUsesItem', {
+_PkgYAMLLibraryUsesItem = TypedDict('_PkgYAMLLibraryUsesItem', {
     'lib': str,
     'for': Literal['lib', 'app', 'test'],
 })
 
 
-class _ProjectJSONDependencyItemRequired(TypedDict):
+class _PkgYAMLDependencyItemRequired(TypedDict):
     dep: str
 
 
@@ -46,7 +46,7 @@ class _VersionItem(TypedDict):
     high: str
 
 
-_ProjectJSONDependencyItemOpt = TypedDict(
+_PkgYAMLDependencyItemOpt = TypedDict(
     '_ProjectJSONDependencyItemOpt',
     {
         'versions': Sequence[_VersionItem],
@@ -57,38 +57,38 @@ _ProjectJSONDependencyItemOpt = TypedDict(
 )
 
 
-class _ProjectJSONDependencyItemMap(_ProjectJSONDependencyItemRequired, _ProjectJSONDependencyItemOpt):
+class _PkgYAMLDependencyItemMap(_PkgYAMLDependencyItemRequired, _PkgYAMLDependencyItemOpt):
     pass
 
 
-_ProjectJSONDependencyItem = Union[str, _ProjectJSONDependencyItemMap]
+_PkgYAMLDependencyItem = Union[str, _PkgYAMLDependencyItemMap]
 
 
-class _ProjectJSONLibraryItemRequired(TypedDict):
+class _PkgYAMLLibraryItemRequired(TypedDict):
     name: str
     path: str
 
 
-class _ProjectJSONLibraryItem(_ProjectJSONLibraryItemRequired, total=False):
-    uses: Sequence[Union[str, _ProjectJSONLibraryUsesItem]]
-    depends: Sequence[_ProjectJSONDependencyItem]
+class _PkgYAMLLibraryItem(_PkgYAMLLibraryItemRequired, total=False):
+    uses: Sequence[Union[str, _PkgYAMLLibraryUsesItem]]
+    depends: Sequence[_PkgYAMLDependencyItem]
 
 
 class _MainProjectLibraryItem(TypedDict, total=False):
     name: str
-    depends: Sequence[_ProjectJSONDependencyItem]
-    uses: Sequence[Union[str, _ProjectJSONLibraryUsesItem]]
+    depends: Sequence[_PkgYAMLDependencyItem]
+    uses: Sequence[Union[str, _PkgYAMLLibraryUsesItem]]
 
 
-class _ProjectJSONRequired(TypedDict):
+class _PkgYAMLRequired(TypedDict):
     name: str
     version: str
 
 
-class ProjectJSON(_ProjectJSONRequired, total=False):
-    depends: Sequence[_ProjectJSONDependencyItem]
+class PkgYAML(_PkgYAMLRequired, total=False):
+    depends: Sequence[_PkgYAMLDependencyItem]
     lib: _MainProjectLibraryItem
-    libs: Sequence[_ProjectJSONLibraryItem]
+    libs: Sequence[_PkgYAMLLibraryItem]
     namespace: str
 
 
@@ -123,15 +123,15 @@ class Project:
         self.build_root = dirpath / '_build'
 
     @property
-    def project_json(self) -> ProjectJSON:
+    def pkg_yaml(self) -> PkgYAML:
         """
-        Get/set the content of the `project.json` file for the project.
+        Get/set the content of the `pkg.yaml` file for the project.
         """
-        return cast(ProjectJSON, json.loads(self.root.joinpath('project.jsonc').read_text()))
+        return cast(PkgYAML, json.loads(self.root.joinpath('pkg.yaml').read_text()))
 
-    @project_json.setter
-    def project_json(self, data: ProjectJSON) -> None:
-        self.root.joinpath('project.jsonc').write_text(json.dumps(data, indent=2))
+    @pkg_yaml.setter
+    def pkg_yaml(self, data: PkgYAML) -> None:
+        self.root.joinpath('pkg.yaml').write_text(json.dumps(data, indent=2))
 
     def lib(self, name: str) -> Library:
         return Library(name, self.root / f'libs/{name}')

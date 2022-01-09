@@ -7,9 +7,13 @@
 #include <dds/error/try_catch.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/fs/io.hpp>
+#include <dds/util/fs/op.hpp>
 #include <dds/util/fs/path.hpp>
 #include <dds/util/json5/convert.hpp>
 #include <dds/util/json5/parse.hpp>
+#include <dds/util/log.hpp>
+#include <dds/util/yaml/convert.hpp>
+#include <dds/util/yaml/parse.hpp>
 
 #include <neo/ranges.hpp>
 #include <neo/tl.hpp>
@@ -18,18 +22,22 @@ using namespace dds;
 
 project project::open_directory(path_ref path_) {
     DDS_E_SCOPE(e_open_project{path_});
-    auto path = resolve_path_strong(path_).value();
-    for (auto cand_fname : {"project.json", "project.jsonc", "project.json5"}) {
-        auto cand = path / cand_fname;
-        if (!fs::exists(cand)) {
-            continue;
+    auto path     = resolve_path_strong(path_).value();
+    auto pkg_yaml = path / "pkg.yaml";
+    if (!dds::file_exists(pkg_yaml)) {
+        if (dds::file_exists(path / "pkg.yml")) {
+            dds_log(warn,
+                    "There's a [pkg.yml] file in the project directory, but dds expects a '.yaml' "
+                    "file extension. The file [{}] will be ignored.",
+                    (path / "pkg.yml").string());
         }
-        DDS_E_SCOPE(e_parse_project_manifest_path{cand});
-        auto data = parse_json5_file(cand);
-        auto man  = project_manifest::from_json_data(data);
-        return project{path, man};
+        return project{path, std::nullopt};
     }
-    return project{path, std::nullopt};
+    DDS_E_SCOPE(e_parse_project_manifest_path{pkg_yaml});
+    auto yml  = sbs::parse_yaml_file(pkg_yaml);
+    auto data = sbs::yaml_as_json5_data(yml);
+    auto man  = project_manifest::from_json_data(data);
+    return project{path, man};
 }
 
 crs::package_meta project_manifest::as_crs_package_meta() const noexcept {

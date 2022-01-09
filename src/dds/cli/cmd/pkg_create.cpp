@@ -32,9 +32,9 @@ int pkg_create(const options& opts) {
                 filepath.string());
         return 0;
     }
-    dds_leaf_catch(e_sdist_from_directory  dirpath,
-                   e_missing_pkg_json      expect_pkg_json,
-                   e_missing_project_json5 expect_proj_json5) {
+    dds_leaf_catch(e_sdist_from_directory dirpath,
+                   e_missing_pkg_json     expect_pkg_json,
+                   e_missing_project_yaml expect_proj_json5) {
         dds_log(
             error,
             "No package or project files are presenting in the directory [.bold.red[{}]]"_styled,

@@ -68,16 +68,16 @@ def test_sdist_unreadable_dir(dds: DDSWrapper) -> None:
         dds.run(['pkg', 'create', '--project=/root'])
 
 
-def test_sdist_invalid_json5(tmp_project: Project) -> None:
-    tmp_project.write('project.json5', 'bogus json5')
-    with error.expect_error_marker('package-json5-parse-error'):
+def test_sdist_invalid_yml(tmp_project: Project) -> None:
+    tmp_project.write('pkg.yaml', '[[')
+    with error.expect_error_marker('package-yaml-parse-error'):
         tmp_project.pkg_create()
 
 
 def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
     with error.expect_error_marker('pkg-search-no-result'):
         tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
-    tmp_project.project_json = {
+    tmp_project.pkg_yaml = {
         'name': 'test-pkg',
         'version': '0.1.2',
     }

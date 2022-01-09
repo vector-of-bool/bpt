@@ -123,7 +123,7 @@ sdist sdist::from_directory(path_ref where) {
                 make_user_error<errc::invalid_pkg_filesystem>(
                     "No pkg.json nor project manifest in the project directory"),
                 e_missing_pkg_json{pkg_json},
-                e_missing_project_json5{where / "project.json5"});
+                e_missing_project_yaml{where / "pkg.yaml"});
         }
         meta = proj.manifest->as_crs_package_meta();
     }

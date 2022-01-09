@@ -54,6 +54,7 @@ project_manifest project_manifest::from_json_data(const json5::data& data) {
                     for_each{put_into(std::back_inserter(ret.libraries),
                                       project_library::from_json_data)}},
              if_key{"$schema", just_accept},
+             if_key{"x", just_accept},
          });
 
     ret.as_crs_package_meta().throw_if_invalid();
