@@ -7,6 +7,7 @@
 #include <dds/error/toolchain.hpp>
 #include <dds/project/dependency.hpp>
 #include <dds/project/error.hpp>
+#include <dds/project/spdx.hpp>
 #include <dds/sdist/error.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/compress.hpp>
@@ -98,6 +99,20 @@ auto handlers = std::tuple(  //
             str.value,
             pkg_yaml.value.string(),
             exc.what());
+        return 1;
+    },
+    [](sbs::e_bad_spdx_expression err,
+       sbs::e_spdx_license_str    spdx_str,
+       e_sdist_from_directory,
+       e_parse_project_manifest_path pkg_yaml) {
+        dds_log(error,
+                "Invalid SPDX license expression '.bold.yellow[{}]': .bold.red[{}]"_styled,
+                spdx_str.value,
+                err.value);
+        dds_log(error,
+                "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
+                pkg_yaml.value.string());
+        write_error_marker("invalid-spdx");
         return 1;
     },
     [](user_cancelled) {

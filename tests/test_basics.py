@@ -133,3 +133,19 @@ def test_empty_sdist_create(tmp_project: Project) -> None:
     tmp_project.pkg_create()
     assert tmp_project.build_root.joinpath('test-pkg@0.2.2~1.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'
+
+
+def test_project_with_meta(tmp_project: Project) -> None:
+    tmp_project.pkg_yaml = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'license': 'MIT-1.2.3',
+    }
+    with expect_error_marker('invalid-spdx'):
+        tmp_project.build()
+    tmp_project.pkg_yaml = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'license': 'MIT',  # A valid license string
+    }
+    tmp_project.build()

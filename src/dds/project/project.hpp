@@ -2,6 +2,8 @@
 
 #include "./library.hpp"
 
+#include "./spdx.hpp"
+
 #include <dds/crs/meta/package.hpp>
 #include <dds/util/name.hpp>
 
@@ -24,13 +26,16 @@ struct project_manifest {
     std::vector<project_library>    libraries;
     std::vector<project_dependency> root_dependencies;
 
-    std::optional<std::vector<std::string>> authors;
-    std::optional<std::string>              description;
-    std::optional<neo::url>                 documentation;
-    std::optional<std::filesystem::path>    readme;
-    std::optional<neo::url>                 homepage;
-    std::optional<neo::url>                 repository;
-    std::optional<std::filesystem::path>    license_file;
+    std::optional<std::vector<std::string>>     authors;
+    std::optional<std::string>                  description;
+    std::optional<neo::url>                     documentation;
+    std::optional<std::filesystem::path>        readme;
+    std::optional<neo::url>                     homepage;
+    std::optional<neo::url>                     repository;
+    std::optional<sbs::spdx_license_expression> license;
+    std::optional<std::filesystem::path>        license_file;
+
+    bool is_private = false;
 
     static project_manifest from_json_data(const json5::data&                          data,
                                            std::optional<std::filesystem::path> const& proj_dir);
