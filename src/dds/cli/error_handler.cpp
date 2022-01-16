@@ -17,6 +17,7 @@
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
+#include <dds/util/url.hpp>
 #include <dds/util/yaml/errors.hpp>
 
 #include <boost/leaf/common.hpp>
@@ -28,6 +29,7 @@
 #include <neo/scope.hpp>
 #include <neo/sqlite3/error.hpp>
 #include <neo/url/parse.hpp>
+#include <semester/walk.hpp>
 
 #include <fstream>
 
@@ -39,10 +41,6 @@ using boost::leaf::catch_;
 namespace {
 
 auto handlers = std::tuple(  //
-    [](neo::url_validation_error exc, e_url_string bad_url) {
-        dds_log(error, "Invalid URL '{}': {}", bad_url.value, exc.what());
-        return 1;
-    },
     [](e_sdist_from_directory       sdist_dirpath,
        e_json_parse_error           error,
        const std::filesystem::path* maybe_fpath) {
@@ -69,6 +67,37 @@ auto handlers = std::tuple(  //
             dds_log(error, "  (While reading from [{}])", maybe_fpath->string());
         }
         write_error_marker("package-yaml-parse-error");
+        return 1;
+    },
+    [](e_sdist_from_directory, e_parse_project_manifest_path pkg_yaml, e_bad_pkg_yaml_key badkey) {
+        dds_log(error,
+                "Error loading project info from [.bold.yellow[{}]]"_styled,
+                pkg_yaml.value.string());
+        dds_log(error, "Unknown project property '.bold.red[{}]'"_styled, badkey.given);
+        if (badkey.nearest.has_value()) {
+            dds_log(error, "  (Did you mean '.bold.green[{}]'?)"_styled, *badkey.nearest);
+        }
+        return 1;
+    },
+    [](const semester::walk_error& exc,
+       e_sdist_from_directory,
+       e_parse_project_manifest_path pkg_yaml) {
+        dds_log(error,
+                "Error loading project info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                pkg_yaml.value.string(),
+                exc.what());
+        return 1;
+    },
+    [](const neo::url_validation_error& exc,
+       e_sdist_from_directory,
+       e_parse_project_manifest_path pkg_yaml,
+       e_url_string                  str) {
+        dds_log(
+            error,
+            "Error while parsing URL string '.bold.yellow[{}]' in [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+            str.value,
+            pkg_yaml.value.string(),
+            exc.what());
         return 1;
     },
     [](user_cancelled) {

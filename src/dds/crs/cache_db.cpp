@@ -14,6 +14,7 @@
 #include <dds/util/http/pool.hpp>
 #include <dds/util/http/response.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/url.hpp>
 
 #include <boost/leaf.hpp>
 #include <fansi/styled.hpp>
@@ -207,7 +208,7 @@ optional<cache_db::remote_entry> cache_db::get_remote(neo::url_view const& url_)
                        string_view(url.to_string()))
                        .value();
         auto [rowid, url_str, name] = row;
-        return cache_db::remote_entry{rowid, neo::url::parse(url_str), name};
+        return cache_db::remote_entry{rowid, dds::parse_url(url_str), name};
     }
     dds_leaf_catch(matchv<neo::sqlite3::errc::done>) { return std::nullopt; };
 }
@@ -221,7 +222,7 @@ optional<cache_db::remote_entry> cache_db::get_remote_by_id(std::int64_t rowid) 
         rowid);
     if (row.has_value()) {
         auto [url_str, name] = *row;
-        return remote_entry{rowid, neo::url::parse(url_str), name};
+        return remote_entry{rowid, dds::parse_url(url_str), name};
     }
     return std::nullopt;
 }

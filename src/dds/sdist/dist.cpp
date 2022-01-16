@@ -15,6 +15,7 @@
 #include <dds/util/log.hpp>
 
 #include <boost/leaf/exception.hpp>
+#include <fansi/styled.hpp>
 #include <libman/parse.hpp>
 #include <neo/assert.hpp>
 #include <neo/ranges.hpp>
@@ -27,6 +28,7 @@
 #include <fstream>
 
 using namespace dds;
+using namespace fansi::literals;
 
 namespace {
 
@@ -111,8 +113,19 @@ sdist sdist::from_directory(path_ref where) {
     DDS_E_SCOPE(e_sdist_from_directory{where});
     crs::package_meta meta;
 
-    auto pkg_json = where / "pkg.json";
-    if (dds::file_exists(pkg_json)) {
+    auto       pkg_json      = where / "pkg.json";
+    auto       pkg_yaml      = where / "pkg.yaml";
+    const bool have_pkg_json = dds::file_exists(pkg_json);
+    const bool have_pkg_yaml = dds::file_exists(pkg_yaml);
+
+    if (have_pkg_json) {
+        if (have_pkg_yaml) {
+            dds_log(
+                warn,
+                "Directory has both [.cyan[{}]] and [.cyan[{}]] (The .bold.cyan[pkg`.json] file will be preferred)"_styled,
+                pkg_json.string(),
+                pkg_yaml.string());
+        }
         DDS_E_SCOPE(crs::e_pkg_json_path{pkg_json});
         auto data = dds::parse_json5_file(pkg_json);
         meta      = crs::package_meta::from_json_data(data);

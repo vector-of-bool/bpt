@@ -27,10 +27,6 @@ constexpr T value_or(const result<T>& res, U&& arg) {
     return res ? res.value() : static_cast<T>(arg);
 }
 
-struct e_url_string {
-    std::string value;
-};
-
 void write_error_marker(std::string_view error) noexcept;
 
 }  // namespace dds

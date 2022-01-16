@@ -7,6 +7,7 @@
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/exception.hpp>
+#include <dds/util/url.hpp>
 #include <fmt/format.h>
 #include <neo/gzip_io.hpp>
 #include <neo/http/parse/chunked.hpp>
@@ -474,7 +475,7 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
             if (loc->value.starts_with("/")) {
                 url.path = std::string(loc->value);
             } else {
-                url = neo::url::parse(loc->value);
+                url = dds::parse_url(loc->value);
             }
             continue;
         }
