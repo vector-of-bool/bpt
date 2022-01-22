@@ -48,7 +48,7 @@ library_meta library_meta::from_data(const json5::data& data) {
                           put_into{ret.path,
                                    [](std::string s) {
                                        auto p = std::filesystem::path(s).lexically_normal();
-                                       if (p.is_absolute()) {
+                                       if (p.is_absolute() || !p.root_path().empty()) {
                                            throw semester::walk_error{
                                                neo::
                                                    ufmt("Library path [{}] must be a relative path",
