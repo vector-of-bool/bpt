@@ -79,7 +79,7 @@ std::string dds::crs::dependency::decl_to_string() const noexcept {
     uses.visit(neo::overload{
         [&](implicit_uses_all) { strm << "/*"; },
         [&](explicit_uses_list const& u) {
-            strm << '/' << joinstr(",", u.uses | std::views::transform(NEO_TL(_1.str)));
+            strm << '/' << joinstr(",", u.uses | std::views::transform(&dds::name::str));
         },
     });
     return strm.str();

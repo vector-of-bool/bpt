@@ -77,7 +77,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
     }
 
     ///  Predicate for if a '.kind' member is equal to the given kidn
-    auto kind_is_for = [](crs::usage_kind k) { return [k] NEO_CTL(_1.kind == k); };
+    auto kind_is_for = [](crs::usage_kind k) { return [k](auto& l) { return l.kind == k; }; };
 
     auto pkg_dep_to_usages = [&](crs::dependency const& dep) {
         neo_assert(invariant,
@@ -86,14 +86,17 @@ library_plan library_plan::create(path_ref                    pkg_base,
                    dep,
                    pkg,
                    lib);
-        return dep.uses.as<crs::explicit_uses_list>().uses
-            | std::views::transform(NEO_TL(lm::usage{dep.name.str, _1.str}));
+        return dep.uses.as<crs::explicit_uses_list>().uses | std::views::transform([&](auto&& l) {
+                   return lm::usage{dep.name.str, l.str};
+               });
     };
 
     auto usages_of_kind = [&](crs::usage_kind k) -> neo::ranges::range_of<lm::usage> auto {
-        auto intra = lib.intra_uses  //
-            | std::views::filter(kind_is_for(k))
-            | std::views::transform(NEO_TL(lm::usage{pkg.namespace_.str, _1.lib.str}));
+        auto intra = lib.intra_uses               //
+            | std::views::filter(kind_is_for(k))  //
+            | std::views::transform([&](auto& use) {
+                         return lm::usage{pkg.namespace_.str, use.lib.str};
+                     });
         auto from_dep                                   //
             = lib.dependencies                          //
             | std::views::filter(kind_is_for(k))        //

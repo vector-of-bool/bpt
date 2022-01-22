@@ -100,8 +100,9 @@ static void resolve_implicit_usages(crs::package_meta& proj_meta, crs::package_m
         | std::views::transform(NEO_TL(_1.uses))                                //
         | std::views::filter(NEO_TL(_1.template is<crs::implicit_uses_all>()))  //
         | neo::ranges::each([&](crs::dependency_uses& item) {
-              item = crs::explicit_uses_list{
-                  dep_meta.libraries | std::views::transform(NEO_TL(_1.name)) | neo::to_vector};
+              item = crs::explicit_uses_list{dep_meta.libraries
+                                             | std::views::transform(&dds::crs::library_meta::name)
+                                             | neo::to_vector};
           });
 }
 

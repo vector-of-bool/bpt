@@ -8,12 +8,12 @@ dds::crs::version_range_set simple_ver_range(std::string_view from, std::string_
     return dds::crs::version_range_set(semver::version::parse(from), semver::version::parse(until));
 }
 
+#ifndef _MSC_VER  // MSVC struggles with compiling this test case
 TEST_CASE("Parse a shorthand") {
     struct case_ {
         std::string_view        given;
         dds::project_dependency expect;
     };
-
     auto [given, expect] = GENERATE(Catch::Generators::values<case_>({
         {
             .given  = "foo@1.2.3",
@@ -47,3 +47,4 @@ TEST_CASE("Parse a shorthand") {
     CHECK(dep.kind == expect.kind);
     CHECK(dep.acceptable_versions == expect.acceptable_versions);
 }
+#endif

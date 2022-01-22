@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include <neo/url/url.hpp>
 
 #include <string_view>

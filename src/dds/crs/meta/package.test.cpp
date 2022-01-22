@@ -658,6 +658,7 @@ TEST_CASE("Check some valid meta JSON") {
 
 auto mk_name = [](std::string_view s) { return dds::name::from_string(s).value(); };
 
+#ifndef _MSC_VER  // MSVC struggles with compiling this test
 TEST_CASE("Check parse results") {
     using pkg_meta             = dds::crs::package_meta;
     using lib_meta             = dds::crs::library_meta;
@@ -737,3 +738,4 @@ TEST_CASE("Check parse results") {
     }
     CHECK_NOTHROW(meta.to_json());
 }
+#endif  // _MSC_VER

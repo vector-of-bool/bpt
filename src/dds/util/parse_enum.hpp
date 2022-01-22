@@ -5,6 +5,8 @@
 #include <boost/leaf/exception.hpp>
 #include <magic_enum.hpp>
 
+#include <ranges>
+
 namespace dds {
 
 template <typename E>

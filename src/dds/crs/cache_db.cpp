@@ -152,7 +152,7 @@ cache_entries_for_query(neo::sqlite3::statement&& st) {
     return dds_leaf_try->result<neo::any_input_range<cache_db::package_entry>> {
         auto pin = neo::copy_shared(std::move(st));
         return neo::sqlite3::iter_tuples<std::int64_t, std::int64_t, string_view>(*pin)
-            | std::views::transform([pin] NEO_CTL(pkg_entry_from_row(_1)))  //
+            | std::views::transform([pin](auto row) { return pkg_entry_from_row(row); })  //
             ;
     }
     dds_leaf_catch(catch_<neo::sqlite3::error> err)->noreturn_t {

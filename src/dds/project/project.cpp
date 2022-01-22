@@ -47,20 +47,21 @@ crs::package_meta project_manifest::as_crs_package_meta() const noexcept {
     ret.meta_version = 1;
     ret.namespace_   = namespace_.value_or(name);
 
-    auto libs
-        = libraries  //
+    auto libs = libraries  //
         | std::views::transform([&](project_library lib) {
-              auto deps = lib.lib_dependencies
-                  | std::views::transform(NEO_TL(_1.as_crs_dependency())) | neo::to_vector;
-              extend(deps,
-                     root_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
-              return crs::library_meta{
-                  .name         = lib.name,
-                  .path         = lib.relpath,
-                  .intra_uses   = lib.intra_uses.value_or(std::vector<crs::intra_usage>{}),
-                  .dependencies = std::move(deps),
-              };
-          });
+                    auto deps = lib.lib_dependencies
+                        | std::views::transform(&project_dependency::as_crs_dependency)
+                        | neo::to_vector;
+                    extend(deps,
+                           root_dependencies
+                               | std::views::transform(&project_dependency::as_crs_dependency));
+                    return crs::library_meta{
+                        .name         = lib.name,
+                        .path         = lib.relpath,
+                        .intra_uses   = lib.intra_uses.value_or(std::vector<crs::intra_usage>{}),
+                        .dependencies = std::move(deps),
+                    };
+                });
     ret.libraries = neo::to_vector(libs);
     if (ret.libraries.empty()) {
         ret.libraries.push_back(crs::library_meta{

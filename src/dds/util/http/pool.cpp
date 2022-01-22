@@ -7,7 +7,6 @@
 #include <dds/util/result.hpp>
 
 #include <boost/leaf/exception.hpp>
-#include <dds/util/url.hpp>
 #include <fmt/format.h>
 #include <neo/gzip_io.hpp>
 #include <neo/http/parse/chunked.hpp>

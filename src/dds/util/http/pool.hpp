@@ -3,6 +3,8 @@
 #include "./request.hpp"
 #include "./response.hpp"
 
+#include <dds/util/url.hpp>
+
 #include <neo/buffer_algorithm/copy.hpp>
 #include <neo/buffer_sink.hpp>
 #include <neo/buffer_source.hpp>

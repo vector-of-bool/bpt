@@ -61,8 +61,8 @@ package_meta package_meta::from_json_data(const json5::data& data) {
 }
 
 std::string package_meta::to_json(int indent) const noexcept {
-    using json     = nlohmann::ordered_json;
-    json libraries = json::array();
+    using json    = nlohmann::ordered_json;
+    json ret_libs = json::array();
     for (auto&& lib : this->libraries) {
         json lib_intra_uses = json::array();
         for (auto&& use : lib.intra_uses) {
@@ -83,7 +83,7 @@ std::string package_meta::to_json(int indent) const noexcept {
             json uses = json::array();
             dep.uses.visit(neo::overload{
                 [&](explicit_uses_list const& l) {
-                    extend(uses, l.uses | std::views::transform(NEO_TL(_1.str)));
+                    extend(uses, l.uses | std::views::transform(&dds::name::str));
                 },
                 [&](implicit_uses_all) {
                     neo_assert(
@@ -101,7 +101,7 @@ std::string package_meta::to_json(int indent) const noexcept {
                 {"uses", std::move(uses)},
             }));
         }
-        libraries.push_back(json::object({
+        ret_libs.push_back(json::object({
             {"name", lib.name.str},
             {"path", lib.path.generic_string()},
             {"uses", std::move(lib_intra_uses)},
@@ -114,7 +114,7 @@ std::string package_meta::to_json(int indent) const noexcept {
         {"meta_version", meta_version},
         {"namespace", namespace_.str},
         {"extra", json5_as_nlohmann_json(extra)},
-        {"libraries", std::move(libraries)},
+        {"libraries", std::move(ret_libs)},
         {"crs_version", 1},
     });
 

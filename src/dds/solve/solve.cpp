@@ -189,7 +189,7 @@ struct metadata_provider {
                       .first;
             sr::sort(found->second,
                      std::less<>{},
-                     NEO_TL(std::tuple(_1.pkg.version, -_1.pkg.meta_version)));
+                     NEO_TL(std::make_tuple(_1.pkg.version, -_1.pkg.meta_version)));
         }
         return found->second;
     }
@@ -255,14 +255,15 @@ struct metadata_provider {
         req.uses.visit(
             neo::overload{[&](crs::explicit_uses_list const& u) { extend(uses, u.uses); },
                           [&](crs::implicit_uses_all) {
-                              extend(uses, pkg.libraries | stdv::transform(NEO_TL(_1.name)));
+                              extend(uses,
+                                     pkg.libraries | stdv::transform(&crs::library_meta::name));
                           }});
 
         std::set<dds::name> more_uses;
         while (1) {
             more_uses = uses;
             for (auto& used : uses) {
-                auto lib_it = sr::find_if(pkg.libraries, NEO_TL(_1.name == used));
+                auto lib_it = sr::find(pkg.libraries, used, &crs::library_meta::name);
                 neo_assert(invariant,
                            lib_it != sr::end(pkg.libraries),
                            "Invalid 'uses' on non-existent requirement library",
@@ -271,7 +272,7 @@ struct metadata_provider {
                 extend(more_uses,
                        lib_it->intra_uses
                            | stdv::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-                           | stdv::transform(NEO_TL(_1.lib)));
+                           | stdv::transform(&crs::intra_usage::lib));
             }
             if (sr::includes(uses, more_uses)) {
                 break;
@@ -279,10 +280,10 @@ struct metadata_provider {
             uses = more_uses;
         }
 
-        auto reqs = pkg.libraries                           //
-            | stdv::filter(NEO_TL(uses.contains(_1.name)))  //
-            | stdv::transform(NEO_TL(_1.dependencies))      //
-            | stdv::join                                    //
+        auto reqs = pkg.libraries                                                //
+            | stdv::filter([&](auto&& lib) { return uses.contains(lib.name); })  //
+            | stdv::transform(NEO_TL(_1.dependencies))                           //
+            | stdv::join                                                         //
             | stdv::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
             | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))  //
             | neo::to_vector;

@@ -116,8 +116,9 @@ int repo_validate(const options& opts) {
             INSERT INTO dds_crs_packages(json, remote_id, remote_revno)
             VALUES (?, ?, 1)
         )"_sql),
-        repo.all_packages() | neo::lref
-            | std::views::transform(NEO_TL(std::tuple(_1.to_json(), tmp_remote_id))))
+        repo.all_packages() | neo::lref | std::views::transform([&](const auto& pkg) {
+            return std::make_tuple(pkg.to_json(), tmp_remote_id);
+        }))
         .throw_if_error();
 
     for (auto&& pkg : repo.all_packages()) {
