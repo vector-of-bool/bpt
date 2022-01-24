@@ -68,8 +68,8 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
     std::string_view remain    = sv;
     std::string_view tok       = remain.substr(0, 0);
     auto             adv_token = [&] {
-        auto off   = tok.end() - remain.begin();
-        remain     = remain.substr(off);
+        remain.remove_prefix(tok.data() - remain.data());
+        remain.remove_prefix(tok.size());
         return tok = next_token(remain);
     };
 
