@@ -213,7 +213,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
         },
     )
     # yapf: enable
-    tmp_crs_repo.import_((libs / 'foo',libs / 'bar'))
+    tmp_crs_repo.import_((libs / 'foo', libs / 'bar'))
 
     bd_project.write(
         'CMakeLists.txt', r'''
@@ -241,4 +241,4 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
     bd_project.dds.build_deps(['bar@1.2.3', f'--cmake=libraries.cmake'], repos=[tmp_crs_repo.path])
     proc.check_run(['cmake', '-S', bd_project.root, '-B', bd_project.build_root])
     proc.check_run(['cmake', '--build', bd_project.build_root])
-    proc.check_run(['cmake', '--build', bd_project.build_root, '--target', 'test'])
+    proc.check_run(['ctest'], cwd=bd_project.build_root)
