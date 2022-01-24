@@ -16,8 +16,10 @@ neo::url dds::parse_url(std::string_view sv) {
 neo::url dds::guess_url_from_string(std::string_view sv) {
     /// We can probably be a lot smarter about this...
     std::filesystem::path as_path{sv};
-    if (as_path.is_absolute()) {
-        return dds::parse_url("file://" + std::string(sv));
+    if (not as_path.empty()
+        and (as_path.has_root_path()
+             or as_path.begin()->filename() == neo::oper::any_of("..", "."))) {
+        return neo::url::for_file_path(as_path);
     }
 
     if (sv.find("://") == sv.npos) {
