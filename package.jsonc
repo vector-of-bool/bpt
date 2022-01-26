@@ -20,7 +20,7 @@
         "ctre@2.8.1",
         "fmt^6.2.1",
         "neo-http^0.2.0",
-        "neo-io^0.2.2",
+        "neo-io^0.2.3",
         "boost.leaf^1.78.0",
         "magic_enum+0.7.3",
         "sqlite3^3.35.2",
