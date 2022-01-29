@@ -43,7 +43,8 @@ class GetResult(NamedTuple):
 
     def commit(self) -> Path:
         assert self.prep_path
-        return self.prep_path.rename(self.final_dest)
+        self.prep_path.rename(self.final_dest)
+        return self.final_dest
 
 
 def render_into(root: Pathish, tree: TreeData) -> Path:
