@@ -23,7 +23,7 @@ temporary_dir temporary_dir::create_in(path_ref base) {
 
     auto            new_dir = base / ("dds-" + uuid_std_str);
     std::error_code ec;
-    fs::create_directory(new_dir);
+    fs::create_directories(new_dir);
     return std::make_shared<impl>(std::move(new_dir));
 }
 #endif
