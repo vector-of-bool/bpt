@@ -43,8 +43,7 @@ class GetResult(NamedTuple):
 
     def commit(self) -> Path:
         assert self.prep_path
-        shutil.copytree(self.prep_path, self.final_dest)
-        return self.final_dest
+        return self.prep_path.rename(self.final_dest)
 
 
 def render_into(root: Pathish, tree: TreeData) -> Path:
@@ -73,16 +72,23 @@ class DirRenderer:
     @contextmanager
     def _get_or_prepare(self, key: str) -> Iterator[GetResult]:
         cached_path = self._cache_path / key
-        prep_path = self._tmp_path / f'.prep-{key}'
-        later = time.time() + 10
-        while prep_path.exists() and time.time() < later:
-            pass
-
         if cached_path.is_dir():
             yield GetResult(cached_path, None, cached_path)
-        else:
-            yield GetResult(None, prep_path, cached_path)
-            shutil.rmtree(prep_path, ignore_errors=True)
+            return
+
+        prep_path = cached_path.with_suffix(cached_path.suffix + '.tmp')
+        try:
+            prep_path.mkdir(parents=True)
+        except FileExistsError:
+            later = time.time() + 10
+            while prep_path.exists() and time.time() < later:
+                pass
+            assert cached_path.is_dir()
+            yield GetResult(cached_path, None, cached_path)
+            return
+
+        yield GetResult(None, prep_path, cached_path)
+        shutil.rmtree(prep_path, ignore_errors=True)
 
     def get_or_render(self, name: str, tree: TreeData) -> Path:
         b64_tree = _b64_encode_tree(tree)
