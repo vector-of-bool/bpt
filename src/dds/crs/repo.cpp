@@ -74,7 +74,7 @@ void copy_library(path_ref lib_root, path_ref to_root) {
     }
 }
 
-void archive_package_libraries(path_ref from_dir, path_ref dest_root, const package_meta& pkg) {
+void archive_package_libraries(path_ref from_dir, path_ref dest_root, const package_info& pkg) {
     for (auto& lib : pkg.libraries) {
         fs::path relpath = lib.path;
         auto     dest    = dest_root / relpath;
@@ -126,7 +126,7 @@ std::string repository::name() const {
         .value();
 }
 
-fs::path repository::subdir_of(const package_meta& pkg) const noexcept {
+fs::path repository::subdir_of(const package_info& pkg) const noexcept {
     return this->pkg_dir() / pkg.name.str
         / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.pkg_revision);
 }
@@ -176,17 +176,17 @@ void repository::import_dir(path_ref dirpath) {
     NEO_EMIT(ev_repo_imported_package{*this, dirpath, pkg});
 }
 
-neo::any_input_range<package_meta> repository::all_packages() const {
+neo::any_input_range<package_info> repository::all_packages() const {
     auto& q   = _prepare("SELECT meta_json FROM crs_repo_packages ORDER BY package_id"_sql);
     auto  rst = neo::copy_shared(q.auto_reset());
     return db_query<std::string_view>(q)
-        | std::views::transform([pin = rst](auto tup) -> package_meta {
+        | std::views::transform([pin = rst](auto tup) -> package_info {
                auto [json_str] = tup;
-               return package_meta::from_json_str(json_str);
+               return package_info::from_json_str(json_str);
            });
 }
 
-void repository::remove_pkg(const package_meta& meta) {
+void repository::remove_pkg(const package_info& meta) {
     auto to_delete = subdir_of(meta);
     db_exec(_prepare(R"(
                 DELETE FROM crs_repo_packages

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./meta/package.hpp"
-#include "./meta/pkg_id.hpp"
+#include "./info/package.hpp"
+#include "./info/pkg_id.hpp"
 
 #include <dds/util/db/db.hpp>
 
@@ -49,7 +49,7 @@ public:
         /// The row ID of the remote that contains this package
         std::int64_t remote_id;
         /// The metadata for this cache entry
-        package_meta pkg;
+        package_info pkg;
     };
 
     /**

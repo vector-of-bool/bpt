@@ -40,8 +40,8 @@ project project::open_directory(path_ref path_) {
     return project{path, man};
 }
 
-crs::package_meta project_manifest::as_crs_package_meta() const noexcept {
-    crs::package_meta ret;
+crs::package_info project_manifest::as_crs_package_meta() const noexcept {
+    crs::package_info ret;
     ret.name         = name;
     ret.version      = version;
     ret.pkg_revision = 1;
@@ -55,7 +55,7 @@ crs::package_meta project_manifest::as_crs_package_meta() const noexcept {
                     extend(deps,
                            root_dependencies
                                | std::views::transform(&project_dependency::as_crs_dependency));
-                    return crs::library_meta{
+                    return crs::library_info{
                         .name         = lib.name,
                         .path         = lib.relpath,
                         .intra_uses   = lib.intra_uses.value_or(std::vector<crs::intra_usage>{}),
@@ -64,7 +64,7 @@ crs::package_meta project_manifest::as_crs_package_meta() const noexcept {
                 });
     ret.libraries = neo::to_vector(libs);
     if (ret.libraries.empty()) {
-        ret.libraries.push_back(crs::library_meta{
+        ret.libraries.push_back(crs::library_info{
             .name         = name,
             .path         = ".",
             .intra_uses   = {},

@@ -588,7 +588,7 @@ TEST_CASE("Reject bad meta informations") {
     INFO("Parsing data: " << given);
     CAPTURE(expect_error);
     dds_leaf_try {
-        dds::crs::package_meta::from_json_str(given);
+        dds::crs::package_info::from_json_str(given);
         FAIL("Expected a failure, but no failure occurred");
     }
     dds_leaf_catch(dds::e_json_parse_error                     err,
@@ -612,7 +612,7 @@ TEST_CASE("Reject bad meta informations") {
     };
 
     dds_leaf_try {
-        dds::crs::package_meta::from_json_str(R"({
+        dds::crs::package_info::from_json_str(R"({
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
@@ -653,15 +653,15 @@ TEST_CASE("Check some valid meta JSON") {
              }],
              "crs_version": 1
          })");
-    REQUIRE_NOTHROW(dds::crs::package_meta::from_json_str(given));
+    REQUIRE_NOTHROW(dds::crs::package_info::from_json_str(given));
 }
 
 auto mk_name = [](std::string_view s) { return dds::name::from_string(s).value(); };
 
 #ifndef _MSC_VER  // MSVC struggles with compiling this test
 TEST_CASE("Check parse results") {
-    using pkg_meta             = dds::crs::package_meta;
-    using lib_meta             = dds::crs::library_meta;
+    using pkg_meta             = dds::crs::package_info;
+    using lib_meta             = dds::crs::library_info;
     using dependency           = dds::crs::dependency;
     const auto [given, expect] = GENERATE(Catch::Generators::table<std::string, pkg_meta>({
         {R"({
@@ -707,7 +707,7 @@ TEST_CASE("Check parse results") {
          }},
     }));
 
-    auto meta = dds_leaf_try { return dds::crs::package_meta::from_json_str(given); }
+    auto meta = dds_leaf_try { return dds::crs::package_info::from_json_str(given); }
     dds_leaf_catch_all->dds::noreturn_t {
         FAIL("Unexpected error: " << diagnostic_info);
         std::terminate();

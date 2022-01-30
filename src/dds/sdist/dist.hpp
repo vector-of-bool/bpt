@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/crs/meta/package.hpp>
+#include <dds/crs/info/package.hpp>
 #include <dds/util/fs/path.hpp>
 
 namespace dds {
@@ -12,10 +12,10 @@ struct sdist_params {
 };
 
 struct sdist {
-    crs::package_meta pkg;
+    crs::package_info pkg;
     fs::path          path;
 
-    sdist(crs::package_meta pkg_, path_ref path_) noexcept
+    sdist(crs::package_info pkg_, path_ref path_) noexcept
         : pkg{pkg_}
         , path{path_} {}
 

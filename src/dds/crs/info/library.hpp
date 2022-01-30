@@ -24,16 +24,16 @@ struct intra_usage {
     }
 };
 
-struct library_meta {
+struct library_info {
     dds::name                name;
     std::filesystem::path    path;
     std::vector<intra_usage> intra_uses;
     std::vector<dependency>  dependencies;
 
-    static library_meta from_data(const json5::data& data);
+    static library_info from_data(const json5::data& data);
 
-    friend void do_repr(auto out, const library_meta* self) noexcept {
-        out.type("dds::crs::library_meta");
+    friend void do_repr(auto out, const library_info* self) noexcept {
+        out.type("dds::crs::library_info");
         if (self) {
             out.bracket_value("name={}, path={}, intra_uses={}, dependencies={}",
                               out.repr_value(self->name),

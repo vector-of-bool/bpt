@@ -20,13 +20,13 @@
 using namespace dds;
 using namespace dds::crs;
 
-package_meta package_meta::from_json_str(std::string_view json) {
+package_info package_info::from_json_str(std::string_view json) {
     DDS_E_SCOPE(e_given_meta_json_str{std::string(json)});
     auto data = parse_json_str(json);
     return from_json_data(nlohmann_json_as_json5(data));
 }
 
-package_meta package_meta::from_json_data(const json5::data& data) {
+package_info package_info::from_json_data(const json5::data& data) {
     DDS_E_SCOPE(e_given_meta_json_data{data});
     return dds_leaf_try {
         if (!data.is_object()) {
@@ -60,7 +60,7 @@ package_meta package_meta::from_json_data(const json5::data& data) {
     };
 }
 
-std::string package_meta::to_json(int indent) const noexcept {
+std::string package_info::to_json(int indent) const noexcept {
     using json    = nlohmann::ordered_json;
     json ret_libs = json::array();
     for (auto&& lib : this->libraries) {
@@ -121,7 +121,7 @@ std::string package_meta::to_json(int indent) const noexcept {
     return indent ? data.dump(indent) : data.dump();
 }
 
-void package_meta::throw_if_invalid() const {
+void package_info::throw_if_invalid() const {
     for (auto& lib : libraries) {
         for (auto&& uses : lib.intra_uses) {
             if (std::ranges::find_if(libraries, NEO_TL(_1.name == uses.lib)) == libraries.end()) {

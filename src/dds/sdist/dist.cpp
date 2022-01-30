@@ -42,7 +42,7 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
 
 void sdist_copy_library(path_ref                 out_root,
                         const sdist&             sd,
-                        const crs::library_meta& lib,
+                        const crs::library_info& lib,
                         const sdist_params&      params) {
     auto lib_dir = dds::resolve_path_strong(sd.path / lib.path).value();
     auto inc_dir = source_root{lib_dir / "include"};
@@ -100,7 +100,7 @@ void dds::create_sdist_targz(path_ref filepath, const sdist_params& params) {
 
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     auto in_sd = sdist::from_directory(params.project_dir);
-    for (const crs::library_meta& lib : in_sd.pkg.libraries) {
+    for (const crs::library_info& lib : in_sd.pkg.libraries) {
         sdist_copy_library(out, in_sd, lib, params);
     }
 
@@ -111,7 +111,7 @@ sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
 
 sdist sdist::from_directory(path_ref where) {
     DDS_E_SCOPE(e_sdist_from_directory{where});
-    crs::package_meta meta;
+    crs::package_info meta;
 
     auto       pkg_json      = where / "pkg.json";
     auto       pkg_yaml      = where / "pkg.yaml";
@@ -128,7 +128,7 @@ sdist sdist::from_directory(path_ref where) {
         }
         DDS_E_SCOPE(crs::e_pkg_json_path{pkg_json});
         auto data = dds::parse_json5_file(pkg_json);
-        meta      = crs::package_meta::from_json_data(data);
+        meta      = crs::package_info::from_json_data(data);
     } else {
         auto proj = project::open_directory(where);
         if (!proj.manifest.has_value()) {

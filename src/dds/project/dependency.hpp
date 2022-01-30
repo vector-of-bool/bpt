@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/crs/meta/dependency.hpp>
+#include <dds/crs/info/dependency.hpp>
 #include <dds/util/name.hpp>
 
 #include <json5/data.hpp>

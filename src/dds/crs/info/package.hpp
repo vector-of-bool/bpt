@@ -30,17 +30,17 @@ struct e_invalid_usage_kind {
     std::string value;
 };
 
-struct package_meta {
+struct package_info {
     dds::name                 name;
     dds::name                 namespace_;
     semver::version           version;
     int                       pkg_revision = 0;
-    std::vector<library_meta> libraries;
+    std::vector<library_info> libraries;
     json5::data               extra;
 
-    static package_meta from_json_data_v1(const json5::data&);
-    static package_meta from_json_data(const json5::data&);
-    static package_meta from_json_str(std::string_view json);
+    static package_info from_json_data_v1(const json5::data&);
+    static package_info from_json_data(const json5::data&);
+    static package_info from_json_str(std::string_view json);
 
     void throw_if_invalid() const;
 
@@ -49,8 +49,8 @@ struct package_meta {
 
     pkg_id id() const noexcept { return pkg_id{name, version, pkg_revision}; }
 
-    friend void do_repr(auto out, const package_meta* self) noexcept {
-        out.type("dds::crs::package_meta");
+    friend void do_repr(auto out, const package_info* self) noexcept {
+        out.type("dds::crs::package_info");
         if (self) {
             out.bracket_value("name={}, namespace={}, version={}, pkg_revision={}, libraries={}",
                               out.repr_value(self->name),

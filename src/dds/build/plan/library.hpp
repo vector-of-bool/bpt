@@ -5,7 +5,7 @@
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs/path.hpp>
 
-#include <dds/crs/meta/package.hpp>
+#include <dds/crs/info/package.hpp>
 
 #include <libman/library.hpp>
 
@@ -134,8 +134,8 @@ public:
      * the `ureqs` map. If there are any missing requirements, an exception will be thrown.
      */
     static library_plan create(path_ref                    pkg_base,
-                               const crs::package_meta&    pkg,
-                               const crs::library_meta&    lib,
+                               const crs::package_info&    pkg,
+                               const crs::library_info&    lib,
                                const library_build_params& params);
 };
 

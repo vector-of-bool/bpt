@@ -1,7 +1,7 @@
 #include "./solve.hpp"
 
 #include <dds/crs/cache_db.hpp>
-#include <dds/crs/meta/dependency.hpp>
+#include <dds/crs/info/dependency.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/util/algo.hpp>
@@ -256,14 +256,14 @@ struct metadata_provider {
             neo::overload{[&](crs::explicit_uses_list const& u) { extend(uses, u.uses); },
                           [&](crs::implicit_uses_all) {
                               extend(uses,
-                                     pkg.libraries | stdv::transform(&crs::library_meta::name));
+                                     pkg.libraries | stdv::transform(&crs::library_info::name));
                           }});
 
         std::set<dds::name> more_uses;
         while (1) {
             more_uses = uses;
             for (auto& used : uses) {
-                auto lib_it = sr::find(pkg.libraries, used, &crs::library_meta::name);
+                auto lib_it = sr::find(pkg.libraries, used, &crs::library_info::name);
                 neo_assert(invariant,
                            lib_it != sr::end(pkg.libraries),
                            "Invalid 'uses' on non-existent requirement library",

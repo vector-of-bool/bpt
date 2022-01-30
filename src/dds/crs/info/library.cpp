@@ -30,8 +30,8 @@ crs::intra_usage intra_usage_from_data(const json5::data& data) {
 
 }  // namespace
 
-library_meta library_meta::from_data(const json5::data& data) {
-    library_meta ret;
+library_info library_info::from_data(const json5::data& data) {
+    library_info ret;
 
     using namespace semester::walk_ops;
 

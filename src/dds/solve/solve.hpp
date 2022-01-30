@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/crs/meta/pkg_id.hpp>
+#include <dds/crs/info/pkg_id.hpp>
 
 #include <libman/library.hpp>
 #include <neo/any_range.hpp>

@@ -22,8 +22,8 @@ using namespace dds;
 using namespace fansi::literals;
 
 library_plan library_plan::create(path_ref                    pkg_base,
-                                  const crs::package_meta&    pkg,
-                                  const crs::library_meta&    lib,
+                                  const crs::package_info&    pkg,
+                                  const crs::library_info&    lib,
                                   const library_build_params& params) {
     fs::path out_dir   = params.out_subdir;
     auto     qual_name = neo::ufmt("{}/{}", pkg.name.str, lib.name.str);

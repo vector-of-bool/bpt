@@ -1,6 +1,6 @@
 #include "../options.hpp"
 
-#include <dds/crs/meta/pkg_id.hpp>
+#include <dds/crs/info/pkg_id.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/error/marker.hpp>
 #include <dds/error/try_catch.hpp>
@@ -17,7 +17,7 @@ int repo_remove(const options& opts) {
     for (auto pkg : opts.repo.remove.pkgs) {
         auto pkg_id = dds::crs::pkg_id::parse(pkg);
         /// We only need the name and version info to do the removal
-        dds::crs::package_meta meta;
+        dds::crs::package_info meta;
         meta.name         = pkg_id.name;
         meta.version      = pkg_id.version;
         meta.pkg_revision = pkg_id.pkg_revision;

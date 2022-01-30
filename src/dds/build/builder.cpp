@@ -40,8 +40,8 @@ void log_failure(const test_failure& fail) {
 }
 
 library_plan prepare_library(const sdist_target&      sdt,
-                             const crs::library_meta& lib,
-                             const crs::package_meta& pkg_man) {
+                             const crs::library_info& lib,
+                             const crs::package_info& pkg_man) {
     library_build_params lp;
     lp.out_subdir      = normalize_path(sdt.params.subdir / lib.path);
     lp.build_apps      = sdt.params.build_apps;

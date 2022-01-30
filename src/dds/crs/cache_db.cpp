@@ -137,7 +137,7 @@ cache_db cache_db::open(unique_database& db) {
 
 static cache_db::package_entry pkg_entry_from_row(auto&& row) noexcept {
     auto&& [rowid, remote_id, json_str] = row;
-    auto meta                           = package_meta::from_json_str(json_str);
+    auto meta                           = package_info::from_json_str(json_str);
     return cache_db::package_entry{.package_id = rowid,
                                    .remote_id  = remote_id,
                                    .pkg        = std::move(meta)};
@@ -388,10 +388,10 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
         *neo::sqlite3::exec_tuples<std::string_view>(db.prepare(R"(
             SELECT meta_json FROM remote.crs_repo_packages
         )"_sql))
-        | std::views::transform([](auto tup) -> std::optional<package_meta> {
+        | std::views::transform([](auto tup) -> std::optional<package_info> {
               auto [json_str] = tup;
-              return dds_leaf_try->std::optional<package_meta> {
-                  auto meta = package_meta::from_json_str(json_str);
+              return dds_leaf_try->std::optional<package_info> {
+                  auto meta = package_info::from_json_str(json_str);
                   if (meta.pkg_revision < 1) {
                       dds_log(warn,
                               "Remote package {} has an invalid 'pkg_revision' of {}.",

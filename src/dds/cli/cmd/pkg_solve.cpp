@@ -3,7 +3,7 @@
 #include "./build_common.hpp"
 
 #include <dds/crs/cache.hpp>
-#include <dds/crs/meta/dependency.hpp>
+#include <dds/crs/info/dependency.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/deps.hpp>
 #include <dds/error/marker.hpp>
@@ -48,7 +48,7 @@ int pkg_solve(const options& opts) {
     }
     dds_leaf_catch(e_usage_namespace_mismatch,
                    crs::dependency   dep,
-                   crs::package_meta package,
+                   crs::package_info package,
                    lm::usage         usage) {
         dds_log(
             error,

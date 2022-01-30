@@ -9,7 +9,7 @@ namespace dds::crs {
 
 class cache;
 struct pkg_id;
-struct package_meta;
+struct package_info;
 
 }  // namespace dds::crs
 
@@ -41,9 +41,9 @@ dds::crs::cache open_ready_cache(const options& opts);
  * @param cache
  * @param pkg
  * @param b
- * @return crs::package_meta
+ * @return crs::package_info
  */
-crs::package_meta fetch_cache_load_dependency(crs::cache&                  cache,
+crs::package_info fetch_cache_load_dependency(crs::cache&                  cache,
                                               const crs::pkg_id&           pkg,
                                               builder&                     b,
                                               const std::filesystem::path& subdir_base);

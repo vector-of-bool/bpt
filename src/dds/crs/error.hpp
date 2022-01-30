@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./meta/package.hpp"
+#include "./info/package.hpp"
 
 #include <neo/url/url.hpp>
 
@@ -17,7 +17,7 @@ struct e_repo_importing_dir {
 };
 
 struct e_repo_importing_package {
-    package_meta value;
+    package_info value;
 };
 
 struct e_repo_already_init {};

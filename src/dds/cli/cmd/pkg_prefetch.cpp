@@ -2,7 +2,7 @@
 
 #include <dds/crs/cache.hpp>
 #include <dds/crs/cache_db.hpp>
-#include <dds/crs/meta/pkg_id.hpp>
+#include <dds/crs/info/pkg_id.hpp>
 #include <dds/crs/repo.hpp>
 #include <dds/util/url.hpp>
 

@@ -4,7 +4,7 @@
 
 #include "./spdx.hpp"
 
-#include <dds/crs/meta/package.hpp>
+#include <dds/crs/info/package.hpp>
 #include <dds/util/name.hpp>
 
 #include <json5/data.hpp>
@@ -40,7 +40,7 @@ struct project_manifest {
     static project_manifest from_json_data(const json5::data&                          data,
                                            std::optional<std::filesystem::path> const& proj_dir);
 
-    crs::package_meta as_crs_package_meta() const noexcept;
+    crs::package_info as_crs_package_meta() const noexcept;
 };
 
 struct project {

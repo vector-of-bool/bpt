@@ -28,8 +28,8 @@ auto require_integer_key(std::string name) {
     };
 }
 
-package_meta meta_from_data(const json5::data& data) {
-    package_meta ret;
+package_info meta_from_data(const json5::data& data) {
+    package_info ret;
     using namespace semester::walk_ops;
 
     walk(data,
@@ -57,7 +57,7 @@ package_meta meta_from_data(const json5::data& data) {
                           "A 'libraries' array is required",
                           require_array{"'libraries' must be an array of library objects"},
                           for_each{put_into{std::back_inserter(ret.libraries),
-                                            library_meta::from_data}}},
+                                            library_info::from_data}}},
              required_key{"crs_version", "A 'crs_version' number is required", just_accept},
              if_key{"extra", put_into{ret.extra}},
              if_key{"_comment", just_accept},
@@ -72,4 +72,4 @@ package_meta meta_from_data(const json5::data& data) {
 
 }  // namespace
 
-package_meta package_meta::from_json_data_v1(const json5::data& dat) { return meta_from_data(dat); }
+package_info package_info::from_json_data_v1(const json5::data& dat) { return meta_from_data(dat); }

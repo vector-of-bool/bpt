@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./meta/package.hpp"
+#include "./info/package.hpp"
 
 #include <dds/util/db/db.hpp>
 
@@ -28,7 +28,7 @@ public:
     static repository create(const std::filesystem::path& directory, std::string_view name);
     static repository open_existing(const std::filesystem::path& directory);
 
-    std::filesystem::path subdir_of(const package_meta&) const noexcept;
+    std::filesystem::path subdir_of(const package_info&) const noexcept;
 
     auto        pkg_dir() const noexcept { return _dirpath / "pkg"; }
     auto&       root() const noexcept { return _dirpath; }
@@ -37,15 +37,15 @@ public:
     void import_targz(const std::filesystem::path& tgz_path);
     void import_dir(const std::filesystem::path& dirpath);
 
-    void remove_pkg(const package_meta&);
+    void remove_pkg(const package_info&);
 
-    neo::any_input_range<package_meta> all_packages() const;
+    neo::any_input_range<package_info> all_packages() const;
 };
 
 struct ev_repo_imported_package {
     repository const&            into_repo;
     std::filesystem::path const& from_path;
-    package_meta const&          pkg_meta;
+    package_info const&          pkg_meta;
 };
 
 }  // namespace dds::crs

@@ -3,7 +3,7 @@
 #include <dds/crs/cache.hpp>
 #include <dds/crs/cache_db.hpp>
 #include <dds/crs/error.hpp>
-#include <dds/crs/meta/dependency.hpp>
+#include <dds/crs/info/dependency.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/marker.hpp>
 #include <dds/error/on_error.hpp>
@@ -92,7 +92,7 @@ crs::cache cli::open_ready_cache(const cli::options& opts) {
     return cache;
 }
 
-static void resolve_implicit_usages(crs::package_meta& proj_meta, crs::package_meta& dep_meta) {
+static void resolve_implicit_usages(crs::package_info& proj_meta, crs::package_info& dep_meta) {
     proj_meta.libraries                                                         //
         | std::views::transform(NEO_TL(_1.dependencies))                        //
         | std::views::join                                                      //
@@ -101,7 +101,7 @@ static void resolve_implicit_usages(crs::package_meta& proj_meta, crs::package_m
         | std::views::filter(NEO_TL(_1.template is<crs::implicit_uses_all>()))  //
         | neo::ranges::each([&](crs::dependency_uses& item) {
               item = crs::explicit_uses_list{dep_meta.libraries
-                                             | std::views::transform(&dds::crs::library_meta::name)
+                                             | std::views::transform(&dds::crs::library_info::name)
                                              | neo::to_vector};
           });
 }
@@ -120,11 +120,11 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
 
     sdist proj_sd = dds_leaf_try { return sdist::from_directory(opts.project_dir); }
     dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_yaml) {
-        crs::package_meta default_meta;
+        crs::package_info default_meta;
         default_meta.name.str       = "anon";
         default_meta.namespace_.str = "anon";
         default_meta.pkg_revision   = 0;
-        crs::library_meta default_library;
+        crs::library_info default_library;
         default_library.name.str = "anon";
         default_meta.libraries.push_back(default_library);
         return sdist{std::move(default_meta), opts.project_dir};
@@ -145,7 +145,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     return builder;
 }
 
-crs::package_meta dds::cli::fetch_cache_load_dependency(crs::cache&        cache,
+crs::package_info dds::cli::fetch_cache_load_dependency(crs::cache&        cache,
                                                         crs::pkg_id const& pkg,
                                                         dds::builder&      builder,
                                                         path_ref           subdir_base) {
@@ -154,7 +154,7 @@ crs::package_meta dds::cli::fetch_cache_load_dependency(crs::cache&        cache
     auto pkg_json_path    = local_dir / "pkg.json";
     auto pkg_json_content = dds::read_file(pkg_json_path);
     DDS_E_SCOPE(crs::e_pkg_json_path{pkg_json_path});
-    auto crs_meta = crs::package_meta::from_json_str(pkg_json_content);
+    auto crs_meta = crs::package_info::from_json_str(pkg_json_content);
 
     dds::sdist         sd{crs_meta, local_dir};
     sdist_build_params params;

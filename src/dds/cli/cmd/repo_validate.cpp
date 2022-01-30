@@ -26,7 +26,7 @@ using namespace fansi::literals;
 
 namespace dds::cli::cmd {
 
-static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
+static bool try_it(const crs::package_info& pkg, crs::cache_db& cache) {
     auto dep = {crs::dependency{
         .name                = pkg.name,
         .acceptable_versions = crs::version_range_set{pkg.version, pkg.version.next_after()},
@@ -47,7 +47,7 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
     dds_leaf_catch(e_usage_no_such_lib,
                    lm::usage bad_usage,
                    crs::dependency,
-                   crs::package_meta dep_pkg) {
+                   crs::package_info dep_pkg) {
         dds_log(error,
                 "Package .bold.red[{}@{}~{}] is not valid:"_styled,
                 pkg.name.str,
