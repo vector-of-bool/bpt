@@ -12,10 +12,10 @@ struct e_invalid_pkg_id_str {
 struct pkg_id {
     /// The name of the package
     dds::name name;
-    /// The version of the package
+    /// The version of the code in the package package
     semver::version version;
-    /// The meta-version of the package
-    int meta_version;
+    /// The revision of the package itself
+    int pkg_revision;
 
     /// Parse the given string as a package-id string
     static pkg_id parse(std::string_view sv);

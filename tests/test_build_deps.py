@@ -160,7 +160,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
                     'name': 'foo',
                     'namespace': 'foo',
                     'version': '1.2.3',
-                    'meta_version': 1,
+                    'pkg_revision': 1,
                     'libraries': [{
                         'name': 'foo',
                         'uses': [],
@@ -185,7 +185,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
                     'name': 'bar',
                     'namespace': 'bar',
                     'version': '1.2.3',
-                    'meta_version': 1,
+                    'pkg_revision': 1,
                     'libraries': [{
                         'name': 'bar',
                         'uses': [],

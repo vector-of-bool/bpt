@@ -19,7 +19,7 @@ namespace {
 
 neo::url calc_pkg_url(neo::url_view from, pkg_id pkg) {
     return from.normalized() / "pkg" / pkg.name.str
-        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.meta_version) / "pkg.tgz";
+        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.pkg_revision) / "pkg.tgz";
 }
 
 void expand_tgz(path_ref tgz_path, path_ref into) {
@@ -69,7 +69,7 @@ void crs::pull_pkg_from_remote(path_ref expand_into, neo::url_view from, pkg_id 
         // Create a tempdir, download into it, and expand that
         auto tmpdir   = dds::temporary_dir::create_in(expand_into.parent_path());
         auto tgz_path = tmpdir.path()
-            / neo::ufmt("~{}@{}~{}.tgz", pkg.name.str, pkg.version.to_string(), pkg.meta_version);
+            / neo::ufmt("~{}@{}~{}.tgz", pkg.name.str, pkg.version.to_string(), pkg.pkg_revision);
         // Download:
         pull_pkg_ar_from_remote(tgz_path, from, pkg);
         // Expand:

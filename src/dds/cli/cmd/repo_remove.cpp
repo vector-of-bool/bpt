@@ -20,9 +20,9 @@ int repo_remove(const options& opts) {
         dds::crs::package_meta meta;
         meta.name         = pkg_id.name;
         meta.version      = pkg_id.version;
-        meta.meta_version = pkg_id.meta_version;
-        // Zero to remove all package meta-versions
-        meta.meta_version = 0;
+        meta.pkg_revision = pkg_id.pkg_revision;
+        // Zero to remove all package revisions
+        meta.pkg_revision = 0;
         repo.remove_pkg(meta);
     }
     return 0;

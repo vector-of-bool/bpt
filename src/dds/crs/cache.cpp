@@ -47,8 +47,8 @@ fs::path cache::prefetch(const pkg_id& pid_) {
         BOOST_LEAF_THROW_EXCEPTION(e_no_such_pkg{pid});
     }
     auto remote = metadata_db().get_remote_by_id(it->remote_id);
-    if (pid.meta_version == 0) {
-        pid.meta_version = it->pkg.meta_version;
+    if (pid.pkg_revision == 0) {
+        pid.pkg_revision = it->pkg.pkg_revision;
     }
     auto pkg_dir = _impl->root_dir / "pkgs" / pid.to_string();
     if (fs::exists(pkg_dir)) {

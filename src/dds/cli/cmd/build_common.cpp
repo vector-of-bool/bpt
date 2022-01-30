@@ -123,7 +123,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
         crs::package_meta default_meta;
         default_meta.name.str       = "anon";
         default_meta.namespace_.str = "anon";
-        default_meta.meta_version   = 0;
+        default_meta.pkg_revision   = 0;
         crs::library_meta default_library;
         default_library.name.str = "anon";
         default_meta.libraries.push_back(default_library);

@@ -3,7 +3,7 @@
     "name": "test-pkg",
     "version": "1.2.43",
     "namespace": "test",
-    "meta_version": 1,
+    "pkg_revision": 1,
     "libraries": [
         {
             "path": ".",

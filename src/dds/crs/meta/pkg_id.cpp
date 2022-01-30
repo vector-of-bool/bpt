@@ -26,26 +26,26 @@ crs::pkg_id crs::pkg_id::parse(const std::string_view sv) {
     auto ver_str = sv.substr(at_pos + 1);
 
     auto tilde_pos    = ver_str.find("~");
-    int  meta_version = 0;
+    int  pkg_revision = 0;
     if (tilde_pos != ver_str.npos) {
         auto tail   = ver_str.substr(tilde_pos + 1);
-        auto fc_res = std::from_chars(tail.data(), tail.data() + tail.size(), meta_version);
+        auto fc_res = std::from_chars(tail.data(), tail.data() + tail.size(), pkg_revision);
         if (fc_res.ec != std::errc{}) {
             BOOST_LEAF_THROW_EXCEPTION(
-                e_human_message{"Invalid meta_version integer suffix in package ID string"});
+                e_human_message{"Invalid pkg_revision integer suffix in package ID string"});
         }
         ver_str = ver_str.substr(0, tilde_pos);
     }
     auto version = semver::version::parse(ver_str);
-    return crs::pkg_id{name, version, meta_version};
+    return crs::pkg_id{name, version, pkg_revision};
 }
 
 std::string crs::pkg_id::to_string() const noexcept {
-    return neo::ufmt("{}@{}~{}", name.str, version.to_string(), meta_version);
+    return neo::ufmt("{}@{}~{}", name.str, version.to_string(), pkg_revision);
 }
 
 static auto _tie(const crs::pkg_id& pid) noexcept {
-    return std::tie(pid.name, pid.version, pid.meta_version);
+    return std::tie(pid.name, pid.version, pid.pkg_revision);
 }
 
 bool crs::pkg_id::operator<(const crs::pkg_id& other) const noexcept {

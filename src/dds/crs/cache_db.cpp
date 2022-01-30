@@ -73,11 +73,11 @@ cache_db cache_db::open(unique_database& db) {
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.version'))
                     STORED,
-                meta_version INTEGER NOT NULL
+                pkg_revision INTEGER NOT NULL
                     GENERATED ALWAYS
-                    AS (json_extract(json, '$.meta_version'))
+                    AS (json_extract(json, '$.pkg_revision'))
                     STORED,
-                UNIQUE (name, version, meta_version, remote_id)
+                UNIQUE (name, version, pkg_revision, remote_id)
             );
 
             CREATE TABLE dds_crs_libraries (
@@ -392,11 +392,11 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
               auto [json_str] = tup;
               return dds_leaf_try->std::optional<package_meta> {
                   auto meta = package_meta::from_json_str(json_str);
-                  if (meta.meta_version < 1) {
+                  if (meta.pkg_revision < 1) {
                       dds_log(warn,
-                              "Remote package {} has an invalid 'meta_version' of {}.",
+                              "Remote package {} has an invalid 'pkg_revision' of {}.",
                               meta.id().to_string(),
-                              meta.meta_version);
+                              meta.pkg_revision);
                       dds_log(warn, "  The corresponding package will not be available.");
                       dds_log(debug, "  The bad JSON content is: {}", json_str);
                       return std::nullopt;
@@ -414,7 +414,7 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     auto& update_pkg_st = db.prepare(R"(
         INSERT INTO dds_crs_packages (json, remote_id, remote_revno)
             VALUES (?1, ?2, ?3)
-        ON CONFLICT(name, version, meta_version, remote_id) DO UPDATE
+        ON CONFLICT(name, version, pkg_revision, remote_id) DO UPDATE
             SET json=excluded.json,
                 remote_revno=?3
     )"_sql);

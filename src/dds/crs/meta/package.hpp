@@ -34,7 +34,7 @@ struct package_meta {
     dds::name                 name;
     dds::name                 namespace_;
     semver::version           version;
-    int                       meta_version = 0;
+    int                       pkg_revision = 0;
     std::vector<library_meta> libraries;
     json5::data               extra;
 
@@ -47,16 +47,16 @@ struct package_meta {
     std::string to_json(int indent) const noexcept;
     std::string to_json() const noexcept { return to_json(0); }
 
-    pkg_id id() const noexcept { return pkg_id{name, version, meta_version}; }
+    pkg_id id() const noexcept { return pkg_id{name, version, pkg_revision}; }
 
     friend void do_repr(auto out, const package_meta* self) noexcept {
         out.type("dds::crs::package_meta");
         if (self) {
-            out.bracket_value("name={}, namespace={}, version={}, meta_version={}, libraries={}",
+            out.bracket_value("name={}, namespace={}, version={}, pkg_revision={}, libraries={}",
                               out.repr_value(self->name),
                               out.repr_value(self->namespace_),
                               out.repr_value(self->version.to_string()),
-                              out.repr_value(self->meta_version),
+                              out.repr_value(self->pkg_revision),
                               out.repr_value(self->libraries));
         }
     }

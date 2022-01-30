@@ -45,7 +45,7 @@ def test_repo_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
             'name': 'meow',
             'namespace': 'test',
             'version': '1.2.3',
-            'meta_version': 1,
+            'pkg_revision': 1,
             'libraries': [{
                 'name': 'test',
                 'path': '.',
@@ -211,7 +211,7 @@ def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'name': 'foo',
             'namespace': 'foo',
             'version': '1.2.3',
-            'meta_version': 1,
+            'pkg_revision': 1,
             'crs_version': 1,
             'libraries': [{
                 'path': '.',
@@ -231,7 +231,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'name': 'foo',
             'namespace': 'foo',
             'version': '1.2.3',
-            'meta_version': 1,
+            'pkg_revision': 1,
             'crs_version': 1,
             'libraries': [{
                 'path': '.',
@@ -264,15 +264,15 @@ def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Pr
         tmp_crs_repo.import_(tmp_project.root)
 
 
-def test_repo_invalid_meta_version_zero(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
-    tmp_path.joinpath('pkg.json').write_text(json.dumps(make_simple_crs('foo', '1.2.3', meta_version=0)))
-    with expect_error_marker('repo-import-invalid-meta_version'):
+def test_repo_invalid_pkg_revision_zero(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
+    tmp_path.joinpath('pkg.json').write_text(json.dumps(make_simple_crs('foo', '1.2.3', pkg_revision=0)))
+    with expect_error_marker('repo-import-invalid-pkg_revision'):
         tmp_crs_repo.import_(tmp_path)
 
 
-def test_repo_no_use_invalid_meta_version(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
+def test_repo_no_use_invalid_pkg_revision(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
     '''
-    Check that DDS refuses to acknowledge remote packages that have an invalid (<1) meta version.
+    Check that DDS refuses to acknowledge remote packages that have an invalid (<1) pkg revision.
 
     The 'repo import' utility will refuse to import them, but a hostile server could still
     serve them.
@@ -291,7 +291,7 @@ def test_repo_no_use_invalid_meta_version(tmp_crs_repo: CRSRepo, tmp_project: Pr
     ''')
     with db:
         db.execute(r'INSERT INTO crs_repo_packages(meta_json) VALUES(?)',
-                   [json.dumps(make_simple_crs('bar', '1.2.3', meta_version=1))])
+                   [json.dumps(make_simple_crs('bar', '1.2.3', pkg_revision=1))])
 
     tmp_project.pkg_yaml = {
         'name': 'foo',
@@ -302,9 +302,9 @@ def test_repo_no_use_invalid_meta_version(tmp_crs_repo: CRSRepo, tmp_project: Pr
         },
     }
     tmp_project.dds.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])
-    # Replace with a bad meta_version:
+    # Replace with a bad pkg_revision:
     with db:
         db.execute('UPDATE crs_repo_packages SET meta_json=?',
-                   [json.dumps(make_simple_crs('bar', '1.2.3', meta_version=0))])
+                   [json.dumps(make_simple_crs('bar', '1.2.3', pkg_revision=0))])
     with expect_error_marker('no-dependency-solution'):
         tmp_project.dds.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])

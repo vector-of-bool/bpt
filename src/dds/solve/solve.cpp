@@ -47,7 +47,7 @@ struct requirement {
     dds::name              name;
     crs::version_range_set versions;
     dependency_uses        uses;
-    std::optional<int>     meta_version;
+    std::optional<int>     pkg_revision;
 
     explicit requirement(dds::name              name,
                          crs::version_range_set vrs,
@@ -56,7 +56,7 @@ struct requirement {
         : name{std::move(name)}
         , versions{std::move(vrs)}
         , uses{std::move(u)}
-        , meta_version{mv} {
+        , pkg_revision{mv} {
         uses.visit(neo::overload{
             [](explicit_uses_list& l) { sr::sort(l.uses); },
             [](implicit_uses_all) {},
@@ -189,7 +189,7 @@ struct metadata_provider {
                       .first;
             sr::sort(found->second,
                      std::less<>{},
-                     NEO_TL(std::make_tuple(_1.pkg.version, -_1.pkg.meta_version)));
+                     NEO_TL(std::make_tuple(_1.pkg.version, -_1.pkg.pkg_revision)));
         }
         return found->second;
     }
@@ -228,7 +228,7 @@ struct metadata_provider {
         return requirement{cand->pkg.name,
                            {cand->pkg.version, cand->pkg.version.next_after()},
                            req.uses,
-                           cand->pkg.meta_version};
+                           cand->pkg.pkg_revision};
     }
 
     /**
@@ -373,7 +373,7 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
         | stdv::transform(NEO_TL(crs::pkg_id{
             .name         = _1.name,
             .version      = sole_version(_1.versions),
-            .meta_version = _1.meta_version.value(),
+            .pkg_revision = _1.pkg_revision.value(),
         }))
         | neo::to_vector;
 }

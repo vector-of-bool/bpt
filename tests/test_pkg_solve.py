@@ -179,15 +179,15 @@ def test_solve_1(solve_repo_1: QuickRepo) -> None:
     solve_repo_1.pkg_solve('foo@1.3.1 uses main')
 
 
-def test_solve_upgrade_meta_version(make_quick_repo: QuickRepoFactory, tmp_project: Project,
+def test_solve_upgrade_pkg_revision(make_quick_repo: QuickRepoFactory, tmp_project: Project,
                                     dir_renderer: DirRenderer) -> None:
     '''
-    Test that dds will pull a new copy of a package if its meta_version is updated,
+    Test that dds will pull a new copy of a package if its pkg_revision is updated,
     even if the version proper is not changed.
     '''
     # yapf: disable
     repo = make_quick_repo(
-        name='upgrade-meta-version',
+        name='upgrade-pkg-revision',
         spec={
             'packages': {
                 'foo': {
@@ -213,7 +213,7 @@ def test_solve_upgrade_meta_version(make_quick_repo: QuickRepoFactory, tmp_proje
         tmp_project.build(repos=[repo.path])
 
     # Create a new package that is good
-    new_foo_crs = make_simple_crs('foo', '1.2.3', meta_version=2)
+    new_foo_crs = make_simple_crs('foo', '1.2.3', pkg_revision=2)
     new_foo_crs['libraries'][0]['name'] = 'main'
     new_foo = dir_renderer.get_or_render('new-foo', {
         'pkg.json': json.dumps(new_foo_crs),

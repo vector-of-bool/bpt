@@ -38,7 +38,7 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
         fmt::print("Validate package .br.cyan[{}@{}~{}] ..."_styled,
                    pkg.name.str,
                    pkg.version.to_string(),
-                   pkg.meta_version);
+                   pkg.pkg_revision);
         std::cout.flush();
         neo_defer { fmt::print("\r\x1b[K"); };
         dds::solve(cache, dep);
@@ -52,7 +52,7 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
                 "Package .bold.red[{}@{}~{}] is not valid:"_styled,
                 pkg.name.str,
                 pkg.version.to_string(),
-                pkg.meta_version);
+                pkg.pkg_revision);
         dds_log(
             error,
             "It requests a usage of library .br.red[{}] from .br.yellow[{}@{}], which does not exist in that package."_styled,
@@ -76,7 +76,7 @@ static bool try_it(const crs::package_meta& pkg, crs::cache_db& cache) {
             "Installation of .bold.red[{}@{}-{}] is not possible with the known package information: \n{}"_styled,
             pkg.name.str,
             pkg.version.to_string(),
-            pkg.meta_version,
+            pkg.pkg_revision,
             explain.value);
         return false;
     }

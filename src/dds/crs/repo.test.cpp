@@ -62,5 +62,5 @@ TEST_CASE_METHOD(empty_repo, "Import a simple packages") {
     auto third = all[2];
     CHECK(third.name.str == "test-pkg");
     CHECK(third.version.to_string() == "1.3.0");
-    CHECK(third.meta_version == 2);
+    CHECK(third.pkg_revision == 2);
 }

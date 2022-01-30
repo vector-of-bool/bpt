@@ -111,7 +111,7 @@ std::string package_meta::to_json(int indent) const noexcept {
     json data = json::object({
         {"name", name.str},
         {"version", version.to_string()},
-        {"meta_version", meta_version},
+        {"pkg_revision", pkg_revision},
         {"namespace", namespace_.str},
         {"extra", json5_as_nlohmann_json(extra)},
         {"libraries", std::move(ret_libs)},

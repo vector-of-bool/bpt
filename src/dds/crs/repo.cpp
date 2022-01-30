@@ -48,10 +48,10 @@ void ensure_migrated(unique_database& db) {
                 version TEXT NOT NULL
                     GENERATED ALWAYS AS (json_extract(meta_json, '$.version'))
                     VIRTUAL,
-                meta_version INTEGER NOT NULL
-                    GENERATED ALWAYS AS (json_extract(meta_json, '$.meta_version'))
+                pkg_revision INTEGER NOT NULL
+                    GENERATED ALWAYS AS (json_extract(meta_json, '$.pkg_revision'))
                     VIRTUAL,
-                UNIQUE(name, version, meta_version)
+                UNIQUE(name, version, pkg_revision)
             );
         )"_sql);
     }).value();
@@ -128,7 +128,7 @@ std::string repository::name() const {
 
 fs::path repository::subdir_of(const package_meta& pkg) const noexcept {
     return this->pkg_dir() / pkg.name.str
-        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.meta_version);
+        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.pkg_revision);
 }
 
 void repository::import_dir(path_ref dirpath) {
@@ -148,9 +148,9 @@ void repository::import_dir(path_ref dirpath) {
     auto tmp_tgz = pkg_dir() / "tmp.tgz";
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
 
-    if (pkg.meta_version < 1) {
-        BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_meta_version{
-            "Package meta_version must be a positive non-zero integer in order to be imported into "
+    if (pkg.pkg_revision < 1) {
+        BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_pkg_revision{
+            "Package pkg_revision must be a positive non-zero integer in order to be imported into "
             "a repository"});
     }
 
@@ -192,12 +192,12 @@ void repository::remove_pkg(const package_meta& meta) {
                 DELETE FROM crs_repo_packages
                  WHERE name = ?1
                        AND version = ?2
-                       AND (meta_version = ?3
+                       AND (pkg_revision = ?3
                             OR ?3 = 0)
             )"_sql),
             meta.name.str,
             meta.version.to_string(),
-            meta.meta_version)
+            meta.pkg_revision)
         .value();
     ensure_absent(to_delete).value();
 }

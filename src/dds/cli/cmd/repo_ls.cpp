@@ -18,7 +18,7 @@ int repo_ls(const options& opts) {
                    "{}@{}~{}\n",
                    pkg.name.str,
                    pkg.version.to_string(),
-                   pkg.meta_version);
+                   pkg.pkg_revision);
     }
     return 0;
 }

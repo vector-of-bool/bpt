@@ -161,13 +161,13 @@ int repo_import(const options& opts) {
     }
     dds_leaf_catch(crs::e_repo_importing_dir               crs_dir,
                    crs::e_repo_importing_package           meta,
-                   crs::e_repo_import_invalid_meta_version err) {
+                   crs::e_repo_import_invalid_pkg_revision err) {
         dds_log(info,
                 "Error while importing .br.yellow[{}] (from [.br.yellow[{}]]):"_styled,
                 meta.value.id().to_string(),
                 crs_dir.value.string());
-        dds_log(error, "Invalid meta_version on package: .br.red[{}]"_styled, err.value);
-        write_error_marker("repo-import-invalid-meta_version");
+        dds_log(error, "Invalid pkg_revision on package: .br.red[{}]"_styled, err.value);
+        write_error_marker("repo-import-invalid-pkg_revision");
         return 1;
     };
 }

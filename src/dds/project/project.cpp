@@ -44,7 +44,7 @@ crs::package_meta project_manifest::as_crs_package_meta() const noexcept {
     crs::package_meta ret;
     ret.name         = name;
     ret.version      = version;
-    ret.meta_version = 1;
+    ret.pkg_revision = 1;
     ret.namespace_   = namespace_.value_or(name);
 
     auto libs = libraries  //
