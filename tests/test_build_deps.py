@@ -21,12 +21,12 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                     '#pragma once\nextern void foo_fun();',
                     'foo.cpp':
                     r'''
-                    #include <iostream>
+                    #include <stdio.h>
 
                     #include "./foo.hpp"
 
                     void foo_fun() {
-                        std::cout << "Hello, from foo library!\n";
+                        puts("Hello, from foo library!\n");
                     }
                 '''
                 }
@@ -39,11 +39,12 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                     '#pragma once\n extern void bar_fun();',
                     'foo.cpp':
                     r'''
-                    #include <iostream>
+                    #include <stdio.h>
+
                     #include "./foo.hpp"
 
                     void bar_fun() {
-                        std::cout << "New foo libary!\n";
+                        puts("Hello, new foo library!\n");
                     }
                 '''
                 }
@@ -56,11 +57,11 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                     '#pragma once\n extern void foo_fun();',
                     'foo.cpp':
                     r'''
-                    #include <iostream>
+                    #include <stdio.h>
                     #include "./foo.hpp"
 
                     void foo_fun() {
-                        std::cout << "foo 1.2.8!\n";
+                        puts("foo 1.2.8!\n");
                     }
                 '''
                 }
@@ -73,11 +74,11 @@ def bd_test_repo(crs_repo_factory: CRSRepoFactory, dir_renderer: DirRenderer) ->
                     '#pragma once\n extern void foo_fun();',
                     'foo.cpp':
                     r'''
-                    #include <iostream>
+                    #include <stdio.h>
                     #include "./foo.hpp"
 
                     void foo_fun() {
-                        std::cout << "foo 1.3.4!\n";
+                        puts("foo 1.3.4!\n");
                     }
                 '''
                 }
