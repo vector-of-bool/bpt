@@ -124,7 +124,7 @@ std::string package_info::to_json(int indent) const noexcept {
 void package_info::throw_if_invalid() const {
     for (auto& lib : libraries) {
         for (auto&& uses : lib.intra_uses) {
-            if (std::ranges::find_if(libraries, NEO_TL(_1.name == uses.lib)) == libraries.end()) {
+            if (std::ranges::find(libraries, uses.lib, &library_info::name) == libraries.end()) {
                 BOOST_LEAF_THROW_EXCEPTION(e_invalid_meta_data{
                     neo::ufmt("Library '{}' uses non-existent sibling library '{}'",
                               lib.name.str,
