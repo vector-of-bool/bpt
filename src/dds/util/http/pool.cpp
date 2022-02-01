@@ -319,6 +319,11 @@ struct recv_plain_state : erased_message_body {
         , _client(cl) {}
 
     neo::const_buffer next(std::size_t n) override {
+        if (_size == 0) {
+            // We are done reading. Don't perform another read, just return.
+            _client->_state = detail::http_client_impl::_state_t::ready;
+            return neo::const_buffer();
+        }
         auto part = _strm.next((std::min)(n, _size));
         if (neo::buffer_is_empty(part)) {
             _client->_state = detail::http_client_impl::_state_t::ready;
