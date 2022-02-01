@@ -61,7 +61,7 @@ static bool try_it(const crs::package_info& pkg, crs::cache_db& cache) {
             dep_pkg.version.to_string());
         auto yellows
             = dep_pkg.libraries | std::views::transform([&](auto&& _1) {
-                  return fmt::format(".yellow[{}/{}]"_styled, dep_pkg.namespace_.str, _1.name.str);
+                  return fmt::format(".yellow[{}/{}]"_styled, dep_pkg.name.str, _1.name.str);
               });
         dds_log(error,
                 "  (.br.yellow[{}@{}] defines {})"_styled,

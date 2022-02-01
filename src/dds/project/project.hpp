@@ -22,7 +22,6 @@ struct project_manifest {
     dds::name       name;
     semver::version version;
 
-    std::optional<dds::name>        namespace_;
     std::vector<project_library>    libraries;
     std::vector<project_dependency> root_dependencies;
 

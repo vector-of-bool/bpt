@@ -89,7 +89,6 @@ class PkgYAML(_PkgYAMLRequired, total=False):
     depends: Sequence[_PkgYAMLDependencyItem]
     lib: _MainProjectLibraryItem
     libs: Sequence[_PkgYAMLLibraryItem]
-    namespace: str
 
 
 class Library:

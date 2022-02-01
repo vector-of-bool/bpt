@@ -32,7 +32,6 @@ struct e_invalid_usage_kind {
 
 struct package_info {
     dds::name                 name;
-    dds::name                 namespace_;
     semver::version           version;
     int                       pkg_revision = 0;
     std::vector<library_info> libraries;
@@ -52,9 +51,8 @@ struct package_info {
     friend void do_repr(auto out, const package_info* self) noexcept {
         out.type("dds::crs::package_info");
         if (self) {
-            out.bracket_value("name={}, namespace={}, version={}, pkg_revision={}, libraries={}",
+            out.bracket_value("name={}, version={}, pkg_revision={}, libraries={}",
                               out.repr_value(self->name),
-                              out.repr_value(self->namespace_),
                               out.repr_value(self->version.to_string()),
                               out.repr_value(self->pkg_revision),
                               out.repr_value(self->libraries));

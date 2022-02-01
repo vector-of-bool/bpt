@@ -159,7 +159,6 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
                 'pkg.json': json.dumps({
                     'crs_version': 1,
                     'name': 'foo',
-                    'namespace': 'foo',
                     'version': '1.2.3',
                     'pkg_revision': 1,
                     'libraries': [{
@@ -184,7 +183,6 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
                 'pkg.json': json.dumps({
                     'crs_version': 1,
                     'name': 'bar',
-                    'namespace': 'bar',
                     'version': '1.2.3',
                     'pkg_revision': 1,
                     'libraries': [{

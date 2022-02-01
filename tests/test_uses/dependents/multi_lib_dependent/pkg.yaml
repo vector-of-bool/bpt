@@ -1,14 +1,9 @@
-{
-    name: 'test',
-    namespace: 'test',
-    version: '0.0.0',
-    libs: [{
-        path: 'libs/uses',
-        name: 'uses',
-        depends: ['the_test_lib@0.0.0']
-    }, {
-        path: 'libs/uses_for_tests',
-        name: 'uses_for_tests',
-        depends: ['the_test_lib@0.0.0 for test']
-    }]
-}
+name: "test"
+version: "0.0.0"
+libs:
+    - path: "libs/uses"
+      name: "uses"
+      depends: ["the_test_lib@0.0.0"]
+    - path: "libs/uses_for_tests"
+      name: "uses_for_tests"
+      depends: ["the_test_lib@0.0.0 for test"]

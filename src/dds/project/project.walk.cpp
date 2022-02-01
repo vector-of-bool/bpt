@@ -39,7 +39,6 @@ const std::set<std::string_view, std::less<>> KNOWN_KEYS = {
     // Base package keys
     "name",
     "version",
-    "namespace",
     "depends",
     "lib",
     "libs",
@@ -125,9 +124,6 @@ project_manifest::from_json_data(const json5::data&                          dat
                           "A project 'version' is required",
                           require_str{"Project 'version' must be a string"},
                           put_into{ret.version, version_from_string{}}},
-             if_key{"namespace",
-                    require_str{"Project 'namespace' must be a string"},
-                    put_into{ret.namespace_, name_from_string{}}},
              if_key{"depends",
                     require_array{"Project 'depends' should be an array"},
                     for_each{put_into{std::back_inserter(ret.root_dependencies),

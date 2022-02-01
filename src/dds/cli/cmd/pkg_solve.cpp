@@ -45,19 +45,6 @@ int pkg_solve(const options& opts) {
                 explain.value);
         write_error_marker("no-dependency-solution");
         return 1;
-    }
-    dds_leaf_catch(e_usage_namespace_mismatch,
-                   crs::dependency   dep,
-                   crs::package_info package,
-                   lm::usage         usage) {
-        dds_log(
-            error,
-            "Dependency on .br.cyan[{}] uses library .br.yellow[{}], but .br.red[{}] does not match the package namespace of .br.yellow[{}]"_styled,
-            dep.name.str,
-            usage,
-            usage.namespace_,
-            package.namespace_.str);
-        return 1;
     };
 }
 

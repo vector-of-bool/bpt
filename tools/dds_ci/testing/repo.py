@@ -99,7 +99,6 @@ def make_simple_crs(name: str, version: str, *, pkg_revision: int = 1) -> Any:
         'name': name,
         'version': version,
         'pkg_revision': pkg_revision,
-        'namespace': name,
         'libraries': [{
             'path': '.',
             'name': name,

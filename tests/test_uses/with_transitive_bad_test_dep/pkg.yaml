@@ -1,6 +1,5 @@
 {
     "name": "uses-bad-dep",
-    "namespace": "test2",
     "version": "0.0.0",
     "depends": [
         {

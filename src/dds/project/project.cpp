@@ -45,7 +45,6 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
     ret.name         = name;
     ret.version      = version;
     ret.pkg_revision = 1;
-    ret.namespace_   = namespace_.value_or(name);
 
     auto libs = libraries  //
         | std::views::transform([&](project_library lib) {

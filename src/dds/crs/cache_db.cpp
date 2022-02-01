@@ -65,10 +65,6 @@ cache_db cache_db::open(unique_database& db) {
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.name'))
                     STORED,
-                namespace TEXT NOT NULL
-                    GENERATED ALWAYS
-                    AS (json_extract(json, '$.namespace'))
-                    STORED,
                 version TEXT NOT NULL
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.version'))
@@ -86,7 +82,6 @@ cache_db cache_db::open(unique_database& db) {
                     REFERENCES dds_crs_packages
                     ON DELETE CASCADE,
                 name TEXT NOT NULL,
-                qualname TEXT NOT NULL,
                 path TEXT NOT NULL,
                 UNIQUE (pkg_id, name)
             );
@@ -95,14 +90,13 @@ cache_db cache_db::open(unique_database& db) {
                 AFTER INSERT ON dds_crs_packages
                 FOR EACH ROW
                 BEGIN
-                    INSERT INTO dds_crs_libraries (pkg_id, name, qualname, path)
+                    INSERT INTO dds_crs_libraries (pkg_id, name, path)
                         WITH libraries AS (
                             SELECT value FROM json_each(new.json, '$.libraries')
                         )
                         SELECT
                             new.pkg_id,
                             json_extract(lib.value, '$.name'),
-                            printf('%s/%s', new.namespace, json_extract(lib.value, '$.name')),
                             json_extract(lib.value, '$.path')
                         FROM libraries AS lib;
                 END;
@@ -113,14 +107,13 @@ cache_db cache_db::open(unique_database& db) {
                 BEGIN
                     DELETE FROM dds_crs_libraries
                         WHERE pkg_id = new.pkg_id;
-                    INSERT INTO dds_crs_libraries (pkg_id, name, qualname, path)
+                    INSERT INTO dds_crs_libraries (pkg_id, name, path)
                         WITH libraries AS (
                             SELECT value FROM json_each(new.json, '$.libraries')
                         )
                         SELECT
                             new.pkg_id,
                             json_extract(lib.value, '$.name'),
-                            printf('%s/%s', new.namespace, json_extract(lib.value, '$.name')),
                             json_extract(lib.value, '$.path')
                         FROM libraries AS lib;
                 END;

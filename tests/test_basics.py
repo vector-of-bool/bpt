@@ -73,14 +73,7 @@ def test_error_enoent_toolchain(tmp_project: Project) -> None:
 
 
 def test_invalid_names(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
-        'name': 'test',
-        'version': '1.2.3',
-        'namespace': 'test',
-        'depends': [{
-            'dep': 'invalid name@1.2.3'
-        }]
-    }
+    tmp_project.pkg_yaml = {'name': 'test', 'version': '1.2.3', 'depends': [{'dep': 'invalid name@1.2.3'}]}
     with expect_error_marker('invalid-pkg-dep-name'):
         tmp_project.build()
     with expect_error_marker('invalid-pkg-dep-name'):
@@ -98,28 +91,10 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-name'):
         tmp_project.pkg_create()
 
-    tmp_project.pkg_yaml = {
-        **tmp_project.pkg_yaml,
-        'name': 'simple_name',
-        'namespace': 'invalid namespace',
-    }
-    with expect_error_marker('invalid-name'):
-        tmp_project.build()
-    with expect_error_marker('invalid-name'):
-        tmp_project.pkg_create()
-
-    tmp_project.pkg_yaml = {
-        'name': 'test',
-        'version': '1.2.3',
-        'namespace': 'test',
-        'depends': [],
-    }
-
 
 TEST_PACKAGE: PkgYAML = {
     'name': 'test-pkg',
     'version': '0.2.2',
-    'namespace': 'test',
 }
 
 

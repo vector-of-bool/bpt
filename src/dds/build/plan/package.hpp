@@ -15,8 +15,6 @@ namespace dds {
 class package_plan {
     /// Package name
     std::string _name;
-    /// The package namespace. Used to specify interdependencies
-    std::string _namespace;
     /// The libraries in this package
     std::vector<library_plan> _libraries;
 
@@ -24,11 +22,9 @@ public:
     /**
      * Create a new package plan.
      * @param name The name of the package
-     * @param namespace_ The namespace of the package. Used when specifying linker dependencies.
      */
-    package_plan(std::string_view name, std::string_view namespace_)
-        : _name(name)
-        , _namespace(namespace_) {}
+    package_plan(std::string_view name)
+        : _name(name) {}
 
     /**
      * Add a library plan to this package plan
@@ -41,10 +37,6 @@ public:
      * Get the package name
      */
     auto& name() const noexcept { return _name; }
-    /**
-     * The package namespace
-     */
-    auto& namespace_() const noexcept { return _namespace; }
     /**
      * The libraries in the package
      */

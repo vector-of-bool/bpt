@@ -43,7 +43,6 @@ def test_repo_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
         json.dumps({
             'crs_version': 1,
             'name': 'meow',
-            'namespace': 'test',
             'version': '1.2.3',
             'pkg_revision': 1,
             'libraries': [{
@@ -209,7 +208,6 @@ def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
     tmp_path.joinpath('pkg.json').write_text(
         json.dumps({
             'name': 'foo',
-            'namespace': 'foo',
             'version': '1.2.3',
             'pkg_revision': 1,
             'crs_version': 1,
@@ -229,7 +227,6 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
     tmp_path.joinpath('pkg.json').write_text(
         json.dumps({
             'name': 'foo',
-            'namespace': 'foo',
             'version': '1.2.3',
             'pkg_revision': 1,
             'crs_version': 1,

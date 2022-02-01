@@ -52,7 +52,7 @@ library_plan prepare_library(const sdist_target&      sdt,
 
 package_plan prepare_one(const sdist_target& sd) {
     auto&        man = sd.sd.pkg;
-    package_plan pkg{man.name.str, man.namespace_.str};
+    package_plan pkg{man.name.str};
     for (auto& lib : man.libraries) {
         pkg.add_library(prepare_library(sd, lib, man));
     }
@@ -108,7 +108,7 @@ void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
     auto out = dds::open_file(lmp_path, std::ios::binary | std::ios::out);
     out << "Type: Package\n"
         << "Name: " << pkg.name() << '\n'
-        << "Namespace: " << pkg.namespace_() << '\n';
+        << "Namespace: " << pkg.name() << '\n';
     for (const auto& lib : pkg.libraries()) {
         auto lml_path = lmp_path.parent_path() / (lib.qualified_name() + ".lml");
         write_lml(env, lib, lml_path);

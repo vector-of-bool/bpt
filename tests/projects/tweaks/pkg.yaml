@@ -1,5 +1,1 @@
-{
-    name: 'tweakable',
-    version: '1.2.3',
-    "namespace": "test",
-}
+{ name: "tweakable", version: "1.2.3" }

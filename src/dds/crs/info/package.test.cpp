@@ -43,17 +43,9 @@ TEST_CASE("Reject bad meta informations") {
         })",
          "'pkg_revision' must be an integer"},
         {R"({
-            "name": "foo",
-            "version": "1.2.3",
-            "pkg_revision": 1,
-            "crs_version": 1
-        })",
-         "A string 'namespace' is required"},
-        {R"({
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "crs_version": 1
          })",
          "A 'libraries' array is required"},
@@ -61,7 +53,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": {},
              "crs_version": 1
          })",
@@ -70,7 +61,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [],
              "crs_version": 1
          })",
@@ -79,7 +69,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [12],
              "crs_version": 1
          })",
@@ -88,7 +77,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{}],
              "crs_version": 1
          })",
@@ -97,7 +85,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo"
              }],
@@ -108,7 +95,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": 12
@@ -120,7 +106,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": "/foo/bar"
@@ -132,7 +117,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": "../bar"
@@ -144,7 +128,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": "."
@@ -156,7 +139,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -169,7 +151,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -183,7 +164,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -197,7 +177,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -211,7 +190,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -227,7 +205,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -243,7 +220,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -260,7 +236,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -278,7 +253,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -296,7 +270,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -315,7 +288,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -333,7 +305,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -353,7 +324,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -373,7 +343,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -393,7 +362,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -414,7 +382,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -435,7 +402,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -457,7 +423,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -479,7 +444,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -501,7 +465,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -522,7 +485,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -544,7 +506,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -566,7 +527,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -616,7 +576,6 @@ TEST_CASE("Reject bad meta informations") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -644,7 +603,6 @@ TEST_CASE("Check some valid meta JSON") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -668,7 +626,6 @@ TEST_CASE("Check parse results") {
              "name": "foo",
              "version": "1.2.3",
              "pkg_revision": 1,
-             "namespace": "cat",
              "libraries": [{
                  "name": "foo",
                  "path": ".",
@@ -687,7 +644,6 @@ TEST_CASE("Check parse results") {
          })",
          pkg_meta{
              .name         = mk_name("foo"),
-             .namespace_   = mk_name("cat"),
              .version      = semver::version::parse("1.2.3"),
              .pkg_revision = 1,
              .libraries    = {lib_meta{
@@ -714,7 +670,6 @@ TEST_CASE("Check parse results") {
     };
 
     CHECK(meta.name == expect.name);
-    CHECK(meta.namespace_ == expect.namespace_);
     CHECK(meta.version == expect.version);
     CHECK(meta.pkg_revision == expect.pkg_revision);
     CHECK(meta.extra == expect.extra);

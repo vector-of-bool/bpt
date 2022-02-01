@@ -95,7 +95,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
         auto intra = lib.intra_uses               //
             | std::views::filter(kind_is_for(k))  //
             | std::views::transform([&](auto& use) {
-                         return lm::usage{pkg.namespace_.str, use.lib.str};
+                         return lm::usage{pkg.name.str, use.lib.str};
                      });
         auto from_dep                                   //
             = lib.dependencies                          //

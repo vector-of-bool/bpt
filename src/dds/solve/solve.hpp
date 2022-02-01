@@ -16,7 +16,6 @@ struct dependency;
 
 }  // namespace crs
 
-struct e_usage_namespace_mismatch {};
 struct e_usage_no_such_lib {};
 
 struct e_dependency_solve_failure {};
