@@ -72,5 +72,37 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
         extend(ret.libraries.back().dependencies,
                root_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
     }
+
+    auto meta_obj = json5::data::object_type();
+    if (authors) {
+        meta_obj.emplace("authors",
+                         *authors                                              //
+                             | std::views::transform(NEO_TL(json5::data(_1)))  //
+                             | neo::to_vector);
+    }
+    if (description) {
+        meta_obj.emplace("description", *description);
+    }
+    if (documentation) {
+        meta_obj.emplace("documentation", documentation->normalized().to_string());
+    }
+    if (readme) {
+        meta_obj.emplace("readme", readme->string());
+    }
+    if (homepage) {
+        meta_obj.emplace("homepage", homepage->normalized().to_string());
+    }
+    if (repository) {
+        meta_obj.emplace("repository", repository->normalized().to_string());
+    }
+    if (license) {
+        meta_obj.emplace("license", license->to_string());
+    }
+    if (license_file) {
+        meta_obj.emplace("license-file", license_file->string());
+    }
+    if (!meta_obj.empty()) {
+        ret.meta = std::move(meta_obj);
+    }
     return ret;
 }

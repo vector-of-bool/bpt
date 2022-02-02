@@ -55,6 +55,7 @@ package_info meta_from_data(const json5::data& data) {
                                             library_info::from_data}}},
              required_key{"crs_version", "A 'crs_version' number is required", just_accept},
              if_key{"extra", put_into{ret.extra}},
+             if_key{"meta", put_into{ret.meta}},
              if_key{"_comment", just_accept},
          });
 

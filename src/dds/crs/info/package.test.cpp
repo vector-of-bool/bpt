@@ -662,6 +662,7 @@ TEST_CASE("Check parse results") {
                  }},
              }},
              .extra        = {},
+             .meta         = {},
          }},
     }));
 

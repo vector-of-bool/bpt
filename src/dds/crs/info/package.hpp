@@ -34,6 +34,7 @@ struct package_info {
     pkg_id                    id;
     std::vector<library_info> libraries;
     json5::data               extra;
+    json5::data               meta;
 
     static package_info from_json_data_v1(const json5::data&);
     static package_info from_json_data(const json5::data&);

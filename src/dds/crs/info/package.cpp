@@ -113,6 +113,7 @@ std::string package_info::to_json(int indent) const noexcept {
         {"version", id.version.to_string()},
         {"pkg_revision", id.revision},
         {"extra", json5_as_nlohmann_json(extra)},
+        {"meta", json5_as_nlohmann_json(meta)},
         {"libraries", std::move(ret_libs)},
         {"crs_version", 1},
     });
