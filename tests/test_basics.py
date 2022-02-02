@@ -81,11 +81,8 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-dep-shorthand'):
         tmp_project.dds.build_deps(['invalid name@1.2.3'])
 
-    tmp_project.pkg_yaml = {
-        **tmp_project.pkg_yaml,
-        'name': 'invalid name',
-        'depends': [],
-    }
+    tmp_project.pkg_yaml['name'] = 'invalid name'
+    tmp_project.pkg_yaml['depends'] = []
     with expect_error_marker('invalid-name'):
         tmp_project.build()
     with expect_error_marker('invalid-name'):

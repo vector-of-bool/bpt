@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import json
 import shutil
-from typing import Sequence, Union, cast, Optional, Callable
+from typing import Any, Iterator, Mapping, Sequence, Union, cast, Optional, Callable
 from typing_extensions import Literal, TypedDict
 
 from _pytest.config import Config as PyTestConfig
@@ -112,6 +112,49 @@ class Library:
         return path
 
 
+class _WritebackData:
+    def __init__(self, fpath: Path, items: Any, root: Any) -> None:
+        self._root = root
+        self._data = items
+        self._fpath = fpath
+
+    def __setitem__(self, k: Any, v: Any) -> None:
+        self._data[k] = v
+        self._writeback()
+
+    def __getitem__(self, k: Any) -> Any:
+        v = self._data[k]
+        if isinstance(v, (Sequence, Mapping)):
+            return _WritebackData(self._fpath, v, self._root)
+        return v
+
+    def __contains__(self, v: Any) -> bool:
+        return v in self._data
+
+    def keys(self) -> Iterator[Any]:
+        return self._data.keys()
+
+    def append(self, item: Any) -> None:
+        self._data.append(item)
+        self._writeback()
+
+    def pop(self, *args: Any) -> Any:
+        v = self._data.pop(*args)
+        self._writeback()
+        return v
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        if key in self._data:
+            v = self._data[key]
+            if isinstance(v, (Sequence, Mapping)):
+                return _WritebackData(self._fpath, v, self._root)
+            return v
+        return default
+
+    def _writeback(self) -> None:
+        self._fpath.write_text(json.dumps(self._data, indent=2))
+
+
 class Project:
     """
     Utilities to access a project being used as a test.
@@ -126,7 +169,8 @@ class Project:
         """
         Get/set the content of the `pkg.yaml` file for the project.
         """
-        return cast(PkgYAML, json.loads(self.root.joinpath('pkg.yaml').read_text()))
+        dat = json.loads(self.root.joinpath('pkg.yaml').read_text())
+        return cast(PkgYAML, _WritebackData(self.root.joinpath('pkg.yaml'), dat, dat))
 
     @pkg_yaml.setter
     def pkg_yaml(self, data: PkgYAML) -> None:

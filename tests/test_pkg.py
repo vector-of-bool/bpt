@@ -1,3 +1,5 @@
+import json
+import tarfile
 import pytest
 from pathlib import Path
 from typing import Tuple
@@ -48,15 +50,6 @@ def test_create_pkg_already_exists_succeeds_with_replace(test_project: Project) 
     assert sd_path.stat().st_size > 0, 'Did not replace the existing file'
 
 
-@pytest.fixture()
-def _test_pkg(test_project: Project) -> Tuple[Path, Project]:
-    repo_content_path = test_project.dds.repo_dir / 'foo@1.2.3~1'
-    assert not repo_content_path.is_dir()
-    test_project.pkg_create()
-    assert not repo_content_path.is_dir()
-    return test_project.build_root / 'foo@1.2.3~1.tar.gz', test_project
-
-
 def test_sdist_invalid_project(tmp_project: Project) -> None:
     with error.expect_error_marker('no-pkg-meta-files'):
         tmp_project.pkg_create()
@@ -84,3 +77,24 @@ def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
     tmp_crs_repo.import_(tmp_project.root)
     # No error now:
     tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
+
+
+def test_pkg_spdx(tmp_project: Project) -> None:
+    tmp_project.pkg_yaml = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'license': 'MIT',
+    }
+    tmp_project.pkg_create()
+    tmp_project.pkg_yaml['license'] = 'bogus'
+    with error.expect_error_marker('invalid-spdx'):
+        tmp_project.pkg_create()
+
+    dest_tgz = tmp_project.root / 'test.tgz'
+    tmp_project.pkg_yaml['license'] = 'MIT'
+    tmp_project.pkg_create(dest=dest_tgz)
+    with tarfile.open(dest_tgz) as tgz:
+        pkg_json = json.loads(tgz.extractfile('pkg.json').read())
+    assert 'meta' in pkg_json
+    assert 'license' in pkg_json['meta']
+    assert pkg_json['meta']['license'] == 'MIT'
