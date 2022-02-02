@@ -52,7 +52,7 @@ static int _build_deps(const options& opts) {
     neo::ranges::range_of<crs::dependency> auto all_deps
         = ranges::views::concat(file_deps, cli_deps);
 
-    auto sln = dds::solve(cache.metadata_db(), all_deps);
+    auto sln = dds::solve(cache.db(), all_deps);
     for (auto&& pkg : sln) {
         fetch_cache_load_dependency(cache, pkg, builder, ".");
     }

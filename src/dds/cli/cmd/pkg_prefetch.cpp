@@ -11,7 +11,7 @@ namespace dds::cli::cmd {
 int pkg_prefetch(const options& opts) {
     auto cache
         = dds::crs::cache::open(opts.crs_cache_dir.value_or(dds::crs::cache::default_path()));
-    auto& meta_db = cache.metadata_db();
+    auto& meta_db = cache.db();
     for (auto& r : opts.use_repos) {
         auto url = dds::guess_url_from_string(r);
         meta_db.sync_remote(url);

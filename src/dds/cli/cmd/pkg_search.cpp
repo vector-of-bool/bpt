@@ -88,7 +88,7 @@ namespace dds::cli::cmd {
 static int _pkg_search(const options& opts) {
     auto cache = open_ready_cache(opts);
 
-    auto results = search_impl(cache.metadata_db().sqlite3_db(), opts.pkg.search.pattern);
+    auto results = search_impl(cache.db().sqlite3_db(), opts.pkg.search.pattern);
     for (pkg_group_search_result const& found : results.found) {
         fmt::print(
             "    Name: .bold[{}]\n"

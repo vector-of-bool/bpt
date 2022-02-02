@@ -37,16 +37,16 @@ cache cache::open(path_ref dirpath) {
 cache::cache(path_ref dirpath)
     : _impl(std::make_shared<impl>(dirpath)) {}
 
-cache_db& cache::metadata_db() noexcept { return _impl->metadata_db; }
+cache_db& cache::db() noexcept { return _impl->metadata_db; }
 
 fs::path cache::prefetch(const pkg_id& pid_) {
     auto pid     = pid_;
-    auto entries = metadata_db().for_package(pid.name, pid.version);
+    auto entries = db().for_package(pid.name, pid.version);
     auto it      = entries.begin();
     if (it == entries.end()) {
         BOOST_LEAF_THROW_EXCEPTION(e_no_such_pkg{pid});
     }
-    auto remote = metadata_db().get_remote_by_id(it->remote_id);
+    auto remote = db().get_remote_by_id(it->remote_id);
     if (pid.revision == 0) {
         pid.revision = it->pkg.id.revision;
     }

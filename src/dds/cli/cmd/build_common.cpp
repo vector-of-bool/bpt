@@ -29,7 +29,7 @@ using namespace fansi::literals;
 crs::cache cli::open_ready_cache(const cli::options& opts) {
     auto cache
         = dds::crs::cache::open(opts.crs_cache_dir.value_or(dds::crs::cache::default_path()));
-    auto& meta_db = cache.metadata_db();
+    auto& meta_db = cache.db();
     for (auto& r : opts.use_repos) {
         // Convert what may be just a domain name or partial URL into a proper URL:
         auto url = dds::guess_url_from_string(r);
@@ -116,7 +116,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     };
 
     auto  cache   = open_ready_cache(opts);
-    auto& meta_db = cache.metadata_db();
+    auto& meta_db = cache.db();
 
     sdist proj_sd = dds_leaf_try { return sdist::from_directory(opts.project_dir); }
     dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_yaml) {

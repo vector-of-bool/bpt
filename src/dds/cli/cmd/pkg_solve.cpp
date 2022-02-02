@@ -30,7 +30,7 @@ static int _pkg_solve(const options& opts) {
               return project_dependency::from_shorthand_string(s).as_crs_dependency();
           });
 
-    auto sln = dds::solve(cache.metadata_db(), deps);
+    auto sln = dds::solve(cache.db(), deps);
     for (auto&& pkg : sln) {
         dds_log(info, "Require: {}", pkg.to_string());
     }

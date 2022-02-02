@@ -40,7 +40,7 @@ public:
      *
      * @return cache_db&
      */
-    cache_db& metadata_db() noexcept;
+    cache_db& db() noexcept;
 
     /**
      * @brief Ensure that the given package has a locally cached copy of its source distribution.
