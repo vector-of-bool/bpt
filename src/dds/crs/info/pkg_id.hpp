@@ -15,7 +15,7 @@ struct pkg_id {
     /// The version of the code in the package package
     semver::version version;
     /// The revision of the package itself
-    int pkg_revision;
+    int revision;
 
     /// Parse the given string as a package-id string
     static pkg_id parse(std::string_view sv);

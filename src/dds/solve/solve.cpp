@@ -189,7 +189,7 @@ struct metadata_provider {
                       .first;
             sr::sort(found->second,
                      std::less<>{},
-                     NEO_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.pkg_revision)));
+                     NEO_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.revision)));
         }
         return found->second;
     }
@@ -228,7 +228,7 @@ struct metadata_provider {
         return requirement{cand->pkg.id.name,
                            {cand->pkg.id.version, cand->pkg.id.version.next_after()},
                            req.uses,
-                           cand->pkg.id.pkg_revision};
+                           cand->pkg.id.revision};
     }
 
     /**
@@ -371,9 +371,9 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
     };
     return sln
         | stdv::transform(NEO_TL(crs::pkg_id{
-            .name         = _1.name,
-            .version      = sole_version(_1.versions),
-            .pkg_revision = _1.pkg_revision.value(),
+            .name     = _1.name,
+            .version  = sole_version(_1.versions),
+            .revision = _1.pkg_revision.value(),
         }))
         | neo::to_vector;
 }

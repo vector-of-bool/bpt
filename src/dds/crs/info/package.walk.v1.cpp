@@ -47,7 +47,7 @@ package_info meta_from_data(const json5::data& data) {
              required_key{"pkg_revision",
                           "A 'pkg_revision' integer is required",
                           require_integer_key("pkg_revision"),
-                          put_into{ret.id.pkg_revision, [](double d) { return int(d); }}},
+                          put_into{ret.id.revision, [](double d) { return int(d); }}},
              required_key{"libraries",
                           "A 'libraries' array is required",
                           require_array{"'libraries' must be an array of library objects"},

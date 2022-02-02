@@ -19,7 +19,7 @@ namespace {
 
 neo::url calc_pkg_url(neo::url_view from, pkg_id pkg) {
     return from.normalized() / "pkg" / pkg.name.str
-        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.pkg_revision) / "pkg.tgz";
+        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.revision) / "pkg.tgz";
 }
 
 void expand_tgz(path_ref tgz_path, path_ref into) {

@@ -41,11 +41,11 @@ crs::pkg_id crs::pkg_id::parse(const std::string_view sv) {
 }
 
 std::string crs::pkg_id::to_string() const noexcept {
-    return neo::ufmt("{}@{}~{}", name.str, version.to_string(), pkg_revision);
+    return neo::ufmt("{}@{}~{}", name.str, version.to_string(), revision);
 }
 
 static auto _tie(const crs::pkg_id& pid) noexcept {
-    return std::tie(pid.name, pid.version, pid.pkg_revision);
+    return std::tie(pid.name, pid.version, pid.revision);
 }
 
 bool crs::pkg_id::operator<(const crs::pkg_id& other) const noexcept {

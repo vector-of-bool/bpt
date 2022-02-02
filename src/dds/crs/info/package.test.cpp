@@ -646,7 +646,7 @@ TEST_CASE("Check parse results") {
              .id=dds::crs::pkg_id{
                 .name         = mk_name("foo"),
                 .version      = semver::version::parse("1.2.3"),
-                .pkg_revision = 1,
+                .revision = 1,
              },
              .libraries    = {lib_meta{
                  .name         = mk_name("foo"),
