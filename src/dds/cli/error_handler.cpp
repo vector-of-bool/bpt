@@ -49,7 +49,7 @@ auto handlers = std::tuple(  //
             error,
             "Invalid metadata file while opening source distribution/project in [.bold.yellow[{}]]"_styled,
             sdist_dirpath.value.string());
-        dds_log(error, "Invalid JSON/JSON5 file: .bold.red[{}]"_styled, error.value);
+        dds_log(error, "Invalid JSON file: .bold.red[{}]"_styled, error.value);
         if (maybe_fpath) {
             dds_log(error, "  (While reading from [{}])", maybe_fpath->string());
         }

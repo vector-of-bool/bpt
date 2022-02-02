@@ -89,7 +89,7 @@ struct simple_expression
         auto license = find_with_id<spdx_license_info>(tok);
         if (!license) {
             BOOST_LEAF_THROW_EXCEPTION(
-                e_bad_spdx_expression{neo::ufmt("No such license '{}'", tok)});
+                e_bad_spdx_expression{neo::ufmt("No such SPDX license '{}'", tok)});
         }
         sv.remove_prefix(tok.size());
         tok = next_token(sv);
@@ -159,8 +159,8 @@ struct compound_expression : sbs::variant_wrapper<simple_expression,
             auto exc_id = next_token(sv);
             auto exc    = find_with_id<spdx_exception_info>(exc_id);
             if (!exc) {
-                BOOST_LEAF_THROW_EXCEPTION(
-                    e_bad_spdx_expression{neo::ufmt("No such license exception '{}'", exc_id)});
+                BOOST_LEAF_THROW_EXCEPTION(e_bad_spdx_expression{
+                    neo::ufmt("No such SPDX license exception '{}'", exc_id)});
             }
             sv.remove_prefix(exc_id.size());
             return with_exception{std::move(simple), *exc};
