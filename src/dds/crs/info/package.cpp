@@ -109,9 +109,9 @@ std::string package_info::to_json(int indent) const noexcept {
         }));
     }
     json data = json::object({
-        {"name", name.str},
-        {"version", version.to_string()},
-        {"pkg_revision", pkg_revision},
+        {"name", id.name.str},
+        {"version", id.version.to_string()},
+        {"pkg_revision", id.pkg_revision},
         {"extra", json5_as_nlohmann_json(extra)},
         {"libraries", std::move(ret_libs)},
         {"crs_version", 1},

@@ -31,7 +31,7 @@ int _repo_import(const options& opts) {
         dds_log(info,
                 "[{}]: Imported .bold.cyan[{}] from [.br.cyan[{}]]"_styled,
                 imported.into_repo.name(),
-                imported.pkg_meta.id().to_string(),
+                imported.pkg_meta.id.to_string(),
                 imported.from_path.string());
     };
     for (auto& path : opts.repo.import.files) {
@@ -44,18 +44,16 @@ int _repo_import(const options& opts) {
             switch (opts.if_exists) {
             case if_exists::ignore:
                 dds_log(info,
-                        "Ignoring existing package .br.cyan[{}@{}] (from .br.white[{}])"_styled,
-                        meta.value.name.str,
-                        meta.value.version.to_string(),
+                        "Ignoring existing package .br.cyan[{}] (from .br.white[{}])"_styled,
+                        meta.value.id.to_string(),
                         path.string());
                 return;
             case if_exists::fail:
                 throw;
             case if_exists::replace:
                 dds_log(info,
-                        "Replacing existing package .br.yellow[{}@{}]"_styled,
-                        meta.value.name.str,
-                        meta.value.version.to_string());
+                        "Replacing existing package .br.yellow[{}]"_styled,
+                        meta.value.id.to_string());
                 repo.remove_pkg(meta.value);
                 _import_file(repo, path);
                 return;
@@ -74,9 +72,8 @@ int repo_import(const options& opts) {
                    dds::crs::e_repo_importing_dir     from_dir) {
         dds_log(
             error,
-            "Refusing to overwrite existing package .br.yellow[{}@{}] (Importing from [.br.yellow[{}]])"_styled,
-            meta.value.name.str,
-            meta.value.version.to_string(),
+            "Refusing to overwrite existing package .br.yellow[{}] (Importing from [.br.yellow[{}]])"_styled,
+            meta.value.id.to_string(),
             from_dir.value.string());
         write_error_marker("repo-import-pkg-already-exists");
         return 1;
@@ -164,7 +161,7 @@ int repo_import(const options& opts) {
                    crs::e_repo_import_invalid_pkg_revision err) {
         dds_log(info,
                 "Error while importing .br.yellow[{}] (from [.br.yellow[{}]]):"_styled,
-                meta.value.id().to_string(),
+                meta.value.id.to_string(),
                 crs_dir.value.string());
         dds_log(error, "Invalid pkg_revision on package: .br.red[{}]"_styled, err.value);
         write_error_marker("repo-import-invalid-pkg_revision");

@@ -96,7 +96,7 @@ static void resolve_implicit_usages(crs::package_info& proj_meta, crs::package_i
     proj_meta.libraries                                                         //
         | std::views::transform(NEO_TL(_1.dependencies))                        //
         | std::views::join                                                      //
-        | std::views::filter(NEO_TL(_1.name == dep_meta.name))                  //
+        | std::views::filter(NEO_TL(_1.name == dep_meta.id.name))               //
         | std::views::transform(NEO_TL(_1.uses))                                //
         | std::views::filter(NEO_TL(_1.template is<crs::implicit_uses_all>()))  //
         | neo::ranges::each([&](crs::dependency_uses& item) {
@@ -121,8 +121,8 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     sdist proj_sd = dds_leaf_try { return sdist::from_directory(opts.project_dir); }
     dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_yaml) {
         crs::package_info default_meta;
-        default_meta.name.str     = "anon";
-        default_meta.pkg_revision = 0;
+        default_meta.id.name.str     = "anon";
+        default_meta.id.pkg_revision = 0;
         crs::library_info default_library;
         default_library.name.str = "anon";
         default_meta.libraries.push_back(default_library);
@@ -157,7 +157,7 @@ crs::package_info dds::cli::fetch_cache_load_dependency(crs::cache&        cache
 
     dds::sdist         sd{crs_meta, local_dir};
     sdist_build_params params;
-    params.subdir = subdir_base / sd.pkg.id().to_string();
+    params.subdir = subdir_base / sd.pkg.id.to_string();
     builder.add(sd, params);
     return crs_meta;
 }

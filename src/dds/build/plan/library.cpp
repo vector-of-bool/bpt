@@ -26,7 +26,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
                                   const crs::library_info&    lib,
                                   const library_build_params& params) {
     fs::path out_dir   = params.out_subdir;
-    auto     qual_name = neo::ufmt("{}/{}", pkg.name.str, lib.name.str);
+    auto     qual_name = neo::ufmt("{}/{}", pkg.id.name.str, lib.name.str);
 
     // Source files are kept in different groups:
     std::vector<source_file> app_sources;
@@ -95,7 +95,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
         auto intra = lib.intra_uses               //
             | std::views::filter(kind_is_for(k))  //
             | std::views::transform([&](auto& use) {
-                         return lm::usage{pkg.name.str, use.lib.str};
+                         return lm::usage{pkg.id.name.str, use.lib.str};
                      });
         auto from_dep                                   //
             = lib.dependencies                          //

@@ -18,11 +18,9 @@ int repo_remove(const options& opts) {
         auto pkg_id = dds::crs::pkg_id::parse(pkg);
         /// We only need the name and version info to do the removal
         dds::crs::package_info meta;
-        meta.name         = pkg_id.name;
-        meta.version      = pkg_id.version;
-        meta.pkg_revision = pkg_id.pkg_revision;
+        meta.id = pkg_id;
         // Zero to remove all package revisions
-        meta.pkg_revision = 0;
+        meta.id.pkg_revision = 0;
         repo.remove_pkg(meta);
     }
     return 0;

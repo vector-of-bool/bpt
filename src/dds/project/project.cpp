@@ -42,9 +42,9 @@ project project::open_directory(path_ref path_) {
 
 crs::package_info project_manifest::as_crs_package_meta() const noexcept {
     crs::package_info ret;
-    ret.name         = name;
-    ret.version      = version;
-    ret.pkg_revision = 1;
+    ret.id.name         = name;
+    ret.id.version      = version;
+    ret.id.pkg_revision = 1;
 
     auto libs = libraries  //
         | std::views::transform([&](project_library lib) {

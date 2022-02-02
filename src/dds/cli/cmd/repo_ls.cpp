@@ -14,11 +14,7 @@ namespace dds::cli::cmd {
 int repo_ls(const options& opts) {
     auto repo = dds::crs::repository::open_existing(opts.repo.repo_dir);
     for (auto pkg : repo.all_packages()) {
-        fmt::print(std::cout,
-                   "{}@{}~{}\n",
-                   pkg.name.str,
-                   pkg.version.to_string(),
-                   pkg.pkg_revision);
+        fmt::print(std::cout, pkg.id.to_string());
     }
     return 0;
 }

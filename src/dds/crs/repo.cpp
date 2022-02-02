@@ -127,8 +127,8 @@ std::string repository::name() const {
 }
 
 fs::path repository::subdir_of(const package_info& pkg) const noexcept {
-    return this->pkg_dir() / pkg.name.str
-        / neo::ufmt("{}~{}", pkg.version.to_string(), pkg.pkg_revision);
+    return this->pkg_dir() / pkg.id.name.str
+        / neo::ufmt("{}~{}", pkg.id.version.to_string(), pkg.id.pkg_revision);
 }
 
 void repository::import_dir(path_ref dirpath) {
@@ -148,7 +148,7 @@ void repository::import_dir(path_ref dirpath) {
     auto tmp_tgz = pkg_dir() / "tmp.tgz";
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
 
-    if (pkg.pkg_revision < 1) {
+    if (pkg.id.pkg_revision < 1) {
         BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_pkg_revision{
             "Package pkg_revision must be a positive non-zero integer in order to be imported into "
             "a repository"});
@@ -195,9 +195,9 @@ void repository::remove_pkg(const package_info& meta) {
                        AND (pkg_revision = ?3
                             OR ?3 = 0)
             )"_sql),
-            meta.name.str,
-            meta.version.to_string(),
-            meta.pkg_revision)
+            meta.id.name.str,
+            meta.id.version.to_string(),
+            meta.id.pkg_revision)
         .value();
     ensure_absent(to_delete).value();
 }

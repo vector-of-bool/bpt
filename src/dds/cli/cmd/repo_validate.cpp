@@ -28,17 +28,14 @@ namespace dds::cli::cmd {
 
 static bool try_it(const crs::package_info& pkg, crs::cache_db& cache) {
     auto dep = {crs::dependency{
-        .name                = pkg.name,
-        .acceptable_versions = crs::version_range_set{pkg.version, pkg.version.next_after()},
+        .name                = pkg.id.name,
+        .acceptable_versions = crs::version_range_set{pkg.id.version, pkg.id.version.next_after()},
         .kind                = crs::usage_kind::lib,
         .uses = crs::explicit_uses_list{pkg.libraries | std::views::transform(NEO_TL(_1.name))
                                         | neo::to_vector},
     }};
     return dds_leaf_try {
-        fmt::print("Validate package .br.cyan[{}@{}~{}] ..."_styled,
-                   pkg.name.str,
-                   pkg.version.to_string(),
-                   pkg.pkg_revision);
+        fmt::print("Validate package .br.cyan[{}] ..."_styled, pkg.id.to_string());
         std::cout.flush();
         neo_defer { fmt::print("\r\x1b[K"); };
         dds::solve(cache, dep);
@@ -48,35 +45,27 @@ static bool try_it(const crs::package_info& pkg, crs::cache_db& cache) {
                    lm::usage bad_usage,
                    crs::dependency,
                    crs::package_info dep_pkg) {
-        dds_log(error,
-                "Package .bold.red[{}@{}~{}] is not valid:"_styled,
-                pkg.name.str,
-                pkg.version.to_string(),
-                pkg.pkg_revision);
+        dds_log(error, "Package .bold.red[{}] is not valid:"_styled, pkg.id.to_string());
         dds_log(
             error,
-            "It requests a usage of library .br.red[{}] from .br.yellow[{}@{}], which does not exist in that package."_styled,
+            "It requests a usage of library .br.red[{}] from .br.yellow[{}], which does not exist in that package."_styled,
             bad_usage,
-            dep_pkg.name.str,
-            dep_pkg.version.to_string());
+            dep_pkg.id.to_string());
         auto yellows
             = dep_pkg.libraries | std::views::transform([&](auto&& _1) {
-                  return fmt::format(".yellow[{}/{}]"_styled, dep_pkg.name.str, _1.name.str);
+                  return fmt::format(".yellow[{}/{}]"_styled, dep_pkg.id.name.str, _1.name.str);
               });
         dds_log(error,
-                "  (.br.yellow[{}@{}] defines {})"_styled,
-                dep_pkg.name.str,
-                dep_pkg.version.to_string(),
+                "  (.br.yellow[{}] defines {})"_styled,
+                dep_pkg.id.to_string(),
                 joinstr(", ", yellows));
         return false;
     }
     dds_leaf_catch(e_dependency_solve_failure, e_dependency_solve_failure_explanation explain) {
         dds_log(
             error,
-            "Installation of .bold.red[{}@{}-{}] is not possible with the known package information: \n{}"_styled,
-            pkg.name.str,
-            pkg.version.to_string(),
-            pkg.pkg_revision,
+            "Installation of .bold.red[{}] is not possible with the known package information: \n{}"_styled,
+            pkg.id.to_string(),
             explain.value);
         return false;
     }

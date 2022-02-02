@@ -31,9 +31,7 @@ struct e_invalid_usage_kind {
 };
 
 struct package_info {
-    dds::name                 name;
-    semver::version           version;
-    int                       pkg_revision = 0;
+    pkg_id                    id;
     std::vector<library_info> libraries;
     json5::data               extra;
 
@@ -46,15 +44,11 @@ struct package_info {
     std::string to_json(int indent) const noexcept;
     std::string to_json() const noexcept { return to_json(0); }
 
-    pkg_id id() const noexcept { return pkg_id{name, version, pkg_revision}; }
-
     friend void do_repr(auto out, const package_info* self) noexcept {
         out.type("dds::crs::package_info");
         if (self) {
-            out.bracket_value("name={}, version={}, pkg_revision={}, libraries={}",
-                              out.repr_value(self->name),
-                              out.repr_value(self->version.to_string()),
-                              out.repr_value(self->pkg_revision),
+            out.bracket_value("id={}, libraries={}",
+                              self->id.to_string(),
                               out.repr_value(self->libraries));
         }
     }

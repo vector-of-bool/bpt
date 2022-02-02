@@ -52,7 +52,7 @@ library_plan prepare_library(const sdist_target&      sdt,
 
 package_plan prepare_one(const sdist_target& sd) {
     auto&        man = sd.sd.pkg;
-    package_plan pkg{man.name.str};
+    package_plan pkg{man.id.name.str};
     for (auto& lib : man.libraries) {
         pkg.add_library(prepare_library(sd, lib, man));
     }

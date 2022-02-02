@@ -385,11 +385,11 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
               auto [json_str] = tup;
               return dds_leaf_try->std::optional<package_info> {
                   auto meta = package_info::from_json_str(json_str);
-                  if (meta.pkg_revision < 1) {
+                  if (meta.id.pkg_revision < 1) {
                       dds_log(warn,
                               "Remote package {} has an invalid 'pkg_revision' of {}.",
-                              meta.id().to_string(),
-                              meta.pkg_revision);
+                              meta.id.to_string(),
+                              meta.id.pkg_revision);
                       dds_log(warn, "  The corresponding package will not be available.");
                       dds_log(debug, "  The bad JSON content is: {}", json_str);
                       return std::nullopt;

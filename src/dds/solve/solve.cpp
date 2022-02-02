@@ -189,7 +189,7 @@ struct metadata_provider {
                       .first;
             sr::sort(found->second,
                      std::less<>{},
-                     NEO_TL(std::make_tuple(_1.pkg.version, -_1.pkg.pkg_revision)));
+                     NEO_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.pkg_revision)));
         }
         return found->second;
     }
@@ -199,7 +199,7 @@ struct metadata_provider {
         auto& pkgs = packages_for_name(req.name.str);
         dds_log(debug, "Find best candidate of {}", req.decl_to_string());
         auto cand = sr::find_if(pkgs, [&](auto&& entry) {
-            if (!req.versions.contains(entry.pkg.version)) {
+            if (!req.versions.contains(entry.pkg.id.version)) {
                 return false;
             }
             return req.uses.visit(neo::overload{
@@ -211,7 +211,7 @@ struct metadata_provider {
                     if (!has_all_libraries) {
                         dds_log(debug,
                                 "  Near match: {} (missing one or more required libraries)",
-                                entry.pkg.id().to_string());
+                                entry.pkg.id.to_string());
                     }
                     return has_all_libraries;
                 },
@@ -223,12 +223,12 @@ struct metadata_provider {
             return std::nullopt;
         }
 
-        dds_log(debug, "  Best candidate: {}", cand->pkg.id().to_string());
+        dds_log(debug, "  Best candidate: {}", cand->pkg.id.to_string());
 
-        return requirement{cand->pkg.name,
-                           {cand->pkg.version, cand->pkg.version.next_after()},
+        return requirement{cand->pkg.id.name,
+                           {cand->pkg.id.version, cand->pkg.id.version.next_after()},
                            req.uses,
-                           cand->pkg.pkg_revision};
+                           cand->pkg.id.pkg_revision};
     }
 
     /**

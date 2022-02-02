@@ -618,9 +618,9 @@ auto mk_name = [](std::string_view s) { return dds::name::from_string(s).value()
 
 #ifndef _MSC_VER  // MSVC struggles with compiling this test
 TEST_CASE("Check parse results") {
-    using pkg_meta             = dds::crs::package_info;
-    using lib_meta             = dds::crs::library_info;
-    using dependency           = dds::crs::dependency;
+    using pkg_meta   = dds::crs::package_info;
+    using lib_meta   = dds::crs::library_info;
+    using dependency = dds::crs::dependency;
     const auto [given, expect] = GENERATE(Catch::Generators::table<std::string, pkg_meta>({
         {R"({
              "name": "foo",
@@ -643,9 +643,11 @@ TEST_CASE("Check parse results") {
              "crs_version": 1
          })",
          pkg_meta{
-             .name         = mk_name("foo"),
-             .version      = semver::version::parse("1.2.3"),
-             .pkg_revision = 1,
+             .id=dds::crs::pkg_id{
+                .name         = mk_name("foo"),
+                .version      = semver::version::parse("1.2.3"),
+                .pkg_revision = 1,
+             },
              .libraries    = {lib_meta{
                  .name         = mk_name("foo"),
                  .path         = ".",
@@ -669,9 +671,7 @@ TEST_CASE("Check parse results") {
         std::terminate();
     };
 
-    CHECK(meta.name == expect.name);
-    CHECK(meta.version == expect.version);
-    CHECK(meta.pkg_revision == expect.pkg_revision);
+    CHECK(meta.id == expect.id);
     CHECK(meta.extra == expect.extra);
     CHECKED_IF(meta.libraries.size() == expect.libraries.size()) {
         auto res_lib_it = meta.libraries.cbegin();

@@ -35,8 +35,8 @@ TEST_CASE_METHOD(empty_repo, "Import a simple packages") {
     auto all = REQUIRES_LEAF_NOFAIL(repo.all_packages() | neo::to_vector);
     REQUIRE(all.size() == 1);
     auto first = all.front();
-    CHECK(first.name.str == "test-pkg");
-    CHECK(first.version.to_string() == "1.2.43");
+    CHECK(first.id.name.str == "test-pkg");
+    CHECK(first.id.version.to_string() == "1.2.43");
     CHECKED_IF(fs::is_directory(repo.pkg_dir())) {
         CHECKED_IF(fs::is_directory(repo.pkg_dir() / "test-pkg")) {
             CHECKED_IF(fs::is_directory(repo.pkg_dir() / "test-pkg/1.2.43~1")) {
@@ -51,16 +51,16 @@ TEST_CASE_METHOD(empty_repo, "Import a simple packages") {
     REQUIRE(all.size() == 2);
     first       = all[0];
     auto second = all[1];
-    CHECK(first.name.str == "test-pkg");
-    CHECK(second.name.str == "test-pkg");
-    CHECK(first.version.to_string() == "1.2.43");
-    CHECK(second.version.to_string() == "1.3.0");
+    CHECK(first.id.name.str == "test-pkg");
+    CHECK(second.id.name.str == "test-pkg");
+    CHECK(first.id.version.to_string() == "1.2.43");
+    CHECK(second.id.version.to_string() == "1.3.0");
 
     REQUIRES_LEAF_NOFAIL(repo.import_dir(dds::testing::DATA_DIR / "simple3.crs"));
     all = REQUIRES_LEAF_NOFAIL(repo.all_packages() | neo::to_vector);
     REQUIRE(all.size() == 3);
     auto third = all[2];
-    CHECK(third.name.str == "test-pkg");
-    CHECK(third.version.to_string() == "1.3.0");
-    CHECK(third.pkg_revision == 2);
+    CHECK(third.id.name.str == "test-pkg");
+    CHECK(third.id.version.to_string() == "1.3.0");
+    CHECK(third.id.pkg_revision == 2);
 }
