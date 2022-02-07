@@ -218,7 +218,7 @@ auto handlers = std::tuple(  //
                 sync_repo.value.to_string(),
                 exc.matched.what());
         dds_log(error,
-                "It's possilbe that the downloaded SQLite database is corrupt, invalid, or "
+                "It's possible that the downloaded SQLite database is corrupt, invalid, or "
                 "incompatible with this version of dds");
         return 1;
     },

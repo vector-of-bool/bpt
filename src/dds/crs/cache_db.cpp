@@ -14,6 +14,7 @@
 #include <dds/util/http/pool.hpp>
 #include <dds/util/http/response.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/string.hpp>
 #include <dds/util/url.hpp>
 
 #include <boost/leaf.hpp>
@@ -30,6 +31,8 @@
 #include <neo/sqlite3/transaction.hpp>
 #include <neo/tl.hpp>
 
+#include <charconv>
+
 using namespace dds;
 using namespace dds::crs;
 using namespace neo::sqlite3::literals;
@@ -37,6 +40,9 @@ using namespace fansi::literals;
 using std::optional;
 using std::string;
 using std::string_view;
+namespace chrono = std::chrono;
+using chrono::steady_clock;
+using steady_time_point = steady_clock::time_point;
 
 neo::sqlite3::statement& cache_db::_prepare(neo::sqlite3::sql_string_literal sql) const {
     return _db.get().prepare(sql);
@@ -50,8 +56,14 @@ cache_db cache_db::open(unique_database& db) {
                 url TEXT NOT NULL,
                 unique_name TEXT NOT NULL UNIQUE,
                 revno INTEGER NOT NULL,
+                -- HTTP Etag header
                 etag TEXT,
-                last_modified TEXT
+                -- HTTP Last-Modified header
+                last_modified TEXT,
+                -- System time of the most recent DB update
+                resource_time INTEGER NOT NULL,
+                -- Content of the prior Cache-Control header for HTTP remotes
+                cache_control TEXT
             );
 
             CREATE TABLE dds_crs_packages (
@@ -239,11 +251,56 @@ void cache_db::enable_remote(neo::url_view const& url_) {
 namespace {
 
 struct remote_repo_db_info {
-    fs::path                        local_path;
-    std::optional<std::string_view> etag;
-    std::optional<std::string_view> last_modified;
-    bool                            up_to_date;
+    fs::path                         local_path;
+    std::optional<std::string_view>  etag;
+    std::optional<std::string_view>  last_modified;
+    std::optional<steady_time_point> resource_time;
+    std::optional<std::string_view>  cache_control;
+    bool                             up_to_date;
 };
+
+/**
+ * @brief Determine whether we should revalidate a cached resource based on the cache-control and
+ * age of the resource.
+ *
+ * @param cache_control The 'Cache-Control' header
+ * @param resource_time The create-time of the resource. This may be affected by the 'Age' header.
+ */
+bool should_revalidate(std::string_view cache_control, steady_time_point resource_time) {
+    auto parts = dds::split_view(cache_control, ", ");
+    if (std::ranges::find(parts, "no-cache", trim_view) != parts.end()) {
+        // Always revalidate
+        return true;
+    }
+    if (auto max_age = std::ranges::find_if(parts, NEO_TL(_1.starts_with("max-age=")));
+        max_age != parts.end()) {
+        auto age_str     = dds::trim_view(max_age->substr(std::strlen("max-age=")));
+        int  max_age_int = 0;
+        auto r = std::from_chars(age_str.data(), age_str.data() + age_str.size(), max_age_int);
+        if (r.ec != std::errc{}) {
+            dds_log(warn,
+                    "Malformed max-age integer '{}' in stored cache-control header '{}'",
+                    age_str,
+                    cache_control);
+            return true;
+        }
+        auto stale_time = resource_time + chrono::seconds(max_age_int);
+        if (stale_time < steady_clock::now()) {
+            // The associated resource has become stale, so it must revalidate
+            return true;
+        } else {
+            // The cached item is still fresh
+            dds_log(debug, "Cached repo data is still within its max-age.");
+            dds_log(debug,
+                    "Repository data will expire in {} seconds",
+                    chrono::duration_cast<chrono::seconds>(stale_time - steady_clock::now())
+                        .count());
+            return false;
+        }
+    }
+    // No other headers supported yet. Just revalidate.
+    return true;
+}
 
 neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, neo::url url) {
     if (url.scheme == "file") {
@@ -253,29 +310,51 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
             .local_path    = path / "repo.db",
             .etag          = std::nullopt,
             .last_modified = std::nullopt,
+            .resource_time = std::nullopt,
+            .cache_control = std::nullopt,
             .up_to_date    = false,
         };
         co_yield info;
     } else {
         dds::http_request_params params;
-        auto&                    prio_info_st
-            = db.prepare("SELECT etag, last_modified FROM dds_crs_remotes WHERE url=?"_sql);
+        auto&                    prio_info_st = db.prepare(
+            "SELECT etag, last_modified, resource_time, cache_control "
+            "FROM dds_crs_remotes "
+            "WHERE url=?"_sql);
         auto url_str = url.to_string();
         neo_assertion_breadcrumbs("Pulling remote repository metadata", url_str);
+        dds_log(debug, "Syncing repository [{}] via HTTP", url_str);
         neo::sqlite3::reset_and_bind(prio_info_st, std::string_view(url_str)).throw_if_error();
-        auto prior_info
-            = neo::sqlite3::one_row<std::optional<std::string>, std::optional<std::string>>(
-                prio_info_st);
+        auto prior_info = neo::sqlite3::one_row<std::optional<std::string>,
+                                                std::optional<std::string>,
+                                                std::int64_t,
+                                                std::optional<std::string>>(prio_info_st);
         if (prior_info.has_value()) {
             dds_log(debug, "Seen this remote repository before. Checking for updates.");
-            const auto& [etag, last_mod] = *prior_info;
+            const auto& [etag, last_mod, prev_rc_time_, cache_control] = *prior_info;
             if (etag.has_value()) {
                 params.prior_etag = *etag;
             }
             if (last_mod.has_value()) {
                 params.last_modified = *last_mod;
             }
+            // Check if the cached item is stale according to the server.
+            const auto prev_rc_time = steady_time_point(steady_clock::duration(prev_rc_time_));
+            if (cache_control and not should_revalidate(*cache_control, prev_rc_time)) {
+                dds_log(info, "Repository data from .cyan[{}] is fresh"_styled, url_str);
+                auto info = remote_repo_db_info{
+                    .local_path    = "",
+                    .etag          = etag,
+                    .last_modified = last_mod,
+                    .resource_time = prev_rc_time,
+                    .cache_control = cache_control,
+                    .up_to_date    = true,
+                };
+                co_yield info;
+                co_return;
+            }
         }
+
         if (!prior_info.has_value() && prior_info.errc() != neo::sqlite3::errc::done) {
             prior_info.throw_error();
         }
@@ -292,17 +371,32 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
             }
         };
 
+        // Compute the create-time of the source. By default, just the request time.
+        auto resource_time = steady_clock::now();
+        if (auto age_str = rinfo.resp.header_value("Age")) {
+            int  age_int = 0;
+            auto r = std::from_chars(age_str->data(), age_str->data() + age_str->size(), age_int);
+            if (r.ec == std::errc{}) {
+                resource_time -= chrono::seconds{age_int};
+            }
+        }
+
+        // Init the info about the resource that we will return to the caller
+        remote_repo_db_info yield_info{
+            .local_path    = "",
+            .etag          = rinfo.resp.etag(),
+            .last_modified = rinfo.resp.last_modified(),
+            .resource_time = resource_time,
+            .cache_control = rinfo.resp.header_value("Cache-Control"),
+            .up_to_date    = false,
+        };
+
         if (rinfo.resp.not_modified()) {
             dds_log(info, "Repository data from .cyan[{}] is up-to-date"_styled, url_str);
             do_discard = false;
             rinfo.discard_body();
-            auto info = remote_repo_db_info{
-                .local_path    = "",
-                .etag          = rinfo.resp.etag(),
-                .last_modified = rinfo.resp.last_modified(),
-                .up_to_date    = true,
-            };
-            co_yield info;
+            yield_info.up_to_date = true;
+            co_yield yield_info;
             co_return;
         }
 
@@ -324,13 +418,8 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
 
         auto repo_db = tmpdir.path() / "repo.db";
         dds::decompress_file_gz(dest_file, repo_db).value();
-        auto info = remote_repo_db_info{
-            .local_path    = repo_db,
-            .etag          = rinfo.resp.etag(),
-            .last_modified = rinfo.resp.last_modified(),
-            .up_to_date    = false,
-        };
-        co_yield info;
+        yield_info.local_path = repo_db;
+        co_yield yield_info;
     }
 }
 
@@ -342,7 +431,15 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     DDS_E_SCOPE(e_sync_remote{url});
     auto remote_db = get_remote_db(_db, url);
 
+    auto rc_time = remote_db->resource_time;
+
     if (remote_db->up_to_date) {
+        neo::sqlite3::exec(  //
+            db.prepare("UPDATE dds_crs_remotes "
+                       "SET resource_time = ?1, cache_control = ?2"_sql),
+            rc_time ? std::make_optional(rc_time->time_since_epoch().count()) : std::nullopt,
+            remote_db->cache_control)
+            .throw_if_error();
         return;
     }
 
@@ -354,28 +451,34 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     // Import those packages
     neo::sqlite3::transaction_guard tr{db.raw_database()};
 
-    auto& update_remote_st = db.prepare(R"(
+    auto& update_remote_st         = db.prepare(R"(
         INSERT INTO dds_crs_remotes
-            (url, unique_name, revno, etag, last_modified)
+            (url, unique_name, revno, etag, last_modified, resource_time, cache_control)
         VALUES (
             ?1,  -- url
             (SELECT name FROM remote.crs_repo_self), -- unique_name
-            1,  -- revno
+            1,   -- revno
             ?2,  -- etag
-            ?3  -- last_modified
+            ?3,  -- last_modified
+            ?4,  -- resource_time
+            ?5   -- Cache-Control header
         )
         ON CONFLICT (unique_name) DO UPDATE
             SET url = ?1,
                 etag = ?2,
                 last_modified = ?3,
+                resource_time = ?4,
+                cache_control = ?5,
                 revno = revno + 1
         RETURNING remote_id, revno
     )"_sql);
-    auto [remote_id, remote_revno]
-        = *neo::sqlite3::one_row<std::int64_t, std::int64_t>(update_remote_st,
-                                                             url.to_string(),
-                                                             remote_db->etag,
-                                                             remote_db->last_modified);
+    auto [remote_id, remote_revno] = *neo::sqlite3::one_row<std::int64_t, std::int64_t>(  //
+        update_remote_st,
+        url.to_string(),
+        remote_db->etag,
+        remote_db->last_modified,
+        rc_time ? std::make_optional(rc_time->time_since_epoch().count()) : std::nullopt,
+        remote_db->cache_control);
 
     auto remote_packages =  //
         *neo::sqlite3::exec_tuples<std::string_view>(db.prepare(R"(
@@ -404,22 +507,22 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
               };
           });
 
-    auto& update_pkg_st = db.prepare(R"(
+    auto&              update_pkg_st  = db.prepare(R"(
         INSERT INTO dds_crs_packages (json, remote_id, remote_revno)
             VALUES (?1, ?2, ?3)
         ON CONFLICT(name, version, pkg_revision, remote_id) DO UPDATE
             SET json=excluded.json,
                 remote_revno=?3
     )"_sql);
-    int   n_updated     = 0;
+    const std::int64_t changes_before = db.raw_database().total_changes();
     for (auto meta : remote_packages) {
         if (!meta.has_value()) {
             continue;
         }
         neo::sqlite3::exec(update_pkg_st, meta->to_json(), remote_id, remote_revno)
             .throw_if_error();
-        n_updated++;
     }
+    const std::int64_t n_updated = db.raw_database().total_changes() - changes_before;
 
     auto& delete_old_st = db.prepare(R"(
         DELETE FROM dds_crs_packages
