@@ -61,7 +61,7 @@ cache_db cache_db::open(unique_database& db) {
                 -- HTTP Last-Modified header
                 last_modified TEXT,
                 -- System time of the most recent DB update
-                resource_time INTEGER NOT NULL,
+                resource_time INTEGER,
                 -- Content of the prior Cache-Control header for HTTP remotes
                 cache_control TEXT
             );
