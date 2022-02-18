@@ -13,7 +13,7 @@ using namespace fansi::literals;
 
 namespace dds::cli::cmd {
 
-int compile_file(const options& opts) {
+int _compile_file(const options& opts) {
     return boost::leaf::try_catch(
         [&] {
             auto builder = create_project_builder(opts);
@@ -51,6 +51,10 @@ int compile_file(const options& opts) {
             write_error_marker("compile-file-failed");
             return 2;
         });
+}
+
+int compile_file(const options& opts) {
+    return handle_build_error([&] { return _compile_file(opts); });
 }
 
 }  // namespace dds::cli::cmd
