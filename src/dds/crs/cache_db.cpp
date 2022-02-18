@@ -136,6 +136,9 @@ cache_db cache_db::open(unique_database& db) {
             remote_id INTEGER NOT NULL -- references main.dds_crs_remotes
                 UNIQUE ON CONFLICT IGNORE
         );
+        CREATE TEMPORARY VIEW IF NOT EXISTS enabled_packages AS
+            SELECT * FROM dds_crs_packages
+            WHERE remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes);
     )"_sql);
     return cache_db{db};
 }
@@ -180,9 +183,8 @@ cache_db::for_package(dds::name const& name, semver::version const& version) con
                               version.to_string());
     auto st       = *_db.get().sqlite3_db().prepare(R"(
         SELECT pkg_id, remote_id, json
-        FROM dds_crs_packages
+        FROM enabled_packages
         WHERE name = ? AND version = ?
-            AND remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes)
     )");
     st.bindings() = std::forward_as_tuple(name.str, version.to_string());
     return cache_entries_for_query(std::move(st));
@@ -192,12 +194,18 @@ neo::any_input_range<cache_db::package_entry> cache_db::for_package(dds::name co
     neo_assertion_breadcrumbs("Loading package cache entries for name", name.str);
     auto st       = *_db.get().sqlite3_db().prepare(R"(
         SELECT pkg_id, remote_id, json
-        FROM dds_crs_packages
+        FROM enabled_packages
         WHERE name = ?
-            AND remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes)
     )");
     st.bindings() = std::forward_as_tuple(name.str);
     db_bind(st, string_view(name.str)).value();
+    return cache_entries_for_query(std::move(st));
+}
+
+neo::any_input_range<cache_db::package_entry> cache_db::all_enabled() const {
+    neo_assertion_breadcrumbs("Loading all enabled package entries");
+    auto st
+        = *_db.get().sqlite3_db().prepare("SELECT pkg_id, remote_id, json FROM enabled_packages");
     return cache_entries_for_query(std::move(st));
 }
 

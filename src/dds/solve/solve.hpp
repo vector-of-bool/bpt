@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dds/crs/info/pkg_id.hpp>
+#include <dds/error/nonesuch.hpp>
 
 #include <libman/library.hpp>
 #include <neo/any_range.hpp>
@@ -21,6 +22,10 @@ struct e_usage_no_such_lib {};
 struct e_dependency_solve_failure {};
 struct e_dependency_solve_failure_explanation {
     std::string value;
+};
+
+struct e_nonesuch_package : e_nonesuch {
+    using e_nonesuch::e_nonesuch;
 };
 
 std::vector<crs::pkg_id> solve(crs::cache_db const&, neo::any_input_range<crs::dependency>);

@@ -2,6 +2,7 @@
 
 #include <dds/crs/cache_db.hpp>
 #include <dds/crs/info/dependency.hpp>
+#include <dds/dym.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/util/algo.hpp>
@@ -358,6 +359,24 @@ generate_failure_explanation(const solve_failure_exception& exc) {
     return e_dependency_solve_failure_explanation{explain.strm.str()};
 }
 
+void try_load_nonesuch_packages(boost::leaf::error_id           error,
+                                crs::cache_db const&            cache,
+                                const std::vector<requirement>& reqs) {
+    error.load([&](std::vector<e_nonesuch_package>& missing) {
+        for (auto& req : reqs) {
+            auto cands = cache.for_package(req.name);
+            if (cands.begin() != cands.end()) {
+                // This requirement has candidates
+                continue;
+            }
+            auto all       = cache.all_enabled();
+            auto all_names = all | stdv::transform([](auto entry) { return entry.pkg.id.name.str; })
+                | neo::to_vector;
+            missing.emplace_back(req.name.str, did_you_mean(req.name.str, all_names));
+        }
+    });
+}
+
 }  // namespace
 
 std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
@@ -366,7 +385,10 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
     auto deps = deps_ | stdv::transform(NEO_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
     auto sln  = dds_leaf_try { return pubgrub::solve(deps, provider); }
     dds_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
-        BOOST_LEAF_THROW_EXCEPTION(dds::e_dependency_solve_failure{},
+        auto error = boost::leaf::new_error();
+        try_load_nonesuch_packages(error, cache, deps);
+        BOOST_LEAF_THROW_EXCEPTION(error,
+                                   dds::e_dependency_solve_failure{},
                                    DDS_E_ARG(generate_failure_explanation(exc.matched)));
     };
     return sln

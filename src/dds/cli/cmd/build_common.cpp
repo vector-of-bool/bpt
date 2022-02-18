@@ -164,12 +164,18 @@ crs::package_info dds::cli::fetch_cache_load_dependency(crs::cache&        cache
 
 int dds::cli::handle_build_error(std::function<int()> fn) {
     return dds_leaf_try { return fn(); }
-    dds_leaf_catch(e_dependency_solve_failure, e_dependency_solve_failure_explanation explain)
+    dds_leaf_catch(e_dependency_solve_failure,
+                   e_dependency_solve_failure_explanation explain,
+                   const std::vector<e_nonesuch_package>& missing_pkgs)
         ->int {
         dds_log(
             error,
             "No dependency solution is possible with the known package information: \n{}"_styled,
             explain.value);
+        for (auto& missing : missing_pkgs) {
+            missing.log_error(
+                "Direct requirement on '.bold.red[{}]' does not name an existing package in any enabled repositories"_styled);
+        }
         write_error_marker("no-dependency-solution");
         return 1;
     }

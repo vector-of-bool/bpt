@@ -39,10 +39,16 @@ static int _pkg_solve(const options& opts) {
 
 int pkg_solve(const options& opts) {
     return dds_leaf_try { return _pkg_solve(opts); }
-    dds_leaf_catch(e_dependency_solve_failure, e_dependency_solve_failure_explanation explain) {
+    dds_leaf_catch(e_dependency_solve_failure,
+                   e_dependency_solve_failure_explanation explain,
+                   const std::vector<e_nonesuch_package>& missing_pkgs) {
         dds_log(error,
                 "No solution is possible with the known package information: \n{}"_styled,
                 explain.value);
+        for (auto& missing : missing_pkgs) {
+            missing.log_error(
+                "Direct requirement on '.bold.red[{}]' does not name an existing package in any enabled repositories"_styled);
+        }
         write_error_marker("no-dependency-solution");
         return 1;
     };

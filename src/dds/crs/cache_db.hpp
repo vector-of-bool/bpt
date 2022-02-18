@@ -99,6 +99,13 @@ public:
     [[nodiscard]] neo::any_input_range<package_entry> for_package(dds::name const& name) const;
 
     /**
+     * @brief Iterate over all package entries that are currently available in any enabled remote.
+     *
+     * @return neo::any_input_range<package_entry>
+     */
+    [[nodiscard]] neo::any_input_range<package_entry> all_enabled() const;
+
+    /**
      * @brief Ensure that we have up-to-date package metadata from the given remote repo
      */
     void sync_remote(const neo::url_view& url) const;
