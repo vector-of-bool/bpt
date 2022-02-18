@@ -198,6 +198,27 @@ auto handlers = std::tuple(  //
         write_error_marker("invalid-dep-shorthand");
         return 1;
     },
+    [](const semver::invalid_version&            exc,
+       e_parse_dep_shorthand_string              given,
+       e_parse_dep_range_shorthand_string const* range_part,
+       e_parse_project_manifest_path const*      proj_man) {
+        dds_log(error,
+                "Invalid dependency shorthand string '.bold.yellow[{}]'"_styled,
+                given.value);
+        if (range_part) {
+            dds_log(error,
+                    "  (While parsing name+range string '.bold.yellow[{}]')"_styled,
+                    range_part->value);
+        }
+        if (proj_man) {
+            dds_log(error,
+                    "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
+                    proj_man->value);
+        }
+        dds_log(error, "  Error: .bold.red[{}]"_styled, exc.what());
+        write_error_marker("invalid-dep-shorthand");
+        return 1;
+    },
     [](dds::crs::e_sync_remote sync_repo,
        dds::e_decompress_error err,
        dds::e_read_file_path   read_file) {
