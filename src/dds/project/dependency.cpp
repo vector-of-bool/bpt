@@ -32,7 +32,7 @@ project_dependency project_dependency::parse_dep_range_shorthand(std::string_vie
     auto sep_pos = sv.find_first_of("=@^~+");
     if (sep_pos == sv.npos) {
         BOOST_LEAF_THROW_EXCEPTION(
-            e_human_message{"Expected an one of '=@^~+' in name+version shorthand"});
+            e_human_message{"Expected one of '=@^~+' in name+version shorthand"});
     }
 
     ret.dep_name = dds::name::from_string(sv.substr(0, sep_pos)).value();
