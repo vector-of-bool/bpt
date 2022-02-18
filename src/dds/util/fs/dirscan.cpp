@@ -50,7 +50,7 @@ neo::any_input_range<fs::path> file_collector::collect(path_ref dirpath) {
         dir_id = std::get<0>(*dir_id_);
     } else {
         // Nothing for this directory. We need to scan it
-        neo::sqlite3::transaction_guard tr{_db.get().raw_database()};
+        neo::sqlite3::transaction_guard tr{_db.get().sqlite3_db()};
 
         auto new_dir_id = *neo::sqlite3::one_row<std::int64_t>(  //
             _db.get().prepare(R"(
@@ -75,7 +75,7 @@ neo::any_input_range<fs::path> file_collector::collect(path_ref dirpath) {
     }
 
     auto st = neo::copy_shared(
-        *_db.get().raw_database().prepare("SELECT relpath FROM dds_found_files WHERE dir_id = ?"));
+        *_db.get().sqlite3_db().prepare("SELECT relpath FROM dds_found_files WHERE dir_id = ?"));
 
     return *neo::sqlite3::exec_tuples<std::string>(*st, dir_id)
         | std::views::transform([pin = st](auto tup) { return fs::path(tup.template get<0>()); });

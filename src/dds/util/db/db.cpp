@@ -65,7 +65,7 @@ void unique_database::exec_script(nsql::sql_string_literal script) {
     _impl->db.exec(neo::zstring_view(script.string())).throw_if_error();
 }
 
-nsql::connection_ref unique_database::raw_database() const noexcept { return _impl->db; }
+nsql::connection_ref unique_database::sqlite3_db() const noexcept { return _impl->db; }
 
 nsql::statement& unique_database::prepare(nsql::sql_string_literal s) const {
     try {

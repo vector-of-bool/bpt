@@ -23,7 +23,7 @@ result<void> detail::do_migrations_1(unique_database&                           
             SELECT * FROM init
         )",
         tablename);
-    auto st = db.raw_database().prepare(init_meta_table);
+    auto st = db.sqlite3_db().prepare(init_meta_table);
     if (!st.has_value()) {
         return new_error(db_migration_errc::init_failed,
                          st.errc(),
@@ -31,7 +31,7 @@ result<void> detail::do_migrations_1(unique_database&                           
                              "Failed to prepare initialize-meta-table statement for '{}': {}: {}",
                              tablename,
                              nsql::make_error_code(st.errc()).message(),
-                             db.raw_database().error_message())});
+                             db.sqlite3_db().error_message())});
     }
     auto step_rc = st->step();
     if (step_rc != neo::sqlite3::errc::done) {
@@ -41,7 +41,7 @@ result<void> detail::do_migrations_1(unique_database&                           
                              fmt::format("Failed to initialize migration meta-table '{}': {}: {}",
                                          tablename,
                                          nsql::make_error_code(st.errc()).message(),
-                                         db.raw_database().error_message())});
+                                         db.sqlite3_db().error_message())});
     }
 
     // Check the migration version
@@ -56,7 +56,7 @@ result<void> detail::do_migrations_1(unique_database&                           
     }
 
     // Wrap migrations in a transaction
-    neo::sqlite3::transaction_guard tr{db.raw_database()};
+    neo::sqlite3::transaction_guard tr{db.sqlite3_db()};
 
     // Apply individual migrations
     auto it = migrations.begin() + version;
@@ -72,7 +72,7 @@ result<void> detail::do_migrations_1(unique_database&                           
 
     // Update the version in the meta table
     std::string query = fmt::format("UPDATE \"{}\" SET version = {}", tablename, migrations.size());
-    st                = *db.raw_database().prepare(query);
+    st                = *db.sqlite3_db().prepare(query);
     step_rc           = st->step();
     if (step_rc != neo::sqlite3::errc::done) {
         tr.rollback();
@@ -81,7 +81,7 @@ result<void> detail::do_migrations_1(unique_database&                           
                              fmt::format("Failed to update migration version on '{}': {}: {}",
                                          tablename,
                                          nsql::make_error_code(step_rc.errc()).message(),
-                                         db.raw_database().error_message())});
+                                         db.sqlite3_db().error_message())});
     }
 
     return {};
@@ -89,20 +89,20 @@ result<void> detail::do_migrations_1(unique_database&                           
 
 result<int> dds::get_migration_version(unique_database& db, std::string_view tablename) {
     auto q  = fmt::format("SELECT version FROM \"{}\"", tablename);
-    auto st = db.raw_database().prepare(q);
+    auto st = db.sqlite3_db().prepare(q);
     if (!st.has_value()) {
         return new_error(e_migration_error{
             fmt::format("Failed to find version for migrations table '{}': {}: {}",
                         tablename,
                         nsql::make_error_code(st.errc()).message(),
-                        db.raw_database().error_message())});
+                        db.sqlite3_db().error_message())});
     }
     auto step_rc = st->step();
     if (step_rc != neo::sqlite3::errc::row) {
         return new_error("Failed to find version for migrations table '{}': {}: {}",
                          tablename,
                          nsql::make_error_code(step_rc.errc()).message(),
-                         db.raw_database().error_message());
+                         db.sqlite3_db().error_message());
     }
     auto r = st->row()[0];
     if (!r.is_integer()) {

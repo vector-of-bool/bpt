@@ -88,7 +88,7 @@ int repo_validate(const options& opts) {
         cache.enable_remote(url);
     }
 
-    neo::sqlite3::transaction_guard tr{db.raw_database()};
+    neo::sqlite3::transaction_guard tr{db.sqlite3_db()};
     neo_defer { tr.rollback(); };
 
     auto tmp_remote_id = *neo::sqlite3::one_cell<std::int64_t>(db.prepare(R"(

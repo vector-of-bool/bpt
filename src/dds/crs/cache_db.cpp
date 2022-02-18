@@ -178,7 +178,7 @@ cache_db::for_package(dds::name const& name, semver::version const& version) con
     neo_assertion_breadcrumbs("Loading package cache entries for name+version",
                               name.str,
                               version.to_string());
-    auto st       = *_db.get().raw_database().prepare(R"(
+    auto st       = *_db.get().sqlite3_db().prepare(R"(
         SELECT pkg_id, remote_id, json
         FROM dds_crs_packages
         WHERE name = ? AND version = ?
@@ -190,7 +190,7 @@ cache_db::for_package(dds::name const& name, semver::version const& version) con
 
 neo::any_input_range<cache_db::package_entry> cache_db::for_package(dds::name const& name) const {
     neo_assertion_breadcrumbs("Loading package cache entries for name", name.str);
-    auto st       = *_db.get().raw_database().prepare(R"(
+    auto st       = *_db.get().sqlite3_db().prepare(R"(
         SELECT pkg_id, remote_id, json
         FROM dds_crs_packages
         WHERE name = ?
@@ -449,7 +449,7 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     neo_defer { db.exec_script(R"(DETACH DATABASE remote)"_sql); };
 
     // Import those packages
-    neo::sqlite3::transaction_guard tr{db.raw_database()};
+    neo::sqlite3::transaction_guard tr{db.sqlite3_db()};
 
     auto& update_remote_st         = db.prepare(R"(
         INSERT INTO dds_crs_remotes
@@ -507,14 +507,15 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
               };
           });
 
-    auto&              update_pkg_st  = db.prepare(R"(
+    auto n_before = *neo::sqlite3::one_cell<std::int64_t>(
+        db.prepare("SELECT count(*) FROM dds_crs_packages"_sql));
+    auto& update_pkg_st = db.prepare(R"(
         INSERT INTO dds_crs_packages (json, remote_id, remote_revno)
             VALUES (?1, ?2, ?3)
         ON CONFLICT(name, version, pkg_version, remote_id) DO UPDATE
             SET json=excluded.json,
                 remote_revno=?3
     )"_sql);
-    const std::int64_t changes_before = db.raw_database().total_changes();
     for (auto meta : remote_packages) {
         if (!meta.has_value()) {
             continue;
@@ -522,7 +523,9 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
         neo::sqlite3::exec(update_pkg_st, meta->to_json(), remote_id, remote_revno)
             .throw_if_error();
     }
-    const std::int64_t n_updated = db.raw_database().total_changes() - changes_before;
+    auto n_after = *neo::sqlite3::one_cell<std::int64_t>(
+        db.prepare("SELECT count(*) FROM dds_crs_packages"_sql));
+    const std::int64_t n_added = n_after - n_before;
 
     auto& delete_old_st = db.prepare(R"(
         DELETE FROM dds_crs_packages
@@ -530,18 +533,18 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     )"_sql);
     neo::sqlite3::reset_and_bind(delete_old_st, remote_id, remote_revno).throw_if_error();
     neo::sqlite3::exec(delete_old_st).throw_if_error();
-    const auto n_deleted = db.raw_database().changes();
+    const auto n_deleted = db.sqlite3_db().changes();
 
     dds_log(debug, "Running integrity check");
     db.exec_script("PRAGMA main.integrity_check"_sql);
 
     dds_log(info,
-            "Syncing repository .cyan[{}] Done: {} added/updated, {} deleted"_styled,
+            "Syncing repository .cyan[{}] Done: {} added, {} deleted"_styled,
             url.to_string(),
-            n_updated,
+            n_added,
             n_deleted);
 }
 
 neo::sqlite3::connection_ref cache_db::sqlite3_db() const noexcept {
-    return _db.get().raw_database();
+    return _db.get().sqlite3_db();
 }

@@ -87,7 +87,7 @@ void archive_package_libraries(path_ref from_dir, path_ref dest_root, const pack
 
 void repository::_vacuum_and_compress() const {
     neo_assert(invariant,
-               !_db.raw_database().is_transaction_active(),
+               !_db.sqlite3_db().is_transaction_active(),
                "Database cannot be recompressed while a transaction is open");
     db_exec(_prepare("VACUUM"_sql)).value();
     dds::compress_file_gz(_dirpath / "repo.db", _dirpath / "repo.db.gz").value();
@@ -154,7 +154,7 @@ void repository::import_dir(path_ref dirpath) {
             "a repository"});
     }
 
-    neo::sqlite3::transaction_guard tr{_db.raw_database()};
+    neo::sqlite3::transaction_guard tr{_db.sqlite3_db()};
     dds_leaf_try {
         db_exec(  //
             _prepare(R"(
