@@ -5,6 +5,7 @@
 #include <dds/util/fs/io.hpp>
 #include <dds/util/fs/shutil.hpp>
 #include <dds/util/http/pool.hpp>
+#include <dds/util/log.hpp>
 
 #include <neo/scope.hpp>
 #include <neo/tar/util.hpp>
@@ -36,6 +37,11 @@ void expand_tgz(path_ref tgz_path, path_ref into) {
 }  // namespace
 
 void crs::pull_pkg_ar_from_remote(path_ref dest, neo::url_view from, pkg_id pkg) {
+    dds_log(trace,
+            "Pulling package archive from remote {} for {} to {}",
+            from.to_string(),
+            pkg.to_string(),
+            dest.string());
     auto tgz_url = calc_pkg_url(from, pkg);
 
     fs::create_directories(dest.parent_path());
@@ -62,6 +68,11 @@ void crs::pull_pkg_ar_from_remote(path_ref dest, neo::url_view from, pkg_id pkg)
 void crs::pull_pkg_from_remote(path_ref expand_into, neo::url_view from, pkg_id pkg) {
     fs::path expand_tgz_path;
     if (from.scheme == "file") {
+        dds_log(debug,
+                "Expanding package archive of {} from remote [{}] in-place into [{}]",
+                pkg.to_string(),
+                from.to_string(),
+                expand_into.string());
         // We can skip copying the tarball and just expand the one in the repository directly.
         fs::path tgz_path = calc_pkg_url(from, pkg).path;
         expand_tgz(tgz_path, expand_into);
