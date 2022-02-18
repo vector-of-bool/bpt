@@ -263,7 +263,7 @@ def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Pr
 
 def test_repo_invalid_pkg_version_zero(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
     tmp_path.joinpath('pkg.json').write_text(json.dumps(make_simple_crs('foo', '1.2.3', pkg_version=0)))
-    with expect_error_marker('repo-import-invalid-pkg_version'):
+    with expect_error_marker('repo-import-invalid-pkg-version'):
         tmp_crs_repo.import_(tmp_path)
 
 
