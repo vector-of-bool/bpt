@@ -48,10 +48,10 @@ void ensure_migrated(unique_database& db) {
                 version TEXT NOT NULL
                     GENERATED ALWAYS AS (json_extract(meta_json, '$.version'))
                     VIRTUAL,
-                pkg_revision INTEGER NOT NULL
-                    GENERATED ALWAYS AS (json_extract(meta_json, '$.pkg_revision'))
+                pkg_version INTEGER NOT NULL
+                    GENERATED ALWAYS AS (json_extract(meta_json, '$.pkg-version'))
                     VIRTUAL,
-                UNIQUE(name, version, pkg_revision)
+                UNIQUE(name, version, pkg_version)
             );
         )"_sql);
     }).value();
@@ -149,8 +149,8 @@ void repository::import_dir(path_ref dirpath) {
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
 
     if (pkg.id.revision < 1) {
-        BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_pkg_revision{
-            "Package pkg_revision must be a positive non-zero integer in order to be imported into "
+        BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_pkg_version{
+            "Package pkg-version must be a positive non-zero integer in order to be imported into "
             "a repository"});
     }
 
@@ -192,7 +192,7 @@ void repository::remove_pkg(const package_info& meta) {
                 DELETE FROM crs_repo_packages
                  WHERE name = ?1
                        AND version = ?2
-                       AND (pkg_revision = ?3
+                       AND (pkg_version = ?3
                             OR ?3 = 0)
             )"_sql),
             meta.id.name.str,

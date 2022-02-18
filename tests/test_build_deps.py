@@ -108,7 +108,7 @@ def test_cli_missing(bd_test_repo: CRSRepo, bd_project: Project) -> None:
 
 def test_from_file(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     """build-deps using a file listing deps"""
-    bd_project.write('deps.json5', json.dumps({'depends': ['foo+0.3.0']}))
+    bd_project.write('deps.json5', json.dumps({'dependencies': ['foo+0.3.0']}))
     bd_project.dds.build_deps(['-d', 'deps.json5'], repos=[bd_test_repo.path])
     assert bd_project.root.joinpath('_deps/foo@1.2.3~1').is_dir()
     assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
@@ -117,7 +117,7 @@ def test_from_file(bd_test_repo: CRSRepo, bd_project: Project) -> None:
 
 
 def test_from_file_missing(bd_project: Project) -> None:
-    bd_project.write('deps.json5', json.dumps({'depends': ['no-such-pkg@9.3.1']}))
+    bd_project.write('deps.json5', json.dumps({'dependencies': ['no-such-pkg@9.3.1']}))
     with expect_error_marker('no-dependency-solution'):
         bd_project.dds.build_deps(['-d', 'deps.json5'])
 
@@ -157,15 +157,15 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
         {
             'foo': {
                 'pkg.json': json.dumps({
-                    'crs_version': 1,
+                    'schema-version': 1,
                     'name': 'foo',
                     'version': '1.2.3',
-                    'pkg_revision': 1,
+                    'pkg-version': 1,
                     'libraries': [{
                         'name': 'foo',
-                        'uses': [],
+                        'using': [],
                         'path': '.',
-                        'depends': [],
+                        'dependencies': [],
                     }]
                 }),
                 'src': {
@@ -181,18 +181,18 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
             },
             'bar': {
                 'pkg.json': json.dumps({
-                    'crs_version': 1,
+                    'schema-version': 1,
                     'name': 'bar',
                     'version': '1.2.3',
-                    'pkg_revision': 1,
+                    'pkg-version': 1,
                     'libraries': [{
                         'name': 'bar',
-                        'uses': [],
+                        'using': [],
                         'path': '.',
-                        'depends': [{
+                        'dependencies': [{
                             'name': 'foo',
                             'versions': [{'low': '1.2.3', 'high': '1.2.4'}],
-                            'uses': ['foo'],
+                            'using': ['foo'],
                             'for': 'lib',
                         }],
                     }]

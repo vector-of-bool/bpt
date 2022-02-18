@@ -16,300 +16,300 @@ TEST_CASE("Reject bad meta informations") {
         {"f",
          "[json.exception.parse_error.101] parse error at line 1, column 2: syntax error while "
          "parsing value - invalid literal; last read: 'f'"},
-        {"{\"crs_version\": 1}", "A string 'name' is required"},
-        {R"({"crs_version": 1, "name": "foo"})", "A 'version' string is required"},
-        {R"({"crs_version": 1, "name": "foo."})",
+        {"{\"schema-version\": 1}", "A string 'name' is required"},
+        {R"({"schema-version": 1, "name": "foo"})", "A 'version' string is required"},
+        {R"({"schema-version": 1, "name": "foo."})",
          "Invalid name string 'foo.': Names must not end with a punctuation character"},
-        {R"({"crs_version": 1, "name": "foo", "version": "bleh"})",
+        {R"({"schema-version": 1, "name": "foo", "version": "bleh"})",
          "Invalid semantic version string 'bleh'"},
         {R"({
             "name": "foo",
             "version": "1.2.3",
-            "crs_version": 1
+            "schema-version": 1
         })",
-         "A 'pkg_revision' integer is required"},
+         "A 'pkg-version' integer is required"},
         {R"({
             "name": "foo",
             "version": "1.2.3",
-            "pkg_revision": true,
-            "crs_version": 1
+            "pkg-version": true,
+            "schema-version": 1
         })",
-         "'pkg_revision' must be an integer"},
+         "'pkg-version' must be an integer"},
         {R"({
             "name": "foo",
             "version": "1.2.3",
-            "pkg_revision": 3.14,
-            "crs_version": 1
+            "pkg-version": 3.14,
+            "schema-version": 1
         })",
-         "'pkg_revision' must be an integer"},
+         "'pkg-version' must be an integer"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
-             "crs_version": 1
+             "pkg-version": 1,
+             "schema-version": 1
          })",
          "A 'libraries' array is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": {},
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'libraries' must be an array of library objects"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'libraries' array must be non-empty"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [12],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Each library must be a JSON object"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{}],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "A library 'name' is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo"
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "A library 'path' is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": 12
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Library 'path' must be a string"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": "/foo/bar"
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Library path [/foo/bar] must be a relative path"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": "../bar"
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Library path [../bar] must not reach outside of the distribution directory."},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": "."
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
-         "A 'uses' list is required"},
+         "A 'using' list is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": []
+                 "using": []
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
-         "A 'depends' list is required"},
+         "A 'dependencies' list is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": {}
+                 "using": [],
+                 "dependencies": {}
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
-         "'depends' must be an array of dependency objects"},
+         "'dependencies' must be an array of dependency objects"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [12]
+                 "using": [],
+                 "dependencies": [12]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Each dependency should be a JSON object"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{}]
+                 "using": [],
+                 "dependencies": [{}]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "A string 'name' is required for each dependency"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bad-name."
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Invalid name string 'bad-name.': Names must not end with a punctuation character"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar"
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "A 'for' is required for each dependency"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib"
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "An array 'versions' is required for each dependency"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": 12
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Dependency 'versions' must be an array"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [12]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'versions' elements must be objects"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [],
-                     "uses": []
+                     "using": []
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "A dependency's 'versions' array may not be empty"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{}]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'low' version is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
@@ -317,18 +317,18 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'low' version must be a string"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
@@ -336,18 +336,18 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Invalid semantic version string '1.2.'"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
@@ -355,18 +355,18 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'high' version is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
@@ -375,18 +375,18 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'high' version must be a string"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
@@ -395,155 +395,155 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
-         "A dependency 'uses' key is required"},
+         "A dependency 'using' key is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": []
+                     "using": []
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "'high' version must be strictly greater than 'low' version"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": [12]
+                     "using": [12]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
-         "Each 'uses' item must be a usage string"},
+         "Each 'using' item must be a usage string"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": ["baz/quux"]
+                     "using": ["baz/quux"]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          "Invalid name string 'baz/quux'"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": []
+                     "using": []
                  }]
              }]
          })",
-         "A 'crs_version' integer is required"},
+         "A 'schema-version' integer is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": []
+                     "using": []
                  }]
              }],
-             "crs_version": true
+             "schema-version": true
          })",
-         "Only 'crs_version' == 1 is supported"},
+         "Only 'schema-version' == 1 is supported"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": []
+                     "using": []
                  }]
              }],
-             "crs_version": 1.4
+             "schema-version": 1.4
          })",
-         "Only 'crs_version' == 1 is supported"},
+         "Only 'schema-version' == 1 is supported"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
                      }],
-                     "uses": []
+                     "using": []
                  }]
              }],
-             "crs_version": 3
+             "schema-version": 3
          })",
-         "Only 'crs_version' == 1 is supported"},
+         "Only 'schema-version' == 1 is supported"},
     }));
     INFO("Parsing data: " << given);
     CAPTURE(expect_error);
@@ -575,17 +575,17 @@ TEST_CASE("Reject bad meta informations") {
         dds::crs::package_info::from_json_str(R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "meow"
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })");
         FAIL_CHECK("Expected an error, but non occurred");
     }
@@ -602,14 +602,14 @@ TEST_CASE("Check some valid meta JSON") {
     const auto given = GENERATE(R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": []
+                 "using": [],
+                 "dependencies": []
              }],
-             "crs_version": 1
+             "schema-version": 1
          })");
     REQUIRE_NOTHROW(dds::crs::package_info::from_json_str(given));
 }
@@ -625,22 +625,22 @@ TEST_CASE("Check parse results") {
         {R"({
              "name": "foo",
              "version": "1.2.3",
-             "pkg_revision": 1,
+             "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
                  "path": ".",
-                 "uses": [],
-                 "depends": [{
+                 "using": [],
+                 "dependencies": [{
                      "name": "bar",
                      "for": "lib",
                      "versions": [{
                          "low": "1.0.0",
                          "high": "1.5.1"
                      }],
-                     "uses": ["bar"]
+                     "using": ["bar"]
                  }]
              }],
-             "crs_version": 1
+             "schema-version": 1
          })",
          pkg_meta{
              .id=dds::crs::pkg_id{

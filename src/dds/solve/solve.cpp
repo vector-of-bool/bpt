@@ -47,16 +47,16 @@ struct requirement {
     dds::name              name;
     crs::version_range_set versions;
     dependency_uses        uses;
-    std::optional<int>     pkg_revision;
+    std::optional<int>     pkg_version;
 
     explicit requirement(dds::name              name,
                          crs::version_range_set vrs,
                          dependency_uses        u,
-                         std::optional<int>     mv)
+                         std::optional<int>     pver)
         : name{std::move(name)}
         , versions{std::move(vrs)}
         , uses{std::move(u)}
-        , pkg_revision{mv} {
+        , pkg_version{pver} {
         uses.visit(neo::overload{
             [](explicit_uses_list& l) { sr::sort(l.uses); },
             [](implicit_uses_all) {},
@@ -266,7 +266,7 @@ struct metadata_provider {
                 auto lib_it = sr::find(pkg.libraries, used, &crs::library_info::name);
                 neo_assert(invariant,
                            lib_it != sr::end(pkg.libraries),
-                           "Invalid 'uses' on non-existent requirement library",
+                           "Invalid 'using' on non-existent requirement library",
                            used,
                            pkg);
                 extend(more_uses,
@@ -373,7 +373,7 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
         | stdv::transform(NEO_TL(crs::pkg_id{
             .name     = _1.name,
             .version  = sole_version(_1.versions),
-            .revision = _1.pkg_revision.value(),
+            .revision = _1.pkg_version.value(),
         }))
         | neo::to_vector;
 }

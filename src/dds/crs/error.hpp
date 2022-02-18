@@ -24,7 +24,7 @@ struct e_repo_already_init {};
 
 struct e_repo_import_pkg_already_present {};
 
-struct e_repo_import_invalid_pkg_revision {
+struct e_repo_import_invalid_pkg_version {
     std::string value;
 };
 

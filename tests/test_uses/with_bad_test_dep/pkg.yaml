@@ -1,9 +1,9 @@
 {
     "name": "with_bad_test_dep",
     "version": "0.0.0",
-    "depends": [
+    "dependencies": [
         # This dependency cannot compile. We will therefore fail to build
         # if we build with tests
-        "unbuildable@0.0.0 uses fails_to_build for test"
+        "unbuildable@0.0.0 using fails_to_build for test"
     ]
 }

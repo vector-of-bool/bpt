@@ -1,3 +1,3 @@
 name: "test"
 version: "0.0.0"
-depends: [{ dep: "the_test_lib@0.0.0", for: "test" }]
+dependencies: [{ dep: "the_test_lib@0.0.0", for: "test" }]

@@ -8,7 +8,7 @@ def test_self_referential_uses_fails(tmp_project: Project) -> None:
         'version': '0.1.0',
         'lib': {
             'name': 'mine',
-            'uses': ['mine']
+            'using': ['mine']
         },
     }
 
@@ -25,11 +25,11 @@ def test_self_referential_uses_cycle_fails(tmp_project: Project) -> None:
         'libs': [{
             'name': 'liba',
             'path': 'libs/liba',
-            'uses': ['libb'],
+            'using': ['libb'],
         }, {
             'name': 'libb',
             'path': 'libs/libb',
-            'uses': ['liba'],
+            'using': ['liba'],
         }],
     }
     liba = tmp_project.lib('liba')
@@ -49,7 +49,7 @@ def test_self_referential_uses_for_libs_fails(tmp_project: Project) -> None:
         'libs': [{
             'name': 'liba',
             'path': 'libs/liba',
-            'uses': ['liba'],
+            'using': ['liba'],
         }]
     }
     lib = tmp_project.lib('liba')

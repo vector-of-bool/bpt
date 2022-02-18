@@ -81,11 +81,11 @@ cache_db cache_db::open(unique_database& db) {
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.version'))
                     STORED,
-                pkg_revision INTEGER NOT NULL
+                pkg_version INTEGER NOT NULL
                     GENERATED ALWAYS
-                    AS (json_extract(json, '$.pkg_revision'))
+                    AS (json_extract(json, '$.pkg-version'))
                     STORED,
-                UNIQUE (name, version, pkg_revision, remote_id)
+                UNIQUE (name, version, pkg_version, remote_id)
             );
 
             CREATE TABLE dds_crs_libraries (
@@ -490,7 +490,7 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
                   auto meta = package_info::from_json_str(json_str);
                   if (meta.id.revision < 1) {
                       dds_log(warn,
-                              "Remote package {} has an invalid 'pkg_revision' of {}.",
+                              "Remote package {} has an invalid 'pkg-version' of {}.",
                               meta.id.to_string(),
                               meta.id.revision);
                       dds_log(warn, "  The corresponding package will not be available.");
@@ -510,7 +510,7 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     auto&              update_pkg_st  = db.prepare(R"(
         INSERT INTO dds_crs_packages (json, remote_id, remote_revno)
             VALUES (?1, ?2, ?3)
-        ON CONFLICT(name, version, pkg_revision, remote_id) DO UPDATE
+        ON CONFLICT(name, version, pkg_version, remote_id) DO UPDATE
             SET json=excluded.json,
                 remote_revno=?3
     )"_sql);

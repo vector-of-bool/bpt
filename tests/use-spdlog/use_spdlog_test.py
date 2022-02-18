@@ -44,7 +44,7 @@ def test_invalid_uses_specifier(project_opener: ProjectOpener, toolchain_path: P
     proj.pkg_yaml = {
         'name': 'test',
         'version': '0.0.0',
-        'depends': ['spdlog@1.4.2 uses no-such-library'],
+        'dependencies': ['spdlog@1.4.2 using no-such-library'],
     }
     with error.expect_error_marker('no-dependency-solution'):
         proj.build(toolchain=toolchain_path, repos=[repo_with_spdlog.path])

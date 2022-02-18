@@ -35,25 +35,6 @@ auto parse_root_lib = [](json5::data::mapping_type data) {
     return project_library::from_json_data(std::move(data));
 };
 
-const std::set<std::string_view, std::less<>> KNOWN_KEYS = {
-    // Base package keys
-    "name",
-    "version",
-    "depends",
-    "lib",
-    "libs",
-    "x",
-    // Common metadata keys
-    "authors",
-    "description",
-    "documentation",
-    "readme",
-    "homepage",
-    "repository",
-    "license",
-    "license-file",
-};
-
 auto path_key(std::string_view                      key,
               std::optional<std::filesystem::path>& into,
               const std::optional<fs::path>&        proj_dir) {
@@ -99,23 +80,30 @@ project_manifest::from_json_data(const json5::data&                          dat
     DDS_E_SCOPE(e_parse_project_manifest_data{data});
     project_manifest ret;
 
-    std::set<std::string, std::less<>> seen_keys;
+    key_dym_tracker dym{
+        {
+            "name",
+            "version",
+            "dependencies",
+            "lib",
+            "libs",
+            "readme",
+            "license-file",
+            "homepage",
+            "repository",
+            "documentation",
+            "description",
+            "license",
+            "authors",
+        },
+    };
 
     std::vector<std::string> authors;
 
     walk(data,
          require_mapping{"Project manifest root must be a mapping (JSON object)"},
          mapping{
-             [&](std::string_view s, auto&&) {
-                 if (KNOWN_KEYS.contains(s)) {
-                     seen_keys.emplace(s);
-                     return walk.pass;
-                 }
-                 auto unseen_keys = KNOWN_KEYS
-                     | std::views::filter([&](auto k) { return !seen_keys.contains(k); });
-                 BOOST_LEAF_THROW_EXCEPTION(
-                     e_bad_pkg_yaml_key{std::string(s), did_you_mean(s, unseen_keys)});
-             },
+             dym.tracker(),
              required_key{"name",
                           "A project 'name' is required",
                           require_str{"Project 'name' must be a string"},
@@ -124,8 +112,8 @@ project_manifest::from_json_data(const json5::data&                          dat
                           "A project 'version' is required",
                           require_str{"Project 'version' must be a string"},
                           put_into{ret.version, version_from_string{}}},
-             if_key{"depends",
-                    require_array{"Project 'depends' should be an array"},
+             if_key{"dependencies",
+                    require_array{"Project 'dependencies' should be an array"},
                     for_each{put_into{std::back_inserter(ret.root_dependencies),
                                       project_dependency::from_json_data}}},
              if_key{"lib",
@@ -153,9 +141,10 @@ project_manifest::from_json_data(const json5::data&                          dat
                     require_array{"Project 'authors' must be an array of strings"},
                     for_each{require_str{"Each element of project 'authors' must be a string"},
                              put_into(std::back_inserter(authors))}},
+             dym.rejecter<e_bad_pkg_yaml_key>(),
          });
 
-    if (seen_keys.contains("authors")) {
+    if (dym.seen_keys.contains("authors")) {
         ret.authors = std::move(authors);
     }
 

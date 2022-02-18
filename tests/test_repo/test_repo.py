@@ -41,15 +41,15 @@ def test_repo_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
     tmp_project.write(
         'pkg.json',
         json.dumps({
-            'crs_version': 1,
+            'schema-version': 1,
             'name': 'meow',
             'version': '1.2.3',
-            'pkg_revision': 1,
+            'pkg-version': 1,
             'libraries': [{
                 'name': 'test',
                 'path': '.',
-                'uses': [],
-                'depends': [],
+                'using': [],
+                'dependencies': [],
             }],
         }))
     tmp_crs_repo.import_(tmp_project.root)
@@ -209,13 +209,13 @@ def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
         json.dumps({
             'name': 'foo',
             'version': '1.2.3',
-            'pkg_revision': 1,
-            'crs_version': 1,
+            'pkg-version': 1,
+            'schema-version': 1,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
-                'uses': [],
-                'depends': [],
+                'using': [],
+                'dependencies': [],
             }],
         }))
     tmp_crs_repo.import_(tmp_path)
@@ -228,18 +228,18 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
         json.dumps({
             'name': 'foo',
             'version': '1.2.3',
-            'pkg_revision': 1,
-            'crs_version': 1,
+            'pkg-version': 1,
+            'schema-version': 1,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
-                'uses': [{'lib': 'bar', 'for': 'lib'}],
-                'depends': [],
+                'using': [{'lib': 'bar', 'for': 'lib'}],
+                'dependencies': [],
             }, {
                 'path': 'bar',
                 'name': 'bar',
-                'uses': [],
-                'depends': [],
+                'using': [],
+                'dependencies': [],
             }],
         }))
     # yapf: enable
@@ -254,20 +254,20 @@ def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Pr
         'libs': [{
             'path': '.',
             'name': 'foo',
-            'uses': ['bar'],
+            'using': ['bar'],
         }],
     }
     with expect_error_marker('repo-import-invalid-proj-json'):
         tmp_crs_repo.import_(tmp_project.root)
 
 
-def test_repo_invalid_pkg_revision_zero(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
-    tmp_path.joinpath('pkg.json').write_text(json.dumps(make_simple_crs('foo', '1.2.3', pkg_revision=0)))
-    with expect_error_marker('repo-import-invalid-pkg_revision'):
+def test_repo_invalid_pkg_version_zero(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
+    tmp_path.joinpath('pkg.json').write_text(json.dumps(make_simple_crs('foo', '1.2.3', pkg_version=0)))
+    with expect_error_marker('repo-import-invalid-pkg_version'):
         tmp_crs_repo.import_(tmp_path)
 
 
-def test_repo_no_use_invalid_pkg_revision(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
+def test_repo_no_use_invalid_pkg_version(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
     '''
     Check that DDS refuses to acknowledge remote packages that have an invalid (<1) pkg revision.
 
@@ -288,20 +288,20 @@ def test_repo_no_use_invalid_pkg_revision(tmp_crs_repo: CRSRepo, tmp_project: Pr
     ''')
     with db:
         db.execute(r'INSERT INTO crs_repo_packages(meta_json) VALUES(?)',
-                   [json.dumps(make_simple_crs('bar', '1.2.3', pkg_revision=1))])
+                   [json.dumps(make_simple_crs('bar', '1.2.3', pkg_version=1))])
 
     tmp_project.pkg_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'lib': {
             'name': 'main',
-            'depends': ['bar@1.2.3']
+            'dependencies': ['bar@1.2.3']
         },
     }
     tmp_project.dds.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])
-    # Replace with a bad pkg_revision:
+    # Replace with a bad pkg_version:
     with db:
         db.execute('UPDATE crs_repo_packages SET meta_json=?',
-                   [json.dumps(make_simple_crs('bar', '1.2.3', pkg_revision=0))])
+                   [json.dumps(make_simple_crs('bar', '1.2.3', pkg_version=0))])
     with expect_error_marker('no-dependency-solution'):
         tmp_project.dds.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])

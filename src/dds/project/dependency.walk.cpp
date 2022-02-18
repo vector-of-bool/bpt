@@ -1,5 +1,7 @@
 #include "./dependency.hpp"
 
+#include "./error.hpp"
+
 #include <dds/deps.hpp>
 #include <dds/error/on_error.hpp>
 #include <neo/ranges.hpp>
@@ -13,9 +15,11 @@ using namespace dds::walk_utils;
 static auto parse_version_range = [](const json5::data& range) {
     semver::version low;
     semver::version high;
+    key_dym_tracker dym;
     walk(range,
          require_mapping{"'versions' elements must be objects"},
          mapping{
+             dym.tracker(),
              required_key{"low",
                           "'low' version is required",
                           require_str{"'low' version must be a string"},
@@ -25,6 +29,7 @@ static auto parse_version_range = [](const json5::data& range) {
                           require_str{"'high' version must be a string"},
                           put_into{high, version_from_string{}}},
              if_key{"_comment", just_accept},
+             dym.rejecter<e_bad_pkg_yaml_key>(),
          });
     if (high <= low) {
         throw(semester::walk_error{"'high' version must be strictly greater than 'low' version"});
@@ -42,13 +47,16 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
     std::optional<crs::usage_kind> dep_kind;
     bool                           got_versions_key = false;
     std::vector<dds::name>         explicit_uses;
-    bool                           got_uses_key = false;
+    bool                           got_using_key = false;
     std::vector<semver::range>     ver_ranges;
+
+    key_dym_tracker dym{{"dep", "versions", "for", "using"}};
 
     walk(  //
         data,
         require_mapping{"Dependency must be a shorthand string or a JSON object"},
         mapping{
+            dym.tracker(),
             required_key{
                 "dep",
                 "A 'dep' key is required in a dependency object",
@@ -68,14 +76,15 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
             if_key{"for",
                    require_str{"Dependency 'for' must be a string"},
                    put_into{dep_kind, parse_enum_str<crs::usage_kind>}},
-            if_key{"uses",
-                   require_array{"Dependency 'uses' must be an array"},
-                   for_each{require_str{"Each dependency 'uses' item must be a string"},
+            if_key{"using",
+                   require_array{"Dependency 'using' must be an array"},
+                   for_each{require_str{"Each dependency 'using' item must be a string"},
                             [&](auto&&) {
-                                got_uses_key = true;
+                                got_using_key = true;
                                 return walk.pass;
                             },
                             put_into(std::back_inserter(explicit_uses), name_from_string{})}},
+            dym.rejecter<e_bad_pkg_yaml_key>(),
         });
 
     for (auto& ver : ver_ranges) {
@@ -92,7 +101,7 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
         ret.acceptable_versions = partial.acceptable_versions;
     }
 
-    if (got_uses_key) {
+    if (got_using_key) {
         ret.explicit_uses = std::move(explicit_uses);
     }
 

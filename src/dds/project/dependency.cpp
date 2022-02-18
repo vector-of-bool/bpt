@@ -85,12 +85,13 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
         return ret;
     }
 
-    if (tok != neo::oper::any_of("for", "uses", "")) {
-        BOOST_LEAF_THROW_EXCEPTION(
-            e_human_message{"Expected 'for' or 'uses' following dependency name and range"});
+    if (tok != neo::oper::any_of("for", "using", "")) {
+        BOOST_LEAF_THROW_EXCEPTION(e_human_message{
+            neo::ufmt("Expected 'for' or 'using' following dependency name and range (Got '{}')",
+                      tok)});
     }
 
-    if (tok == "uses") {
+    if (tok == "using") {
         ret.explicit_uses.emplace();
         while (1) {
             adv_token();
@@ -111,9 +112,9 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
         tok      = adv_token();
     }
 
-    if (tok == "uses") {
+    if (tok == "using") {
         BOOST_LEAF_THROW_EXCEPTION(
-            e_human_message{"'uses' must appear before 'for' in dependency shorthand string"});
+            e_human_message{"'using' must appear before 'for' in dependency shorthand string"});
     }
 
     if (!tok.empty()) {

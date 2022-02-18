@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dds/error/nonesuch.hpp>
 #include <dds/util/name.hpp>
 #include <dds/util/wrap_var.hpp>
 

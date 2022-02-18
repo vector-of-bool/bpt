@@ -1,5 +1,7 @@
 #include "./library.hpp"
 
+#include "./error.hpp"
+
 #include <dds/util/json_walk.hpp>
 
 using namespace dds;
@@ -11,9 +13,12 @@ project_library project_library::from_json_data(const json5::data& data) {
     std::vector<crs::intra_usage> intra_uses;
     bool                          got_use_key = false;
 
+    key_dym_tracker dym{{"name", "path", "using", "dependencies"}};
+
     walk(data,
          require_mapping{"Library entries must be a mapping (JSON object)"},
          mapping{
+             dym.tracker(),
              required_key{"name",
                           "Library must have a 'name' string",
                           require_str{"Library 'name' must be a string"},
@@ -27,8 +32,8 @@ project_library project_library::from_json_data(const json5::data& data) {
                           put_into(ret.relpath,
                                    [](std::string s) { return std::filesystem::path{s}; })},
              if_key{
-                 "uses",
-                 require_array{"Library 'uses' key must be an array of strings"},
+                 "using",
+                 require_array{"Library 'using' key must be an array of strings"},
                  for_each{
                      [&](auto&&) {
                          got_use_key = true;
@@ -39,30 +44,36 @@ project_library project_library::from_json_data(const json5::data& data) {
                          return walk.accept;
                      }),
                      require_mapping{
-                         "Each library's top-level 'uses' item must be a string or a JSON object"},
+                         "Each library's top-level 'using' item must be a string or a JSON object"},
                      [&](const json5::data& uses) {
                          crs::intra_usage r;
-                         walk(uses,
-                              mapping{
-                                  required_key{
-                                      "lib",
-                                      "A library top-level 'uses' object requires a 'lib' property",
-                                      require_str{
-                                          "Library 'uses' item 'lib' property must be a string"},
-                                      put_into(r.lib, name_from_string{})},
-                                  required_key{
-                                      "for",
-                                      "A library top-level 'uses' object requires a 'for' property",
-                                      require_str{"Library 'uses' item 'for' property must be a "
-                                                  "usage-kind string"},
-                                      put_into{r.kind, parse_enum_str<crs::usage_kind>}}});
+                         key_dym_tracker  dym2{{"lib", "for"}};
+                         walk(
+                             uses,
+                             mapping{
+                                 dym2.tracker(),
+                                 required_key{
+                                     "lib",
+                                     "A library top-level 'using' object requires a 'lib' property",
+                                     require_str{
+                                         "Library 'using' item 'lib' property must be a string"},
+                                     put_into(r.lib, name_from_string{})},
+                                 required_key{
+                                     "for",
+                                     "A library top-level 'using' object requires a 'for' property",
+                                     require_str{"Library 'using' item 'for' property must be a "
+                                                 "usage-kind string"},
+                                     put_into{r.kind, parse_enum_str<crs::usage_kind>}},
+                                 dym2.rejecter<e_bad_pkg_yaml_key>(),
+                             });
                          intra_uses.push_back(r);
                          return walk.accept;
                      }}},
-             if_key{"depends",
-                    require_array{"Library 'depends' must be an array of dependencies"},
+             if_key{"dependencies",
+                    require_array{"Library 'dependencies' must be an array of dependencies"},
                     for_each{put_into(std::back_inserter(ret.lib_dependencies),
                                       project_dependency::from_json_data)}},
+             dym.rejecter<e_bad_pkg_yaml_key>(),
          });
 
     if (got_use_key) {

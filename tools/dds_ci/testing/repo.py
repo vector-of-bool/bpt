@@ -93,16 +93,16 @@ def http_crs_repo(tmp_crs_repo: CRSRepo, http_server_factory: HTTPServerFactory)
     return CRSRepoServer(tmp_crs_repo, server)
 
 
-def make_simple_crs(name: str, version: str, *, pkg_revision: int = 1) -> Any:
+def make_simple_crs(name: str, version: str, *, pkg_version: int = 1) -> Any:
     return {
-        'crs_version': 1,
+        'schema-version': 1,
         'name': name,
         'version': version,
-        'pkg_revision': pkg_revision,
+        'pkg-version': pkg_version,
         'libraries': [{
             'path': '.',
             'name': name,
-            'uses': [],
-            'depends': [],
+            'using': [],
+            'dependencies': [],
         }]
     }

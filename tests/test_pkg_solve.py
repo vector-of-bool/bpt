@@ -13,8 +13,8 @@ from dds_ci.testing.repo import RepoCloner, make_simple_crs
 _RepoPackageLibraryItem_Opt = TypedDict(
     '_RepoPackageLibraryItem_Opt',
     {
-        'uses': Sequence[str],
-        'depends': Sequence[str],
+        'using': Sequence[str],
+        'dependencies': Sequence[str],
         'content': TreeData,
     },
     total=False,
@@ -51,8 +51,8 @@ def _render_pkg_version(name: str, version: str, item: _RepoPackageItem) -> Tree
             {
                 'name': lib_name,
                 'path': f'libs/{lib_name}',
-                'uses': lib.get('uses', []),
-                'depends': lib.get('depends', []),
+                'using': lib.get('using', []),
+                'dependencies': lib.get('dependencies', []),
             } for lib_name, lib in item['libs'].items()  #
         ]
     }
@@ -117,7 +117,7 @@ def solve_repo_1(make_quick_repo: QuickRepoFactory) -> QuickRepo:
         spec={
             'packages': {
                 'foo': {
-                    '1.3.1': {'libs': {'main': {'uses': ['bar']}, 'bar': {}}}
+                    '1.3.1': {'libs': {'main': {'using': ['bar']}, 'bar': {}}}
                 },
                 'pkg-adds-library': {
                     '1.2.3': {'libs': {'main': {}}},
@@ -128,28 +128,28 @@ def solve_repo_1(make_quick_repo: QuickRepoFactory) -> QuickRepo:
                     '1.2.4': {'libs': {'another': {}}},
                 },
                 'pkg-conflicting-libset-2': {
-                    '1.2.3': {'libs': {'main': {'depends': ['nonesuch@1.2.3 uses bleh']}}},
+                    '1.2.3': {'libs': {'main': {'dependencies': ['nonesuch@1.2.3 using bleh']}}},
                     '1.2.4': {'libs': {'nope': {}}},
                 },
                 'pkg-transitive-no-such-lib': {
-                    '1.2.3': {'libs': {'main': {'depends': ['foo@1.2.3 uses no-such-lib']}}}
+                    '1.2.3': {'libs': {'main': {'dependencies': ['foo@1.2.3 using no-such-lib']}}}
                 },
                 'pkg-with-unsolvable-version': {
-                    '1.2.3': {'libs': {'main': {'depends': ['nonesuch@1.2.3 uses bleh']}}},
+                    '1.2.3': {'libs': {'main': {'dependencies': ['nonesuch@1.2.3 using bleh']}}},
                     '1.2.4': {'libs': {'main': {}}},
                 },
                 'pkg-with-unsolvable-library': {
-                    '1.2.3': {'libs': {'goodlib': {}, 'badlib': {'depends': ['nonesuch@1.2.3 uses bleh']}}},
+                    '1.2.3': {'libs': {'goodlib': {}, 'badlib': {'dependencies': ['nonesuch@1.2.3 using bleh']}}},
                 },
 
                 'pkg-unsolvable-version-diamond': {
-                    '1.2.3': {'libs': {'main': {'depends': ['ver-diamond-left=1.2.3 uses main', 'ver-diamond-right=1.2.3 uses main']}}},
+                    '1.2.3': {'libs': {'main': {'dependencies': ['ver-diamond-left=1.2.3 using main', 'ver-diamond-right=1.2.3 using main']}}},
                 },
                 'ver-diamond-left': {
-                    '1.2.3': {'libs': {'main': {'depends': ['ver-diamond-tip=2.0.0 uses main']}}}
+                    '1.2.3': {'libs': {'main': {'dependencies': ['ver-diamond-tip=2.0.0 using main']}}}
                 },
                 'ver-diamond-right': {
-                    '1.2.3': {'libs': {'main': {'depends': ['ver-diamond-tip=3.0.0 uses main']}}}
+                    '1.2.3': {'libs': {'main': {'dependencies': ['ver-diamond-tip=3.0.0 using main']}}}
                 },
                 'ver-diamond-tip': {
                     '2.0.0': {'libs': {'main': {}}},
@@ -157,13 +157,13 @@ def solve_repo_1(make_quick_repo: QuickRepoFactory) -> QuickRepo:
                 },
 
                 'pkg-unsolvable-lib-diamond': {
-                    '1.2.3': {'libs': {'main': {'depends': ['lib-diamond-left=1.2.3 uses main', 'lib-diamond-right=1.2.3 uses main']}}},
+                    '1.2.3': {'libs': {'main': {'dependencies': ['lib-diamond-left=1.2.3 using main', 'lib-diamond-right=1.2.3 using main']}}},
                 },
                 'lib-diamond-left': {
-                    '1.2.3': {'libs': {'main': {'depends': ['lib-diamond-tip^2.0.0 uses lib-foo']}}}
+                    '1.2.3': {'libs': {'main': {'dependencies': ['lib-diamond-tip^2.0.0 using lib-foo']}}}
                 },
                 'lib-diamond-right': {
-                    '1.2.3': {'libs': {'main': {'depends': ['lib-diamond-tip^2.0.0 uses lib-bar']}}}
+                    '1.2.3': {'libs': {'main': {'dependencies': ['lib-diamond-tip^2.0.0 using lib-bar']}}}
                 },
                 'lib-diamond-tip': {
                     '2.0.0': {'libs': {'lib-foo': {}}},
@@ -176,13 +176,13 @@ def solve_repo_1(make_quick_repo: QuickRepoFactory) -> QuickRepo:
 
 
 def test_solve_1(solve_repo_1: QuickRepo) -> None:
-    solve_repo_1.pkg_solve('foo@1.3.1 uses main')
+    solve_repo_1.pkg_solve('foo@1.3.1 using main')
 
 
-def test_solve_upgrade_pkg_revision(make_quick_repo: QuickRepoFactory, tmp_project: Project,
-                                    dir_renderer: DirRenderer) -> None:
+def test_solve_upgrade_pkg_version(make_quick_repo: QuickRepoFactory, tmp_project: Project,
+                                   dir_renderer: DirRenderer) -> None:
     '''
-    Test that dds will pull a new copy of a package if its pkg_revision is updated,
+    Test that dds will pull a new copy of a package if its pkg_version is updated,
     even if the version proper is not changed.
     '''
     # yapf: disable
@@ -207,13 +207,13 @@ def test_solve_upgrade_pkg_revision(make_quick_repo: QuickRepoFactory, tmp_proje
         }
     )
     # yapf: enable
-    tmp_project.pkg_yaml = {'name': 'test-proj', 'version': '1.2.3', 'depends': ['foo@1.2.3 uses main']}
+    tmp_project.pkg_yaml = {'name': 'test-proj', 'version': '1.2.3', 'dependencies': ['foo@1.2.3 using main']}
     tmp_project.write('src/file.cpp', '#include <foo.hpp>\n')
     with error.expect_error_marker('compile-failed'):
         tmp_project.build(repos=[repo.path])
 
     # Create a new package that is good
-    new_foo_crs = make_simple_crs('foo', '1.2.3', pkg_revision=2)
+    new_foo_crs = make_simple_crs('foo', '1.2.3', pkg_version=2)
     new_foo_crs['libraries'][0]['name'] = 'main'
     new_foo = dir_renderer.get_or_render('new-foo', {
         'pkg.json': json.dumps(new_foo_crs),
@@ -230,17 +230,17 @@ def test_solve_cand_missing_libs(solve_repo_1: QuickRepo) -> None:
     Check that we reject if the only candidate does not have the libraries that we need.
     """
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('foo@1.3.1 uses no-such-lib')
+        solve_repo_1.pkg_solve('foo@1.3.1 using no-such-lib')
 
 
 def test_solve_skip_for_req_libs(solve_repo_1: QuickRepo) -> None:
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-adds-library=1.2.3 uses another')
-    solve_repo_1.pkg_solve('pkg-adds-library^1.2.3 uses another')
+        solve_repo_1.pkg_solve('pkg-adds-library=1.2.3 using another')
+    solve_repo_1.pkg_solve('pkg-adds-library^1.2.3 using another')
 
 
 def test_solve_transitive_req_requires_lib_conflict(solve_repo_1: QuickRepo) -> None:
-    solve_repo_1.pkg_solve('pkg-conflicting-libset^1.2.3 uses another')
+    solve_repo_1.pkg_solve('pkg-conflicting-libset^1.2.3 using another')
 
 
 def test_solve_unsolvable_version_diamond(solve_repo_1: QuickRepo):
@@ -257,9 +257,9 @@ def test_solve_ignore_unsolvable_libs(solve_repo_1: QuickRepo) -> None:
     # No error: We aren't depending on the 'nonesuch' library
     with expect_solve_fail():
         solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3')
-    solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3 uses goodlib')
+    solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3 using goodlib')
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3 uses badlib')
+        solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3 using badlib')
 
 
 def test_solve_skip_unsolvable_version(solve_repo_1: QuickRepo) -> None:
@@ -277,7 +277,7 @@ def test_solve_fail_with_transitive_no_such_lib(solve_repo_1: QuickRepo) -> None
 
 def test_solve_conflicting_libset_2(solve_repo_1: QuickRepo) -> None:
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-conflicting-libset-2@1.2.3 uses main')
+        solve_repo_1.pkg_solve('pkg-conflicting-libset-2@1.2.3 using main')
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-conflicting-libset-2@1.2.4 uses main')
-    solve_repo_1.pkg_solve('pkg-conflicting-libset-2@1.2.3 uses nope')
+        solve_repo_1.pkg_solve('pkg-conflicting-libset-2@1.2.4 using main')
+    solve_repo_1.pkg_solve('pkg-conflicting-libset-2@1.2.3 using nope')

@@ -90,7 +90,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
             }
         })
 
-    # Missing the 'uses'
+    # Missing the 'using'
     tmp_project.pkg_yaml = {
         'name': 'testing',
         'version': '1.2.3',
@@ -105,7 +105,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
     with error.expect_error_marker('compile-failed'):
         tmp_project.build()
 
-    # Now add the missing 'uses'
+    # Now add the missing 'using'
     tmp_project.pkg_yaml = {
         'name': 'testing',
         'version': '1.2.3',
@@ -115,7 +115,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         }, {
             'name': 'other',
             'path': 'there',
-            'uses': ['main']
+            'using': ['main']
         }]
     }
     tmp_project.build()

@@ -13,7 +13,7 @@ crs::intra_usage intra_usage_from_data(const json5::data& data) {
     using namespace semester::walk_ops;
 
     walk(data,
-         require_mapping{"'uses' values must be JSON objects"},
+         require_mapping{"'using' values must be JSON objects"},
          mapping{
              required_key{"lib",
                           "A 'lib' string is required",
@@ -62,14 +62,14 @@ library_info library_info::from_data(const json5::data& data) {
                                        }
                                        return p;
                                    }}},
-             required_key{"uses",
-                          "A 'uses' list is required",
-                          require_array{"A library's 'uses' must be an array of usage objects"},
+             required_key{"using",
+                          "A 'using' list is required",
+                          require_array{"A library's 'using' must be an array of usage objects"},
                           for_each{
                               put_into{std::back_inserter(ret.intra_uses), intra_usage_from_data}}},
-             required_key{"depends",
-                          "A 'depends' list is required",
-                          require_array{"'depends' must be an array of dependency objects"},
+             required_key{"dependencies",
+                          "A 'dependencies' list is required",
+                          require_array{"'dependencies' must be an array of dependency objects"},
                           for_each{put_into{std::back_inserter(ret.dependencies),
                                             dependency::from_data}}},
              if_key{"_comment", just_accept},

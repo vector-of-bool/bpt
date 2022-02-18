@@ -31,7 +31,7 @@ def ensure_absent(path: Pathish) -> None:
         pass
 
 
-_PkgYAMLLibraryUsesItem = TypedDict('_PkgYAMLLibraryUsesItem', {
+_PkgYAMLLibraryUsingItem = TypedDict('_PkgYAMLLibraryUsingItem', {
     'lib': str,
     'for': Literal['lib', 'app', 'test'],
 })
@@ -51,7 +51,7 @@ _PkgYAMLDependencyItemOpt = TypedDict(
     {
         'versions': Sequence[_VersionItem],
         'for': Literal['lib', 'app', 'test'],
-        'uses': Sequence[str],
+        'using': Sequence[str],
     },
     total=False,
 )
@@ -70,14 +70,14 @@ class _PkgYAMLLibraryItemRequired(TypedDict):
 
 
 class _PkgYAMLLibraryItem(_PkgYAMLLibraryItemRequired, total=False):
-    uses: Sequence[Union[str, _PkgYAMLLibraryUsesItem]]
-    depends: Sequence[_PkgYAMLDependencyItem]
+    using: Sequence[Union[str, _PkgYAMLLibraryUsingItem]]
+    dependencies: Sequence[_PkgYAMLDependencyItem]
 
 
 class _MainProjectLibraryItem(TypedDict, total=False):
     name: str
-    depends: Sequence[_PkgYAMLDependencyItem]
-    uses: Sequence[Union[str, _PkgYAMLLibraryUsesItem]]
+    dependencies: Sequence[_PkgYAMLDependencyItem]
+    using: Sequence[Union[str, _PkgYAMLLibraryUsingItem]]
 
 
 class _PkgYAMLRequired(TypedDict):
@@ -86,7 +86,7 @@ class _PkgYAMLRequired(TypedDict):
 
 
 class PkgYAML(_PkgYAMLRequired, total=False):
-    depends: Sequence[_PkgYAMLDependencyItem]
+    dependencies: Sequence[_PkgYAMLDependencyItem]
     lib: _MainProjectLibraryItem
     libs: Sequence[_PkgYAMLLibraryItem]
 

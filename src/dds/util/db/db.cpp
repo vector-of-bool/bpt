@@ -2,6 +2,7 @@
 
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
+#include <dds/util/log.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <neo/sqlite3/database.hpp>
@@ -30,7 +31,9 @@ static result<nsql::connection> _open_db(neo::zstring_view str, nsql::openmode m
     DDS_E_SCOPE(e_db_open_path{std::string(str)});
     auto db = nsql::connection::open(str, mode);
     if (!db.has_value()) {
-        return new_error(db.error(), e_db_open_ec{nsql::make_error_code(db.errc())});
+        auto ec = nsql::make_error_code(db.errc());
+        dds_log(debug, "Error opening SQLite database [{}]: {}", str, ec.message());
+        return new_error(db.error(), e_db_open_ec{ec});
     }
     auto e = db->exec(R"(
         PRAGMA foreign_keys = 1;
@@ -38,17 +41,22 @@ static result<nsql::connection> _open_db(neo::zstring_view str, nsql::openmode m
         PRAGMA busy_timeout = 60000;
     )");
     if (e.is_error()) {
-        return new_error(e.error(), e_db_open_ec{nsql::make_error_code(e.errc())});
+        auto ec = nsql::make_error_code(e.errc());
+        dds_log(debug, "Error initializing SQLite database [{}]: {}", str, ec.message());
+        return new_error(e.error(), e_db_open_ec{ec});
     }
+    dds_log(trace, "Successfully opened SQLite database [{}]", str);
     return std::move(*db);
 }
 
 result<unique_database> unique_database::open(neo::zstring_view str) noexcept {
+    dds_log(debug, "Opening/creating SQLite database [{}]", str);
     BOOST_LEAF_AUTO(db, _open_db(str, nsql::openmode::readwrite | nsql::openmode::create));
     return unique_database{std::make_unique<impl>(std::move(db))};
 }
 
 result<unique_database> unique_database::open_existing(neo::zstring_view str) noexcept {
+    dds_log(debug, "Opening existing SQLite database [{}]", str);
     BOOST_LEAF_AUTO(db, _open_db(str, nsql::openmode::readwrite));
     return unique_database{std::make_unique<impl>(std::move(db))};
 }

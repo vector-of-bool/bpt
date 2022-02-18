@@ -32,12 +32,12 @@ package_info package_info::from_json_data(const json5::data& data) {
         if (!data.is_object()) {
             throw(semester::walk_error{"Root of CRS manifest must be a JSON object"});
         }
-        auto crs_version = data.as_object().find("crs_version");
+        auto crs_version = data.as_object().find("schema-version");
         if (crs_version == data.as_object().cend()) {
-            throw(semester::walk_error{"A 'crs_version' integer is required"});
+            throw(semester::walk_error{"A 'schema-version' integer is required"});
         }
         if (!crs_version->second.is_number() || crs_version->second.as_number() != 1) {
-            throw(semester::walk_error{"Only 'crs_version' == 1 is supported"});
+            throw(semester::walk_error{"Only 'schema-version' == 1 is supported"});
         }
         return from_json_data_v1(data);
     }
@@ -98,24 +98,24 @@ std::string package_info::to_json(int indent) const noexcept {
                 {"name", dep.name.str},
                 {"for", magic_enum::enum_name(dep.kind)},
                 {"versions", versions},
-                {"uses", std::move(uses)},
+                {"using", std::move(uses)},
             }));
         }
         ret_libs.push_back(json::object({
             {"name", lib.name.str},
             {"path", lib.path.generic_string()},
-            {"uses", std::move(lib_intra_uses)},
-            {"depends", std::move(depends)},
+            {"using", std::move(lib_intra_uses)},
+            {"dependencies", std::move(depends)},
         }));
     }
     json data = json::object({
         {"name", id.name.str},
         {"version", id.version.to_string()},
-        {"pkg_revision", id.revision},
+        {"pkg-version", id.revision},
         {"extra", json5_as_nlohmann_json(extra)},
         {"meta", json5_as_nlohmann_json(meta)},
         {"libraries", std::move(ret_libs)},
-        {"crs_version", 1},
+        {"schema-version", 1},
     });
 
     return indent ? data.dump(indent) : data.dump();
