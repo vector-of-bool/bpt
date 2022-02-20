@@ -6,6 +6,8 @@
 #include <dds/util/log.hpp>
 #include <dds/util/signal.hpp>
 
+#include <neo/scope.hpp>
+
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -78,6 +80,8 @@ proc_result dds::run_proc(const proc_options& opts) {
 
     int read_pipe  = stdio_pipe[0];
     int write_pipe = stdio_pipe[1];
+
+    neo_defer { ::close(read_pipe); };
 
     auto child = spawn_child(opts, write_pipe, read_pipe);
 
