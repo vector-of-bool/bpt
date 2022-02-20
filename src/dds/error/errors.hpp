@@ -11,34 +11,16 @@ enum class errc {
     none = 0,
     invalid_builtin_toolchain,
     no_default_toolchain,
-    git_url_ref_mutual_req,
     test_failure,
     compile_failure,
     archive_failure,
     link_failure,
 
-    git_clone_failure,
     invalid_remote_url,
-    http_download_failure,
-    invalid_repo_transform,
-    sdist_ident_mismatch,
     sdist_exists,
 
-    corrupted_build_db,
-
-    invalid_lib_manifest,
-    invalid_pkg_manifest,
-    invalid_version_range_string,
-    invalid_version_string,
-    invalid_pkg_id,
-    invalid_pkg_name,
-    unknown_test_driver,
-    dependency_resolve_failure,
-    dup_lib_name,
-    unknown_usage_name,
     cyclic_usage,
 
-    invalid_lib_filesystem,
     invalid_pkg_filesystem,
 };
 

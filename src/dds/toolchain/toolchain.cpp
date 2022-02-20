@@ -1,5 +1,10 @@
 #include "./toolchain.hpp"
 
+#include "./errors.hpp"
+
+#include <dds/error/doc_ref.hpp>
+#include <dds/error/human.hpp>
+#include <dds/error/on_error.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/prep.hpp>
 #include <dds/util/algo.hpp>
@@ -8,7 +13,7 @@
 #include <dds/util/paths.hpp>
 #include <dds/util/string.hpp>
 
-#include <boost/leaf/result.hpp>
+#include <boost/leaf/exception.hpp>
 #include <fmt/ostream.h>
 #include <range/v3/view/transform.hpp>
 
@@ -228,7 +233,9 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
     return cmd;
 }
 
-std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept {
+toolchain toolchain::get_builtin(const std::string_view tc_id_) {
+    DDS_E_SCOPE(sbs::e_builtin_toolchain_str{std::string(tc_id_)});
+    auto tc_id = tc_id_;
     using namespace std::literals;
 
     json5::data tc_data  = json5::data::mapping_type();
@@ -313,7 +320,9 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
     }();
 
     if (!opt_triple) {
-        return std::nullopt;
+        BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("Invalid toolchain string '{}'",
+                                                             tc_id)},
+                                   SBS_ERR_REF("invalid-builtin-toolchain"));
     }
 
     root_map.emplace("c_compiler", opt_triple->c);
@@ -322,7 +331,7 @@ std::optional<toolchain> toolchain::get_builtin(std::string_view tc_id) noexcept
     return parse_toolchain_json_data(tc_data);
 }
 
-std::optional<dds::toolchain> dds::toolchain::get_default() {
+dds::toolchain dds::toolchain::get_default() {
     auto candidates = {
         fs::current_path() / "toolchain.json5",
         fs::current_path() / "toolchain.jsonc",
@@ -341,5 +350,6 @@ std::optional<dds::toolchain> dds::toolchain::get_default() {
             return parse_toolchain_json5(dds::read_file(cand));
         }
     }
-    return std::nullopt;
+    BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("No default toolchain")},
+                               SBS_ERR_REF("no-default-toolchain"));
 }

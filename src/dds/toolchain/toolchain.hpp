@@ -104,8 +104,8 @@ public:
 
     [[nodiscard]] std::uint64_t hash() const noexcept { return _hash; }
 
-    static std::optional<toolchain> get_builtin(std::string_view key) noexcept;
-    static std::optional<toolchain> get_default();
+    static toolchain get_builtin(std::string_view key);
+    static toolchain get_default();
 };
 
 }  // namespace dds

@@ -3,6 +3,7 @@
 #include <dds/error/errors.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/toolchain.hpp>
+#include <dds/toolchain/errors.hpp>
 #include <dds/toolchain/from_json.hpp>
 #include <dds/toolchain/toolchain.hpp>
 #include <dds/util/fs/io.hpp>
@@ -437,27 +438,16 @@ void cli::options::setup_parser(debate::argument_parser& parser) noexcept {
 
 toolchain dds::cli::options::load_toolchain() const {
     if (!toolchain) {
-        auto def = dds::toolchain::get_default();
-        if (!def) {
-            throw_user_error<errc::no_default_toolchain>();
-        }
-        return *def;
+        return dds::toolchain::get_default();
     }
     // Convert the given string to a toolchain
     auto& tc_str = *toolchain;
     DDS_E_SCOPE(e_loading_toolchain{tc_str});
     if (tc_str.starts_with(":")) {
-        DDS_E_SCOPE(e_toolchain_builtin{tc_str});
         auto default_tc = tc_str.substr(1);
-        auto tc         = dds::toolchain::get_builtin(default_tc);
-        if (!tc.has_value()) {
-            throw_user_error<
-                errc::invalid_builtin_toolchain>("Invalid built-in toolchain name '{}'",
-                                                 default_tc);
-        }
-        return std::move(*tc);
+        return dds::toolchain::get_builtin(default_tc);
     } else {
-        DDS_E_SCOPE(e_toolchain_file{tc_str});
+        DDS_E_SCOPE(sbs::e_toolchain_filepath{tc_str});
         return parse_toolchain_json5(dds::read_file(tc_str));
     }
 }

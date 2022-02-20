@@ -9,6 +9,7 @@
 #include <dds/project/error.hpp>
 #include <dds/project/spdx.hpp>
 #include <dds/sdist/error.hpp>
+#include <dds/toolchain/errors.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/compress.hpp>
 #include <dds/util/fs/io.hpp>
@@ -138,7 +139,7 @@ auto handlers = std::tuple(  //
         }
         return 1;
     },
-    [](const std::system_error& err, e_loading_toolchain, e_toolchain_file* tc_file) {
+    [](const std::system_error& err, e_loading_toolchain, sbs::e_toolchain_filepath* tc_file) {
         dds_log(error, "Failed to load toolchain: .br.yellow[{}]"_styled, err.code().message());
         if (tc_file) {
             dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
