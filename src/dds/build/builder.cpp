@@ -3,6 +3,7 @@
 #include <dds/build/plan/compile_exec.hpp>
 #include <dds/build/plan/full.hpp>
 #include <dds/compdb.hpp>
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/usage_reqs.hpp>
 #include <dds/util/fs/io.hpp>
@@ -11,6 +12,7 @@
 #include <dds/util/output.hpp>
 #include <dds/util/time.hpp>
 
+#include <boost/leaf/exception.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 
@@ -281,7 +283,9 @@ void builder::build(const build_params& params) const {
             log_failure(fail);
         }
         if (!test_failures.empty()) {
-            throw_user_error<errc::test_failure>();
+            BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::test_failure>(),
+                                       test_failures,
+                                       SBS_ERR_REF("test-failure"));
         }
 
         if (params.emit_lmi) {

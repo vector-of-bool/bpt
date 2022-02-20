@@ -1,10 +1,12 @@
 #include "./pkg_id.hpp"
 
-#include <boost/leaf/exception.hpp>
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/human.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
 #include <neo/ufmt.hpp>
+
+#include <boost/leaf/exception.hpp>
 
 #include <charconv>
 #include <tuple>
@@ -36,8 +38,12 @@ crs::pkg_id crs::pkg_id::parse(const std::string_view sv) {
         }
         ver_str = ver_str.substr(0, tilde_pos);
     }
-    auto version = semver::version::parse(ver_str);
-    return crs::pkg_id{name, version, pkg_version};
+    try {
+        auto version = semver::version::parse(ver_str);
+        return crs::pkg_id{name, version, pkg_version};
+    } catch (const semver::invalid_version& exc) {
+        BOOST_LEAF_THROW_EXCEPTION(exc, SBS_ERR_REF("invalid-version-string"));
+    }
 }
 
 std::string crs::pkg_id::to_string() const noexcept {

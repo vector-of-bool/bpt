@@ -1,10 +1,12 @@
 #include "./archive.hpp"
 
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/proc.hpp>
 #include <dds/util/time.hpp>
 
+#include <boost/leaf/exception.hpp>
 #include <fansi/styled.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
@@ -61,9 +63,10 @@ void create_archive_plan::archive(const build_env& env) const {
                 "Subcommand FAILED: .bold.yellow[{}]\n{}"_styled,
                 quote_command(ar_cmd),
                 ar_res.output);
-        throw_external_error<
-            errc::archive_failure>("Creating static library archive [{}] failed for '{}'",
-                                   out_relpath,
-                                   _qual_name);
+        BOOST_LEAF_THROW_EXCEPTION(make_external_error<errc::archive_failure>(
+                                       "Creating static library archive [{}] failed for '{}'",
+                                       out_relpath,
+                                       _qual_name),
+                                   SBS_ERR_REF("archive-failure"));
     }
 }

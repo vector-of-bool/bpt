@@ -23,6 +23,10 @@ struct e_dup_library_id {
     lm::usage value;
 };
 
+struct e_cyclic_using {
+    std::vector<lm::usage> value;
+};
+
 // The underlying map used by the usage requirements
 class usage_requirement_map {
 

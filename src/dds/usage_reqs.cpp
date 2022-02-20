@@ -1,6 +1,7 @@
 #include "./usage_reqs.hpp"
 
 #include <dds/build/plan/compile_file.hpp>
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
@@ -28,7 +29,7 @@ lm::library& usage_requirement_map::add(lm::usage ident) {
     auto pair                   = std::pair(ident, lm::library{});
     auto [inserted, did_insert] = _reqs.try_emplace(ident, lm::library());
     if (!did_insert) {
-        BOOST_LEAF_THROW_EXCEPTION(e_dup_library_id{ident});
+        BOOST_LEAF_THROW_EXCEPTION(e_dup_library_id{ident}, SBS_ERR_REF("dup-lib-name"));
     }
     return inserted->second;
 }
@@ -46,7 +47,7 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
 std::vector<fs::path> usage_requirement_map::link_paths(const lm::usage& key) const {
     auto req = get(key);
     if (!req) {
-        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{key});
+        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{key}, SBS_ERR_REF("unknown-usage"));
     }
     std::vector<fs::path> ret;
     if (req->linkable_path) {
@@ -65,7 +66,7 @@ std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usag
     std::vector<fs::path> ret;
     auto                  lib = get(usage);
     if (!lib) {
-        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{usage});
+        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{usage}, SBS_ERR_REF("unknown-usage"));
     }
     extend(ret, lib->include_paths);
     for (const auto& transitive : lib->uses) {
@@ -188,7 +189,10 @@ void usage_requirements::verify_acyclic() const {
         cycle->push_back(cycle->front());
 
         write_error_marker("library-json-cyclic-dependency");
-        throw_user_error<errc::cyclic_usage>("Cyclic dependency found: {}",
-                                             fmt::join(*cycle, " uses "));
+        BOOST_LEAF_THROW_EXCEPTION(make_user_error<
+                                       errc::cyclic_usage>("Cyclic dependency found: {}",
+                                                           fmt::join(*cycle, " uses ")),
+                                   *cycle,
+                                   SBS_ERR_REF("cyclic-usage"));
     }
 }

@@ -3,6 +3,7 @@
 #include "./error.hpp"
 #include <dds/sdist/root.hpp>
 
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/result.hpp>
@@ -136,7 +137,8 @@ sdist sdist::from_directory(path_ref where) {
                 make_user_error<errc::invalid_pkg_filesystem>(
                     "No pkg.json nor project manifest in the project directory"),
                 e_missing_pkg_json{pkg_json},
-                e_missing_project_yaml{where / "pkg.yaml"});
+                e_missing_project_yaml{where / "pkg.yaml"},
+                SBS_ERR_REF("invalid-pkg-filesystem"));
         }
         meta = proj.manifest->as_crs_package_meta();
     }

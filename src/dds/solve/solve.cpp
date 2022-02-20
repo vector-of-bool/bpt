@@ -3,6 +3,7 @@
 #include <dds/crs/cache_db.hpp>
 #include <dds/crs/info/dependency.hpp>
 #include <dds/dym.hpp>
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/on_error.hpp>
 #include <dds/error/try_catch.hpp>
 #include <dds/util/algo.hpp>
@@ -389,7 +390,8 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
         try_load_nonesuch_packages(error, cache, deps);
         BOOST_LEAF_THROW_EXCEPTION(error,
                                    dds::e_dependency_solve_failure{},
-                                   DDS_E_ARG(generate_failure_explanation(exc.matched)));
+                                   DDS_E_ARG(generate_failure_explanation(exc.matched)),
+                                   SBS_ERR_REF("dep-res-failure"));
     };
     return sln
         | stdv::transform(NEO_TL(crs::pkg_id{
