@@ -21,9 +21,16 @@ void extend(Container& c, Iter iter, const Stop stop) {
 }
 
 template <typename Container, typename Iter>
-void extend(Container& c, Iter iter, Iter end) {
+void extend(Container& c, Iter iter, Iter end) requires requires {
     c.insert(c.end(), iter, end);
 }
+{ c.insert(c.end(), iter, end); }
+
+template <typename Container, typename Iter>
+void extend(Container& c, Iter iter, Iter end) requires requires {
+    c.insert(iter, end);
+}
+{ c.insert(iter, end); }
 
 template <typename Container, typename Other>
 void extend(Container& c, Other&& o) {

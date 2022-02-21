@@ -22,5 +22,6 @@
         "zlib/zlib",
         "neo/compress",
         "neargye/magic_enum",
+        "yaml-cpp/yaml-cpp",
     ]
 }

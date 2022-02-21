@@ -4,18 +4,23 @@
 
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
-#include <dds/pkg/cache.hpp>
-#include <dds/pkg/get/get.hpp>
+#include <dds/crs/cache.hpp>
+#include <dds/deps.hpp>
+#include <dds/project/dependency.hpp>
+#include <dds/solve/solve.hpp>
 
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/action/join.hpp>
 #include <range/v3/action/push_back.hpp>
-#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
 #include <range/v3/view/transform.hpp>
 
 namespace dds::cli::cmd {
 
 static int _build_deps(const options& opts) {
+    auto cache = open_ready_cache(opts);
+
     dds::build_params params{
         .out_root          = opts.out_path.value_or(fs::current_path() / "_deps"),
         .existing_lm_index = {},
@@ -26,48 +31,33 @@ static int _build_deps(const options& opts) {
         .parallel_jobs     = opts.jobs,
     };
 
-    dds::builder            bd;
+    dds::builder            builder;
     dds::sdist_build_params sdist_params;
 
-    auto all_file_deps = opts.build_deps.deps_files  //
+    neo::ranges::range_of<crs::dependency> auto file_deps
+        = opts.build_deps.deps_files  //
         | ranges::views::transform([&](auto dep_fpath) {
-                             dds_log(info, "Reading deps from {}", dep_fpath.string());
-                             dds::dependency_manifest depman
-                                 = dds::dependency_manifest::from_file(dep_fpath);
-                             if (opts.build.want_tests) {
-                                 ranges::actions::push_back(depman.dependencies,
-                                                            std::move(depman.test_dependencies));
-                             }
-                             return std::move(depman).dependencies;
-                         })
+              dds_log(info, "Reading deps from {}", dep_fpath.string());
+              dds::dependency_manifest depman = dds::dependency_manifest::from_file(dep_fpath);
+              return depman.dependencies
+                  | std::views::transform(&project_dependency::as_crs_dependency) | neo::to_vector;
+          })
         | ranges::actions::join;
 
-    auto cmd_deps = ranges::views::transform(opts.build_deps.deps, [&](auto dep_str) {
-        return dds::dependency::parse_depends_string(dep_str);
-    });
+    neo::ranges::range_of<crs::dependency> auto cli_deps
+        = std::views::transform(opts.build_deps.deps,
+                                NEO_TL(dds::project_dependency::from_shorthand_string(_1)
+                                           .as_crs_dependency()));
 
-    auto all_deps = ranges::views::concat(all_file_deps, cmd_deps) | ranges::to_vector;
+    neo::ranges::range_of<crs::dependency> auto all_deps
+        = ranges::views::concat(file_deps, cli_deps);
 
-    auto cat = opts.open_pkg_db();
-    dds::pkg_cache::with_cache(  //
-        opts.pkg_cache_dir.value_or(pkg_cache::default_local_path()),
-        dds::pkg_cache_flags::write_lock | dds::pkg_cache_flags::create_if_absent,
-        [&](dds::pkg_cache repo) {
-            // Download dependencies
-            dds_log(info, "Loading {} dependencies", all_deps.size());
-            auto deps = repo.solve(all_deps, cat);
-            dds::get_all(deps, repo, cat);
-            for (const dds::pkg_id& pk : deps) {
-                auto sdist_ptr = repo.find(pk);
-                assert(sdist_ptr);
-                dds::sdist_build_params deps_params;
-                deps_params.subdir = sdist_ptr->manifest.id.to_string();
-                dds_log(info, "Dependency: {}", sdist_ptr->manifest.id.to_string());
-                bd.add(*sdist_ptr, deps_params);
-            }
-        });
+    auto sln = dds::solve(cache.db(), all_deps);
+    for (auto&& pkg : sln) {
+        fetch_cache_load_dependency(cache, pkg, builder, ".");
+    }
 
-    bd.build(params);
+    builder.build(params);
     return 0;
 }
 

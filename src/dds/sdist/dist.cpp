@@ -1,21 +1,35 @@
 #include "./dist.hpp"
 
+#include "./error.hpp"
+#include <dds/sdist/root.hpp>
+
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/pkg/get/http.hpp>
-#include <dds/sdist/library/root.hpp>
+#include <dds/error/on_error.hpp>
+#include <dds/error/result.hpp>
+#include <dds/project/project.hpp>
 #include <dds/temp.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/io.hpp>
+#include <dds/util/fs/op.hpp>
+#include <dds/util/fs/shutil.hpp>
+#include <dds/util/json5/parse.hpp>
 #include <dds/util/log.hpp>
 
+#include <boost/leaf/exception.hpp>
+#include <fansi/styled.hpp>
 #include <libman/parse.hpp>
-
 #include <neo/assert.hpp>
+#include <neo/ranges.hpp>
 #include <neo/tar/util.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/filter.hpp>
 
+#include <fstream>
+
 using namespace dds;
+using namespace fansi::literals;
 
 namespace {
 
@@ -27,37 +41,23 @@ void sdist_export_file(path_ref out_root, path_ref in_root, path_ref filepath) {
     fs::copy(filepath, dest);
 }
 
-void sdist_copy_library(path_ref out_root, const library_root& lib, const sdist_params& params) {
-    auto sources_to_keep =  //
-        lib.all_sources()   //
-        | ranges::views::filter([&](const source_file& sf) {
-              if (sf.kind == source_kind::app && params.include_apps) {
-                  return true;
-              }
-              if (sf.kind == source_kind::source || is_header(sf.kind)) {
-                  return true;
-              }
-              if (sf.kind == source_kind::test && params.include_tests) {
-                  return true;
-              }
-              return false;
-          })  //
-        | ranges::to_vector;
+void sdist_copy_library(path_ref                 out_root,
+                        const sdist&             sd,
+                        const crs::library_info& lib,
+                        const sdist_params&      params) {
+    auto lib_dir = dds::resolve_path_strong(sd.path / lib.path).value();
+    auto inc_dir = source_root{lib_dir / "include"};
+    auto src_dir = source_root{lib_dir / "src"};
 
-    ranges::sort(sources_to_keep, std::less<>(), [](auto&& s) { return s.path; });
+    auto inc_sources = inc_dir.exists() ? inc_dir.collect_sources() : std::vector<source_file>{};
+    auto src_sources = src_dir.exists() ? src_dir.collect_sources() : std::vector<source_file>{};
 
-    auto lib_man_path = library_manifest::find_in_directory(lib.path());
-    if (!lib_man_path) {
-        throw_user_error<errc::invalid_lib_filesystem>(
-            "Each library root in a source distribution requires a library manifest (Expected a "
-            "library manifest in [{}])",
-            lib.path().string());
-    }
-    sdist_export_file(out_root, params.project_dir, *lib_man_path);
+    using namespace std::views;
+    auto all_arr = std::array{all(inc_sources), all(src_sources)};
 
-    dds_log(info, "sdist: Export library from {}", lib.path().string());
+    dds_log(info, "sdist: Export library from {}", lib_dir.string());
     fs::create_directories(out_root);
-    for (const auto& source : sources_to_keep) {
+    for (const auto& source : all_arr | join) {
         sdist_export_file(out_root, params.project_dir, source.path);
     }
 }
@@ -79,7 +79,7 @@ sdist dds::create_sdist(const sdist_params& params) {
         fs::remove_all(dest);
     }
     fs::create_directories(fs::absolute(dest).parent_path());
-    safe_rename(tempdir.path(), dest);
+    move_file(tempdir.path(), dest).value();
     dds_log(info, "Source distribution created in {}", dest.string());
     return sdist::from_directory(dest);
 }
@@ -100,58 +100,47 @@ void dds::create_sdist_targz(path_ref filepath, const sdist_params& params) {
 }
 
 sdist dds::create_sdist_in_dir(path_ref out, const sdist_params& params) {
-    auto libs = collect_libraries(params.project_dir);
-
-    for (const library_root& lib : libs) {
-        sdist_copy_library(out, lib, params);
+    auto in_sd = sdist::from_directory(params.project_dir);
+    for (const crs::library_info& lib : in_sd.pkg.libraries) {
+        sdist_copy_library(out, in_sd, lib, params);
     }
 
-    auto man_path = package_manifest::find_in_directory(params.project_dir);
-    if (!man_path) {
-        throw_user_error<errc::invalid_pkg_filesystem>(
-            "Creating a source distribution requires a package.json5 file for the project "
-            "(Expected manifest in [{}])",
-            params.project_dir.string());
-    }
-
-    auto pkg_man = package_manifest::load_from_file(*man_path);
-    sdist_export_file(out, params.project_dir, *man_path);
+    fs::create_directories(out);
+    dds::write_file(out / "pkg.json", in_sd.pkg.to_json(2));
     return sdist::from_directory(out);
 }
 
 sdist sdist::from_directory(path_ref where) {
-    auto pkg_man = package_manifest::load_from_directory(where);
-    // Code paths should only call here if they *know* that the sdist is valid
-    if (!pkg_man) {
-        throw_user_error<errc::invalid_pkg_filesystem>(
-            "The given directory [{}] does not contain a package manifest file. All source "
-            "distribution directories are required to contain a package manifest.",
-            where.string());
+    DDS_E_SCOPE(e_sdist_from_directory{where});
+    crs::package_info meta;
+
+    auto       pkg_json      = where / "pkg.json";
+    auto       pkg_yaml      = where / "pkg.yaml";
+    const bool have_pkg_json = dds::file_exists(pkg_json);
+    const bool have_pkg_yaml = dds::file_exists(pkg_yaml);
+
+    if (have_pkg_json) {
+        if (have_pkg_yaml) {
+            dds_log(
+                warn,
+                "Directory has both [.cyan[{}]] and [.cyan[{}]] (The .bold.cyan[pkg`.json] file will be preferred)"_styled,
+                pkg_json.string(),
+                pkg_yaml.string());
+        }
+        DDS_E_SCOPE(crs::e_pkg_json_path{pkg_json});
+        auto data = dds::parse_json5_file(pkg_json);
+        meta      = crs::package_info::from_json_data(data);
+    } else {
+        auto proj = project::open_directory(where);
+        if (!proj.manifest.has_value()) {
+            BOOST_LEAF_THROW_EXCEPTION(
+                make_user_error<errc::invalid_pkg_filesystem>(
+                    "No pkg.json nor project manifest in the project directory"),
+                e_missing_pkg_json{pkg_json},
+                e_missing_project_yaml{where / "pkg.yaml"},
+                SBS_ERR_REF("invalid-pkg-filesystem"));
+        }
+        meta = proj.manifest->as_crs_package_meta();
     }
-    return sdist{pkg_man.value(), where};
-}
-
-temporary_sdist dds::expand_sdist_targz(path_ref targz_path) {
-    neo_assertion_breadcrumbs("Expanding sdist targz file", targz_path.string());
-    auto infile = open(targz_path, std::ios::binary | std::ios::in);
-    return expand_sdist_from_istream(infile, targz_path.string());
-}
-
-temporary_sdist dds::expand_sdist_from_istream(std::istream& is, std::string_view input_name) {
-    auto tempdir = temporary_dir::create();
-    dds_log(debug,
-            "Expanding source distribution content from [{}] into [{}]",
-            input_name,
-            tempdir.path().string());
-    fs::create_directories(tempdir.path());
-    neo::expand_directory_targz({.destination_directory = tempdir.path(), .input_name = input_name},
-                                is);
-    return {tempdir, sdist::from_directory(tempdir.path())};
-}
-
-temporary_sdist dds::download_expand_sdist_targz(std::string_view url_str) {
-    auto remote  = http_remote_pkg::from_url(neo::url::parse(url_str));
-    auto tempdir = temporary_dir::create();
-    remote.get_raw_directory(tempdir.path());
-    return {tempdir, sdist::from_directory(tempdir.path())};
+    return sdist{meta, where};
 }

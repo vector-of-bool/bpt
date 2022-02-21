@@ -8,7 +8,7 @@
 #include <debate/debate.hpp>
 #include <debate/enum.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
@@ -35,7 +35,7 @@ static void load_locale() {
 
 int main_fn(std::string_view program_name, const std::vector<std::string>& argv) {
     dds::log::init_logger();
-    auto log_subscr = neo::subscribe(&dds::log::ev_log::print);
+    neo::listener log_listener = &dds::log::ev_log::print;
     load_locale();
     std::setlocale(LC_CTYPE, ".utf8");
 
@@ -127,7 +127,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
                        sp.spelling);
             return 2;
         },
-        [&](debate::missing_required err, debate::e_argument_parser p) {
+        [&](debate::invalid_arguments const& err, debate::e_argument_parser p) {
             fmt::print(std::cerr,
                        "{}\nError: {}\n",
                        p.parser.usage_string(program_name),

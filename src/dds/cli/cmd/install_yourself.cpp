@@ -1,12 +1,13 @@
 #include "../options.hpp"
 
 #include <dds/util/env.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/io.hpp>
+#include <dds/util/fs/shutil.hpp>
 #include <dds/util/paths.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/string.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 #include <neo/assert.hpp>
 #include <neo/platform.hpp>
@@ -192,7 +193,7 @@ void fixup_system_path(const options& opts [[maybe_unused]]) {
 void fixup_user_path(const options& opts) {
 #if !_WIN32
     auto profile_file    = dds::user_home_dir() / ".profile";
-    auto profile_content = dds::slurp_file(profile_file);
+    auto profile_content = dds::read_file(profile_file);
     if (dds::contains(profile_content, "$HOME/.local/bin")) {
         // We'll assume that this is properly loading .local/bin for .profile
         dds_log(info, "[.br.cyan[{}]] is okay"_styled, profile_file.string());
@@ -215,15 +216,15 @@ void fixup_user_path(const options& opts) {
         // Move .profile back into place if we abore for any reason
         neo_defer {
             if (!fs::exists(profile_file)) {
-                safe_rename(bak_file, profile_file);
+                move_file(bak_file, profile_file).value();
             }
         };
         // Write the temporary version
-        dds::write_file(tmp_file, profile_content).value();
+        dds::write_file(tmp_file, profile_content);
         // Make a backup
-        safe_rename(profile_file, bak_file);
+        move_file(profile_file, bak_file).value();
         // Move the tmp over the final location
-        safe_rename(tmp_file, profile_file);
+        move_file(tmp_file, profile_file).value();
         // Okay!
         dds_log(info,
                 "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
@@ -236,7 +237,7 @@ void fixup_user_path(const options& opts) {
 
     auto fish_config = dds::user_config_dir() / "fish/config.fish";
     if (fs::exists(fish_config)) {
-        auto fish_config_content = slurp_file(fish_config);
+        auto fish_config_content = dds::read_file(fish_config);
         if (dds::contains(fish_config_content, "$HOME/.local/bin")) {
             // Assume that this is up-to-date
             dds_log(info,
@@ -260,15 +261,15 @@ void fixup_user_path(const options& opts) {
             bak_file += ".bak";
             neo_defer {
                 if (!fs::exists(fish_config)) {
-                    safe_rename(bak_file, fish_config);
+                    move_file(bak_file, fish_config).value();
                 }
             };
             // Write the temporary version
-            dds::write_file(tmp_file, fish_config_content).value();
+            dds::write_file(tmp_file, fish_config_content);
             // Make a backup
-            safe_rename(fish_config, bak_file);
+            move_file(fish_config, bak_file).value();
             // Move the temp over the destination
-            safe_rename(tmp_file, fish_config);
+            move_file(tmp_file, fish_config).value();
             // Okay!
             dds_log(info,
                     "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
@@ -396,13 +397,7 @@ int _install_yourself(const options& opts) {
 
 int install_yourself(const options& opts) {
     return boost::leaf::try_catch(
-        [&] {
-            try {
-                return _install_yourself(opts);
-            } catch (...) {
-                capture_exception();
-            }
-        },
+        [&] { return _install_yourself(opts); },
         [](std::error_code ec, e_copy_file copy) {
             dds_log(error,
                     "Failed to copy file [.br.cyan[{}]] to .br.yellow[{}]: .bold.red[{}]"_styled,
@@ -427,8 +422,8 @@ int install_yourself(const options& opts) {
                 ec.message());
             return 1;
         },
-        [](e_system_error_exc e) {
-            dds_log(error, "Failure while installing: {}", e.message);
+        [](const std::system_error& e) {
+            dds_log(error, "Failure while installing: {}", e.code().message());
             return 1;
         });
     return 0;

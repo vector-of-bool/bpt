@@ -2,7 +2,6 @@
 
 #include "./argument.hpp"
 
-#include <fmt/format.h>
 #include <neo/assert.hpp>
 #include <neo/opt_ref.hpp>
 

@@ -1,0 +1,5 @@
+{
+    name: 'test',
+    version: '0.0.0',
+    dependencies: ['the_test_lib@0.0.0']
+}

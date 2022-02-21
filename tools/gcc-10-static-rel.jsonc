@@ -7,6 +7,9 @@
     "warning_flags": [
         "-Werror",
     ],
+    "cxx_flags": [
+        "-fcoroutines",
+    ],
     "flags": [
         "-fdata-sections",
         "-ffunction-sections",

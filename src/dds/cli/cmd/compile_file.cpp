@@ -2,17 +2,18 @@
 
 #include "./build_common.hpp"
 #include <dds/error/errors.hpp>
+#include <dds/error/marker.hpp>
 #include <dds/error/nonesuch.hpp>
 #include <dds/util/log.hpp>
 
-#include <boost/leaf/handle_exception.hpp>
+#include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
 
 using namespace fansi::literals;
 
 namespace dds::cli::cmd {
 
-int compile_file(const options& opts) {
+int _compile_file(const options& opts) {
     return boost::leaf::try_catch(
         [&] {
             auto builder = create_project_builder(opts);
@@ -45,11 +46,15 @@ int compile_file(const options& opts) {
             return 2;
         },
         [&](boost::leaf::catch_<dds::user_error<dds::errc::compile_failure>> e) {
-            dds_log(error, e.value().what());
+            dds_log(error, e.matched.what());
             dds_log(error, "  (Refer to compiler output for more information)");
             write_error_marker("compile-file-failed");
             return 2;
         });
+}
+
+int compile_file(const options& opts) {
+    return handle_build_error([&] { return _compile_file(opts); });
 }
 
 }  // namespace dds::cli::cmd

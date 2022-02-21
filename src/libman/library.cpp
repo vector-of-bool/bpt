@@ -23,8 +23,8 @@ dds::result<library> library::from_file(path_ref fpath) {
              read_opt("Path", ret.linkable_path),
              read_accumulate("Include-Path", ret.include_paths),
              read_accumulate("Preprocessor-Define", ret.preproc_defs),
-             read_accumulate("Uses", ret.uses, NEO_TL(*split_usage_string(_1))),
-             read_accumulate("Links", ret.links, NEO_TL(*split_usage_string(_1))),
+             read_accumulate("Uses", ret.uses, NEO_TL(split_usage_string(_1).value())),
+             read_accumulate("Links", ret.links, NEO_TL(split_usage_string(_1).value())),
              read_accumulate("Special-Uses", ret.special_uses));
     } catch (const boost::leaf::bad_result& err) {
         return err.load();
@@ -41,14 +41,4 @@ dds::result<library> library::from_file(path_ref fpath) {
     }
 
     return ret;
-}
-
-dds::result<usage> lm::split_usage_string(std::string_view str) {
-    auto sl_pos = str.find('/');
-    if (sl_pos == str.npos) {
-        return boost::leaf::new_error(e_invalid_usage_string{std::string(str)});
-    }
-    auto ns   = str.substr(0, sl_pos);
-    auto name = str.substr(sl_pos + 1);
-    return usage{std::string(ns), std::string(name)};
 }

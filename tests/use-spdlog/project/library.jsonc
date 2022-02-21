@@ -1,6 +1,0 @@
-{
-    "name": "spdlog-user",
-    "uses": [
-        "spdlog/spdlog"
-    ]
-}

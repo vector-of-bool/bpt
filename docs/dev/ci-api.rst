@@ -7,11 +7,11 @@ Types from pytest
 These types are defined by pytest, but are used extensively within the testing
 scripts.
 
-.. class:: _pytest.fixtures.FixtureRequest
+.. class:: FixtureRequest
 
   .. seealso:: :class:`pytest.FixtureRequest`
 
-.. class:: _pytest.tmpdir.TempPathFactory
+.. class:: TempPathFactory
 
   .. seealso:: :class:`pytest.TempPathFactory`
 
@@ -26,8 +26,8 @@ The following test fixtures are defined:
 - :func:`~dds_ci.testing.fixtures.tmp_project` -
   :class:`dds_ci.testing.fixtures.Project` - Create a new empty directory to be
   used as a test project for ``dds`` to execute.
-- :func:`~dds_ci.testing.http.http_repo` -
-  :class:`dds_ci.testing.http.RepoServer` - Create a new dds repository and
+- :func:`~dds_ci.testing.repo.http_crs_repo` -
+  :class:`dds_ci.testing.repo.CRSRepoServer` - Create a new dds repository and
   spawn an HTTP server to serve it.
 
 Module: ``dds_ci``
@@ -69,6 +69,20 @@ Module: ``dds_ci.testing.fixtures``
 ***********************************
 
 .. automodule:: dds_ci.testing.fixtures
+  :members:
+
+
+Module: ``dds_ci.testing.repo``
+***********************************
+
+.. automodule:: dds_ci.testing.repo
+  :members:
+
+
+Module: ``dds_ci.testing.fs``
+***********************************
+
+.. automodule:: dds_ci.testing.fs
   :members:
 
 

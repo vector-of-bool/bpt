@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/statement.hpp>
@@ -25,14 +25,14 @@ struct completed_compilation {
 
 struct input_file_info {
     fs::path           path;
-    fs::file_time_type last_mtime;
+    fs::file_time_type prev_mtime;
 };
 
 class database {
-    neo::sqlite3::database                _db;
+    neo::sqlite3::connection              _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
 
-    explicit database(neo::sqlite3::database db);
+    explicit database(neo::sqlite3::connection db);
     database(const database&) = delete;
 
     std::int64_t _record_file(path_ref p);

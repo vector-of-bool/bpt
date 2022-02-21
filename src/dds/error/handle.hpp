@@ -2,6 +2,8 @@
 
 #include <neo/fwd.hpp>
 
+#include <boost/leaf/pred.hpp>
+
 #include <string_view>
 
 namespace boost::leaf {
@@ -22,5 +24,8 @@ auto leaf_handle_unknown(std::string_view message, T&& val) {
         return val;
     };
 }
+
+template <auto Val>
+using matchv = boost::leaf::match<decltype(Val), Val>;
 
 }  // namespace dds

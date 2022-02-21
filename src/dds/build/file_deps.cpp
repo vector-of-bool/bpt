@@ -1,19 +1,17 @@
 #include "./file_deps.hpp"
 
-#include <dds/db/database.hpp>
-#include <dds/proc.hpp>
+#include <dds/util/fs/io.hpp>
 #include <dds/util/log.hpp>
+#include <dds/util/proc.hpp>
 #include <dds/util/shlex.hpp>
 #include <dds/util/string.hpp>
 
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
+#include <neo/ranges.hpp>
 
 using namespace dds;
 
 file_deps_info dds::parse_mkfile_deps_file(path_ref where) {
-    auto content = slurp_file(where);
+    auto content = dds::read_file(where);
     return parse_mkfile_deps_str(content);
 }
 
@@ -73,7 +71,7 @@ void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps
     db.forget_inputs_of(deps.output);
     for (auto&& inp : deps.inputs) {
         auto mtime = fs::last_write_time(inp);
-        db.record_dep(inp, deps.output, mtime);
+        db.record_dep(inp, deps.output, (std::min)(mtime, deps.compile_start_time));
     }
 }
 
@@ -91,7 +89,7 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
     auto& inputs        = *inputs_;
     auto  changed_files =  //
         inputs             //
-        | ranges::views::filter([](const input_file_info& input) {
+        | std::views::filter([](const input_file_info& input) {
               if (input.path.extension() == ".syncheck") {
                   // Do not consider .syncheck files, as they will always be re-written and have no
                   // interesting content
@@ -101,15 +99,15 @@ std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
                   // The input does not exist, so consider it out-of-date
                   return true;
               }
-              if (fs::last_write_time(input.path) != input.last_mtime) {
+              if (fs::last_write_time(input.path) != input.prev_mtime) {
                   // The input has been modified since our last execution
                   return true;
               }
               // No "new" inputs
               return false;
           })
-        | ranges::views::transform([](auto& info) { return info.path; })  //
-        | ranges::to_vector;
+        | std::views::transform([](auto& info) { return info.path; })  //
+        | neo::to_vector;
     prior_compilation ret;
     ret.newer_inputs     = std::move(changed_files);
     ret.previous_command = cmd;

@@ -1,10 +1,9 @@
-#ifndef _WIN32
 #include "./temp.hpp"
 
+#ifndef _WIN32
 using namespace dds;
 
-temporary_dir temporary_dir::create() {
-    auto base = fs::temp_directory_path();
+temporary_dir temporary_dir::create_in(path_ref base) {
     auto file = (base / "dds-tmp-XXXXXX").string();
 
     const char* tempdir_path = ::mktemp(file.data());

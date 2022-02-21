@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <optional>
 #include <vector>
@@ -12,15 +12,13 @@ enum class source_kind {
     header,
     // "Header" implementation files which are #included in header files. e.g. .inl
     header_impl,
-    header_template,
     source,
     test,
     app,
 };
 
 constexpr bool is_header(source_kind kind) {
-    return kind == source_kind::header || kind == source_kind::header_impl
-        || kind == source_kind::header_template;
+    return kind == source_kind::header || kind == source_kind::header_impl;
 }
 
 std::optional<source_kind> infer_source_kind(path_ref) noexcept;
@@ -43,7 +41,5 @@ struct source_file {
 
     fs::path relative_path() const noexcept { return fs::relative(path, basis_path); }
 };
-
-using source_list = std::vector<source_file>;
 
 }  // namespace dds

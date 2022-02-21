@@ -1,8 +1,13 @@
 #include "./library.hpp"
 
+#include <dds/sdist/root.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
 
+#include <fansi/styled.hpp>
+#include <libman/usage.hpp>
+#include <neo/ranges.hpp>
+#include <neo/tl.hpp>
 #include <range/v3/action/push_back.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/concat.hpp>
@@ -10,42 +15,29 @@
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
+#include <ranges>
 #include <string>
 
 using namespace dds;
+using namespace fansi::literals;
 
-namespace {
+library_plan library_plan::create(path_ref                    pkg_base,
+                                  const crs::package_info&    pkg,
+                                  const crs::library_info&    lib,
+                                  const library_build_params& params) {
+    fs::path out_dir   = params.out_subdir;
+    auto     qual_name = neo::ufmt("{}/{}", pkg.id.name.str, lib.name.str);
 
-const std::string gen_dir_qual = "__dds/gen";
-
-fs::path rebase_gen_incdir(path_ref subdir) { return gen_dir_qual / subdir; }
-}  // namespace
-
-std::optional<fs::path> library_plan::generated_include_dir() const noexcept {
-    if (_templates.empty()) {
-        return std::nullopt;
-    }
-    return rebase_gen_incdir(output_subdirectory());
-}
-
-library_plan library_plan::create(const library_root&             lib,
-                                  const library_build_params&     params,
-                                  std::optional<std::string_view> qual_name_) {
-    const fs::path out_dir = params.out_subdir / lib.path_namespace();
-
-    // Source files are kept in three groups:
+    // Source files are kept in different groups:
     std::vector<source_file> app_sources;
     std::vector<source_file> test_sources;
     std::vector<source_file> lib_sources;
-    std::vector<source_file> template_sources;
     std::vector<source_file> header_sources;
     std::vector<source_file> public_header_sources;
 
-    auto qual_name = std::string(qual_name_.value_or(lib.manifest().name.str));
-
     // Collect the source for this library. This will look for any compilable sources in the
     // `src/` subdirectory of the library.
-    auto src_dir = lib.src_source_root();
+    auto src_dir = dds::source_root(pkg_base / lib.path / "src");
     if (src_dir.exists()) {
         // Sort each source file between the three source arrays, depending on
         // the kind of source that we are looking at.
@@ -57,8 +49,6 @@ library_plan library_plan::create(const library_root&             lib,
                 app_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::source) {
                 lib_sources.push_back(sfile);
-            } else if (sfile.kind == source_kind::header_template) {
-                template_sources.push_back(sfile);
             } else if (sfile.kind == source_kind::header) {
                 header_sources.push_back(sfile);
             } else {
@@ -67,15 +57,15 @@ library_plan library_plan::create(const library_root&             lib,
         }
     }
 
-    auto include_dir = lib.include_source_root();
+    auto include_dir = dds::source_root{pkg_base / lib.path / "include"};
     if (include_dir.exists()) {
         auto all_sources = include_dir.collect_sources();
         for (const auto& sfile : all_sources) {
             if (!is_header(sfile.kind)) {
-                dds_log(warn,
-                        "Public include/ should only contain header or header template files."
-                        " Not a header: {}",
-                        sfile.path.string());
+                dds_log(
+                    warn,
+                    "Public include/ should only contain header files. Not a header: [.br.yellow[{}]]"_styled,
+                    sfile.path.string());
             } else if (sfile.kind == source_kind::header) {
                 public_header_sources.push_back(sfile);
             }
@@ -86,23 +76,55 @@ library_plan library_plan::create(const library_root&             lib,
         header_sources.clear();
     }
 
+    ///  Predicate for if a '.kind' member is equal to the given kidn
+    auto kind_is_for = [](crs::usage_kind k) { return [k](auto& l) { return l.kind == k; }; };
+
+    auto pkg_dep_to_usages = [&](crs::dependency const& dep) {
+        neo_assert(invariant,
+                   dep.uses.is<crs::explicit_uses_list>(),
+                   "Expected an explicit usage requirement for dependency object",
+                   dep,
+                   pkg,
+                   lib);
+        return dep.uses.as<crs::explicit_uses_list>().uses | std::views::transform([&](auto&& l) {
+                   return lm::usage{dep.name.str, l.str};
+               });
+    };
+
+    auto usages_of_kind = [&](crs::usage_kind k) -> neo::ranges::range_of<lm::usage> auto {
+        auto intra = lib.intra_uses               //
+            | std::views::filter(kind_is_for(k))  //
+            | std::views::transform([&](auto& use) {
+                         return lm::usage{pkg.id.name.str, use.lib.str};
+                     });
+        auto from_dep                                   //
+            = lib.dependencies                          //
+            | std::views::filter(kind_is_for(k))        //
+            | std::views::transform(pkg_dep_to_usages)  //
+            | std::views::join;
+        neo::ranges::range_of<lm::usage> auto ret_uses = ranges::views::concat(intra, from_dep);
+        return ret_uses | neo::to_vector;
+    };
+
+    auto lib_uses  = usages_of_kind(crs::usage_kind::lib);
+    auto test_uses = usages_of_kind(crs::usage_kind::test);
+    //! auto app_uses  = usages_of_kind(crs::usage_kind::app);
+
     // Load up the compile rules
     shared_compile_file_rules compile_rules;
-    lib.append_public_compile_rules(neo::into(compile_rules));
+    auto&                     pub_inc = include_dir.exists() ? include_dir.path : src_dir.path;
+    compile_rules.include_dirs().push_back(pub_inc);
     compile_rules.enable_warnings() = params.enable_warnings;
-    compile_rules.uses()            = lib.manifest().uses;
-
-    const auto codegen_subdir = rebase_gen_incdir(out_dir);
-
-    if (!template_sources.empty()) {
-        compile_rules.include_dirs().push_back(codegen_subdir);
-    }
+    extend(compile_rules.uses(), lib_uses);
 
     auto public_header_compile_rules          = compile_rules.clone();
     public_header_compile_rules.syntax_only() = true;
-    auto src_header_compile_rules             = public_header_compile_rules.clone();
-    lib.append_private_compile_rules(neo::into(compile_rules));
-    lib.append_private_compile_rules(neo::into(src_header_compile_rules));
+    public_header_compile_rules.defs().push_back("__dds_header_check=1");
+    auto src_header_compile_rules = public_header_compile_rules.clone();
+    if (include_dir.exists()) {
+        compile_rules.include_dirs().push_back(src_dir.path);
+        src_header_compile_rules.include_dirs().push_back(src_dir.path);
+    }
 
     // Convert the library sources into their respective file compilation plans.
     auto lib_compile_files =  //
@@ -133,27 +155,23 @@ library_plan library_plan::create(const library_root&             lib,
     std::optional<create_archive_plan> archive_plan;
     if (!lib_compile_files.empty()) {
         dds_log(debug, "Generating an archive library for {}", qual_name);
-        archive_plan.emplace(lib.manifest().name.str,
-                             qual_name,
-                             out_dir,
-                             std::move(lib_compile_files));
+        archive_plan.emplace(lib.name.str, qual_name, out_dir, std::move(lib_compile_files));
     } else {
         dds_log(debug,
                 "Library {} has no compiled inputs, so no archive will be generated",
                 qual_name);
     }
 
-    // Collect the paths to linker inputs that should be used when generating executables for this
-    // library.
+    // Collect the paths to linker inputs that should be used when generating executables for
+    // this library.
     std::vector<lm::usage> links;
-    extend(links, lib.manifest().uses);
-    extend(links, lib.manifest().links);
+    extend(links, lib_uses);
 
     // There may also be additional usage requirements for tests
     auto test_rules = compile_rules.clone();
     auto test_links = links;
-    extend(test_rules.uses(), params.test_uses);
-    extend(test_links, params.test_uses);
+    extend(test_rules.uses(), test_uses);
+    extend(test_links, test_uses);
 
     // Generate the plans to link any executables for this library
     std::vector<link_executable_plan> link_executables;
@@ -184,17 +202,21 @@ library_plan library_plan::create(const library_root&             lib,
         link_executables.emplace_back(std::move(exe));
     }
 
-    std::vector<render_template_plan> render_templates;
-    for (const auto& sf : template_sources) {
-        render_templates.emplace_back(sf, codegen_subdir);
-    }
-
     // Done!
-    return library_plan{lib,
+    return library_plan{lib.name.str,
+                        pkg_base / lib.path,
                         qual_name,
                         out_dir,
                         std::move(archive_plan),
                         std::move(link_executables),
-                        std::move(render_templates),
-                        std::move(header_indep_plan)};
+                        std::move(header_indep_plan),
+                        std::move(lib_uses)};
+}
+
+fs::path library_plan::public_include_dir() const noexcept {
+    auto p = source_root() / "include";
+    if (fs::exists(p)) {
+        return p;
+    }
+    return source_root() / "src";
 }

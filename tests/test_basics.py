@@ -1,11 +1,10 @@
-from subprocess import CalledProcessError
 import time
+from subprocess import CalledProcessError
 
 import pytest
-
 from dds_ci import paths
+from dds_ci.testing import Project, PkgYAML
 from dds_ci.testing.error import expect_error_marker
-from dds_ci.testing import Project, PackageJSON
 
 
 def test_build_empty(tmp_project: Project) -> None:
@@ -44,12 +43,13 @@ def test_simple_lib(tmp_project: Project) -> None:
     the manifest files will affect the output name.
     """
     tmp_project.write('src/foo.cpp', 'int the_answer() { return 42; }')
-    tmp_project.package_json = {
+    tmp_project.pkg_yaml = {
         'name': 'test-project',
         'version': '0.0.0',
-        'namespace': 'test',
+        'lib': {
+            'name': 'test-library',
+        }
     }
-    tmp_project.library_json = {'name': 'test-library'}
     tmp_project.build()
     assert (tmp_project.build_root / 'compile_commands.json').is_file(), 'compdb was not created'
     assert list(tmp_project.build_root.glob('libtest-library.*')) != [], 'No archive was created'
@@ -73,66 +73,51 @@ def test_error_enoent_toolchain(tmp_project: Project) -> None:
 
 
 def test_invalid_names(tmp_project: Project) -> None:
-    tmp_project.package_json = {
-        'name': 'test',
-        'version': '1.2.3',
-        'namespace': 'test',
-        'depends': ['invalid name@1.2.3']
-    }
+    tmp_project.pkg_yaml = {'name': 'test', 'version': '1.2.3', 'dependencies': [{'dep': 'invalid name@1.2.3'}]}
     with expect_error_marker('invalid-pkg-dep-name'):
         tmp_project.build()
     with expect_error_marker('invalid-pkg-dep-name'):
         tmp_project.pkg_create()
-    with expect_error_marker('invalid-pkg-dep-name'):
+    with expect_error_marker('invalid-dep-shorthand'):
         tmp_project.dds.build_deps(['invalid name@1.2.3'])
 
-    tmp_project.package_json = {
-        **tmp_project.package_json,
-        'name': 'invalid name',
-        'depends': [],
-    }
-    with expect_error_marker('invalid-pkg-name'):
+    tmp_project.pkg_yaml['name'] = 'invalid name'
+    tmp_project.pkg_yaml['dependencies'] = []
+    with expect_error_marker('invalid-name'):
         tmp_project.build()
-    with expect_error_marker('invalid-pkg-name'):
+    with expect_error_marker('invalid-name'):
         tmp_project.pkg_create()
 
-    tmp_project.package_json = {
-        **tmp_project.package_json,
-        'name': 'simple_name',
-        'namespace': 'invalid namespace',
-    }
-    with expect_error_marker('invalid-pkg-namespace-name'):
-        tmp_project.build()
-    with expect_error_marker('invalid-pkg-namespace-name'):
-        tmp_project.pkg_create()
 
-    tmp_project.package_json = {
-        'name': 'test',
-        'version': '1.2.3',
-        'namespace': 'test',
-        'depends': [],
-    }
-    tmp_project.library_json = {'name': 'invalid name'}
-    # Need a source directory for dds to load the lib manifest
-    tmp_project.write('src/empty.hpp', '')
-    with expect_error_marker('invalid-lib-name'):
-        tmp_project.build()
-
-
-TEST_PACKAGE: PackageJSON = {
+TEST_PACKAGE: PkgYAML = {
     'name': 'test-pkg',
     'version': '0.2.2',
-    'namespace': 'test',
 }
 
 
 def test_empty_with_pkg_json(tmp_project: Project) -> None:
-    tmp_project.package_json = TEST_PACKAGE
+    tmp_project.pkg_yaml = TEST_PACKAGE
     tmp_project.build()
 
 
 def test_empty_sdist_create(tmp_project: Project) -> None:
-    tmp_project.package_json = TEST_PACKAGE
+    tmp_project.pkg_yaml = TEST_PACKAGE
     tmp_project.pkg_create()
-    assert tmp_project.build_root.joinpath('test-pkg@0.2.2.tar.gz').is_file(), \
+    assert tmp_project.build_root.joinpath('test-pkg@0.2.2~1.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'
+
+
+def test_project_with_meta(tmp_project: Project) -> None:
+    tmp_project.pkg_yaml = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'license': 'MIT-1.2.3',
+    }
+    with expect_error_marker('invalid-spdx'):
+        tmp_project.build()
+    tmp_project.pkg_yaml = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'license': 'MIT',  # A valid license string
+    }
+    tmp_project.build()

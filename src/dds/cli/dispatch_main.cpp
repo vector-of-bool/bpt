@@ -18,19 +18,10 @@ command build;
 command compile_file;
 command install_yourself;
 command pkg_create;
-command pkg_get;
-command pkg_import;
-command pkg_ls;
-command pkg_repo_add;
-command pkg_repo_update;
-command pkg_repo_ls;
-command pkg_repo_remove;
 command pkg_search;
-command repoman_add;
-command repoman_import;
-command repoman_init;
-command repoman_ls;
-command repoman_remove;
+command pkg_prefetch;
+command pkg_solve;
+command repo_cmd;
 
 }  // namespace cmd
 
@@ -43,51 +34,21 @@ int dispatch_main(const options& opts) noexcept {
         case subcommand::pkg: {
             DDS_E_SCOPE(opts.pkg.subcommand);
             switch (opts.pkg.subcommand) {
-            case pkg_subcommand::ls:
-                return cmd::pkg_ls(opts);
             case pkg_subcommand::create:
                 return cmd::pkg_create(opts);
-            case pkg_subcommand::get:
-                return cmd::pkg_get(opts);
-            case pkg_subcommand::import:
-                return cmd::pkg_import(opts);
-            case pkg_subcommand::repo: {
-                DDS_E_SCOPE(opts.pkg.repo.subcommand);
-                switch (opts.pkg.repo.subcommand) {
-                case pkg_repo_subcommand::add:
-                    return cmd::pkg_repo_add(opts);
-                case pkg_repo_subcommand::update:
-                    return cmd::pkg_repo_update(opts);
-                case pkg_repo_subcommand::ls:
-                    return cmd::pkg_repo_ls(opts);
-                case pkg_repo_subcommand::remove:
-                    return cmd::pkg_repo_remove(opts);
-                case pkg_repo_subcommand::_none_:;
-                }
-                neo::unreachable();
-            }
             case pkg_subcommand::search:
                 return cmd::pkg_search(opts);
+            case pkg_subcommand::prefetch:
+                return cmd::pkg_prefetch(opts);
+            case pkg_subcommand::solve:
+                return cmd::pkg_solve(opts);
             case pkg_subcommand::_none_:;
             }
             neo::unreachable();
         }
-        case subcommand::repoman: {
-            DDS_E_SCOPE(opts.repoman.subcommand);
-            switch (opts.repoman.subcommand) {
-            case repoman_subcommand::import:
-                return cmd::repoman_import(opts);
-            case repoman_subcommand::add:
-                return cmd::repoman_add(opts);
-            case repoman_subcommand::init:
-                return cmd::repoman_init(opts);
-            case repoman_subcommand::remove:
-                return cmd::repoman_remove(opts);
-            case repoman_subcommand::ls:
-                return cmd::repoman_ls(opts);
-            case repoman_subcommand::_none_:;
-            }
-            neo::unreachable();
+        case subcommand::repo: {
+            DDS_E_SCOPE(opts.repo.subcommand);
+            return cmd::repo_cmd(opts);
         }
         case subcommand::compile_file:
             return cmd::compile_file(opts);

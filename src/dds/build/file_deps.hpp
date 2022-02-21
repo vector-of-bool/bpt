@@ -28,7 +28,7 @@
  */
 
 #include <dds/db/database.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <neo/out.hpp>
 
@@ -66,6 +66,10 @@ struct file_deps_info {
      * The command that was used to generate the output
      */
     completed_compilation command;
+    /**
+     * The time at which compilation started.
+     */
+    fs::file_time_type compile_start_time;
 };
 
 class database;

@@ -1,4 +1,0 @@
-{
-    name: 'the_test_lib',
-    test_uses: ['dds/the_test_dependency'],
-}

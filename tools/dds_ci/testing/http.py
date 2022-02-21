@@ -1,27 +1,20 @@
-from pathlib import Path
 import socket
-from contextlib import contextmanager, ExitStack, closing
-import json
-from http.server import SimpleHTTPRequestHandler, HTTPServer
-from typing import NamedTuple, Any, Iterator, Callable
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack, closing, contextmanager
 from functools import partial
-import tempfile
-import sys
-import subprocess
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
+from typing import Any, Callable, Iterator, NamedTuple, cast
 
 import pytest
-from _pytest.fixtures import FixtureRequest
-from _pytest.tmpdir import TempPathFactory
-
-from dds_ci.dds import DDSWrapper
+from pytest import FixtureRequest
 
 
 def _unused_tcp_port() -> int:
     """Find an unused localhost TCP port from 1024-65535 and return it."""
     with closing(socket.socket()) as sock:
         sock.bind(('127.0.0.1', 0))
-        return sock.getsockname()[1]
+        return cast(int, sock.getsockname()[1])
 
 
 class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -80,76 +73,3 @@ def http_server_factory(request: FixtureRequest) -> HTTPServerFactory:
         return server
 
     return _make
-
-
-class RepoServer:
-    """
-    A fixture handle to a dds HTTP repository, including a path and URL.
-    """
-    def __init__(self, dds_exe: Path, info: ServerInfo, repo_name: str) -> None:
-        self.repo_name = repo_name
-        self.server = info
-        self.url = info.base_url
-        self.dds_exe = dds_exe
-
-    def import_json_data(self, data: Any) -> None:
-        """
-        Import some packages into the repo for the given JSON data. Uses
-        mkrepo.py
-        """
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            f.write(json.dumps(data).encode())
-            f.close()
-            self.import_json_file(Path(f.name))
-            Path(f.name).unlink()
-
-    def import_json_file(self, fpath: Path) -> None:
-        """
-        Import some package into the repo for the given JSON file. Uses mkrepo.py
-        """
-        subprocess.check_call([
-            sys.executable,
-            str(Path.cwd() / 'tools/mkrepo.py'),
-            f'--dds-exe={self.dds_exe}',
-            f'--dir={self.server.root}',
-            f'--spec={fpath}',
-        ])
-
-
-RepoFactory = Callable[[str], Path]
-
-
-@pytest.fixture(scope='session')
-def repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> RepoFactory:
-    def _make(name: str) -> Path:
-        tmpdir = tmp_path_factory.mktemp('test-repo-')
-        dds.run(['repoman', 'init', tmpdir, f'--name={name}'])
-        return tmpdir
-
-    return _make
-
-
-HTTPRepoServerFactory = Callable[[str], RepoServer]
-
-
-@pytest.fixture(scope='session')
-def http_repo_factory(dds_exe: Path, repo_factory: RepoFactory,
-                      http_server_factory: HTTPServerFactory) -> HTTPRepoServerFactory:
-    """
-    Fixture factory that creates new repositories with an HTTP server for them.
-    """
-    def _make(name: str) -> RepoServer:
-        repo_dir = repo_factory(name)
-        server = http_server_factory(repo_dir)
-        return RepoServer(dds_exe, server, name)
-
-    return _make
-
-
-@pytest.fixture()
-def http_repo(http_repo_factory: HTTPRepoServerFactory, request: FixtureRequest) -> RepoServer:
-    """
-    Fixture that creates a new empty dds repository and an HTTP server to serve
-    it.
-    """
-    return http_repo_factory(f'test-repo-{request.function.__name__}')

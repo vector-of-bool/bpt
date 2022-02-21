@@ -147,7 +147,7 @@ Managing a Repository
 
 A ``dds`` repository is simply a directory of static files, so any HTTP server
 that can serve from a filesystem can be used as a repository. ``dds`` also
-ships with a subcommand, ``repoman``, that can be used to manage a repository
+ships with a subcommand, ``repo``, that can be used to manage a repository
 directory.
 
 
@@ -155,9 +155,9 @@ Initializing a Repository
 =========================
 
 Before anything can be done, a directory should be converted to a repository by
-using ``repoman init``::
+using ``repo init``::
 
-  $ dds repoman init ./my-repo-dir --name=my-experimental-repo
+  $ dds repo init ./my-repo-dir --name=my-experimental-repo
 
 This will add the basic metadata into ``./my-repo-dir`` such that ``dds`` will
 be able to pull package data from it.
@@ -172,7 +172,7 @@ associated with any repository of that name. As such, generic names like
 Listing Contents
 ================
 
-The packages in a repository can be listed using ``dds repoman ls <repo-dir>``.
+The packages in a repository can be listed using ``dds repo ls <repo-dir>``.
 This will simply print each package identifier that is present in the
 repository.
 
@@ -181,51 +181,16 @@ Importing Source Distributions
 ==============================
 
 If you have a source distribution archive, it can be imported with the
-appropriately named ``dds repoman import`` command::
+appropriately named ``dds repo import`` command::
 
-  $ dds repoman import ./my-repo some-pkg@1.2.3.tar.gz
+  $ dds repo import ./my-repo some-pkg@1.2.3.tar.gz
 
 Multiple archive paths may be provided to import them all at once.
-
-
-Adding a Package by URL
-=======================
-
-A repository can also list packages that it does not host itself. Such a package
-listing can be added "by URL," where the URL tells ``dds`` how to pull the
-source distribution of the package. Beyond basic HTTP(S) URLs, ``dds`` can also
-clone packages via ``git``::
-
-  $ dds repoman add ./my-repo git+https://github.com/vector-of-bool/neo-fun.git#0.5.2
-
-The above URL tells ``dds`` that it can use ``git clone`` against
-``https://github.com/vector-of-bool/neo-fun.git`` and ask for tag ``0.5.2`` to
-get a source distribution directory that can be imported. Note the fragment on
-``git`` URLs! The fragment is required to specify the branch or tag to clone.
-
-If the package is available on GitHub, ``dds`` has a shorthand URL for that::
-
-  $ dds repoman add ./my-repo github:vector-of-bool/neo-fun/0.6.0
-
-The ``github:`` URL scheme tells ``dds`` to clone from GitHub. A ``github:`` URL
-must have exactly three path elements to determine *what* to download:
-``github:{owner}/{repository}/{branch-or-tag}``.
-
-.. note::
-
-  The ``github:`` URL lacks an *authority* element, and as such *does not* use
-  the double-slash.
-
-.. note::
-
-  ``repoman add`` will immediately attempt to pull a source distribution from
-  the given URL so that it may import the package's metadata into its listing
-  database. You cannot add a URL that is not already accessible.
 
 
 Removing Packages
 =================
 
 A package can be removed from a repository with
-``dds repoman remove <repo-dir> <pkg-id>``, where ``<pkg-id>`` is the
+``dds repo remove <repo-dir> <pkg-id>``, where ``<pkg-id>`` is the
 ``<name>@<version>`` of the package to remove.

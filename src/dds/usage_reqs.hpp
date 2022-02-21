@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 #include <libman/index.hpp>
 #include <libman/library.hpp>
 
@@ -15,38 +15,32 @@ namespace dds {
 
 class shared_compile_file_rules;
 
+struct e_nonesuch_library {
+    lm::usage value;
+};
+
+struct e_dup_library_id {
+    lm::usage value;
+};
+
+struct e_cyclic_using {
+    std::vector<lm::usage> value;
+};
+
 // The underlying map used by the usage requirements
 class usage_requirement_map {
 
     using library_key = lm::usage;
 
-    struct library_key_compare {
-        bool operator()(const library_key& lhs, const library_key& rhs) const noexcept {
-            if (lhs.namespace_ < rhs.namespace_) {
-                return true;
-            }
-            if (lhs.namespace_ > rhs.namespace_) {
-                return false;
-            }
-            if (lhs.name < rhs.name) {
-                return true;
-            }
-            return false;
-        }
-    };
-
-    using _reqs_map_type = std::map<library_key, lm::library, library_key_compare>;
+    using _reqs_map_type = std::map<library_key, lm::library>;
     _reqs_map_type _reqs;
 
 public:
     using const_iterator = _reqs_map_type::const_iterator;
 
     const lm::library* get(const lm::usage& key) const noexcept;
-    const lm::library* get(std::string ns, std::string name) const noexcept {
-        return get({ns, name});
-    }
-    lm::library& add(std::string ns, std::string name);
-    void         add(std::string ns, std::string name, lm::library lib) { add(ns, name) = lib; }
+    lm::library&       add(lm::usage u);
+    void               add(lm::usage u, lm::library lib) { add(u) = lib; }
 
     std::vector<fs::path> link_paths(const lm::usage&) const;
     std::vector<fs::path> include_paths(const lm::usage& req) const;

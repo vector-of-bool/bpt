@@ -1,0 +1,13 @@
+{
+    "name": "uses-bad-dep",
+    "version": "0.0.0",
+    "dependencies": [
+        {
+            # This dependency's testdependency cannot compile. We will therefore
+            # fail to build if we try to build its tests. Since DDS should not try
+            # to build its test dependencies, we will have no issue here
+            "dep": "with_bad_test_dep@0.0.0",
+            "for": "lib"
+        }
+    ]
+}

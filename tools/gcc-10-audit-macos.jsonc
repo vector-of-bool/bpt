@@ -7,6 +7,9 @@
     "warning_flags": [
         "-Werror",
     ],
+    "cxx_flags": [
+        "-fcoroutines",
+    ],
     "flags": [
         "-I/usr/local/opt/openssl@1.1/include",
         /// NOTE: Asan/UBsan misbehave on macOS, so we aren't ready to use them in CI

@@ -4,6 +4,9 @@
     "c_compiler": "gcc-10",
     "cxx_compiler": "g++-10",
     "cxx_version": "c++20",
+    "cxx_flags": [
+        "-fcoroutines",
+    ],
     "warning_flags": [
         "-Werror",
     ],

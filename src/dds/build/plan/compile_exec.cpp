@@ -2,9 +2,9 @@
 
 #include <dds/build/file_deps.hpp>
 #include <dds/error/errors.hpp>
-#include <dds/proc.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/parallel.hpp>
+#include <dds/util/proc.hpp>
 #include <dds/util/result.hpp>
 #include <dds/util/signal.hpp>
 #include <dds/util/string.hpp>
@@ -102,6 +102,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
 
     // Do it!
     dds_log(info, msg);
+    auto start_time = fs::file_time_type::clock::now();
     auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(compile.command.command); });
     auto nth = counter.n.fetch_add(1);
@@ -175,6 +176,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
 
     if (ret_deps_info) {
         ret_deps_info->command.toolchain_hash = env.toolchain.hash();
+        ret_deps_info->compile_start_time     = start_time;
     }
 
     // MSVC prints the filename of the source file. Remove it from the output.
@@ -201,9 +203,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
         if (compile_signal) {
             dds_log(error, "Process exited via signal {}", compile_signal);
         }
-        if (compile.is_syntax_only) {
-            write_error_marker(fmt::format("syntax-check-failed: {}", source_path.string()));
-        }
+        /// XXX: Use different error based on if a syntax-only check failed
         throw_user_error<errc::compile_failure>("{} [{}]",
                                                 compilation_failure_msg,
                                                 source_path.string());

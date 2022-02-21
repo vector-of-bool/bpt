@@ -11,7 +11,6 @@
 namespace dds {
 
 namespace fs = std::filesystem;
-class pkg_db;
 class toolchain;
 
 namespace cli {
@@ -25,7 +24,7 @@ enum class subcommand {
     compile_file,
     build_deps,
     pkg,
-    repoman,
+    repo,
     install_yourself,
 };
 
@@ -34,12 +33,10 @@ enum class subcommand {
  */
 enum class pkg_subcommand {
     _none_,
-    ls,
-    get,
     create,
-    import,
-    repo,
     search,
+    prefetch,
+    solve,
 };
 
 /**
@@ -54,15 +51,15 @@ enum class pkg_repo_subcommand {
 };
 
 /**
- * @brief 'dds repoman' subcommands
+ * @brief 'dds repo' subcommands
  *
  */
-enum class repoman_subcommand {
+enum class repo_subcommand {
     _none_,
     init,
     import,
-    add,
     remove,
+    validate,
     ls,
 };
 
@@ -80,6 +77,12 @@ enum class if_missing {
     ignore,
 };
 
+enum class repo_sync_mode {
+    always,
+    cached_okay,
+    never,
+};
+
 /**
  * @brief Complete aggregate of all dds command-line options, and some utilities
  */
@@ -89,16 +92,17 @@ struct options {
     using string     = std::string;
     using opt_string = std::optional<std::string>;
 
-    // The `--data-dir` argument
-    opt_path data_dir;
-    // The `--pkg-cache-dir' argument
-    opt_path pkg_cache_dir;
-    // The `--pkg-db-dir` argument
-    opt_path pkg_db_dir;
+    // The `--crs-cache-dir` argument
+    opt_path crs_cache_dir;
     // The `--log-level` argument
     log::level log_level = log::level::info;
     // Any `--dry-run` argument
     bool dry_run = false;
+    // A `--repo-sync-mode` argument
+    cli::repo_sync_mode repo_sync_mode = cli::repo_sync_mode::always;
+
+    // All `--use-repo` arguments
+    std::vector<std::string> use_repos;
 
     // The top-most selected subcommand
     enum subcommand subcommand;
@@ -120,11 +124,6 @@ struct options {
     cli::if_missing if_missing = cli::if_missing::fail;
 
     /**
-     * @brief Open the package pkg_db based on the user-specified options.
-     * @return pkg_db
-     */
-    pkg_db open_pkg_db() const;
-    /**
      * @brief Load a dds toolchain as specified by the user, or a default.
      * @return dds::toolchain
      */
@@ -134,12 +133,10 @@ struct options {
      * @brief Parameters specific to 'dds build'
      */
     struct {
-        bool                want_tests = true;
-        bool                want_apps  = true;
-        opt_path            lm_index;
-        std::vector<string> add_repos;
-        bool                update_repos = false;
-        opt_path            tweaks_dir;
+        bool     want_tests = true;
+        bool     want_apps  = true;
+        opt_path lm_index;
+        opt_path tweaks_dir;
     } build;
 
     /**
@@ -171,48 +168,12 @@ struct options {
         pkg_subcommand subcommand;
 
         /**
-         * @brief Parameters for 'dds pkg import'
-         */
-        struct {
-            /// File paths or URLs of packages to import
-            std::vector<string> items;
-            /// Allow piping a package tarball in through stdin
-            bool from_stdin = false;
-        } import;
-
-        /**
-         * @brief Parameters for 'dds pkg repo'
-         */
-        struct {
-            /// The 'pkg repo' subcommand
-            pkg_repo_subcommand subcommand;
-
-            /**
-             * @brief Parameters of 'dds pkg repo add'
-             */
-            struct {
-                /// The repository URL
-                string url;
-                /// Whether we should update repo data after adding the repository
-                bool update = true;
-            } add;
-
-            /**
-             * @brief Parameters of 'dds pkg repo remove'
-             */
-            struct {
-                /// Repositories to remove (by name)
-                std::vector<string> names;
-            } remove;
-        } repo;
-
-        /**
-         * @brief Paramters for 'dds pkg get'
+         * @brief Paramters for 'dds pkg prefetch'
          */
         struct {
             /// Package IDs to download
             std::vector<string> pkgs;
-        } get;
+        } prefetch;
 
         /**
          * @brief Parameters for 'dds pkg search'
@@ -221,42 +182,44 @@ struct options {
             /// The search pattern, if provided
             opt_string pattern;
         } search;
+
+        /**
+         * @brief Paramters for 'dds pkg solve'
+         */
+        struct {
+            /// Requirements listed to solve
+            std::vector<string> reqs;
+        } solve;
     } pkg;
 
     /**
-     * @brief Parameters for 'dds repoman'
+     * @brief Parameters for 'dds repo'
      */
     struct {
-        /// Shared parameter between repoman subcommands: The directory we are acting upon
+        /// Shared parameter between repo subcommands: The directory we are acting upon
         path repo_dir;
 
         /// The actual operation we are performing on the repository dir
-        repoman_subcommand subcommand;
+        repo_subcommand subcommand;
 
-        /// Options for 'dds repoman init'
+        /// Options for 'dds repo init'
         struct {
             /// The name of the new repository. If not provided, a random one will be generated
-            opt_string name;
+            string name;
         } init;
 
-        /// Options for 'dds repoman import'
+        /// Options for 'dds repo import'
         struct {
             /// sdist tarball file paths to import into the repository
             std::vector<fs::path> files;
         } import;
 
-        /// Options for 'dds repoman add'
-        struct {
-            std::string url_str;
-            std::string description;
-        } add;
-
-        /// Options for 'dds repoman remove'
+        /// Options for 'dds repo remove'
         struct {
             /// Package IDs of packages to remove
             std::vector<string> pkgs;
         } remove;
-    } repoman;
+    } repo;
 
     struct {
         enum where_e {

@@ -1,10 +1,10 @@
 Error: Usage Requirements Cycle
 ###############################
 
-A library can declare that it *uses* another library by using the ``uses`` key
-in ``library.json5``.
+A library can declare that it *uses* another library by using the ``using`` key
+in its project/package manifest.
 
-These ``uses`` requirements must form a directed acyclic graph, meaning that
+These ``using`` requirements must form a directed acyclic graph, meaning that
 there can be no dependency cycle. For example, if library ``clover`` lists
 library ``beehive`` in its ``uses`` list, then ``beehive`` cannot also list
 ``clover``---even transitively---else there would be a dependency cycle.

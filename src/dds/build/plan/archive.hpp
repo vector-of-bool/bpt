@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dds/build/plan/compile_file.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <string>
 #include <string_view>

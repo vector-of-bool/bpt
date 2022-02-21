@@ -7,12 +7,11 @@ from pathlib import Path
 import pytest
 import json
 import shutil
-from typing import Sequence, cast, Optional, Callable
-from typing_extensions import TypedDict
+from typing import Any, Iterator, Mapping, Sequence, Union, cast, Optional, Callable
+from typing_extensions import Literal, TypedDict
 
 from _pytest.config import Config as PyTestConfig
-from _pytest.tmpdir import TempPathFactory
-from _pytest.fixtures import FixtureRequest
+from pytest import FixtureRequest, TempPathFactory
 
 from dds_ci import toolchain, paths
 from ..dds import DDSWrapper
@@ -32,45 +31,73 @@ def ensure_absent(path: Pathish) -> None:
         pass
 
 
-class _PackageJSONRequired(TypedDict):
+_PkgYAMLLibraryUsingItem = TypedDict('_PkgYAMLLibraryUsingItem', {
+    'lib': str,
+    'for': Literal['lib', 'app', 'test'],
+})
+
+
+class _PkgYAMLDependencyItemRequired(TypedDict):
+    dep: str
+
+
+class _VersionItem(TypedDict):
+    low: str
+    high: str
+
+
+_PkgYAMLDependencyItemOpt = TypedDict(
+    '_ProjectJSONDependencyItemOpt',
+    {
+        'versions': Sequence[_VersionItem],
+        'for': Literal['lib', 'app', 'test'],
+        'using': Sequence[str],
+    },
+    total=False,
+)
+
+
+class _PkgYAMLDependencyItemMap(_PkgYAMLDependencyItemRequired, _PkgYAMLDependencyItemOpt):
+    pass
+
+
+_PkgYAMLDependencyItem = Union[str, _PkgYAMLDependencyItemMap]
+
+
+class _PkgYAMLLibraryItemRequired(TypedDict):
     name: str
-    namespace: str
+    path: str
+
+
+class _PkgYAMLLibraryItem(_PkgYAMLLibraryItemRequired, total=False):
+    using: Sequence[Union[str, _PkgYAMLLibraryUsingItem]]
+    dependencies: Sequence[_PkgYAMLDependencyItem]
+
+
+class _MainProjectLibraryItem(TypedDict, total=False):
+    name: str
+    dependencies: Sequence[_PkgYAMLDependencyItem]
+    using: Sequence[Union[str, _PkgYAMLLibraryUsingItem]]
+
+
+class _PkgYAMLRequired(TypedDict):
+    name: str
     version: str
 
 
-class PackageJSON(_PackageJSONRequired, total=False):
-    depends: Sequence[str]
-
-
-class _LibraryJSONRequired(TypedDict):
-    name: str
-
-
-class LibraryJSON(_LibraryJSONRequired, total=False):
-    uses: Sequence[str]
+class PkgYAML(_PkgYAMLRequired, total=False):
+    dependencies: Sequence[_PkgYAMLDependencyItem]
+    lib: _MainProjectLibraryItem
+    libs: Sequence[_PkgYAMLLibraryItem]
 
 
 class Library:
     """
     Utilities to access a library under libs/ for a Project.
     """
-
     def __init__(self, name: str, dirpath: Path) -> None:
         self.name = name
         self.root = dirpath
-
-    @property
-    def library_json(self) -> LibraryJSON:
-        """
-        Get/set the content of the `library.json` file for the library.
-        """
-        return cast(LibraryJSON, json.loads(self.root.joinpath('library.jsonc').read_text()))
-
-    @library_json.setter
-    def library_json(self, data: LibraryJSON) -> None:
-        self.root.mkdir(exist_ok=True, parents=True)
-        self.root.joinpath('library.jsonc').write_text(
-            json.dumps(data, indent=2))
 
     def write(self, path: Pathish, content: str) -> Path:
         """
@@ -84,6 +111,50 @@ class Library:
         path.write_text(content)
         return path
 
+
+class _WritebackData:
+    def __init__(self, fpath: Path, items: Any, root: Any) -> None:
+        self._root = root
+        self._data = items
+        self._fpath = fpath
+
+    def __setitem__(self, k: Any, v: Any) -> None:
+        self._data[k] = v
+        self._writeback()
+
+    def __getitem__(self, k: Any) -> Any:
+        v = self._data[k]
+        if isinstance(v, (Sequence, Mapping)):
+            return _WritebackData(self._fpath, v, self._root)
+        return v
+
+    def __contains__(self, v: Any) -> bool:
+        return v in self._data
+
+    def keys(self) -> Iterator[Any]:
+        return self._data.keys()
+
+    def append(self, item: Any) -> None:
+        self._data.append(item)
+        self._writeback()
+
+    def pop(self, *args: Any) -> Any:
+        v = self._data.pop(*args)
+        self._writeback()
+        return v
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        if key in self._data:
+            v = self._data[key]
+            if isinstance(v, (Sequence, Mapping)):
+                return _WritebackData(self._fpath, v, self._root)
+            return v
+        return default
+
+    def _writeback(self) -> None:
+        self._fpath.write_text(json.dumps(self._data, indent=2))
+
+
 class Project:
     """
     Utilities to access a project being used as a test.
@@ -94,15 +165,16 @@ class Project:
         self.build_root = dirpath / '_build'
 
     @property
-    def package_json(self) -> PackageJSON:
+    def pkg_yaml(self) -> PkgYAML:
         """
-        Get/set the content of the `package.json` file for the project.
+        Get/set the content of the `pkg.yaml` file for the project.
         """
-        return cast(PackageJSON, json.loads(self.root.joinpath('package.jsonc').read_text()))
+        dat = json.loads(self.root.joinpath('pkg.yaml').read_text())
+        return cast(PkgYAML, _WritebackData(self.root.joinpath('pkg.yaml'), dat, dat))
 
-    @package_json.setter
-    def package_json(self, data: PackageJSON) -> None:
-        self.root.joinpath('package.jsonc').write_text(json.dumps(data, indent=2))
+    @pkg_yaml.setter
+    def pkg_yaml(self, data: PkgYAML) -> None:
+        self.root.joinpath('pkg.yaml').write_text(json.dumps(data, indent=2))
 
     def lib(self, name: str) -> Library:
         return Library(name, self.root / f'libs/{name}')
@@ -115,17 +187,6 @@ class Project:
         return Library('<default>', self.root)
 
     @property
-    def library_json(self) -> LibraryJSON:
-        """
-        Get/set the content of the `library.json` file for the project.
-        """
-        return self.__root_library.library_json
-
-    @library_json.setter
-    def library_json(self, data: LibraryJSON) -> None:
-        self.__root_library.library_json = data
-
-    @property
     def project_dir_arg(self) -> str:
         """Argument for --project"""
         return f'--project={self.root}'
@@ -135,8 +196,11 @@ class Project:
               toolchain: Optional[Pathish] = None,
               fixup_toolchain: bool = True,
               jobs: Optional[int] = None,
-              timeout: Optional[int] = None,
-              tweaks_dir: Optional[Path] = None) -> None:
+              timeout: Union[float, None] = None,
+              tweaks_dir: Optional[Path] = None,
+              with_tests: bool = True,
+              repos: Sequence[Pathish] = (),
+              log_level: Literal['info', 'debug', 'trace'] = 'trace') -> None:
         """
         Execute 'dds build' on the project
         """
@@ -150,7 +214,9 @@ class Project:
                            jobs=jobs,
                            timeout=timeout,
                            tweaks_dir=tweaks_dir,
-                           more_args=['-ltrace'])
+                           with_tests=with_tests,
+                           repos=repos,
+                           more_args=[f'--log-level={log_level}'])
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
@@ -158,13 +224,16 @@ class Project:
 
     def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
-        self.dds.run([
-            'pkg',
-            'create',
-            self.project_dir_arg,
-            f'--out={dest}' if dest else (),
-            f'--if-exists={if_exists}' if if_exists else (),
-        ], cwd=self.build_root)
+        self.dds.run(
+            [
+                'pkg',
+                'create',
+                self.project_dir_arg,
+                f'--out={dest}' if dest else (),
+                f'--if-exists={if_exists}' if if_exists else (),
+            ],
+            cwd=self.build_root,
+        )
 
     def sdist_export(self) -> None:
         self.dds.run(['sdist', 'export', self.dds.cache_dir_arg, self.project_dir_arg])
@@ -174,10 +243,10 @@ class Project:
         Write the given `content` to `path`. If `path` is relative, it will
         be resolved relative to the root directory of this project.
         """
-        self.__root_library.write(path, content)
+        return self.__root_library.write(path, content)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module')
 def test_parent_dir(request: FixtureRequest) -> Path:
     """
     :class:`pathlib.Path` fixture pointing to the parent directory of the file
@@ -222,7 +291,7 @@ class ProjectOpener():
 
         proj_copy = self.test_dir / '__test_project'
         if self._worker_id != 'master':
-            proj_copy = self._tmppath_fac.mktemp('test-project-') / self.test_name
+            proj_copy: Path = self._tmppath_fac.mktemp('test-project-') / self.test_name
         else:
             self._request.addfinalizer(lambda: ensure_absent(proj_copy))
 
@@ -230,13 +299,13 @@ class ProjectOpener():
         new_dds = self.dds.clone()
 
         if self._worker_id == 'master':
-            repo_dir = self.test_dir / '__test_repo'
+            crs_dir = self.test_dir / '__test_crs'
         else:
-            repo_dir = self._tmppath_fac.mktemp('test-repo-') / self.test_name
+            crs_dir: Path = self._tmppath_fac.mktemp('test-crs-') / self.test_name
 
-        new_dds.set_repo_scratch(repo_dir)
+        new_dds.crs_cache_dir = crs_dir
         new_dds.default_cwd = proj_copy
-        self._request.addfinalizer(lambda: ensure_absent(repo_dir))
+        self._request.addfinalizer(lambda: ensure_absent(crs_dir))
 
         return Project(proj_copy, new_dds)
 
@@ -261,7 +330,7 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
     when the test completes.
     """
     if worker_id != 'master':
-        proj_dir = tmp_path_factory.mktemp('temp-project')
+        proj_dir: Path = tmp_path_factory.mktemp('temp-project')
         return project_opener.open(proj_dir)
 
     proj_dir = project_opener.test_dir / '__test_project_empty'
@@ -284,40 +353,38 @@ def dds(dds_exe: Path) -> DDSWrapper:
 @pytest.fixture(scope='session')
 def dds_exe(pytestconfig: PyTestConfig) -> Path:
     """A :class:`pathlib.Path` pointing to the DDS executable under test"""
-    opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
+    opt: Path = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
     return Path(opt)
 
 
 TmpGitRepoFactory = Callable[[Pathish], Path]
 
 
-@pytest.fixture
-def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, request: FixtureRequest,
-                         pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
+@pytest.fixture(scope='session')
+def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, pytestconfig: PyTestConfig) -> TmpGitRepoFactory:
     """
     A temporary directory :class:`pathlib.Path` object in which a git repo will
     be initialized
     """
-
-    test_dir = Path(request.fspath).parent
-
     def f(dirpath: Pathish) -> Path:
+        test_dir = Path()
         dirpath = Path(dirpath)
         if not dirpath.is_absolute():
             dirpath = test_dir / dirpath
 
-        tmp_path = tmp_path_factory.mktemp('tmp-git')
+        tmp_path: Path = tmp_path_factory.mktemp('tmp-git')
 
         # Could use dirs_exists_ok=True with Python 3.8, but we min dep on 3.6
         repo = tmp_path / 'r'
         shutil.copytree(dirpath, repo)
 
-        git = pytestconfig.getoption('--git-exe') or 'git'
+        git: str = pytestconfig.getoption('--git-exe') or 'git'
         check_run([git, 'init', repo])
         check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
         check_run([git, 'add', '-A'], cwd=repo)
         check_run(
-            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'], cwd=repo)
+            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'],
+            cwd=repo)
 
         return repo
 

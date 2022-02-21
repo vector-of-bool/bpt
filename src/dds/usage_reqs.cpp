@@ -1,6 +1,7 @@
 #include "./usage_reqs.hpp"
 
 #include <dds/build/plan/compile_file.hpp>
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/log.hpp>
@@ -24,13 +25,11 @@ const lm::library* usage_requirement_map::get(const lm::usage& key) const noexce
     return &found->second;
 }
 
-lm::library& usage_requirement_map::add(std::string ns, std::string name) {
-    auto pair                   = std::pair(library_key{ns, name}, lm::library{});
-    auto [inserted, did_insert] = _reqs.try_emplace(library_key{ns, name}, lm::library());
+lm::library& usage_requirement_map::add(lm::usage ident) {
+    auto pair                   = std::pair(ident, lm::library{});
+    auto [inserted, did_insert] = _reqs.try_emplace(ident, lm::library());
     if (!did_insert) {
-        throw_user_error<errc::dup_lib_name>("More than one library is registered as `{}/{}'",
-                                             ns,
-                                             name);
+        BOOST_LEAF_THROW_EXCEPTION(e_dup_library_id{ident}, SBS_ERR_REF("dup-lib-name"));
     }
     return inserted->second;
 }
@@ -39,7 +38,7 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
     usage_requirement_map ret;
     for (const auto& pkg : idx.packages) {
         for (const auto& lib : pkg.libraries) {
-            ret.add(pkg.namespace_, lib.name, lib);
+            ret.add(lm::usage{pkg.name, lib.name}, lib);
         }
     }
     return ret;
@@ -48,7 +47,7 @@ usage_requirement_map usage_requirement_map::from_lm_index(const lm::index& idx)
 std::vector<fs::path> usage_requirement_map::link_paths(const lm::usage& key) const {
     auto req = get(key);
     if (!req) {
-        throw_user_error<errc::unknown_usage_name>("Unable to find linking requirement {}", key);
+        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{key}, SBS_ERR_REF("unknown-usage"));
     }
     std::vector<fs::path> ret;
     if (req->linkable_path) {
@@ -65,10 +64,9 @@ std::vector<fs::path> usage_requirement_map::link_paths(const lm::usage& key) co
 
 std::vector<fs::path> usage_requirement_map::include_paths(const lm::usage& usage) const {
     std::vector<fs::path> ret;
-    auto                  lib = get(usage.namespace_, usage.name);
+    auto                  lib = get(usage);
     if (!lib) {
-        throw_user_error<
-            errc::unknown_usage_name>("Cannot find non-existent usage requirements for {}", usage);
+        BOOST_LEAF_THROW_EXCEPTION(e_nonesuch_library{usage}, SBS_ERR_REF("unknown-usage"));
     }
     extend(ret, lib->include_paths);
     for (const auto& transitive : lib->uses) {
@@ -121,11 +119,11 @@ std::optional<lm::usage> find_cycle(const usage_requirement_map&                
         info.next                   = next;
         const lm::library* next_lib = reqs.get(next);
 
-        neo_assert(invariant,
-                   next_lib,
-                   "Missing library for lib in `uses`.",
-                   next.namespace_,
-                   next.name);
+        if (!next_lib) {
+            // This is a missing library. This will be an error at a later point, but for now we
+            // simply ignore it.
+            continue;
+        }
 
         // Recursively search each child vertex.
         if (auto cycle = find_cycle(reqs, vertices, next, *next_lib)) {
@@ -144,7 +142,7 @@ std::optional<lm::usage> find_cycle(const usage_requirement_map&                
 std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() const {
     // Performs the setup of the DFS and hands off to ::find_cycle() to search particular vertices.
 
-    std::map<lm::usage, vertex_info, library_key_compare> vertices;
+    std::map<lm::usage, vertex_info> vertices;
     // Default construct each.
     for (const auto& [usage, lib] : _reqs) {
         vertices[usage];
@@ -191,7 +189,10 @@ void usage_requirements::verify_acyclic() const {
         cycle->push_back(cycle->front());
 
         write_error_marker("library-json-cyclic-dependency");
-        throw_user_error<errc::cyclic_usage>("Cyclic dependency found: {}",
-                                             fmt::join(*cycle, " uses "));
+        BOOST_LEAF_THROW_EXCEPTION(make_user_error<
+                                       errc::cyclic_usage>("Cyclic dependency found: {}",
+                                                           fmt::join(*cycle, " uses ")),
+                                   *cycle,
+                                   SBS_ERR_REF("cyclic-usage"));
     }
 }

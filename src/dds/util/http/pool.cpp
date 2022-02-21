@@ -1,5 +1,7 @@
 #include "./pool.hpp"
 
+#include "./error.hpp"
+
 #include <dds/error/errors.hpp>
 #include <dds/util/log.hpp>
 #include <dds/util/result.hpp>
@@ -12,6 +14,7 @@
 #include <neo/http/response.hpp>
 #include <neo/io/openssl/engine.hpp>
 #include <neo/io/stream/buffers.hpp>
+#include <neo/io/stream/file.hpp>
 #include <neo/io/stream/socket.hpp>
 
 #include <map>
@@ -146,7 +149,7 @@ struct http_client_impl {
         }
         bool disconnect = false;
         if (r.version == neo::http::version::v1_0) {
-            dds_log(trace, "HTTP/1.0 server will disconnect by default");
+            dds_log(trace, "     HTTP/1.0 server will disconnect by default");
             disconnect = true;
         } else if (r.version == neo::http::version::v1_1) {
             disconnect = r.header_value("Connection") == "close";
@@ -316,6 +319,11 @@ struct recv_plain_state : erased_message_body {
         , _client(cl) {}
 
     neo::const_buffer next(std::size_t n) override {
+        if (_size == 0) {
+            // We are done reading. Don't perform another read, just return.
+            _client->_state = detail::http_client_impl::_state_t::ready;
+            return neo::const_buffer();
+        }
         auto part = _strm.next((std::min)(n, _size));
         if (neo::buffer_is_empty(part)) {
             _client->_state = detail::http_client_impl::_state_t::ready;
@@ -328,17 +336,40 @@ struct recv_plain_state : erased_message_body {
     }
 };
 
+template <typename Stream>
+struct recv_http_v1_0_state : erased_message_body {
+    Stream&         _strm;
+    client_impl_ptr _client;
+
+    explicit recv_http_v1_0_state(Stream& s, client_impl_ptr cl)
+        : _strm(s)
+        , _client(cl) {}
+
+    neo::const_buffer next(std::size_t n) override {
+        auto part = _strm.next(n);
+        if (neo::buffer_is_empty(part)) {
+            _client->_state = detail::http_client_impl::_state_t::ready;
+        }
+        return part;
+    }
+
+    void consume(std::size_t n) noexcept override { return _strm.consume(n); }
+};
+
 }  // namespace
 
 std::unique_ptr<erased_message_body> http_client::_make_body_reader(const http_response_info& res) {
+    neo_assertion_breadcrumbs("Creating a body reader for HTTP response",
+                              int(_impl->_state),
+                              _impl->origin.protocol,
+                              _impl->origin.hostname,
+                              _impl->origin.port,
+                              res.status,
+                              res.status_message);
     neo_assert(
         expects,
         _impl->_state == detail::http_client_impl::_state_t::recvd_resp_head,
-        "Invalid state to ready HTTP response body. Have not yet received the response header",
-        int(_impl->_state),
-        _impl->origin.protocol,
-        _impl->origin.hostname,
-        _impl->origin.port);
+        "Invalid state to ready HTTP response body. Have not yet received the response header");
     if (res.status < 200 || res.status == 204 || res.status == 304) {
         return std::make_unique<recv_none_state>();
     }
@@ -359,11 +390,11 @@ std::unique_ptr<erased_message_body> http_client::_make_body_reader(const http_r
             return std::make_unique<recv_plain_state<source_type>>(source,
                                                                    *res.content_length(),
                                                                    _impl);
+        } else if (res.version == neo::http::version::v1_0) {
+            dds_log(trace, "HTTP/1.0 response body");
+            return std::make_unique<recv_http_v1_0_state<source_type>>(source, _impl);
         } else {
-            neo_assert(invariant,
-                       false,
-                       "Unimplemented",
-                       res.transfer_encoding().value_or("[null]"));
+            neo_assert(invariant, false, "Unimplemented", res.transfer_encoding());
         }
     });
 }
@@ -385,8 +416,14 @@ void http_client::_set_ready() noexcept {
     _impl->_state = detail::http_client_impl::_state_t::ready;
 }
 
+void http_client::abort_client() noexcept {
+    _impl->_peer_disconnected = true;
+    _set_ready();
+}
+
 request_result http_pool::request(neo::url_view url_, http_request_params params) {
     auto url = url_.normalized();
+    neo_assertion_breadcrumbs("Issuing HTTP request", url.to_string());
     for (auto i = 0; i <= 100; ++i) {
         DDS_E_SCOPE(url);
         params.path  = url.path;
@@ -412,7 +449,8 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
 
         if (resp.is_error()) {
             client.discard_body(resp);
-            throw BOOST_LEAF_EXCEPTION(http_status_error("Received an error from HTTP"),
+            throw BOOST_LEAF_EXCEPTION(http_status_error(resp.status,
+                                                         "Received an error from HTTP"),
                                        e_http_status{resp.status});
         }
 
@@ -420,19 +458,38 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
             client.discard_body(resp);
             if (i == 100) {
                 throw BOOST_LEAF_EXCEPTION(
-                    http_server_error("Encountered over 100 HTTP redirects. Request aborted."));
+                    http_server_error(resp.status,
+                                      "Encountered over 100 HTTP redirects. Request aborted."),
+                    e_http_status{resp.status});
             }
             auto loc = resp.headers.find("Location");
             if (!loc) {
                 throw BOOST_LEAF_EXCEPTION(
-                    http_server_error("Server sent an invalid response of a 30x redirect without a "
-                                      "'Location' header"));
+                    http_server_error(resp.status,
+                                      "Server sent an invalid response of a 30x redirect without a "
+                                      "'Location' header"),
+                    e_http_status{resp.status});
             }
-            url = neo::url::parse(loc->value);
+            dds_log(debug,
+                    "HTTP {} {} [{}] -> [{}]",
+                    resp.status,
+                    resp.status_message,
+                    url.to_string(),
+                    loc->value);
+            if (loc->value.starts_with("/")) {
+                url.path = std::string(loc->value);
+            } else {
+                url = dds::parse_url(loc->value);
+            }
             continue;
         }
 
         return {std::move(client), std::move(resp)};
     }
     neo::unreachable();
+}
+
+void dds::request_result::save_file(const std::filesystem::path& dest) {
+    auto out = neo::file_stream::open(dest, neo::open_mode::write);
+    client.recv_body_into(resp, neo::stream_io_buffers(out));
 }

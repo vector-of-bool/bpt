@@ -1,9 +1,10 @@
 #include "./compdb.hpp"
 
 #include <dds/build/iter_compilations.hpp>
-#include <dds/proc.hpp>
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/io.hpp>
+#include <dds/util/proc.hpp>
 
+#include <fstream>
 #include <nlohmann/json.hpp>
 
 using namespace dds;
@@ -23,6 +24,6 @@ void dds::generate_compdb(const build_plan& plan, build_env_ref env) {
 
     fs::create_directories(env.output_root);
     auto compdb_file = env.output_root / "compile_commands.json";
-    auto ostream     = open(compdb_file, std::ios::binary | std::ios::out);
+    auto ostream     = dds::open_file(compdb_file, std::ios::binary | std::ios::out);
     ostream << compdb.dump(2);
 }

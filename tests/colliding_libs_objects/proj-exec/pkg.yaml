@@ -1,0 +1,14 @@
+{
+    "name": "testing",
+    "version": "1.2.3",
+    "libs": [
+        {
+            "path": "libs/hello",
+            "name": "hello"
+        },
+        {
+            "path": "libs/hello2",
+            "name": "hello2"
+        }
+    ]
+}

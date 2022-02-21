@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/util/fs.hpp>
+#include <dds/util/fs/path.hpp>
 
 #include <neo/iterator_facade.hpp>
 

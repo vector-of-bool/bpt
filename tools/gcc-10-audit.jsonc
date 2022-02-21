@@ -8,13 +8,18 @@
         "-Werror",
     ],
     "flags": [
-        "-fsanitize=address,undefined",
+        // "-fsanitize=address,undefined",
     ],
     "link_flags": [
-        "-fsanitize=address,undefined",
+        // "-fsanitize=address,undefined",
         "-l:libssl.a",
         "-l:libcrypto.a",
         "-ldl",
+        // 'eggs'
+    ],
+    "cxx_flags": [
+        "-fconcepts-diagnostics-depth=10",
+        "-fcoroutines",
     ],
     "debug": true
 }

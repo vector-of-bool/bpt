@@ -23,7 +23,7 @@ package package::from_file(path_ref fpath) {
          read_accumulate("Library", libraries));
 
     for (path_ref lib_path : libraries) {
-        ret.libraries.push_back(*library::from_file(fpath.parent_path() / lib_path));
+        ret.libraries.push_back(library::from_file(fpath.parent_path() / lib_path).value());
     }
 
     return ret;

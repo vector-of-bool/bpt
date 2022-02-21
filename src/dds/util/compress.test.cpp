@@ -1,8 +1,9 @@
 #include <dds/error/result.hpp>
 #include <dds/temp.hpp>
 #include <dds/util/compress.hpp>
+#include <dds/util/fs/io.hpp>
 
-#include <boost/leaf/handle_error.hpp>
+#include <boost/leaf.hpp>
 #include <catch2/catch.hpp>
 
 template <typename Fun>
@@ -17,18 +18,18 @@ TEST_CASE("Compress/uncompress a file") {
     auto                   tdir         = dds::temporary_dir::create();
     dds::fs::create_directories(tdir.path());
     const auto test_file = tdir.path() / "test.txt";
-    check_voidres([&] { return dds::write_file(test_file, plain_string); });
-    CHECK(dds::slurp_file(test_file) == plain_string);
+    dds::write_file(test_file, plain_string);
+    CHECK(dds::read_file(test_file) == plain_string);
     auto test_file_gz = dds::fs::path(test_file) += ".gz";
     check_voidres([&] { return dds::compress_file_gz(test_file, test_file_gz); });
 
-    auto compressed_content = dds::slurp_file(test_file_gz);
+    auto compressed_content = dds::read_file(test_file_gz);
     CHECK_FALSE(compressed_content.empty());
     CHECK(compressed_content != plain_string);
 
     auto decomp_file = dds::fs::path(test_file) += ".plain";
     check_voidres([&] { return dds::decompress_file_gz(test_file_gz, decomp_file); });
-    CHECK(dds::slurp_file(decomp_file) == plain_string);
+    CHECK(dds::read_file(decomp_file) == plain_string);
 }
 
 TEST_CASE("Fail to compress a non-existent file") {

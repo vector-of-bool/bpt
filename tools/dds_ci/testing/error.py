@@ -2,8 +2,9 @@
 Test utilities for error checking
 """
 
+import shutil
 from contextlib import contextmanager
-from typing import Iterator, Callable, Union
+from typing import ContextManager, Iterator, Callable, Pattern, Union
 import subprocess
 from pathlib import Path
 import tempfile
@@ -27,21 +28,27 @@ def expect_error_marker_pred(pred: Callable[[str], bool], expected: str) -> Iter
     """
     tdir = Path(tempfile.mkdtemp())
     err_file = tdir / 'error'
+    env_key = 'DDS_WRITE_ERROR_MARKER'
+    prev = os.environ.get(env_key)
     try:
-        os.environ['DDS_WRITE_ERROR_MARKER'] = str(err_file)
+        os.environ[env_key] = str(err_file)
         yield
         assert False, 'dds subprocess did not raise CallProcessError'
     except subprocess.CalledProcessError:
         assert err_file.exists(), \
-            f'No error marker file was generated, but dds exited with an error (Expected "{expected}")'
+            f'No error marker file [{err_file}] was generated, but dds exited with an error (Expected "{expected}")'
         marker = err_file.read_text().strip()
         assert pred(marker), \
             f'dds did not produce the expected error (Expected {expected}, got {marker})'
     finally:
-        os.environ.pop('DDS_WRITE_ERROR_MARKER')
+        shutil.rmtree(tdir)
+        if prev:
+            os.environ[env_key] = prev
+        else:
+            os.environ.pop(env_key)
 
 
-def expect_error_marker(expect: str):
+def expect_error_marker(expect: str) -> ContextManager[None]:
     """
     A context-manager function that should wrap a scope that causes an error
     from ``dds``.
@@ -56,7 +63,7 @@ def expect_error_marker(expect: str):
     return expect_error_marker_pred(expect.__eq__, expect)
 
 
-def expect_error_marker_re(expect: Union[str, 're.Pattern']):
+def expect_error_marker_re(expect: Union[str, Pattern[str]]) -> ContextManager[None]:
     """
     A context-manager function that should wrap a scope that causes an error
     from ``dds``.
@@ -68,5 +75,5 @@ def expect_error_marker_re(expect: Union[str, 're.Pattern']):
     After handling the exception, asserts that the subprocess wrote an
     error marker matching ``expect``.
     """
-    expect = re.compile(expect)
-    return expect_error_marker_pred(expect.search, expect.pattern)
+    expect_: Pattern[str] = re.compile(expect)
+    return expect_error_marker_pred(lambda s: (expect_.search(s) is not None), expect_.pattern)
