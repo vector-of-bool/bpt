@@ -277,7 +277,10 @@ auto handlers = std::tuple(  //
         return 1;
     },
     [](e_nonesuch_library missing_lib) {
-        dds_log(error, "No such library .bold.red[{}]"_styled, missing_lib.value);
+        dds_log(error,
+                "No such library .bold.red[{}] in package .bold.red[{}]"_styled,
+                missing_lib.value.name,
+                missing_lib.value.namespace_);
         write_error_marker("no-such-library");
         return 1;
     },
