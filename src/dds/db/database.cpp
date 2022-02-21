@@ -1,6 +1,7 @@
 #include "./database.hpp"
 
 #include <dds/error/errors.hpp>
+#include <dds/util/fs/path.hpp>
 #include <dds/util/log.hpp>
 
 #include <neo/sqlite3/error.hpp>
@@ -116,22 +117,21 @@ database::database(nsql::connection db)
     : _db(std::move(db)) {}
 
 std::int64_t database::_record_file(path_ref path_) {
-    auto path = fs::weakly_canonical(path_);
-    nsql::exec(_stmt_cache(R"(
-                    INSERT OR IGNORE INTO dds_source_files (path)
-                    VALUES (?)
-                  )"_sql),
-               path.generic_string())
-        .throw_if_error();
-    auto& st = _stmt_cache(R"(
-        SELECT file_id
-          FROM dds_source_files
-         WHERE path = ?1
+    auto path = dds::normalize_path(path_);
+
+    auto found = _stored_file_ids_cache.find(path);
+    if (found != _stored_file_ids_cache.end()) {
+        return found->second;
+    }
+    auto& st   = _stmt_cache(R"(
+        INSERT INTO dds_source_files (path)
+        VALUES (?1)
+        ON CONFLICT (path) DO UPDATE SET path=path
+        RETURNING file_id
     )"_sql);
-    st.reset();
-    auto str         = path.generic_string();
-    st.bindings()[1] = str;
-    return *nsql::one_cell<std::int64_t>(st);
+    auto [fid] = *nsql::one_row<std::int64_t>(st, path.generic_string());
+    _stored_file_ids_cache.emplace(path, fid);
+    return fid;
 }
 
 void database::record_dep(path_ref input, path_ref output, fs::file_time_type input_mtime) {

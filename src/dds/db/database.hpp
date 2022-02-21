@@ -8,6 +8,7 @@
 #include <neo/sqlite3/transaction.hpp>
 
 #include <chrono>
+#include <map>
 #include <mutex>
 #include <optional>
 #include <shared_mutex>
@@ -31,6 +32,8 @@ struct input_file_info {
 class database {
     neo::sqlite3::connection              _db;
     mutable neo::sqlite3::statement_cache _stmt_cache{_db};
+
+    std::map<fs::path, std::int64_t> _stored_file_ids_cache;
 
     explicit database(neo::sqlite3::connection db);
     database(const database&) = delete;
