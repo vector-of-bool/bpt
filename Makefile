@@ -56,6 +56,7 @@ _alpine-static-ci:
 		-o bootstrap-mode=lazy \
 		-o jobs=4 \
 		-o main-toolchain=tools/gcc-10-static-rel.jsonc \
+		--interface simple \
 		build.main
 	mv _build/dds _build/dds-linux-x64
 
