@@ -23,11 +23,9 @@ def fixup_toolchain(json_file: Pathish) -> Iterator[Path]:
     # Check if we can add ccache
     ccache = paths.find_exe('ccache')
     if ccache and data.get('compiler_id') in ('gnu', 'clang'):
-        print('Found ccache:', ccache)
         data['compiler_launcher'] = [str(ccache)]
     # Check for lld for use with GCC/Clang
     if paths.find_exe('ld.lld') and data.get('compiler_id') in ('gnu', 'clang'):
-        print('Linking with `-fuse-ld=lld`')
         data.setdefault('link_flags', []).append('-fuse-ld=lld')
     # Save the new toolchain data
     with paths.new_tempdir() as tdir:

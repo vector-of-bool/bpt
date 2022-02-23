@@ -2,21 +2,22 @@
 Test fixtures used by DDS in pytest
 """
 
-from contextlib import ExitStack
-from pathlib import Path
-import pytest
 import json
 import shutil
-from typing import Any, Iterator, Mapping, Sequence, Union, cast, Optional, Callable
-from typing_extensions import Literal, TypedDict
+from contextlib import ExitStack
+from pathlib import Path
+from typing import (Any, Callable, Iterator, Mapping, Optional, Sequence, Union, cast)
 
+import pytest
 from _pytest.config import Config as PyTestConfig
 from pytest import FixtureRequest, TempPathFactory
+from typing_extensions import Literal, TypedDict
 
-from dds_ci import toolchain, paths
+from .. import paths, toolchain
 from ..dds import DDSWrapper
-from ..util import Pathish
 from ..proc import check_run
+from ..util import Pathish
+
 tc_mod = toolchain
 
 
@@ -353,7 +354,7 @@ def dds(dds_exe: Path) -> DDSWrapper:
 @pytest.fixture(scope='session')
 def dds_exe(pytestconfig: PyTestConfig) -> Path:
     """A :class:`pathlib.Path` pointing to the DDS executable under test"""
-    opt: Path = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
+    opt: Path = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'for-test/dds'
     return Path(opt)
 
 

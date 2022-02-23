@@ -1,15 +1,15 @@
 import enum
-from pathlib import Path
 import os
-from contextlib import contextmanager
-from typing import Iterator, Optional, Mapping
-import sys
-import urllib.request
 import platform
 import shutil
+import sys
+import urllib.request
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator, Mapping, Optional
 
 from . import paths, proc
-from .dds import PriorDDSWrapper
+from .dds import DDSWrapper
 from .paths import new_tempdir
 
 
@@ -69,8 +69,7 @@ def pin_exe(fpath: Path) -> Iterator[Path]:
         yield tfile
 
 
-@contextmanager
-def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[PriorDDSWrapper]:
+def get_bootstrap_exe(mode: BootstrapMode) -> DDSWrapper:
     """Context manager that yields a DDSWrapper around a prior 'dds' executable"""
     if mode is BootstrapMode.Lazy:
         f = paths.PREBUILT_DDS
@@ -83,8 +82,7 @@ def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[PriorDDSWrapper]:
     elif mode is BootstrapMode.Skip:
         f = paths.PREBUILT_DDS
 
-    with pin_exe(f) as dds:
-        yield PriorDDSWrapper(dds)
+    return DDSWrapper(f)
 
 
 def _do_bootstrap_build() -> Path:

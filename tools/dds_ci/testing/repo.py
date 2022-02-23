@@ -4,14 +4,14 @@ Test fixtures and utilities for creating and using CRS repositories
 
 from pathlib import Path
 from typing import Any, Callable, Iterable, NamedTuple, Union
-from typing_extensions import Literal
 
 import pytest
+from typing_extensions import Literal
 
-from dds_ci.dds import DDSWrapper
-from dds_ci.testing.fixtures import TempPathFactory
-from .http import HTTPServerFactory, ServerInfo
+from ..dds import DDSWrapper
+from .fixtures import TempPathFactory
 from .fs import TempCloner
+from .http import HTTPServerFactory, ServerInfo
 
 
 class CRSRepo:
@@ -89,6 +89,7 @@ class CRSRepoServer(NamedTuple):
 
 @pytest.fixture()
 def http_crs_repo(tmp_crs_repo: CRSRepo, http_server_factory: HTTPServerFactory) -> CRSRepoServer:
+    """Generate a temporary HTTP server serving a temporary CRS repository"""
     server = http_server_factory(tmp_crs_repo.path)
     return CRSRepoServer(tmp_crs_repo, server)
 

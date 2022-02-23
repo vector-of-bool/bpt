@@ -1,12 +1,14 @@
-import multiprocessing
-import shutil
-import os
-from pathlib import Path
 import copy
-from typing import Optional, Sequence, TypeVar, Iterable
+import multiprocessing
+import os
+import shutil
+from pathlib import Path
+from typing import Iterable, Optional, Sequence, TypeVar
 
-from . import paths, proc, toolchain as tc_mod
 from dds_ci.util import Pathish
+
+from . import proc
+from . import toolchain as tc_mod
 
 T = TypeVar('T')
 
@@ -138,12 +140,3 @@ class DDSWrapper:
             (f'--use-repo={r}' for r in repos),
             args,
         ])
-
-
-class PriorDDSWrapper(DDSWrapper):
-    @property
-    def always_args(self) -> proc.CommandLine:
-        return [
-            f'--pkg-db-path={paths.PREBUILT_DIR/"ci-catalog.db"}',
-            f'--pkg-cache-dir={paths.PREBUILT_DIR  / "ci-repo"}',
-        ]

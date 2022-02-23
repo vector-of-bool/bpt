@@ -197,8 +197,8 @@ def ci_with_dds(dds: DDSWrapper, args: CommandArguments) -> int:
 
 def main(argv: Sequence[str]) -> int:
     args = parse_argv(argv)
-    with get_bootstrap_exe(args.bootstrap_with) as f:
-        return ci_with_dds(f, args)
+    f = get_bootstrap_exe(args.bootstrap_with)
+    return ci_with_dds(f, args)
 
 
 def start() -> NoReturn:
