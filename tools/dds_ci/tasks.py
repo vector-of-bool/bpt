@@ -345,4 +345,4 @@ async def format__py__check():
 format_ = task.gather('format', [format__cpp, format__py])
 format__check = task.gather('format.check', [format__cpp__check, format__py__check])
 
-ci = task.gather('ci', [self_build, build__main, test, format__check, docs])
+ci = task.gather('ci', [test])
