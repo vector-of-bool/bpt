@@ -48,8 +48,8 @@ std::string argument::syntax_string() const noexcept {
     std::string ret;
     auto        pref_spell   = preferred_spelling();
     auto        real_valname = !valname.empty()
-               ? valname
-               : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
+        ? valname
+        : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
     if (is_positional()) {
         if (required) {
             if (can_repeat) {

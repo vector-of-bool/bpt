@@ -2,8 +2,8 @@
 
 #include <filesystem>
 
-namespace dds::inline file_utils {
+namespace dds {
 
 bool file_exists(const std::filesystem::path&);
 
-}  // namespace dds::inline file_utils
+}  // namespace dds
