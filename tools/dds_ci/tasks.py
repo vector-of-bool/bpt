@@ -268,7 +268,7 @@ async def self_build() -> DDSWrapper:
         dds,
         test_build_dir.get() / 'self',
         main_tc.get(),
-        args=[f'--use-repo={self_repo.as_uri()}', NEW_CACHE_ARGS],
+        args=[f'--use-repo={self_repo.as_uri()}', NEW_CACHE_ARGS, '--no-default-repo'],
     )
 
 
