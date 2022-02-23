@@ -103,6 +103,8 @@ struct options {
 
     // All `--use-repo` arguments
     std::vector<std::string> use_repos;
+    // Toggle on/off the default repository
+    bool use_default_repo = true;
 
     // The top-most selected subcommand
     enum subcommand subcommand;

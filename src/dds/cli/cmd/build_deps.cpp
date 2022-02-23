@@ -1,6 +1,7 @@
 #include "../options.hpp"
 
 #include "./build_common.hpp"
+#include "./cache_util.hpp"
 
 #include <dds/build/builder.hpp>
 #include <dds/build/params.hpp>
