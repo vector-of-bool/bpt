@@ -18,7 +18,7 @@ pytest-asyncio = "^0.14.0"
 typing-extensions = "^4.0.1"
 json5 = "^0.9.5"
 distro = "^1.5.0"
-dagon = "^0.9.1"
+dagon = "^0.9.3"
 importlib-metadata = "^4.10.0"
 yapf = "^0.32.0"
 

@@ -87,13 +87,14 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "dagon"
-version = "0.9.2"
+version = "0.9.3"
 description = "An asynchronous task graph execution system"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
+importlib-metadata = {version = "*", markers = "python_version < \"3.10\""}
 typing-extensions = ">=4.0.1,<5.0.0"
 
 [[package]]
@@ -613,7 +614,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "0d73ca4f90992bc38632135b2851c466ecb441f9310061782781ecc8e96fb21b"
+content-hash = "755fcd698f8a59cae38cd1ec37185a5a717fc274752586e5820c0b1f264ec63c"
 
 [metadata.files]
 alabaster = [
@@ -653,8 +654,8 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 dagon = [
-    {file = "dagon-0.9.2-py3-none-any.whl", hash = "sha256:5fbe195bd905d34c7e874f35fded87042d5c80d8ff841045b84ae3250c65b005"},
-    {file = "dagon-0.9.2.tar.gz", hash = "sha256:eb0ecc0f66857506ca239bc138b0d01be4f98ba802135eadb6613e144f8e1999"},
+    {file = "dagon-0.9.3-py3-none-any.whl", hash = "sha256:ecada64cb6022c6d5257c2737119e260ca522adcc5d06ecca2b2b0e9431af3ac"},
+    {file = "dagon-0.9.3.tar.gz", hash = "sha256:9251b50bf4c7b66c6d1e04a418fccdeb497ecc4f5d7b82612918b07a9c741d3a"},
 ]
 distro = [
     {file = "distro-1.5.0-py2.py3-none-any.whl", hash = "sha256:df74eed763e18d10d0da624258524ae80486432cd17392d9c3d96f5e83cd2799"},
