@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -346,3 +348,8 @@ format_ = task.gather('format', [format__cpp, format__py])
 format__check = task.gather('format.check', [format__cpp__check, format__py__check])
 
 ci = task.gather('ci', [test, build__main])
+
+if os.name == 'nt':
+    # Workaround: Older Python does not set the event loop such that Windows can
+    # use subprocesses asynchronously
+    asyncio.set_event_loop(asyncio.ProactorEventLoop())
