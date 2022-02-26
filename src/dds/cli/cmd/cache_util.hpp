@@ -4,7 +4,7 @@
 
 namespace dds::cli {
 
-class options;
+struct options;
 
 /**
  * @brief Open a CRS cache in the appropriate directory, will all requested
