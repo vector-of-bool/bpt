@@ -42,7 +42,7 @@ def make_argparser() -> argparse.ArgumentParser:
                         type=int,
                         help='Number of parallel jobs to use when building and testing',
                         default=multiprocessing.cpu_count() + 2)
-    parser.add_argument('--clean', action='store_true', help="Don't remove prior build/deps results")
+    parser.add_argument('--clean', action='store_true', help="Remove prior build/deps results before building")
     parser.add_argument('--no-test',
                         action='store_false',
                         dest='do_test',
