@@ -55,8 +55,14 @@ _alpine-static-ci:
 	poetry run dagon \
 		-o bootstrap-mode=lazy \
 		-o jobs=4 \
+		-o test-toolchain=tools/gcc-10-static-rel.jsonc \
+		--interface simple \
+		--fail-cancels \
+		test format.check
+	poetry run dagon \
 		-o main-toolchain=tools/gcc-10-static-rel.jsonc \
 		--interface simple \
+		--fail-cancels \
 		build.main
 	mv _build/dds _build/dds-linux-x64
 
