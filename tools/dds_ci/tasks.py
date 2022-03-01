@@ -151,6 +151,7 @@ async def build__test() -> DDSWrapper:
 @task.define(depends=[build__test])
 async def test() -> None:
     basetemp = Path('/tmp/dds-ci')
+    basetemp.mkdir(exist_ok=True, parents=True)
     dds = await task.result_of(build__test)
     await proc.run(
         [
