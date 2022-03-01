@@ -120,12 +120,29 @@ async def bootstrap() -> DDSWrapper:
 
 
 @task.define(depends=[bootstrap])
+async def build__init_ci_repo() -> None:
+    "Runs a compile-file just ot get the CI repository available"
+    dds = await task.result_of(bootstrap)
+    await proc.run(
+        [
+            dds.path,
+            PRIOR_CACHE_ARGS,
+            'compile-file',
+            '-t',
+            main_tc.get(),
+            paths.PROJECT_ROOT / 'src/dds.main.cpp',
+        ],
+        on_output='status',
+    )
+
+
+@task.define(depends=[bootstrap, build__init_ci_repo])
 async def build__main() -> DDSWrapper:
     dds = await task.result_of(bootstrap)
     return await _build_with_tc(dds, main_build_dir.get(), main_tc.get(), args=PRIOR_CACHE_ARGS)
 
 
-@task.define(depends=[bootstrap])
+@task.define(depends=[bootstrap, build__init_ci_repo])
 async def build__test() -> DDSWrapper:
     dds = await task.result_of(bootstrap)
     return await _build_with_tc(dds, test_build_dir.get(), test_tc.get(), args=PRIOR_CACHE_ARGS)
