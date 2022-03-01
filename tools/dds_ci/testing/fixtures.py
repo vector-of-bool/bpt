@@ -96,6 +96,7 @@ class Library:
     """
     Utilities to access a library under libs/ for a Project.
     """
+
     def __init__(self, name: str, dirpath: Path) -> None:
         self.name = name
         self.root = dirpath
@@ -114,6 +115,7 @@ class Library:
 
 
 class _WritebackData:
+
     def __init__(self, fpath: Path, items: Any, root: Any) -> None:
         self._root = root
         self._data = items
@@ -160,6 +162,7 @@ class Project:
     """
     Utilities to access a project being used as a test.
     """
+
     def __init__(self, dirpath: Path, dds: DDSWrapper) -> None:
         self.dds = dds.clone()
         self.root = dirpath
@@ -260,6 +263,7 @@ class ProjectOpener():
     """
     A test fixture that opens project directories for testing
     """
+
     def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str,
                  tmp_path_factory: TempPathFactory) -> None:
         self.dds = dds
@@ -367,6 +371,7 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, pytestconfig: PyTest
     A temporary directory :class:`pathlib.Path` object in which a git repo will
     be initialized
     """
+
     def f(dirpath: Pathish) -> Path:
         test_dir = Path()
         dirpath = Path(dirpath)

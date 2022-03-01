@@ -18,6 +18,7 @@ class DDSWrapper:
     Wraps a 'dds' executable with some convenience APIs that invoke various
     'dds' subcommands.
     """
+
     def __init__(self,
                  path: Path,
                  *,

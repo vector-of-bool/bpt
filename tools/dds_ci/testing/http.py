@@ -21,6 +21,7 @@ class DirectoryServingHTTPRequestHandler(SimpleHTTPRequestHandler):
     """
     A simple HTTP request handler that simply serves files from a directory given to the constructor.
     """
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.dir = kwargs.pop('dir')
         super().__init__(*args, **kwargs)
@@ -66,6 +67,7 @@ def http_server_factory(request: FixtureRequest) -> HTTPServerFactory:
     """
     Spawn an HTTP server that serves the content of a directory.
     """
+
     def _make(p: Path) -> ServerInfo:
         st = ExitStack()
         server = st.enter_context(run_http_server(p, _unused_tcp_port()))

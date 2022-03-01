@@ -18,6 +18,7 @@ class CRSRepo:
     """
     A CRS repository directory
     """
+
     def __init__(self, path: Path, dds: DDSWrapper) -> None:
         self.path = path
         self.dds = dds
@@ -49,6 +50,7 @@ CRSRepoFactory = Callable[[str], CRSRepo]
 
 @pytest.fixture(scope='session')
 def crs_repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> CRSRepoFactory:
+
     def _make(name: str) -> CRSRepo:
         tmpdir = Path(tmp_path_factory.mktemp('crs-repo-'))
         dds.run(['repo', 'init', tmpdir, f'--name={name}'])
@@ -67,6 +69,7 @@ RepoCloner = Callable[[CRSRepo], CRSRepo]
 
 @pytest.fixture(scope='session')
 def clone_repo(tmp_clone_dir: TempCloner) -> RepoCloner:
+
     def _clone(repo: CRSRepo) -> CRSRepo:
         clone = tmp_clone_dir('repo', repo.path)
         return CRSRepo(clone, repo.dds)

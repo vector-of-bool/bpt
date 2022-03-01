@@ -13,6 +13,7 @@ CommandLineArg4 = Union[CommandLineArg3, Iterable[CommandLineArg3]]
 
 
 class CommandLine(Protocol):
+
     def __iter__(self) -> Iterator[Union['CommandLine', CommandLineArg]]:
         pass
 
