@@ -367,7 +367,12 @@ async def format__py__check():
 format_ = task.gather('format', [format__cpp, format__py])
 format__check = task.gather('format.check', [format__cpp__check, format__py__check])
 
-ci = task.gather('ci', [test, build__main])
+pyright = proc.cmd_task('pyright', [sys.executable, '-m', 'pyright', paths.TOOLS_DIR])
+pylint = proc.cmd_task('pylint', [sys.executable, '-m', 'pylint', paths.TOOLS_DIR])
+
+py = task.gather('py', [format__py__check, pylint, pyright])
+
+ci = task.gather('ci', [test, build__main, py])
 
 if os.name == 'nt':
     # Workaround: Older Python does not set the event loop such that Windows can
