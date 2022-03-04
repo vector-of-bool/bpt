@@ -2,7 +2,7 @@ Setting Up a Build/Development Environment
 ##########################################
 
 While ``dds`` is able to build itself, several aspects of build infrastructure
-are controlled via Python scripts. You will need Python 3.6 or later available
+are controlled via Python scripts. You will need Python 3.7 or later available
 on your system to get started.
 
 
@@ -51,10 +51,10 @@ Using the Poetry Environment
 Once the ``poetry install`` command has been executed, you will now be ready to
 run the ``dds`` CI scripts and tools.
 
-The scripts are installed into the virtual environment, and need not be globally
-installed anywhere else on the system. You can only access these scripts by
-going through Poetry. To run any individual command within the virtual
-environment, use ``poetry run``::
+The scripts are installed into the virtual environment, and should not be
+globally installed anywhere else on the system. You can only access these
+scripts by going through Poetry. To run any individual command within the
+virtual environment, use ``poetry run``::
 
   $ poetry run <some-command>
 

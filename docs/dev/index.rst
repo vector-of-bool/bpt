@@ -1,7 +1,8 @@
 ``dds`` Development
 ###################
 
-While prebuilt ``dds`` executables are `available on the GitHub page
+This page and its subsections concern with the development of ``dds`` itself.
+Addionally, while prebuilt ``dds`` executables are `available on the GitHub page
 <releases>`_, one may wish to build ``dds`` from source.
 
 .. _releases: https://github.com/vector-of-bool/dds/releases
