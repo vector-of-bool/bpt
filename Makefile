@@ -98,10 +98,3 @@ site: docs
 	cp site/index.html _site/
 	cp -r _build/docs _site/
 	echo "Site generated at _site/"
-
-py-check:
-	poetry run mypy tools/dds_ci $(shell find tests/ -name *.py)
-	poetry run pylint tools/dds_ci $(shell find tests/ -name *.py)
-
-format:
-	poetry run dds-format
