@@ -66,6 +66,8 @@ async def _build_with_tc(dds: DDSWrapper, into: Pathish, tc: Path, *, args: proc
     into = Path(into)
     with pin_exe(dds.path) as pinned:
         with fixup_toolchain(tc) as tc:
+            ui.print(f'Generating a build of dds using the [{tc}] toolchain.')
+            ui.print(f'  This build result will be written to [{into}]')
             await proc.run(
                 [
                     pinned,
@@ -75,12 +77,12 @@ async def _build_with_tc(dds: DDSWrapper, into: Pathish, tc: Path, *, args: proc
                     '-j',
                     jobs.get(),
                     f'--toolchain={tc}',
-                    '--no-tests',
                     '--tweaks-dir',
                     paths.TWEAKS_DIR,
                     args,
                 ],
                 on_output=_progress,
+                print_output_on_finish='always',
             )
     return DDSWrapper(into / 'dds')
 
@@ -121,7 +123,7 @@ async def bootstrap() -> DDSWrapper:
 
 @task.define(depends=[bootstrap])
 async def build__init_ci_repo() -> None:
-    "Runs a compile-file just ot get the CI repository available"
+    "Runs a compile-file just to get the CI repository available"
     dds = await task.result_of(bootstrap)
     await proc.run(
         [
@@ -130,7 +132,6 @@ async def build__init_ci_repo() -> None:
             'compile-file',
             '-t',
             main_tc.get(),
-            paths.PROJECT_ROOT / 'src/dds.main.cpp',
         ],
         on_output='status',
     )
@@ -139,7 +140,7 @@ async def build__init_ci_repo() -> None:
 @task.define(depends=[bootstrap, build__init_ci_repo])
 async def build__main() -> DDSWrapper:
     dds = await task.result_of(bootstrap)
-    return await _build_with_tc(dds, main_build_dir.get(), main_tc.get(), args=PRIOR_CACHE_ARGS)
+    return await _build_with_tc(dds, main_build_dir.get(), main_tc.get(), args=[PRIOR_CACHE_ARGS, '--no-tests'])
 
 
 @task.define(depends=[bootstrap, build__init_ci_repo])
@@ -167,6 +168,7 @@ async def test() -> None:
             paths.PROJECT_ROOT / 'tests',
         ],
         on_output='status',
+        print_output_on_finish='always',
     )
 
 
