@@ -38,14 +38,14 @@ def _do_bootstrap_download() -> Path:
     url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.6/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
-    stream = urllib.request.urlopen(url)
-    paths.PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
-    with paths.PREBUILT_DDS.open('wb') as fd:
-        while True:
-            buf = stream.read(1024 * 4)
-            if not buf:
-                break
-            fd.write(buf)
+    with urllib.request.urlopen(url) as stream:
+        paths.PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
+        with paths.PREBUILT_DDS.open('wb') as fd:
+            while True:
+                buf = stream.read(1024 * 4)
+                if not buf:
+                    break
+                fd.write(buf)
 
     if sys.platform != 'win32':
         # Mark the binary executable. By default it won't be
@@ -223,15 +223,15 @@ def _bootstrap_p1() -> Path:
     return ret_dds
 
 
-def _clone_self_at(dir: Path, ref: str) -> None:
-    if dir.is_dir():
-        shutil.rmtree(dir)
-    dir.mkdir(exist_ok=True, parents=True)
-    proc.check_run(['git', 'clone', '-qq', paths.PROJECT_ROOT, f'--branch={ref}', dir])
+def _clone_self_at(dirpath: Path, ref: str) -> None:
+    if dirpath.is_dir():
+        shutil.rmtree(dirpath)
+    dirpath.mkdir(exist_ok=True, parents=True)
+    proc.check_run(['git', 'clone', '-qq', paths.PROJECT_ROOT, f'--branch={ref}', dirpath])
 
 
-def _dds_in(dir: Path) -> Path:
-    return dir.joinpath('_build/dds' + paths.EXE_SUFFIX)
+def _dds_in(dirpath: Path) -> Path:
+    return dirpath.joinpath('_build/dds' + paths.EXE_SUFFIX)
 
 
 def _prev_dds_env(dds: Path) -> Mapping[str, str]:
@@ -240,8 +240,8 @@ def _prev_dds_env(dds: Path) -> Mapping[str, str]:
     return env
 
 
-def _build_prev(dir: Path, prev_dds: Optional[Path] = None) -> None:
-    build_py = dir / 'tools/build.py'
+def _build_prev(dirpath: Path, prev_dds: Optional[Path] = None) -> None:
+    build_py = dirpath / 'tools/build.py'
     env: Optional[Mapping[str, str]] = None
     if prev_dds is not None:
         env = os.environ.copy()
@@ -253,6 +253,6 @@ def _build_prev(dir: Path, prev_dds: Optional[Path] = None) -> None:
             build_py,
             '--cxx=cl.exe' if platform.system() == 'Windows' else '--cxx=g++-8',
         ],
-        cwd=dir,
+        cwd=dirpath,
         env=env,
     )

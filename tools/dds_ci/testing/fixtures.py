@@ -113,7 +113,7 @@ class Library:
         if not path.is_absolute():
             path = self.root / path
         path.parent.mkdir(exist_ok=True, parents=True)
-        path.write_text(content)
+        path.write_text(content, encoding='utf-8')
         return path
 
 
@@ -329,7 +329,7 @@ class ProjectOpener():
     def test_name(self) -> str:
         """The name of the test that requested this opener"""
         func: Any = self._request.function  # type: ignore
-        return str(self._request.function.__name__)  # type: ignore
+        return func.__name__  # type: ignore
 
     @property
     def test_dir(self) -> Path:

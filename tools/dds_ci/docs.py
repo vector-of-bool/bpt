@@ -15,7 +15,7 @@ def doc_refs_in_code(code: str) -> Iterable[str]:
     code = code.replace('\n', ' ')
     for mat in DOCS_ERR_RE.finditer(code):
         inner = mat.group(1)
-        ref = eval(inner)
+        ref = eval(inner)  # pylint: disable=eval-used
         assert isinstance(ref, str), code
         yield f'err/{ref}'
 

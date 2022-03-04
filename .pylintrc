@@ -8,7 +8,9 @@ unsafe-load-any-extension=no
 [MESSAGES CONTROL]
 
 confidence=
-disable=C,too-few-public-methods,redefined-outer-name
+disable = C,too-few-public-methods,redefined-outer-name,
+      unsubscriptable-object,
+      unused-import
 enable=c-extension-no-member
 
 

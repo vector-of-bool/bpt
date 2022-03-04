@@ -21,13 +21,13 @@ distro = "^1.5.0"
 dagon = "^0.9.3"
 importlib-metadata = "^4.10.0"
 yapf = "^0.32.0"
+pylint = "^2.12.2"
+Sphinx = "^3.4.1"
 
 [tool.poetry.dev-dependencies]
 # Only needed for development
-pylint = "^2.6.0"
 mypy = "^0.790"
 rope = "^0.18.0"
-Sphinx = "^3.4.1"
 
 [tool.poetry.scripts]
 dds-ci = "dds_ci.main:start"

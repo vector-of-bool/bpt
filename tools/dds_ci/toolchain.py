@@ -18,7 +18,7 @@ def fixup_toolchain(json_file: Pathish) -> Iterator[Path]:
     based on 'json_file'
     """
     json_file = Path(json_file)
-    data: JSONishDict = json5.loads(json_file.read_text())  # type: ignore
+    data: JSONishDict = json5.loads(json_file.read_text('utf-8'))  # type: ignore
     assert isinstance(data, Mapping)
     # Check if we can add ccache
     ccache = paths.find_exe('ccache')
@@ -32,7 +32,7 @@ def fixup_toolchain(json_file: Pathish) -> Iterator[Path]:
     # Save the new toolchain data
     with paths.new_tempdir() as tdir:
         new_json = tdir / json_file.name
-        new_json.write_text(json.dumps(data))
+        new_json.write_text(json.dumps(data), encoding='utf-8')
         yield new_json
 
 

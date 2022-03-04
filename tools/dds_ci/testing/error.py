@@ -37,7 +37,7 @@ def expect_error_marker_pred(pred: Callable[[str], bool], expected: str) -> Iter
     except subprocess.CalledProcessError:
         assert err_file.exists(), \
             f'No error marker file [{err_file}] was generated, but dds exited with an error (Expected "{expected}")'
-        marker = err_file.read_text().strip()
+        marker = err_file.read_text(encoding='utf-8').strip()
         assert pred(marker), \
             f'dds did not produce the expected error (Expected {expected}, got {marker})'
     finally:

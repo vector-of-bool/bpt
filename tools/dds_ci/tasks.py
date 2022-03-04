@@ -65,8 +65,8 @@ def _progress(record: proc.ProcessOutputItem) -> None:
 async def _build_with_tc(dds: DDSWrapper, into: Pathish, tc: Path, *, args: proc.CommandLine = ()) -> DDSWrapper:
     into = Path(into)
     with pin_exe(dds.path) as pinned:
-        with fixup_toolchain(tc) as tc:
-            ui.print(f'Generating a build of dds using the [{tc}] toolchain.')
+        with fixup_toolchain(tc) as tc1:
+            ui.print(f'Generating a build of dds using the [{tc1}] toolchain.')
             ui.print(f'  This build result will be written to [{into}]')
             await proc.run(
                 [
@@ -76,7 +76,7 @@ async def _build_with_tc(dds: DDSWrapper, into: Pathish, tc: Path, *, args: proc
                     into,
                     '-j',
                     jobs.get(),
-                    f'--toolchain={tc}',
+                    f'--toolchain={tc1}',
                     '--tweaks-dir',
                     paths.TWEAKS_DIR,
                     args,
@@ -314,8 +314,7 @@ def _find_clang_format() -> Path:
         cf = paths.find_exe(cf_cand)
         if cf:
             return cf
-    else:
-        raise RuntimeError('No clang-format executable found')
+    raise RuntimeError('No clang-format executable found')
 
 
 async def _run_clang_format(args: proc.CommandLine):

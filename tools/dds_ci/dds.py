@@ -22,7 +22,6 @@ class DDSWrapper:
     def __init__(self,
                  path: Path,
                  *,
-                 repo_dir: Optional[Pathish] = None,
                  crs_cache_dir: Optional[Pathish] = None,
                  default_cwd: Optional[Pathish] = None) -> None:
         self.path = path
@@ -39,11 +38,10 @@ class DDSWrapper:
 
     @property
     def crs_cache_dir_arg(self) -> proc.CommandLine:
-        """The arguments for --repo-dir"""
+        """The arguments for --crs-cache-dir"""
         if self.crs_cache_dir is not None:
             return [f'--crs-cache-dir={self.crs_cache_dir}']
-        else:
-            return []
+        return []
 
     def clean(self, *, build_dir: Optional[Path] = None, crs_cache: bool = True) -> None:
         """
