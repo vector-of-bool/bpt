@@ -2,13 +2,12 @@ import json
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Mapping, MutableSequence
 
-import distro
 import json5
 
 from . import paths
-from .util import Pathish
+from .util import JSONishDict, Pathish
 
 
 @contextmanager
@@ -19,14 +18,17 @@ def fixup_toolchain(json_file: Pathish) -> Iterator[Path]:
     based on 'json_file'
     """
     json_file = Path(json_file)
-    data = json5.loads(json_file.read_text())
+    data: JSONishDict = json5.loads(json_file.read_text())  # type: ignore
+    assert isinstance(data, Mapping)
     # Check if we can add ccache
     ccache = paths.find_exe('ccache')
     if ccache and data.get('compiler_id') in ('gnu', 'clang'):
-        data['compiler_launcher'] = [str(ccache)]
+        data['compiler_launcher'] = [str(ccache)]  # type: ignore
     # Check for lld for use with GCC/Clang
     if paths.find_exe('ld.lld') and data.get('compiler_id') in ('gnu', 'clang'):
-        data.setdefault('link_flags', []).append('-fuse-ld=lld')
+        link_flags = data.setdefault('link_flags', [])
+        assert isinstance(link_flags, MutableSequence), link_flags
+        link_flags.append('-fuse-ld=lld')
     # Save the new toolchain data
     with paths.new_tempdir() as tdir:
         new_json = tdir / json_file.name
