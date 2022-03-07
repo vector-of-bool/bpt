@@ -32,7 +32,7 @@ end-to-end feature and error handling tests.
 Tests are grouped into individual Python files in the ``tests/`` directory. Any
 Python file containing tests must have a filename beginning with ``test_``.
 Individual test functions should begin with ``test_``. All test functions should
-be properly type-annotated and successfully check via ``mypy``.
+be properly type-annotated and successfully check via ``pyright``.
 
 The ``dds`` test suite has access to a set of test fixtures that can be used
 throughout tests to perform complex setup and teardown for complete test-by-test

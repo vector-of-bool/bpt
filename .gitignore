@@ -2,7 +2,6 @@ _build/
 _site/
 __pycache__/
 .vscode/
-.mypy_cache/
 _prebuilt/
 .pytest_cache/
 .vagrant/

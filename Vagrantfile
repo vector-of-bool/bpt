@@ -3,7 +3,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder ".", "/vagrant",
     type: 'rsync',
-    rsync__exclude: ['_build/', '.mypy_cache/', '.pytest_cache/', '_prebuilt/']
+    rsync__exclude: ['_build/', '.pytest_cache/', '_prebuilt/']
 
   config.vm.define 'freebsd11' do |freebsd11|
     freebsd11.vm.box = 'generic/freebsd11'
