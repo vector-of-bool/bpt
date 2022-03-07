@@ -1,12 +1,12 @@
 A *Hello, World* Test
 #####################
 
-So far, we have a simple library with a single function: ``get_greeting()``
-and an application that makes use of it. How can we test it?
+So far, we have a simple library with a single function: ``get_greeting()`` and
+an application that makes use of it. How can we test it?
 
 With ``dds``, similar to generating applications, creating a test requires
-adding a suffix to a source filename stem. Instead of ``.main``, simply
-add ``.test`` before the file extension.
+adding a suffix to a source filename stem. Instead of ``.main``, simply add
+``.test`` before the file extension.
 
 
 A New Test Executable
@@ -28,10 +28,10 @@ function:
       }
     }
 
-If you run ``dds build`` once again, ``dds`` will generate a test executable
-and run it immediately. If the test executable exits with a non-zero exit code,
-then it will consider the test to have failed, and ``dds`` itself will exit
-with a non-zero exit code.
+If you run ``dds build`` once again, ``dds`` will generate a test executable and
+run it immediately. If the test executable exits with a non-zero exit code, then
+it will consider the test to have failed, and ``dds`` itself will exit with a
+non-zero exit code.
 
 .. important::
     ``dds`` executes tests *in parallel* by default! If the tests need access
@@ -48,39 +48,42 @@ will already know the problem, but wouldn't it be better if we had better test
 diagnostics?
 
 
-A ``test_driver``: Using *Catch2*
-*********************************
+Using a Library for Testing
+***************************
 
-``dds`` ships with built-in support for the `Catch2`_ C and C++ testing
-framework.
+A library in ``dds`` can declare dependencies on other libraries, possibly in
+other packages. One can also declare that a dependency is "for testing" rather
+than being a strong dependency of the library itself. A "for test" library
+dependency will only be available within the ``.test.*`` source files, and
+downstream library consumers will not see the dependency.
 
-.. _catch2: https://github.com/catchorg/Catch2
+To declare dependencies, we return to the ``pkg.yaml`` file. We'll declare a
+dependency on the `Catch2`_ C and C++ unit testing framework:
 
-To make use of Catch as our test driver, we simply declare this intent in the
-``package.json5`` file at the package root:
+.. code-block:: yaml
+  :caption: ``<root>/pkg.yaml``
+  :emphasize-lines: 3,4
 
-.. code-block:: js
-    :caption: ``<root>/package.json5``
-    :emphasize-lines: 5
+  name: hello-dds
+  version: 0.1.0
+  dependencies:
+    - catch2@2.13.7 using main for test
 
-    {
-      name: 'hello-dds',
-      version: '0.1.0',
-      namespace: 'tutorial',
-      test_driver: 'Catch-Main',
-    }
+The dependency declaration here is using a special shorthand string to declare
+how we wish to consume the dependency. The shorthand string here says that we
+depend on "``catch2``" version ``2.13.7`` (or any compatible version), and we
+are "using" a library from the package called "``main``" for "``test``" only.
 
-If you now run ``dds build``, we will get a linker error for a multiply-defined
-``main`` function. When setting the ``test_driver`` to ``Catch-Main``, ``dds``
-will compile an entrypoint separately from any particular test, and the tests
-will link against that entrypoint. This means we cannot provide our own
-``main`` function, and should instead use Catch's ``TEST_CASE`` macro to
-declare our test cases.
+If you now run ``dds build``, we will likely get a linker error for a
+multiply-defined ``main`` function. The ``catch2::main`` library contains its
+own definition of the ``main()`` function. This means we cannot provide our own
+``main`` function, and should instead use Catch's ``TEST_CASE`` macro to declare
+our test cases.
 
-In addition to an entrypoint, ``dds`` provides a ``catch.hpp`` header that we
-may use in our tests, simply by ``#include``-ing the appropriate path. We'll
-modify our test to use the Catch test macros instead of our own logic. We'll
-leave the condition the same, though:
+In addition to an entrypoint, we can now use the Catch2 headers in our tests,
+simply by ``#include``-ing the appropriate path. We'll modify our test to use
+the Catch2 test macros instead of our own logic. We'll leave the condition the
+same, though:
 
 .. code-block:: c++
     :caption: ``<root>/src/hello/strings.test.cpp``
@@ -121,8 +124,8 @@ part of test execution, and we can see the reason for the failing test::
 
     [dds - test output end]
 
-Now that we have the direct results of the offending expression, we can
-much more easily diagnose the nature of the test failure. In this case, the
-function returns a string containing a comma ``,`` while our expectation lacks
-one. If we fix either the ``get_greeting`` or the expected string, we will then
-see our tests pass successfully and ``dds`` will exit cleanly.
+Now that we have the direct results of the offending expression, we can much
+more easily diagnose the nature of the test failure. In this case, the function
+returns a string containing a comma ``,`` while our expectation lacks one. If we
+fix either the ``get_greeting`` or the expected string, we will then see our
+tests pass successfully and ``dds`` will exit cleanly.
