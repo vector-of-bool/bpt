@@ -281,7 +281,7 @@ class Project:
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
-            self.dds.compile_file(paths, toolchain=tc, out=self.build_root, project_dir=self.root)
+            self.dds.compile_file(paths, toolchain=tc, build_root=self.build_root, root=self.root)
 
     def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)

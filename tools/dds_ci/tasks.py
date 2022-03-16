@@ -297,16 +297,19 @@ async def self_build() -> DDSWrapper:
 @task.define(order_only_depends=[clean])
 async def docs() -> None:
     ui.status('Building documentation with Sphinx')
-    await proc.run([
-        sys.executable,
-        '-m',
-        'sphinx',
-        paths.PROJECT_ROOT / 'docs',
-        paths.BUILD_DIR / 'docs',
-        '-d',
-        paths.BUILD_DIR / 'doctrees',
-        '-qanj8',
-    ])
+    await proc.run(
+        [
+            sys.executable,
+            '-m',
+            'sphinx',
+            paths.PROJECT_ROOT / 'docs',
+            paths.BUILD_DIR / 'docs',
+            '-d',
+            paths.BUILD_DIR / 'doctrees',
+            '-anj8',
+        ],
+        print_output_on_finish='always',
+    )
 
 
 def _find_clang_format() -> Path:

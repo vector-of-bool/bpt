@@ -6,23 +6,24 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional
 
-# The root directory of the dds project
 PROJECT_ROOT = Path(__file__).absolute().parent.parent.parent
-#: The <repo>/tools directory
+'The root directory of the dds project'
 TOOLS_DIR = PROJECT_ROOT / 'tools'
-#: The <repo>/tests directory
+'The ``<repo>/tools`` directory'
 TESTS_DIR = PROJECT_ROOT / 'tests'
-#: The default build directory
+'The ``<repo>/tests`` directory'
 BUILD_DIR = PROJECT_ROOT / '_build'
+'The default build directory'
 TWEAKS_DIR = PROJECT_ROOT / 'conf'
-#: The directory were w prebuild/bootstrapped results will go, and scratch space for the build
+'The directory for tweak headers used by the build'
 PREBUILT_DIR = PROJECT_ROOT / '_prebuilt'
-#: THe suffix of executable files on this system
+'The directory were prebuild/bootstrapped results will go, and scratch space for the build'
 EXE_SUFFIX = '.exe' if os.name == 'nt' else ''
-#: The path to the prebuilt 'dds' executable
+'The suffix of executable files on this system'
 PREBUILT_DDS = (PREBUILT_DIR / 'dds').with_suffix(EXE_SUFFIX)
-#: The path to the main built 'dds' executable
+'The path to the prebuilt ``dds`` executable'
 CUR_BUILT_DDS = (BUILD_DIR / 'dds').with_suffix(EXE_SUFFIX)
+'The path to the main built ``dds`` executable'
 
 
 @contextmanager

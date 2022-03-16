@@ -3,7 +3,7 @@ from os import PathLike
 from typing import Union, MutableSequence, MutableMapping
 
 #: A path, string, or convertible-to-Path object
-Pathish = Union['PathLike[str]', PurePath, str]
+Pathish = Union[PurePath, str]
 
 JSONishValue = Union[None, float, str, bool, MutableSequence['JSONishValue'], MutableMapping[str, 'JSONishValue']]
 JSONishDict = MutableMapping[str, JSONishValue]

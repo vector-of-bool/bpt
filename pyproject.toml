@@ -12,7 +12,7 @@ packages = [
 python = "^3.7"
 
 semver = "^2.13.0"
-pytest = "^6.1.2"
+pytest = "^7.0.1"
 pytest-xdist = "^2.1.0"
 pytest-asyncio = "^0.14.0"
 typing-extensions = "^4.0.1"
@@ -30,7 +30,6 @@ pyright = "^1.1.227"
 rope = "^0.18.0"
 
 [tool.poetry.scripts]
-dds-ci = "dds_ci.main:start"
 gen-msvs-vsc-task = "dds_ci.msvs:generate_vsc_task"
 dds-audit-docrefs = "dds_ci.docs:audit_docrefs_main"
 

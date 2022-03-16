@@ -15,14 +15,14 @@ from .paths import new_tempdir
 
 class BootstrapMode(enum.Enum):
     """How should be bootstrap our prior DDS executable?"""
-    #: Downlaod one from GitHub
     Download = 'download'
-    #: Build one from source
+    'Downlaod one from GitHub'
     Build = 'build'
-    #: Skip bootstrapping. Assume it already exists.
+    'Build one from source'
     Skip = 'skip'
-    #: If the prior executable exists, skip, otherwise download
+    'Skip bootstrapping. Assume it already exists.'
     Lazy = 'lazy'
+    'If the prior executable exists, skip, otherwise download'
 
 
 def _do_bootstrap_download() -> Path:
@@ -59,7 +59,8 @@ def _do_bootstrap_download() -> Path:
 @contextmanager
 def pin_exe(fpath: Path) -> Iterator[Path]:
     """
-    Create a copy of 'fpath' at an unspecified location, and yield that path.
+    Create a copy of the file at ``fpath`` at an unspecified location, and
+    yield that path.
 
     This is needed if the executable would overwrite itself.
     """
@@ -70,7 +71,7 @@ def pin_exe(fpath: Path) -> Iterator[Path]:
 
 
 def get_bootstrap_exe(mode: BootstrapMode) -> DDSWrapper:
-    """Context manager that yields a DDSWrapper around a prior 'dds' executable"""
+    """Obtain a ``dds`` executable for the given bootstrapping mode"""
     if mode is BootstrapMode.Lazy:
         f = paths.PREBUILT_DDS
         if not f.exists():
