@@ -14,6 +14,9 @@ stages:
         pool:
           vmImage: windows-2019
         steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: 3.8
           - pwsh: tools\get-win-openssl.ps1
             displayName: Get OpenSSL for Windows
           - script: python -m pip install poetry && poetry install --no-dev
@@ -23,7 +26,7 @@ stages:
               call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
               echo Executing Build and Tests
               reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
-              poetry run dds-ci || exit 1
+              poetry run dagon ci || exit 1
               move _build\dds.exe _build\dds-win-x64.exe || exit 1
             displayName: Build and Test
           - task: PublishTestResults@2

@@ -89,6 +89,7 @@ class QuickRepo(NamedTuple):
 
 
 class QuickRepoFactory(Protocol):
+
     def __call__(self, name: str, spec: RepoSpec, validate: bool = True) -> QuickRepo:
         ...
 
@@ -96,6 +97,7 @@ class QuickRepoFactory(Protocol):
 @pytest.fixture(scope='session')
 def make_quick_repo(dir_renderer: DirRenderer, session_empty_crs_repo: CRSRepo,
                     clone_repo: RepoCloner) -> QuickRepoFactory:
+
     def _make(name: str, spec: RepoSpec, validate: bool = True) -> QuickRepo:
         repo = clone_repo(session_empty_crs_repo)
         data = _render_repospec(spec)

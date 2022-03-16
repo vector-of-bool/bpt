@@ -14,8 +14,7 @@ lm::index index::from_file(path_ref fpath) {
     //         fmt::format("Libman file has missing/incorrect 'Type' ({})", fpath.string()));
     // }
 
-    index ret;
-
+    index                      ret;
     std::optional<std::string> type;
     std::vector<std::string>   package_lines;
 

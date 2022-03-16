@@ -4,6 +4,7 @@
 #include <dds/crs/error.hpp>
 #include <dds/deps.hpp>
 #include <dds/error/errors.hpp>
+#include <dds/error/exit.hpp>
 #include <dds/error/toolchain.hpp>
 #include <dds/project/dependency.hpp>
 #include <dds/project/error.hpp>
@@ -220,66 +221,18 @@ auto handlers = std::tuple(  //
         write_error_marker("invalid-dep-shorthand");
         return 1;
     },
-    [](dds::crs::e_sync_remote sync_repo,
-       dds::e_decompress_error err,
-       dds::e_read_file_path   read_file) {
-        dds_log(error,
-                "Error while sychronizing package data from .bold.yellow[{}]"_styled,
-                sync_repo.value.to_string());
-        dds_log(
-            error,
-            "Error decompressing remote repository database [.br.yellow[{}]]: .bold.red[{}]"_styled,
-            read_file.value.string(),
-            err.value);
-        write_error_marker("repo-sync-invalid-db-gz");
-        return 1;
-    },
-    [](catch_<neo::sqlite3::error> exc, dds::crs::e_sync_remote sync_repo) {
-        dds_log(error,
-                "SQLite error while importing data from .br.yellow[{}]: .br.red[{}]"_styled,
-                sync_repo.value.to_string(),
-                exc.matched.what());
-        dds_log(error,
-                "It's possible that the downloaded SQLite database is corrupt, invalid, or "
-                "incompatible with this version of dds");
-        return 1;
-    },
-    [](matchv<dds::e_http_status{404}>, dds::crs::e_sync_remote sync_repo, neo::url req_url) {
-        dds_log(
-            error,
-            "Received an .bold.red[HTTP 404 Not Found] error while synchronizing a repository from .bold.yellow[{}]"_styled,
-            sync_repo.value.to_string());
-        dds_log(error,
-                "The given location might not be a valid package repository, or the URL might be "
-                "spelled incorrectly.");
-        dds_log(error,
-                "  (The missing resource URL is [.bold.yellow[{}]])"_styled,
-                req_url.to_string());
-        write_error_marker("repo-sync-http-404");
-        return 1;
-    },
-    [](catch_<dds::http_error>,
-       neo::url                req_url,
-       dds::crs::e_sync_remote sync_repo,
-       dds::http_response_info resp) {
-        dds_log(
-            error,
-            "HTTP .br.red[{}] (.br.red[{}]) error while trying to synchronize remote package repository [.bold.yellow[{}]]"_styled,
-            resp.status,
-            resp.status_message,
-            sync_repo.value.to_string());
-        dds_log(error,
-                "  Error requesting [.bold.yellow[{}]]: .bold.red[HTTP {} {}]"_styled,
-                req_url.to_string(),
-                resp.status,
-                resp.status_message);
-        write_error_marker("repo-sync-http-error");
-        return 1;
-    },
+
     [](e_nonesuch_library missing_lib) {
-        dds_log(error, "No such library .bold.red[{}]"_styled, missing_lib.value);
+        dds_log(error,
+                "No such library .bold.red[{}] in package .bold.red[{}]"_styled,
+                missing_lib.value.name,
+                missing_lib.value.namespace_);
         write_error_marker("no-such-library");
         return 1;
+    },
+    [](sbs::e_exit ex, boost::leaf::verbose_diagnostic_info const& info) {
+        dds_log(trace, "Additional error information: {}", info);
+        return ex.value;
     },
     [](catch_<neo::sqlite3::error> exc, boost::leaf::verbose_diagnostic_info const& diag) {
         dds_log(critical,

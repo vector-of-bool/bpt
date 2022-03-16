@@ -6,7 +6,7 @@
 #include <iosfwd>
 #include <string_view>
 
-namespace dds::inline file_utils {
+namespace dds {
 
 struct e_open_file_path {
     std::filesystem::path value;
@@ -24,4 +24,4 @@ struct e_read_file_path {
 void                       write_file(std::filesystem::path const& path, std::string_view);
 [[nodiscard]] std::string  read_file(std::filesystem::path const& path);
 
-}  // namespace dds::inline file_utils
+}  // namespace dds

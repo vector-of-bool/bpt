@@ -7,7 +7,7 @@
 
 using namespace dds;
 
-bool file_utils::file_exists(const std::filesystem::path& filepath) {
+bool dds::file_exists(const std::filesystem::path& filepath) {
     std::error_code ec;
     auto            r = std::filesystem::exists(filepath, ec);
     if (ec) {

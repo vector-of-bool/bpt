@@ -5,8 +5,8 @@ For ``dds``'s more rigorous test suite, we use the ``pytest`` testing framework.
 These tests are stored in the ``tests/`` directory and written in ``test_*.py``
 files.
 
-The test suite can be run separately without ``dds-ci`` by executing ``pytest``
-from within the :doc:`Poetry virtual environment <env>`::
+The test suite can be run separately without Dagon by executing ``pytest`` from
+within the :doc:`Poetry virtual environment <env>`::
 
   $ pytest tests/
 
@@ -32,7 +32,7 @@ end-to-end feature and error handling tests.
 Tests are grouped into individual Python files in the ``tests/`` directory. Any
 Python file containing tests must have a filename beginning with ``test_``.
 Individual test functions should begin with ``test_``. All test functions should
-be properly type-annotated and successfully check via ``mypy``.
+be properly type-annotated and successfully check via ``pyright``.
 
 The ``dds`` test suite has access to a set of test fixtures that can be used
 throughout tests to perform complex setup and teardown for complete test-by-test
@@ -67,8 +67,8 @@ To write a test that checks for a given error-handling path, use the
 
   def test_sdist_invalid_project(tmp_project: Project) -> None:
     # Trying to create a package archive from a project without a
-    # package.json5 is invalid. Check that it creates the correct
+    # pkg.yaml is invalid. Check that it creates the correct
     # error-message string
-    with error.expect_error_marker('no-package-json5'):
+    with error.expect_error_marker('no-package-yaml'):
       tmp_project.pkg_create()
 

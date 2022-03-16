@@ -5,18 +5,8 @@
 	vagrant-freebsd-ci site alpine-static-ci _alpine-static-ci poetry-setup \
 	full-ci dev-build release-build
 
-
-clean:
-	rm -f -vr -- $(shell find -name __pycache__ -type d)
-	rm -f -vr -- _build/ _prebuilt/
-	rm -f -v -- $(shell find -name "*.stamp" -type f)
-
 docs:
-	sphinx-build -b html \
-		docs \
-		_build/docs \
-		-d _build/doctrees \
-		-Wqanj8
+	poetry run dagon docs
 	echo "Docs generated to _build/docs"
 
 hugo-docs:
@@ -44,13 +34,13 @@ docs-sync-server:
 poetry-setup: .poetry.stamp
 
 full-ci: poetry-setup
-	poetry run dds-ci --clean
+	poetry run dagon clean ci
 
 dev-build: poetry-setup
-	poetry run dds-ci --rapid
+	poetry run dagon clean build.test
 
 release-build: poetry-setup
-	poetry run dds-ci --no-test
+	poetry run dagon clean build.main
 
 macos-ci: full-ci
 	mv _build/dds _build/dds-macos-x64
@@ -62,10 +52,18 @@ _alpine-static-ci:
 	poetry install --no-dev
 	# Alpine Linux does not ship with ASan nor UBSan, so we can't use them in
 	# our test-build. Just use the same build for both. CCache will also speed this up.
-	poetry run dds-ci \
-		--bootstrap-with=lazy \
-		--test-toolchain=tools/gcc-10-static-rel.jsonc \
-		--main-toolchain=tools/gcc-10-static-rel.jsonc
+	poetry run dagon \
+		-o bootstrap-mode=lazy \
+		-o jobs=4 \
+		-o test-toolchain=tools/gcc-10-static-rel.jsonc \
+		--interface simple \
+		--fail-cancels \
+		test format.check
+	poetry run dagon \
+		-o main-toolchain=tools/gcc-10-static-rel.jsonc \
+		--interface simple \
+		--fail-cancels \
+		build.main
 	mv _build/dds _build/dds-linux-x64
 
 alpine-static-ci:
@@ -100,10 +98,3 @@ site: docs
 	cp site/index.html _site/
 	cp -r _build/docs _site/
 	echo "Site generated at _site/"
-
-py-check:
-	poetry run mypy tools/dds_ci $(shell find tests/ -name *.py)
-	poetry run pylint tools/dds_ci $(shell find tests/ -name *.py)
-
-format:
-	poetry run dds-format

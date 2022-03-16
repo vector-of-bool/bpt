@@ -1,5 +1,5 @@
-#include "./parse.hpp"
 #include "./error.hpp"
+#include "./parse.hpp"
 
 #include <dds/dds.test.hpp>
 #include <dds/error/try_catch.hpp>

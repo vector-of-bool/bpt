@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast
 from typing_extensions import Protocol
 
 from . import paths
@@ -13,8 +13,8 @@ class Arguments(Protocol):
 
 
 def gen_task_json_data() -> Dict[str, Any]:
-    dds_ci_exe = paths.find_exe('dds-ci')
-    assert dds_ci_exe, 'Unable to find the dds-ci executable. This command should be run in a Poetry'
+    dds_ci_exe = paths.find_exe('dagon')
+    assert dds_ci_exe, 'Unable to find the dagon executable. This command should be run in a Poetry'
     envs = {key: os.environ[key]
             for key in (
                 'CL',
@@ -28,7 +28,7 @@ def gen_task_json_data() -> Dict[str, Any]:
         'label': 'MSVC Build',
         'type': 'process',
         'command': str(dds_ci_exe.resolve()),
-        'args': ['--rapid'],
+        'args': ['build.test'],
         'group': {
             'kind': 'build',
         },
@@ -43,7 +43,7 @@ def gen_task_json_data() -> Dict[str, Any]:
 def generate_vsc_task() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', '-o', help='File to write into', type=Path)
-    args: Arguments = parser.parse_args()
+    args = cast(Arguments, parser.parse_args())
 
     cl = paths.find_exe('cl')
     if cl is None:

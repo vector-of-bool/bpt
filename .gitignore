@@ -2,7 +2,6 @@ _build/
 _site/
 __pycache__/
 .vscode/
-.mypy_cache/
 _prebuilt/
 .pytest_cache/
 .vagrant/
@@ -14,3 +13,7 @@ external/OpenSSL
 
 *.egg-info
 *.stamp
+
+__test_project/
+__test_crs/
+.dagon.db

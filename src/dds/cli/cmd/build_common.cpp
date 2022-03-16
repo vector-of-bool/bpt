@@ -1,8 +1,9 @@
 #include "./build_common.hpp"
 
+#include "./cache_util.hpp"
+
 #include <dds/crs/cache.hpp>
 #include <dds/crs/cache_db.hpp>
-#include <dds/crs/error.hpp>
 #include <dds/crs/info/dependency.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/marker.hpp>
@@ -13,9 +14,6 @@
 #include <dds/solve/solve.hpp>
 #include <dds/util/algo.hpp>
 #include <dds/util/fs/io.hpp>
-#include <dds/util/http/error.hpp>
-#include <dds/util/http/pool.hpp>
-#include <dds/util/url.hpp>
 
 #include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
@@ -25,72 +23,6 @@
 
 using namespace dds;
 using namespace fansi::literals;
-
-crs::cache cli::open_ready_cache(const cli::options& opts) {
-    auto cache
-        = dds::crs::cache::open(opts.crs_cache_dir.value_or(dds::crs::cache::default_path()));
-    auto& meta_db = cache.db();
-    for (auto& r : opts.use_repos) {
-        // Convert what may be just a domain name or partial URL into a proper URL:
-        auto url = dds::guess_url_from_string(r);
-        // Called by error handler to decide whether to rethrow:
-        auto check_cache_after_error = [&](auto&&... rethrow) {
-            if (opts.repo_sync_mode == cli::repo_sync_mode::always) {
-                // We should always sync package listings, so this is a hard error
-                BOOST_LEAF_THROW_EXCEPTION(NEO_FWD(rethrow)...);
-            }
-            auto rid = meta_db.get_remote(url);
-            if (rid.has_value()) {
-                // We have prior metadata for the given repository.
-                dds_log(warn,
-                        "We'll continue by using cached information for .bold.yellow[{}]"_styled,
-                        url.to_string());
-            } else {
-                dds_log(
-                    error,
-                    "We have no cached metadata for .bold.red[{}], and were unable to obtain any."_styled,
-                    url.to_string());
-                BOOST_LEAF_THROW_EXCEPTION(NEO_FWD(rethrow)...);
-            }
-        };
-        dds_leaf_try {
-            using m = cli::repo_sync_mode;
-            switch (opts.repo_sync_mode) {
-            case m::cached_okay:
-            case m::always:
-                meta_db.sync_remote(url);
-                return;
-            case m::never:
-                return;
-            }
-        }
-        dds_leaf_catch(const std::system_error& e, neo::url e_url, http_response_info resp) {
-            dds_log(error,
-                    "An error occurred while downloading [.bold.red[{}]]: {}"_styled,
-                    e_url.to_string(),
-                    e.code().message());
-            check_cache_after_error(e, e_url, resp);
-        }
-        dds_leaf_catch(const std::system_error& e, network_origin origin, neo::url const* e_url) {
-            dds_log(error,
-                    "Network error communicating with .bold.red[{}://{}:{}]: {}"_styled,
-                    origin.protocol,
-                    origin.hostname,
-                    origin.port,
-                    e.code().message());
-            if (e_url) {
-                dds_log(error,
-                        "  (While accessing URL [.bold.red[{}]])"_styled,
-                        e_url->to_string());
-                check_cache_after_error(e, origin, *e_url);
-            } else {
-                check_cache_after_error(e, origin);
-            }
-        };
-        meta_db.enable_remote(url);
-    }
-    return cache;
-}
 
 static void resolve_implicit_usages(crs::package_info& proj_meta, crs::package_info& dep_meta) {
     proj_meta.libraries                                                         //

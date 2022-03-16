@@ -2,21 +2,25 @@
 Test fixtures used by DDS in pytest
 """
 
-from contextlib import ExitStack
-from pathlib import Path
-import pytest
+from __future__ import annotations
+from copy import deepcopy
+
 import json
 import shutil
-from typing import Any, Iterator, Mapping, Sequence, Union, cast, Optional, Callable
-from typing_extensions import Literal, TypedDict
+from contextlib import ExitStack
+from pathlib import Path
+from typing import (Any, Callable, Iterable, Iterator, KeysView, Mapping, Optional, Sequence, Union, cast)
 
+import pytest
 from _pytest.config import Config as PyTestConfig
 from pytest import FixtureRequest, TempPathFactory
+from typing_extensions import Literal, TypedDict
 
-from dds_ci import toolchain, paths
+from .. import paths, toolchain
 from ..dds import DDSWrapper
-from ..util import Pathish
 from ..proc import check_run
+from ..util import JSONishArray, JSONishDict, JSONishValue, Pathish
+
 tc_mod = toolchain
 
 
@@ -95,6 +99,7 @@ class Library:
     """
     Utilities to access a library under libs/ for a Project.
     """
+
     def __init__(self, name: str, dirpath: Path) -> None:
         self.name = name
         self.root = dirpath
@@ -108,57 +113,113 @@ class Library:
         if not path.is_absolute():
             path = self.root / path
         path.parent.mkdir(exist_ok=True, parents=True)
-        path.write_text(content)
+        path.write_text(content, encoding='utf-8')
         return path
 
 
 class _WritebackData:
-    def __init__(self, fpath: Path, items: Any, root: Any) -> None:
+
+    def __init__(self, fpath: Path, items: JSONishDict | JSONishArray, root: JSONishDict) -> None:
         self._root = root
         self._data = items
         self._fpath = fpath
 
-    def __setitem__(self, k: Any, v: Any) -> None:
-        self._data[k] = v
+    def __setitem__(self, k: str | int, v: JSONishValue) -> None:
+        if isinstance(self._data, Sequence):
+            assert isinstance(k, int)
+            self._data[k] = v
+        else:
+            assert isinstance(k, str)
+            self._data[k] = v
         self._writeback()
 
-    def __getitem__(self, k: Any) -> Any:
-        v = self._data[k]
-        if isinstance(v, (Sequence, Mapping)):
-            return _WritebackData(self._fpath, v, self._root)
-        return v
+    def __getitem__(self, k: str | int) -> JSONishValue:
+        if isinstance(self._data, Sequence):
+            assert isinstance(k, int)
+            v = self._data[k]
+        else:
+            assert isinstance(k, str)
+            v = self._data[k]
+        return self._wrap_if_mutable(v)
 
     def __contains__(self, v: Any) -> bool:
         return v in self._data
 
-    def keys(self) -> Iterator[Any]:
+    def _wrap_if_mutable(self, v: JSONishValue) -> JSONishValue:
+        if isinstance(v, (Sequence, Mapping)) and not isinstance(v, str):
+            return cast(JSONishValue, _WritebackData(self._fpath, v, self._root))
+        return v
+
+    def keys(self) -> KeysView[str]:
+        assert isinstance(self._data, Mapping)
         return self._data.keys()
 
-    def append(self, item: Any) -> None:
-        self._data.append(item)
+    def values(self) -> Iterable[JSONishValue]:
+        assert isinstance(self._data, Mapping)
+        return (self._wrap_if_mutable(v) for v in self._data.values())
+
+    def items(self) -> Iterable[tuple[str, JSONishValue]]:
+        assert isinstance(self._data, Mapping)
+        for key, val in self._data.items():
+            yield key, self._wrap_if_mutable(val)
+
+    def append(self, value: JSONishValue) -> None:
+        assert isinstance(self._data, Sequence)
+        self._data.append(deepcopy(value))
         self._writeback()
 
-    def pop(self, *args: Any) -> Any:
-        v = self._data.pop(*args)
+    __none = object()
+
+    def pop(self, index: str | int | None = None, default: JSONishValue | object = __none) -> JSONishValue:
+        d = self._data
+        if isinstance(d, Mapping):
+            assert isinstance(index, str)
+            if default is not self.__none:
+                v = d.pop(index)
+            else:
+                v = cast(JSONishValue, d.pop(index, default))
+        elif index is None:
+            v = d.pop()
+        else:
+            assert isinstance(index, int)
+            v = d.pop(index)
         self._writeback()
         return v
+
+    def __delitem__(self, key: str) -> None:
+        self.pop(key)
+
+    def __iter__(self) -> Iterator[JSONishValue]:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
 
     def get(self, key: Any, default: Any = None) -> Any:
         if key in self._data:
             v = self._data[key]
-            if isinstance(v, (Sequence, Mapping)):
+            if isinstance(v, (Sequence, Mapping)) and not isinstance(v, str):
                 return _WritebackData(self._fpath, v, self._root)
             return v
         return default
 
+    def insert(self, index: int, value: JSONishValue) -> None:
+        assert isinstance(self._data, Sequence)
+        self._data.insert(index, deepcopy(value))
+        self._writeback()
+
     def _writeback(self) -> None:
         self._fpath.write_text(json.dumps(self._data, indent=2))
+
+
+_WritebackData(Path(''), {}, {})
 
 
 class Project:
     """
     Utilities to access a project being used as a test.
     """
+
     def __init__(self, dirpath: Path, dds: DDSWrapper) -> None:
         self.dds = dds.clone()
         self.root = dirpath
@@ -220,7 +281,7 @@ class Project:
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
-            self.dds.compile_file(paths, toolchain=tc, out=self.build_root, project_dir=self.root)
+            self.dds.compile_file(paths, toolchain=tc, build_root=self.build_root, root=self.root)
 
     def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
@@ -234,9 +295,6 @@ class Project:
             ],
             cwd=self.build_root,
         )
-
-    def sdist_export(self) -> None:
-        self.dds.run(['sdist', 'export', self.dds.cache_dir_arg, self.project_dir_arg])
 
     def write(self, path: Pathish, content: str) -> Path:
         """
@@ -259,6 +317,7 @@ class ProjectOpener():
     """
     A test fixture that opens project directories for testing
     """
+
     def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str,
                  tmp_path_factory: TempPathFactory) -> None:
         self.dds = dds
@@ -269,7 +328,8 @@ class ProjectOpener():
     @property
     def test_name(self) -> str:
         """The name of the test that requested this opener"""
-        return str(self._request.function.__name__)
+        func: Any = self._request.function  # type: ignore
+        return func.__name__  # type: ignore
 
     @property
     def test_dir(self) -> Path:
@@ -353,7 +413,8 @@ def dds(dds_exe: Path) -> DDSWrapper:
 @pytest.fixture(scope='session')
 def dds_exe(pytestconfig: PyTestConfig) -> Path:
     """A :class:`pathlib.Path` pointing to the DDS executable under test"""
-    opt: Path = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'dds'
+    opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'for-test/dds'
+    assert isinstance(opt, (Path, str))
     return Path(opt)
 
 
@@ -366,6 +427,7 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, pytestconfig: PyTest
     A temporary directory :class:`pathlib.Path` object in which a git repo will
     be initialized
     """
+
     def f(dirpath: Pathish) -> Path:
         test_dir = Path()
         dirpath = Path(dirpath)
@@ -378,7 +440,8 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, pytestconfig: PyTest
         repo = tmp_path / 'r'
         shutil.copytree(dirpath, repo)
 
-        git: str = pytestconfig.getoption('--git-exe') or 'git'
+        git = pytestconfig.getoption('--git-exe') or 'git'
+        assert isinstance(git, str)
         check_run([git, 'init', repo])
         check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
         check_run([git, 'add', '-A'], cwd=repo)

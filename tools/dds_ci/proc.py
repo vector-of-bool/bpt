@@ -1,23 +1,11 @@
-from pathlib import PurePath
-from typing import Iterable, Union, Optional, Iterator, NoReturn, Sequence, Mapping
+from typing import Iterable, Optional, NoReturn, Sequence, Mapping
 from typing_extensions import Protocol
 import subprocess
 
+import dagon.proc
+from dagon.proc import CommandLine
+
 from .util import Pathish
-
-CommandLineArg = Union[str, Pathish, int, float]
-CommandLineArg1 = Union[CommandLineArg, Iterable[CommandLineArg]]
-CommandLineArg2 = Union[CommandLineArg1, Iterable[CommandLineArg1]]
-CommandLineArg3 = Union[CommandLineArg2, Iterable[CommandLineArg2]]
-CommandLineArg4 = Union[CommandLineArg3, Iterable[CommandLineArg3]]
-
-
-class CommandLine(Protocol):
-    def __iter__(self) -> Iterator[Union['CommandLine', CommandLineArg]]:
-        pass
-
-
-# CommandLine = Union[CommandLineArg4, Iterable[CommandLineArg4]]
 
 
 class ProcessResult(Protocol):
@@ -28,16 +16,7 @@ class ProcessResult(Protocol):
 
 
 def flatten_cmd(cmd: CommandLine) -> Iterable[str]:
-    if isinstance(cmd, (str, PurePath)):
-        yield str(cmd)
-    elif isinstance(cmd, (int, float)):
-        yield str(cmd)
-    elif hasattr(cmd, '__iter__'):
-        each = (flatten_cmd(arg) for arg in cmd)  # type: ignore
-        for item in each:
-            yield from item
-    else:
-        assert False, f'Invalid command line element: {repr(cmd)}'
+    return (str(s) for s in dagon.proc.flatten_cmdline(cmd))
 
 
 def run(*cmd: CommandLine,

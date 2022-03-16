@@ -1,28 +1,28 @@
 import enum
-from pathlib import Path
 import os
-from contextlib import contextmanager
-from typing import Iterator, Optional, Mapping
-import sys
-import urllib.request
 import platform
 import shutil
+import sys
+import urllib.request
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator, Mapping, Optional
 
 from . import paths, proc
-from .dds import PriorDDSWrapper
+from .dds import DDSWrapper
 from .paths import new_tempdir
 
 
 class BootstrapMode(enum.Enum):
     """How should be bootstrap our prior DDS executable?"""
-    #: Downlaod one from GitHub
     Download = 'download'
-    #: Build one from source
+    'Downlaod one from GitHub'
     Build = 'build'
-    #: Skip bootstrapping. Assume it already exists.
+    'Build one from source'
     Skip = 'skip'
-    #: If the prior executable exists, skip, otherwise download
+    'Skip bootstrapping. Assume it already exists.'
     Lazy = 'lazy'
+    'If the prior executable exists, skip, otherwise download'
 
 
 def _do_bootstrap_download() -> Path:
@@ -38,14 +38,14 @@ def _do_bootstrap_download() -> Path:
     url = f'https://github.com/vector-of-bool/dds/releases/download/0.1.0-alpha.6/{filename}'
 
     print(f'Downloading prebuilt DDS executable: {url}')
-    stream = urllib.request.urlopen(url)
-    paths.PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
-    with paths.PREBUILT_DDS.open('wb') as fd:
-        while True:
-            buf = stream.read(1024 * 4)
-            if not buf:
-                break
-            fd.write(buf)
+    with urllib.request.urlopen(url) as stream:
+        paths.PREBUILT_DDS.parent.mkdir(exist_ok=True, parents=True)
+        with paths.PREBUILT_DDS.open('wb') as fd:
+            while True:
+                buf = stream.read(1024 * 4)
+                if not buf:
+                    break
+                fd.write(buf)
 
     if sys.platform != 'win32':
         # Mark the binary executable. By default it won't be
@@ -59,7 +59,8 @@ def _do_bootstrap_download() -> Path:
 @contextmanager
 def pin_exe(fpath: Path) -> Iterator[Path]:
     """
-    Create a copy of 'fpath' at an unspecified location, and yield that path.
+    Create a copy of the file at ``fpath`` at an unspecified location, and
+    yield that path.
 
     This is needed if the executable would overwrite itself.
     """
@@ -69,9 +70,8 @@ def pin_exe(fpath: Path) -> Iterator[Path]:
         yield tfile
 
 
-@contextmanager
-def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[PriorDDSWrapper]:
-    """Context manager that yields a DDSWrapper around a prior 'dds' executable"""
+def get_bootstrap_exe(mode: BootstrapMode) -> DDSWrapper:
+    """Obtain a ``dds`` executable for the given bootstrapping mode"""
     if mode is BootstrapMode.Lazy:
         f = paths.PREBUILT_DDS
         if not f.exists():
@@ -83,8 +83,7 @@ def get_bootstrap_exe(mode: BootstrapMode) -> Iterator[PriorDDSWrapper]:
     elif mode is BootstrapMode.Skip:
         f = paths.PREBUILT_DDS
 
-    with pin_exe(f) as dds:
-        yield PriorDDSWrapper(dds)
+    return DDSWrapper(f)
 
 
 def _do_bootstrap_build() -> Path:
@@ -225,15 +224,15 @@ def _bootstrap_p1() -> Path:
     return ret_dds
 
 
-def _clone_self_at(dir: Path, ref: str) -> None:
-    if dir.is_dir():
-        shutil.rmtree(dir)
-    dir.mkdir(exist_ok=True, parents=True)
-    proc.check_run(['git', 'clone', '-qq', paths.PROJECT_ROOT, f'--branch={ref}', dir])
+def _clone_self_at(dirpath: Path, ref: str) -> None:
+    if dirpath.is_dir():
+        shutil.rmtree(dirpath)
+    dirpath.mkdir(exist_ok=True, parents=True)
+    proc.check_run(['git', 'clone', '-qq', paths.PROJECT_ROOT, f'--branch={ref}', dirpath])
 
 
-def _dds_in(dir: Path) -> Path:
-    return dir.joinpath('_build/dds' + paths.EXE_SUFFIX)
+def _dds_in(dirpath: Path) -> Path:
+    return dirpath.joinpath('_build/dds' + paths.EXE_SUFFIX)
 
 
 def _prev_dds_env(dds: Path) -> Mapping[str, str]:
@@ -242,8 +241,8 @@ def _prev_dds_env(dds: Path) -> Mapping[str, str]:
     return env
 
 
-def _build_prev(dir: Path, prev_dds: Optional[Path] = None) -> None:
-    build_py = dir / 'tools/build.py'
+def _build_prev(dirpath: Path, prev_dds: Optional[Path] = None) -> None:
+    build_py = dirpath / 'tools/build.py'
     env: Optional[Mapping[str, str]] = None
     if prev_dds is not None:
         env = os.environ.copy()
@@ -255,6 +254,6 @@ def _build_prev(dir: Path, prev_dds: Optional[Path] = None) -> None:
             build_py,
             '--cxx=cl.exe' if platform.system() == 'Windows' else '--cxx=g++-8',
         ],
-        cwd=dir,
+        cwd=dirpath,
         env=env,
     )

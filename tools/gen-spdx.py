@@ -38,5 +38,5 @@ exc_lines = (render_exception(e) for e in sorted(exceptions['exceptions'], key=i
 
 proj_dir = Path(__file__).resolve().parent.parent / 'src/dds/project'
 print('Writing license content')
-proj_dir.joinpath('spdx.inl').write_text('\n'.join(lic_lines))
-proj_dir.joinpath('spdx-exc.inl').write_text('\n'.join(exc_lines))
+proj_dir.joinpath('spdx.inl').write_text('\n'.join(lic_lines), encoding='utf-8')
+proj_dir.joinpath('spdx-exc.inl').write_text('\n'.join(exc_lines), encoding='utf-8')

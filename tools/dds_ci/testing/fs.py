@@ -62,6 +62,7 @@ def render_into(root: Pathish, tree: TreeData) -> Path:
 
 
 class DirRenderer:
+
     def __init__(self, cache_root: Pathish, tmp_root: Pathish, tmp_factory: TempPathFactory) -> None:
         self._cache_path = Path(cache_root)
         self._tmp_path = Path(tmp_root)
@@ -93,8 +94,8 @@ class DirRenderer:
 
     def get_or_render(self, name: str, tree: TreeData) -> Path:
         b64_tree = _b64_encode_tree(tree)
-        hash = hashlib.md5(json.dumps(b64_tree, sort_keys=True).encode('utf-8')).hexdigest()[:4]
-        key = f'{name}-{hash}'
+        md5 = hashlib.md5(json.dumps(b64_tree, sort_keys=True).encode('utf-8')).hexdigest()[:4]
+        key = f'{name}-{md5}'
         clone_dest = self._tmp_path / key
         shutil.rmtree(clone_dest, ignore_errors=True)
         with self.get_or_prepare(key) as prep:
@@ -117,6 +118,7 @@ TempCloner = Callable[[str, Pathish], Path]
 
 @pytest.fixture(scope='session')
 def tmp_clone_dir(tmp_path_factory: TempPathFactory) -> TempCloner:
+
     def _dup(name: str, p: Pathish) -> Path:
         tdir: Path = tmp_path_factory.mktemp(name) / '_'
         shutil.copytree(p, tdir)

@@ -10,12 +10,13 @@ Downloading
 
 Downloads are available on `the main dds website <https://dds.pizza/downloads>`_
 as well as
-`the GitHub Releases page <https://github.com/vector-of-bool/dds/releases>`_. Select the executable appropriate for your platform.
+`the GitHub Releases page <https://github.com/vector-of-bool/dds/releases>`_.
+Select the executable appropriate for your platform.
 
 Alternatively, the appropriate executable can be downloaded directly from the
 command-line with an easy-to-remember URL. Using ``curl``:
 
-.. code-block:: sh
+.. code-block:: bash
 
   # For Linux, writes a file in the working directory called "dds"
   curl dds.pizza/get/linux -Lo dds
@@ -23,17 +24,17 @@ command-line with an easy-to-remember URL. Using ``curl``:
   # For macOS, writes a file in the working directory called "dds"
   curl dds.pizza/get/macos -Lo dds
 
-Or using PowerShell on Windows:
+Or using PowerShell:
 
 .. code-block:: powershell
 
   # Writes a file in the working directory called "dds.exe"
   Invoke-WebRequest dds.pizza/get/windows -OutFile dds.exe
 
-**On Linux, macOS, or other Unix-like system**, you will need to mark the
+**On Linux, macOS, or other Unix-like systems**, you may need to mark the
 downloaded file as executable:
 
-.. code-block:: sh
+.. code-block:: bash
 
   # Add the executable bit to the file mode for the file named "dds"
   chmod +x dds
@@ -74,6 +75,11 @@ environment variable for your user profile.
   your command line and any other applications that wish to see ``dds`` on your
   ``PATH``.
 
+.. note::
+
+  The ``install-yourself`` command accepts some other options. Pass ``--help``
+  for more information.
+
 
 Manually: On Unix-like Systems
 ==============================
@@ -107,7 +113,7 @@ For a **system-wide installation**, place the downloaded ``dds`` executable
 within the ``/usr/local/bin/`` directory. This will be a directory on the
 ``PATH`` for any Unix-like system.
 
-.. note::
+.. warning::
 
   **DO NOT** place ``dds`` in ``/usr/bin`` or ``/bin``: These are reserved for
   your system's package management utilities.

@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=res/pkg-yaml-schema.json
+name: dds
+version: 0.1.0-alpha.6
+dependencies:
+  - spdlog@1.7.0
+  - ms-wil@2020.3.16
+  - range-v3@0.11.0
+  - nlohmann-json@3.9.1
+  - neo-sqlite3@0.7.1
+  - neo-fun^0.11.0
+  - neo-buffer^0.5.2
+  - neo-compress^0.3.0
+  - neo-url^0.2.4
+  - semver@0.2.2
+  - pubgrub@0.3.0
+  - vob-json5@0.1.6
+  - vob-semester@0.3.1
+  - ctre@2.8.1
+  - fmt^6.2.1
+  - neo-http^0.2.0
+  - neo-io^0.2.2
+  - boost.leaf^1.78.0
+  - magic_enum+0.7.3
+  - sqlite3^3.35.2
+  - catch2@2.13.5 using main for test
+  - yaml-cpp@0.7.0
+lib:
+  name: dds

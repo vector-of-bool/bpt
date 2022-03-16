@@ -12,29 +12,34 @@ packages = [
 python = "^3.7"
 
 semver = "^2.13.0"
-pytest = "^6.1.2"
+pytest = "^7.0.1"
 pytest-xdist = "^2.1.0"
 pytest-asyncio = "^0.14.0"
 typing-extensions = "^4.0.1"
 json5 = "^0.9.5"
 distro = "^1.5.0"
-dagon = "^0.9.1"
+dagon = "^0.9.3"
 importlib-metadata = "^4.10.0"
+yapf = "^0.32.0"
+pylint = "^2.12.2"
+Sphinx = "^4.4.0"
+pyright = "^1.1.227"
 
 [tool.poetry.dev-dependencies]
 # Only needed for development
-pylint = "^2.6.0"
-mypy = "^0.790"
 rope = "^0.18.0"
-yapf = "^0.30.0"
-Sphinx = "^3.4.1"
 
 [tool.poetry.scripts]
-dds-ci = "dds_ci.main:start"
-dds-format = "dds_ci.format:start"
 gen-msvs-vsc-task = "dds_ci.msvs:generate_vsc_task"
 dds-audit-docrefs = "dds_ci.docs:audit_docrefs_main"
 
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+[tool.pyright]
+include = ["tools/**"]
+typeCheckingMode = "strict"
+useLibraryCodeForTypes = true
+reportMissingTypeStubs = false
+reportMissingImports = true

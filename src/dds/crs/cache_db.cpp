@@ -133,12 +133,14 @@ cache_db cache_db::open(unique_database& db) {
     }).value();
     db.exec_script(R"(
         CREATE TEMPORARY TABLE IF NOT EXISTS dds_crs_enabled_remotes (
+            enablement_id INTEGER PRIMARY KEY,
             remote_id INTEGER NOT NULL -- references main.dds_crs_remotes
                 UNIQUE ON CONFLICT IGNORE
         );
         CREATE TEMPORARY VIEW IF NOT EXISTS enabled_packages AS
             SELECT * FROM dds_crs_packages
-            WHERE remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes);
+            JOIN dds_crs_enabled_remotes USING (remote_id)
+            ORDER BY enablement_id ASC
     )"_sql);
     return cache_db{db};
 }

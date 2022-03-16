@@ -54,7 +54,7 @@ struct key_dym_tracker {
 
     template <typename E>
     auto rejecter() {
-        return [this](auto&& key, auto&&) -> semester::walk_result {
+        return [this](auto&& key, auto &&) -> semester::walk_result {
             auto unseen
                 = known_keys | std::views::filter([&](auto k) { return !seen_keys.contains(k); });
             BOOST_LEAF_THROW_EXCEPTION(E{std::string(key), did_you_mean(key, unseen)});

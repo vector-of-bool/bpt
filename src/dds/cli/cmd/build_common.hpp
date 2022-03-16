@@ -20,14 +20,6 @@ dds::builder create_project_builder(const options& opts);
 int handle_build_error(std::function<int()>);
 
 /**
- * @brief Open a CRS cache in the appropriate directory, will all requested
- * remote repositories synced and enabled.
- *
- * @param opts The options given by the user.
- */
-dds::crs::cache open_ready_cache(const options& opts);
-
-/**
  * @brief Fetch, cache, and load the given package ID.
  *
  * For a given package ID:

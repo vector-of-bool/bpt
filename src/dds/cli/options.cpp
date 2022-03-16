@@ -111,6 +111,14 @@ struct setup {
         .action          = push_back_onto(opts.use_repos),
     };
 
+    argument no_default_repo_arg{
+        .long_spellings  = {"no-default-repo"},
+        .short_spellings = {"NDR"},
+        .help            = "Do not consult the default package repository [repo-2.dds.pizza]",
+        .nargs           = 0,
+        .action          = store_false(opts.use_default_repo),
+    };
+
     argument repo_sync_arg{
         .long_spellings = {"repo-sync"},
         .help
@@ -177,11 +185,16 @@ struct setup {
         }));
     }
 
+    void add_repo_args(argument_parser& cmd) {
+        cmd.add_argument(use_repos_arg.dup());
+        cmd.add_argument(no_default_repo_arg.dup());
+        cmd.add_argument(repo_sync_arg.dup());
+    }
+
     void setup_build_cmd(argument_parser& build_cmd) {
         build_cmd.add_argument(toolchain_arg.dup());
         build_cmd.add_argument(project_arg.dup());
-        build_cmd.add_argument(use_repos_arg.dup());
-        build_cmd.add_argument(repo_sync_arg.dup());
+        add_repo_args(build_cmd);
         build_cmd.add_argument({
             .long_spellings = {"no-tests"},
             .help           = "Do not build and run project tests",
@@ -212,8 +225,7 @@ struct setup {
         compile_file_cmd.add_argument(lm_index_arg.dup());
         compile_file_cmd.add_argument(out_arg.dup());
         compile_file_cmd.add_argument(tweaks_dir_arg.dup());
-        compile_file_cmd.add_argument(use_repos_arg.dup());
-        compile_file_cmd.add_argument(repo_sync_arg.dup());
+        add_repo_args(compile_file_cmd);
         compile_file_cmd.add_argument({
             .help       = "One or more source files to compile",
             .valname    = "<source-files>",
@@ -228,8 +240,7 @@ struct setup {
         build_deps_cmd.add_argument(out_arg.dup());
         build_deps_cmd.add_argument(lm_index_arg.dup()).help
             = "Destination path for the generated libman index file";
-        build_deps_cmd.add_argument(use_repos_arg.dup());
-        build_deps_cmd.add_argument(repo_sync_arg.dup());
+        add_repo_args(build_deps_cmd);
         build_deps_cmd.add_argument({
             .long_spellings  = {"deps-file"},
             .short_spellings = {"d"},
@@ -292,9 +303,7 @@ struct setup {
     }
 
     void setup_pkg_search_cmd(argument_parser& pkg_search_cmd) noexcept {
-        auto& use    = pkg_search_cmd.add_argument(use_repos_arg.dup());
-        use.required = true;
-        pkg_search_cmd.add_argument(repo_sync_arg.dup());
+        add_repo_args(pkg_search_cmd);
         pkg_search_cmd.add_argument({
             .help
             = "A name or glob-style pattern. Only matching packages will be returned. \n"
@@ -307,9 +316,7 @@ struct setup {
     }
 
     void setup_pkg_prefetch_cmd(argument_parser& pkg_prefetch_cmd) noexcept {
-        auto& use    = pkg_prefetch_cmd.add_argument(use_repos_arg.dup());
-        use.help     = "The URLs of package repositories to pull from";
-        use.required = true;
+        add_repo_args(pkg_prefetch_cmd);
         pkg_prefetch_cmd.add_argument({
             .help       = "List of package IDs to prefetch",
             .valname    = "<pkg-id>",
@@ -319,9 +326,7 @@ struct setup {
     }
 
     void setup_pkg_solve_cmd(argument_parser& pkg_solve_cmd) noexcept {
-        auto& use    = pkg_solve_cmd.add_argument(use_repos_arg.dup());
-        use.required = true;
-        pkg_solve_cmd.add_argument(repo_sync_arg.dup());
+        add_repo_args(pkg_solve_cmd);
         pkg_solve_cmd.add_argument({
             .help       = "List of package requirements to solve for",
             .valname    = "<requirement>",
@@ -358,8 +363,6 @@ struct setup {
             .help = "Check that all repository packages are valid and resolvable",
         });
         validate_cmd.add_argument(repo_repo_dir_arg.dup());
-        validate_cmd.add_argument(use_repos_arg.dup());
-        validate_cmd.add_argument(repo_sync_arg.dup());
     }
 
     void setup_repo_import_cmd(argument_parser& repo_import_cmd) {

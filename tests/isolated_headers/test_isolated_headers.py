@@ -16,6 +16,7 @@ def test_dependent_include_header_fails(project_opener: ProjectOpener) -> None:
     with error.expect_error_marker_re('compile-failed'):
         proj.build()
 
+
 def test_dependent_inl_or_ipp_succeeds(project_opener: ProjectOpener) -> None:
     proj = project_opener.open('good_proj_inl')
     proj.build()

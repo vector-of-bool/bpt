@@ -4,7 +4,7 @@
 
 #include <filesystem>
 
-namespace dds::inline file_utils {
+namespace dds {
 
 namespace fs = std::filesystem;
 
@@ -42,4 +42,4 @@ struct e_resolve_path {
  */
 [[nodiscard]] result<fs::path> resolve_path_strong(path_ref p) noexcept;
 
-}  // namespace dds::inline file_utils
+}  // namespace dds

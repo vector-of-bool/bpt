@@ -13,10 +13,12 @@ directory. The name and location of this directory is not important, but the
 contents therein will be significant.
 
 .. note::
-   The term *package root* is further described in the :doc:`/guide/packages` page.
 
-From here on, this created directory will simply be noted as ``<root>``. In
-the examples, this will refer to the package root directory we have created.
+   The term *package root* is further described in the :doc:`/guide/packages`
+   page.
+
+From here on, this created directory will simply be noted as ``<root>``. In the
+examples, this will refer to the package root directory we have created.
 
 
 Creating the First *Source Root*
@@ -66,20 +68,22 @@ Building *Hello, World*
 Now comes the fun part. It is time to actually compile the application!
 
 .. important::
-    If you intend to compile with Visual C++, the build must be executed
-    from within a Visual Studio or Visual C++ development command prompt. These
-    program shortcuts should be made available with any standard installation
-    of the Visual C++ toolchain.
+
+    If you intend to compile with Visual C++, the build must be executed from
+    within a Visual Studio or Visual C++ development command prompt. These
+    program shortcuts should be made available with any standard installation of
+    the Visual C++ toolchain.
 
     ``dds`` **will not** automatically load the Visual C++ environment.
 
-To build the program, we must provide ``dds`` with information about our
-program toolchain. ``dds`` comes with a few "built in" toolchain options that
-can be used out-of-the-box, and they'll be suitable for our purposes.
+To build the program, we must provide ``dds`` with information about our program
+toolchain. ``dds`` comes with a few "built in" toolchain options that can be
+used out-of-the-box, and they'll be suitable for our purposes.
 
-- If you are compiling with GCC, the toolchain name is ``:gcc``
-- If you are compiling with Clang, the toolchain name is ``:clang``
-- If you are compiling with Visual C++, the toolchain name is ``:msvc``
+- If you are compiling with GCC, the toolchain name is ``:gcc``.
+- If you are compiling with Clang, the toolchain name is ``:clang``.
+- If you are compiling with Microsoft Visual C++, the toolchain name is
+  ``:msvc``.
 
 .. note::
     The leading colon ``:`` is important: This tells ``dds`` to use its
@@ -181,8 +185,8 @@ be haven't *defined it*.
 Adding Another Compiled Source
 ******************************
 
-We'll add another compilable source file to our project. In the same
-directory as ``strings.hpp``, add ``strings.cpp``:
+We'll add another compilable source file to our project. In the same directory
+as ``strings.hpp``, add ``strings.cpp``:
 
 .. code-block:: c++
     :caption: ``<root>/src/hello/strings.cpp``
@@ -220,27 +224,20 @@ Creating a package manifest file.
 
 ``dds`` will work happily with packages that do not declare themselves, as long
 as the filesystem structure is sufficient. However: To use features covered in
-later tutorials, we'll need a simple ``package.json5`` file to declare
-information about are package. This file should be placed directly in the
-package root:
+later tutorials, we'll need a simple ``pkg.yaml`` file to declare information
+about are package. This file should be placed directly in the package root:
 
-.. code-block:: js
-    :caption: ``<root>/package.json5``
+.. code-block:: yaml
+    :caption: ``<root>/pkg.yaml``
 
-    {
-        name: 'hello-dds',
-        version: '0.1.0',
-        namespace: 'tutorial',
-    }
-
-.. note::
-    The ``namespace`` option will be discussed later.
+    name: hello-dds
+    version: 0.1.0
 
 Rebuilding the project will show no difference at the moment.
 
 .. note::
-    You may also use a ``.jsonc`` or ``.json`` file extension. ``dds`` will
-    search for all of these files, but they will all be parsed as JSON5.
+    You must use the ``.yaml`` extension for this file. A ``pkg.yml`` will be
+    ignored.
 
 .. seealso::
     Creating a single application executable is fine and all, but what if we
