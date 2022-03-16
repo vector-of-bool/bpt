@@ -2,6 +2,7 @@
 
 #include <dds/build/iter_compilations.hpp>
 #include <dds/build/plan/compile_exec.hpp>
+#include <dds/error/doc_ref.hpp>
 #include <dds/error/errors.hpp>
 #include <dds/error/nonesuch.hpp>
 #include <dds/error/on_error.hpp>
@@ -32,6 +33,13 @@ decltype(auto) pair_up(T& left, Range& right) {
     return ranges::views::zip(rep, right);
 }
 
+struct pending_file {
+    bool     marked = false;
+    fs::path filepath;
+
+    auto operator<=>(const pending_file&) const noexcept = default;
+};
+
 }  // namespace
 
 void build_plan::compile_all(const build_env& env, int njobs) const {
@@ -44,10 +52,6 @@ void build_plan::compile_all(const build_env& env, int njobs) const {
 void build_plan::compile_files(const build_env&             env,
                                int                          njobs,
                                const std::vector<fs::path>& filepaths) const {
-    struct pending_file {
-        bool     marked = false;
-        fs::path filepath;
-    };
 
     auto as_pending =                  //
         ranges::views::all(filepaths)  //
@@ -55,6 +59,8 @@ void build_plan::compile_files(const build_env&             env,
               return pending_file{false, fs::weakly_canonical(path)};
           })
         | ranges::to_vector;
+
+    dds::sort_unique_erase(as_pending);
 
     auto check_compilation = [&](const compile_file_plan& comp) {
         return ranges::any_of(as_pending, [&](pending_file& f) {
@@ -82,7 +88,8 @@ void build_plan::compile_files(const build_env&             env,
 
     auto okay = dds::compile_all(comps, env, njobs);
     if (!okay) {
-        throw_user_error<errc::compile_failure>();
+        BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::compile_failure>(),
+                                   SBS_ERR_REF("compile-failure"));
     }
 }
 
@@ -113,7 +120,8 @@ void build_plan::link_all(const build_env& env, int njobs) const {
         exe.get().link(env, lib);
     });
     if (!okay) {
-        throw_user_error<errc::link_failure>();
+        BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::link_failure>(),
+                                   SBS_ERR_REF("link-failure"));
     }
 }
 
