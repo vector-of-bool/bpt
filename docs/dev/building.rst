@@ -12,13 +12,17 @@ run in the root of the repository to access and execute various CI tasks. Dagon
 will take care of task ordering and dependency execution.
 
 .. note::
-  By default, Dagon folds away the output of all non-failing subprocesses. To see more information from Dagon, pass the ``-ui=simple`` argument when running tasks.
+
+  By default, Dagon folds away the output of all non-failing subprocesses. To
+  see more information from Dagon, pass the ``-ui=simple`` argument when running
+  tasks.
 
 
 Running a Build *Only*
 **********************
 
-If you only with to obtain an optimized build of the main ``dds`` executable, run the ``build.main`` task::
+If you only with to obtain an optimized build of the main ``dds`` executable,
+run the ``build.main`` task::
 
   $ dagon build.main
 

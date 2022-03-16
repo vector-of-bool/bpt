@@ -1,21 +1,6 @@
 DDS CI Scripts Python API
 #########################
 
-Types from pytest
-*****************
-
-These types are defined by pytest, but are used extensively within the testing
-scripts.
-
-.. class:: FixtureRequest
-
-  .. seealso:: :class:`pytest.FixtureRequest`
-
-.. class:: TempPathFactory
-
-  .. seealso:: :class:`pytest.TempPathFactory`
-
-
 Test Fixtures
 *************
 
@@ -30,10 +15,19 @@ The following test fixtures are defined:
   :class:`dds_ci.testing.repo.CRSRepoServer` - Create a new dds repository and
   spawn an HTTP server to serve it.
 
+
 Module: ``dds_ci``
 ******************
 
 .. automodule:: dds_ci
+  :members:
+
+
+
+Module: ``dds_ci.bootstrap``
+****************************
+
+.. automodule:: dds_ci.bootstrap
   :members:
 
 
@@ -44,10 +38,52 @@ Module: ``dds_ci.dds``
   :members:
 
 
+Module: ``dds_ci.docs``
+***********************
+
+.. automodule:: dds_ci.docs
+  :members:
+
+
+Module: ``dds_ci.msvs``
+***********************
+
+.. automodule:: dds_ci.msvs
+  :members:
+
+
+Module: ``dds_ci.paths``
+************************
+
+.. automodule:: dds_ci.paths
+  :members:
+
+
 Module: ``dds_ci.proc``
 ***********************
 
 .. automodule:: dds_ci.proc
+  :members:
+
+
+Module: ``dds_ci.tasks``
+************************
+
+.. automodule:: dds_ci.tasks
+  :members:
+
+
+Module: ``dds_ci.util``
+***********************
+
+.. automodule:: dds_ci.util
+  :members:
+
+
+Module: ``dds_ci.toolchain``
+****************************
+
+.. automodule:: dds_ci.toolchain
   :members:
 
 
@@ -58,10 +94,10 @@ Module: ``dds_ci.testing``
   :members:
 
 
-Module: ``dds_ci.testing.http``
+Module: ``dds_ci.testing.error``
 *******************************
 
-.. automodule:: dds_ci.testing.http
+.. automodule:: dds_ci.testing.error
   :members:
 
 
@@ -72,13 +108,6 @@ Module: ``dds_ci.testing.fixtures``
   :members:
 
 
-Module: ``dds_ci.testing.repo``
-***********************************
-
-.. automodule:: dds_ci.testing.repo
-  :members:
-
-
 Module: ``dds_ci.testing.fs``
 ***********************************
 
@@ -86,8 +115,34 @@ Module: ``dds_ci.testing.fs``
   :members:
 
 
-Module: ``dds_ci.testing.error``
-********************************
+Module: ``dds_ci.testing.http``
+*******************************
 
-.. automodule:: dds_ci.testing.error
+.. automodule:: dds_ci.testing.http
   :members:
+
+
+Module: ``dds_ci.testing.repo``
+***********************************
+
+.. automodule:: dds_ci.testing.repo
+  :members:
+
+
+External Types to Know
+**********************
+
+These types are defined externally and arg used extensively throughout the CI
+scripts.
+
+.. class:: _pytest.fixtures.FixtureRequest
+
+  .. seealso:: :class:`pytest.FixtureRequest`
+
+.. class:: _pytest.tmpdir.TempPathFactory
+
+  .. seealso:: :class:`pytest.TempPathFactory`
+
+.. class:: _pytest.config.Config
+
+  .. seealso:: :class:`pytest.Config`

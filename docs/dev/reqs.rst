@@ -12,7 +12,7 @@ Build Requirements
 
 Building ``dds`` has a simple set of requirements:
 
-- **Python 3.6** or newer to run the bootstrap/CI scripts.
+- **Python 3.7** or newer to run the bootstrap/CI scripts.
 - A C++ compiler that has rudimentary support for several C++20 features,
   including Concepts. Newer releases of Visual C++ that ship with **VS 2019**
   will be sufficient on Windows, as will **GCC 10** with ``-std=c++20`` and
