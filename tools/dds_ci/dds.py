@@ -70,11 +70,11 @@ class DDSWrapper:
 
     def pkg_prefetch(self, *, repos: Iterable[Pathish], pkgs: Iterable[str] = ()) -> None:
         "Execute the ``dds pkg prefetch`` subcommand"
-        self.run(['pkg', 'prefetch', (f'--use-repo={r}' for r in repos), pkgs])
+        self.run(['pkg', 'prefetch', '--no-default-repo', (f'--use-repo={r}' for r in repos), pkgs])
 
     def pkg_solve(self, *, repos: Iterable[Pathish], pkgs: Iterable[str]) -> None:
         "Execute the ``dds pkg solve`` subcommand"
-        self.run(['pkg', 'solve', (f'--use-repo={r}' for r in repos), pkgs])
+        self.run(['pkg', 'solve', '--no-default-repo', (f'--use-repo={r}' for r in repos), pkgs])
 
     def build(self,
               *,
@@ -105,6 +105,7 @@ class DDSWrapper:
         self.run(
             [
                 'build',
+                '--no-default-repo',
                 f'--toolchain={toolchain}',
                 (f'--use-repo={r}' for r in repos),
                 f'--jobs={jobs}',

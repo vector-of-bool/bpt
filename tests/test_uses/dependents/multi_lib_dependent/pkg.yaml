@@ -6,4 +6,4 @@ libs:
     dependencies: ["the_test_lib@0.0.0"]
   - path: "libs/uses_for_tests"
     name: "uses_for_tests"
-    dependencies: ["the_test_lib@0.0.0 for test"]
+    test-dependencies: ["the_test_lib@0.0.0 using the_test_lib"]

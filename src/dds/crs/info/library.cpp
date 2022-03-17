@@ -19,10 +19,6 @@ crs::intra_usage intra_usage_from_data(const json5::data& data) {
                           "A 'lib' string is required",
                           require_str{"'lib' must be a value usage string"},
                           put_into{ret.lib, name_from_string{}}},
-             required_key{"for",
-                          "A 'for' string is required",
-                          require_str{"'for' must be one of 'lib', 'app', or 'test'"},
-                          put_into{ret.kind, parse_enum_str<usage_kind>}},
              if_key{"_comment", just_accept},
          });
     return ret;
@@ -39,11 +35,11 @@ library_info library_info::from_data(const json5::data& data) {
          require_mapping{"Each library must be a JSON object"},
          mapping{
              required_key{"name",
-                          "A library 'name' is required",
+                          "A library 'name' string is required",
                           require_str{"Library 'name' must be a string"},
                           put_into{ret.name, name_from_string{}}},
              required_key{"path",
-                          "A library 'path' is required",
+                          "A library 'path' string is required",
                           require_str{"Library 'path' must be a string"},
                           put_into{ret.path,
                                    [](std::string s) {
@@ -63,14 +59,26 @@ library_info library_info::from_data(const json5::data& data) {
                                        return p;
                                    }}},
              required_key{"using",
-                          "A 'using' list is required",
+                          "A 'using' array is required",
                           require_array{"A library's 'using' must be an array of usage objects"},
                           for_each{
                               put_into{std::back_inserter(ret.intra_uses), intra_usage_from_data}}},
+             required_key{"test-using",
+                          "A 'test-using' array is required",
+                          require_array{
+                              "A library's 'test-using' must be an array of usage objects"},
+                          for_each{put_into{std::back_inserter(ret.intra_test_uses),
+                                            intra_usage_from_data}}},
              required_key{"dependencies",
-                          "A 'dependencies' list is required",
+                          "A 'dependencies' array is required",
                           require_array{"'dependencies' must be an array of dependency objects"},
                           for_each{put_into{std::back_inserter(ret.dependencies),
+                                            dependency::from_data}}},
+             required_key{"test-dependencies",
+                          "A 'test-dependencies' array is required",
+                          require_array{
+                              "'test-dependencies' must be an array of dependency objects"},
+                          for_each{put_into{std::back_inserter(ret.test_dependencies),
                                             dependency::from_data}}},
              if_key{"_comment", just_accept},
          });

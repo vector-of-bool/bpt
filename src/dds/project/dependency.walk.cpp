@@ -44,13 +44,12 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
 
     project_dependency ret;
 
-    std::optional<crs::usage_kind> dep_kind;
-    bool                           got_versions_key = false;
-    std::vector<dds::name>         explicit_uses;
-    bool                           got_using_key = false;
-    std::vector<semver::range>     ver_ranges;
+    bool                       got_versions_key = false;
+    std::vector<dds::name>     explicit_uses;
+    bool                       got_using_key = false;
+    std::vector<semver::range> ver_ranges;
 
-    key_dym_tracker dym{{"dep", "versions", "for", "using"}};
+    key_dym_tracker dym{{"dep", "versions", "using"}};
 
     walk(  //
         data,
@@ -73,9 +72,6 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
                    },
                    for_each{require_mapping{"Each 'versions' element must be an object"},
                             put_into(std::back_inserter(ver_ranges), parse_version_range)}},
-            if_key{"for",
-                   require_str{"Dependency 'for' must be a string"},
-                   put_into{dep_kind, parse_enum_str<crs::usage_kind>}},
             if_key{"using",
                    require_array{"Dependency 'using' must be an array"},
                    for_each{require_str{"Each dependency 'using' item must be a string"},

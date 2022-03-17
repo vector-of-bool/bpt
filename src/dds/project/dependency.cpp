@@ -18,7 +18,6 @@ crs::dependency project_dependency::as_crs_dependency() const noexcept {
     return crs::dependency{
         .name                = dep_name,
         .acceptable_versions = acceptable_versions,
-        .kind                = kind,
         .uses = explicit_uses ? crs::dependency_uses{crs::explicit_uses_list{*explicit_uses}}
                               : crs::dependency_uses{crs::implicit_uses_all{}},
     };
@@ -85,10 +84,9 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
         return ret;
     }
 
-    if (tok != neo::oper::any_of("for", "using", "")) {
+    if (tok != "using") {
         BOOST_LEAF_THROW_EXCEPTION(e_human_message{
-            neo::ufmt("Expected 'for' or 'using' following dependency name and range (Got '{}')",
-                      tok)});
+            neo::ufmt("Expected 'using' following dependency name and range (Got '{}')", tok)});
     }
 
     if (tok == "using") {
@@ -104,17 +102,6 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
                 break;
             }
         }
-    }
-
-    if (tok == "for") {
-        tok      = adv_token();
-        ret.kind = parse_enum_str<crs::usage_kind>(std::string(tok));
-        tok      = adv_token();
-    }
-
-    if (tok == "using") {
-        BOOST_LEAF_THROW_EXCEPTION(
-            e_human_message{"'using' must appear before 'for' in dependency shorthand string"});
     }
 
     if (!tok.empty()) {

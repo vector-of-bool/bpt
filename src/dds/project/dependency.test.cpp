@@ -28,14 +28,9 @@ TEST_CASE("Parse a shorthand") {
             .expect = {{"foo"}, simple_ver_range("1.2.3", "1.2.4")},
         },
         {
-            .given  = "foo@1.2.3 for test",
-            .expect = {"foo", simple_ver_range("1.2.3", "2.0.0"), dds::crs::usage_kind::test},
-        },
-        {
-            .given  = "foo@1.2.3 using bar , baz for test",
+            .given  = "foo@1.2.3 using bar , baz",
             .expect = {"foo",
                        simple_ver_range("1.2.3", "2.0.0"),
-                       dds::crs::usage_kind::test,
                        std::vector({dds::name{"bar"}, dds::name{"baz"}})},
         },
     }));
@@ -44,7 +39,6 @@ TEST_CASE("Parse a shorthand") {
 
     CHECK(dep.dep_name == expect.dep_name);
     CHECK(dep.explicit_uses == expect.explicit_uses);
-    CHECK(dep.kind == expect.kind);
     CHECK(dep.acceptable_versions == expect.acceptable_versions);
 }
 #endif

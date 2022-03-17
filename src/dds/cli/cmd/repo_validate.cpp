@@ -30,7 +30,6 @@ static bool try_it(const crs::package_info& pkg, crs::cache_db& cache) {
     auto dep = {crs::dependency{
         .name                = pkg.id.name,
         .acceptable_versions = crs::version_range_set{pkg.id.version, pkg.id.version.next_after()},
-        .kind                = crs::usage_kind::lib,
         .uses = crs::explicit_uses_list{pkg.libraries | std::views::transform(NEO_TL(_1.name))
                                         | neo::to_vector},
     }};

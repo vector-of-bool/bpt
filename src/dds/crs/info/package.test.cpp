@@ -80,7 +80,7 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{}],
              "schema-version": 1
          })",
-         "A library 'name' is required"},
+         "A library 'name' string is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -90,7 +90,7 @@ TEST_CASE("Reject bad meta informations") {
              }],
              "schema-version": 1
          })",
-         "A library 'path' is required"},
+         "A library 'path' string is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -130,11 +130,12 @@ TEST_CASE("Reject bad meta informations") {
              "pkg-version": 1,
              "libraries": [{
                  "name": "foo",
-                 "path": "."
+                 "path": ".",
+                 "test-using": []
              }],
              "schema-version": 1
          })",
-         "A 'using' list is required"},
+         "A 'using' array is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -146,7 +147,20 @@ TEST_CASE("Reject bad meta informations") {
              }],
              "schema-version": 1
          })",
-         "A 'dependencies' list is required"},
+         "A 'test-using' array is required"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "pkg-version": 1,
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "test-using": [],
+                 "using": []
+             }],
+             "schema-version": 1
+         })",
+         "A 'dependencies' array is required"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -180,7 +194,9 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{}]
              }],
              "schema-version": 1
@@ -193,7 +209,9 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bad-name."
                  }]
@@ -208,14 +226,37 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "dependencies": [{
+                     "name": "bar",
+                     "versions": [{
+                         "low": "1.2.3",
+                         "high": "1.2.4"
+                     }],
+                     "using": ["foo"]
+                 }]
+             }],
+             "schema-version": 1
+         })",
+         "A 'test-dependencies' array is required"},
+        {R"({
+             "name": "foo",
+             "version": "1.2.3",
+             "pkg-version": 1,
+             "libraries": [{
+                 "name": "foo",
+                 "path": ".",
+                 "test-using": [],
+                 "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar"
                  }]
              }],
              "schema-version": 1
          })",
-         "A 'for' is required for each dependency"},
+         "A 'versions' array is required for each dependency"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -223,26 +264,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib"
-                 }]
-             }],
-             "schema-version": 1
-         })",
-         "An array 'versions' is required for each dependency"},
-        {R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "pkg-version": 1,
-             "libraries": [{
-                 "name": "foo",
-                 "path": ".",
-                 "using": [],
-                 "dependencies": [{
-                     "name": "bar",
-                     "for": "lib",
                      "versions": 12
                  }]
              }],
@@ -256,10 +282,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [12]
                  }]
              }],
@@ -273,10 +300,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [],
                      "using": []
                  }]
@@ -291,10 +319,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{}]
                  }]
              }],
@@ -308,10 +337,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": 21
                      }]
@@ -327,10 +357,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2."
                      }]
@@ -346,10 +377,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3"
                      }]
@@ -365,10 +397,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": 12
@@ -385,10 +418,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.4"
@@ -405,10 +439,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -426,10 +461,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -447,10 +483,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -468,10 +505,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -488,10 +526,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -509,10 +548,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -530,10 +570,11 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.2.3",
                          "high": "1.2.3"
@@ -570,32 +611,6 @@ TEST_CASE("Reject bad meta informations") {
     dds_leaf_catch_all {  //
         FAIL_CHECK("Unexpected error: " << diagnostic_info);
     };
-
-    dds_leaf_try {
-        dds::crs::package_info::from_json_str(R"({
-             "name": "foo",
-             "version": "1.2.3",
-             "pkg-version": 1,
-             "libraries": [{
-                 "name": "foo",
-                 "path": ".",
-                 "using": [],
-                 "dependencies": [{
-                     "name": "bar",
-                     "for": "meow"
-                 }]
-             }],
-             "schema-version": 1
-         })");
-        FAIL_CHECK("Expected an error, but non occurred");
-    }
-    dds_leaf_catch(dds::e_invalid_enum<dds::crs::usage_kind>,
-                   dds::e_invalid_enum_str bad_str,
-                   dds::e_enum_options     opts) {
-        CHECK(bad_str.value == "meow");
-        CHECK(opts.value == R"("lib", "test", "app")");
-    }
-    dds_leaf_catch_all { FAIL_CHECK("Unexpected error: " << diagnostic_info); };
 }
 
 TEST_CASE("Check some valid meta JSON") {
@@ -606,7 +621,9 @@ TEST_CASE("Check some valid meta JSON") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": []
              }],
              "schema-version": 1
@@ -629,16 +646,18 @@ TEST_CASE("Check parse results") {
              "libraries": [{
                  "name": "foo",
                  "path": ".",
+                 "test-using": [],
                  "using": [],
+                 "test-dependencies": [],
                  "dependencies": [{
                      "name": "bar",
-                     "for": "lib",
                      "versions": [{
                          "low": "1.0.0",
                          "high": "1.5.1"
                      }],
                      "using": ["bar"]
-                 }]
+                 }],
+                 "test-dependencies": []
              }],
              "schema-version": 1
          })",
@@ -652,14 +671,15 @@ TEST_CASE("Check parse results") {
                  .name         = mk_name("foo"),
                  .path         = ".",
                  .intra_uses   = {},
+                 .intra_test_uses = {},
                  .dependencies = {dependency{
                      .name = mk_name("bar"),
                      .acceptable_versions
                      = dds::crs::version_range_set{semver::version::parse("1.0.0"),
                                                    semver::version::parse("1.5.1")},
-                     .kind = dds::crs::usage_kind::lib,
                      .uses = dds::crs::explicit_uses_list{{dds::name{"baz"}}},
                  }},
+                 .test_dependencies ={},
              }},
              .extra        = {},
              .meta         = {},

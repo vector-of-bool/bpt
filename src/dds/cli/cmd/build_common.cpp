@@ -64,7 +64,13 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     builder builder;
     if (!opts.build.lm_index.has_value()) {
         auto crs_deps = proj_sd.pkg.libraries | std::views::transform(NEO_TL(_1.dependencies))
-            | std::views::join;
+            | std::views::join | neo::to_vector;
+
+        if (opts.build.want_tests) {
+            extend(crs_deps,
+                   proj_sd.pkg.libraries | std::views::transform(NEO_TL(_1.test_dependencies))
+                       | std::views::join);
+        }
 
         auto sln = dds::solve(meta_db, crs_deps);
         for (auto&& pkg : sln) {

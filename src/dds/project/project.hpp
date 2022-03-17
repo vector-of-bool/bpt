@@ -24,6 +24,7 @@ struct project_manifest {
 
     std::vector<project_library>    libraries;
     std::vector<project_dependency> root_dependencies;
+    std::vector<project_dependency> root_test_dependencies;
 
     std::optional<std::vector<std::string>>     authors;
     std::optional<std::string>                  description;

@@ -7,11 +7,12 @@
         {
             "path": ".",
             "name": "the-main-library",
+            "test-using": [],
             "using": [],
+            "test-dependencies": [],
             "dependencies": [
                 {
                     "name": "sqlite3",
-                    "for": "lib",
                     "versions": [
                         {
                             "low": "1.2.0",
@@ -27,7 +28,9 @@
         {
             "path": "subdir/",
             "name": "the-other-library",
+            "test-using": [],
             "using": [],
+            "test-dependencies": [],
             "dependencies": []
         }
     ],

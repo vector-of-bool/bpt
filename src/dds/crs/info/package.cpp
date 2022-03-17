@@ -13,6 +13,7 @@
 #include <magic_enum.hpp>
 #include <neo/assert.hpp>
 #include <neo/overload.hpp>
+#include <neo/ranges.hpp>
 #include <neo/tl.hpp>
 #include <neo/ufmt.hpp>
 #include <nlohmann/json.hpp>
@@ -63,18 +64,20 @@ package_info package_info::from_json_data(const json5::data& data) {
 }
 
 std::string package_info::to_json(int indent) const noexcept {
-    using json    = nlohmann::ordered_json;
-    json ret_libs = json::array();
-    for (auto&& lib : this->libraries) {
-        json lib_intra_uses = json::array();
-        for (auto&& use : lib.intra_uses) {
-            lib_intra_uses.push_back(json::object({
+    using json                   = nlohmann::ordered_json;
+    json ret_libs                = json::array();
+    auto using_seq_as_json_array = [](neo::ranges::range_of<crs::intra_usage> auto&& uses) {
+        json ret = json::array();
+        for (auto&& use : uses) {
+            ret.push_back(json::object({
                 {"lib", use.lib.str},
-                {"for", magic_enum::enum_name(use.kind)},
             }));
         }
-        json depends = json::array();
-        for (auto&& dep : lib.dependencies) {
+        return ret;
+    };
+    auto deps_as_json_array = [this](neo::ranges::range_of<crs::dependency> auto&& deps) {
+        json ret = json::array();
+        for (auto&& dep : deps) {
             json versions = json::array();
             for (auto&& ver : dep.acceptable_versions.iter_intervals()) {
                 versions.push_back(json::object({
@@ -88,26 +91,31 @@ std::string package_info::to_json(int indent) const noexcept {
                     extend(uses, l.uses | std::views::transform(&dds::name::str));
                 },
                 [&](implicit_uses_all) {
-                    neo_assert(
-                        invariant,
-                        false,
-                        "We attempted to serialize (to_json) a CRS metadata object that contains "
-                        "an implicit dependency library uses list. This should never occur.",
-                        *this);
+                    neo_assert(invariant,
+                               false,
+                               "We attempted to serialize (to_json) a CRS metadata object that "
+                               "contains an implicit dependency library uses list. This should "
+                               "never occur.",
+                               *this);
                 },
             });
-            depends.push_back(json::object({
+            ret.push_back(json::object({
                 {"name", dep.name.str},
-                {"for", magic_enum::enum_name(dep.kind)},
                 {"versions", versions},
                 {"using", std::move(uses)},
             }));
         }
+        return ret;
+    };
+
+    for (auto&& lib : this->libraries) {
         ret_libs.push_back(json::object({
             {"name", lib.name.str},
             {"path", lib.path.generic_string()},
-            {"using", std::move(lib_intra_uses)},
-            {"dependencies", std::move(depends)},
+            {"using", std::move(using_seq_as_json_array(lib.intra_uses))},
+            {"test-using", std::move(using_seq_as_json_array(lib.intra_test_uses))},
+            {"dependencies", deps_as_json_array(lib.dependencies)},
+            {"test-dependencies", deps_as_json_array(lib.test_dependencies)},
         }));
     }
     json data = json::object({
