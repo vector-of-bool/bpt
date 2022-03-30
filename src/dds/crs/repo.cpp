@@ -145,7 +145,7 @@ void repository::import_dir(path_ref dirpath) {
     fs::create_directories(prep_dir.path());
     dds::write_file(prep_dir.path() / "pkg.json", pkg.to_json(2));
 
-    auto tmp_tgz = pkg_dir() / "tmp.tgz";
+    auto tmp_tgz = pkg_dir() / (prep_dir.path().filename().string() + ".tgz");
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
 
     if (pkg.id.revision < 1) {
