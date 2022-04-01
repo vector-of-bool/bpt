@@ -24,10 +24,15 @@ yapf = "^0.32.0"
 pylint = "^2.12.2"
 Sphinx = "^4.4.0"
 pyright = "^1.1.227"
+sphinx-hoverxref = "^1.0.1"
+rstcheck = "^3.3.1"
+doc8 = "^0.10.1"
+toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 # Only needed for development
 rope = "^0.18.0"
+sphinx-autobuild = "^2021.3.14"
 
 [tool.poetry.scripts]
 gen-msvs-vsc-task = "dds_ci.msvs:generate_vsc_task"
@@ -43,3 +48,6 @@ typeCheckingMode = "strict"
 useLibraryCodeForTypes = true
 reportMissingTypeStubs = false
 reportMissingImports = true
+
+[tool.doc8]
+max_line_length = 81
