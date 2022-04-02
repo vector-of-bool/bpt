@@ -10,30 +10,9 @@ using namespace dds::walk_utils;
 project_library project_library::from_json_data(const json5::data& data) {
     project_library ret;
 
-    auto record_usings = [](auto& into) {
-        return walk_seq{
-            if_type<std::string>([&into](const std::string& s) {
-                into.push_back(crs::intra_usage{dds::name{s}});
-                return walk.accept;
-            }),
-            require_mapping{
-                "Each library's top-level 'using' item must be a string or a JSON object"},
-            [&](const json5::data& uses) {
-                crs::intra_usage r;
-                key_dym_tracker  dym2{{"lib"}};
-                walk(uses,
-                     mapping{
-                         dym2.tracker(),
-                         required_key{
-                             "lib",
-                             "A library top-level 'using' object requires a 'lib' property",
-                             require_str{"Library 'using' item 'lib' property must be a string"},
-                             put_into(r.lib, name_from_string{})},
-                         dym2.rejecter<e_bad_pkg_yaml_key>(),
-                     });
-                into.push_back(r);
-                return walk.accept;
-            }};
+    auto record_usings = [](auto key, auto& into) {
+        return walk_seq{require_str{neo::ufmt("Each '{}' must be a string", key)},
+                        put_into{std::back_inserter(into), name_from_string{}}};
     };
 
     key_dym_tracker dym{{"name", "path", "using", "test-using", "dependencies"}};
@@ -57,11 +36,11 @@ project_library project_library::from_json_data(const json5::data& data) {
              if_key{
                  "using",
                  require_array{"Library 'using' key must be an array of strings"},
-                 for_each{record_usings(ret.intra_uses)},
+                 for_each{record_usings("using", ret.intra_using)},
              },
              if_key{"test-using",
                     require_array{"Library 'test-using' key must be an array of strings"},
-                    for_each{record_usings(ret.intra_test_uses)}},
+                    for_each{record_usings("test-using", ret.intra_test_using)}},
              if_key{"dependencies",
                     require_array{"Library 'dependencies' must be an array of dependencies"},
                     for_each{put_into(std::back_inserter(ret.lib_dependencies),

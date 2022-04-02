@@ -17,6 +17,8 @@
 #include <neo/tl.hpp>
 #include <neo/ufmt.hpp>
 #include <nlohmann/json.hpp>
+#include <range/v3/algorithm/contains.hpp>
+#include <range/v3/view/concat.hpp>
 #include <semester/walk.hpp>
 
 using namespace dds;
@@ -64,16 +66,12 @@ package_info package_info::from_json_data(const json5::data& data) {
 }
 
 std::string package_info::to_json(int indent) const noexcept {
-    using json                   = nlohmann::ordered_json;
-    json ret_libs                = json::array();
-    auto using_seq_as_json_array = [](neo::ranges::range_of<crs::intra_usage> auto&& uses) {
-        json ret = json::array();
-        for (auto&& use : uses) {
-            ret.push_back(json::object({
-                {"lib", use.lib.str},
-            }));
-        }
-        return ret;
+    using json              = nlohmann::ordered_json;
+    json ret_libs           = json::array();
+    auto names_as_str_array = [](neo::ranges::range_of<dds::name> auto&& names) {
+        auto arr = json::array();
+        extend(arr, names | std::views::transform(&dds::name::str));
+        return arr;
     };
     auto deps_as_json_array = [this](neo::ranges::range_of<crs::dependency> auto&& deps) {
         json ret = json::array();
@@ -112,8 +110,8 @@ std::string package_info::to_json(int indent) const noexcept {
         ret_libs.push_back(json::object({
             {"name", lib.name.str},
             {"path", lib.path.generic_string()},
-            {"using", std::move(using_seq_as_json_array(lib.intra_uses))},
-            {"test-using", std::move(using_seq_as_json_array(lib.intra_test_uses))},
+            {"using", std::move(names_as_str_array(lib.intra_using))},
+            {"test-using", std::move(names_as_str_array(lib.intra_test_using))},
             {"dependencies", deps_as_json_array(lib.dependencies)},
             {"test-dependencies", deps_as_json_array(lib.test_dependencies)},
         }));
@@ -133,13 +131,14 @@ std::string package_info::to_json(int indent) const noexcept {
 
 void package_info::throw_if_invalid() const {
     for (auto& lib : libraries) {
-        for (auto&& uses : lib.intra_uses) {
-            if (std::ranges::find(libraries, uses.lib, &library_info::name) == libraries.end()) {
+        auto all_using = ranges::views::concat(lib.intra_using, lib.intra_test_using);
+        std::ranges::for_each(all_using, [&](auto name) {
+            if (!ranges::contains(libraries, name, &library_info::name)) {
                 BOOST_LEAF_THROW_EXCEPTION(e_invalid_meta_data{
                     neo::ufmt("Library '{}' uses non-existent sibling library '{}'",
                               lib.name.str,
-                              uses.lib.str)});
+                              name.str)});
             }
-        }
+        });
     }
 }

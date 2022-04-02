@@ -92,7 +92,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
         = [&](auto intra_ptr, auto deps_ptr) -> neo::ranges::range_of<lm::usage> auto {
         auto intra = std::invoke(intra_ptr, lib)  //
             | std::views::transform([&](auto& use) {
-                         return lm::usage{pkg.id.name.str, use.lib.str};
+                         return lm::usage{pkg.id.name.str, use.str};
                      });
         auto from_dep                                   //
             = std::invoke(deps_ptr, lib)                //
@@ -103,8 +103,8 @@ library_plan library_plan::create(path_ref                    pkg_base,
     };
 
     auto lib_uses
-        = usages_of_kind(&crs::library_info::intra_uses, &crs::library_info::dependencies);
-    auto test_uses = usages_of_kind(&crs::library_info::intra_test_uses,
+        = usages_of_kind(&crs::library_info::intra_using, &crs::library_info::dependencies);
+    auto test_uses = usages_of_kind(&crs::library_info::intra_test_using,
                                     &crs::library_info::test_dependencies);
 
     // Load up the compile rules

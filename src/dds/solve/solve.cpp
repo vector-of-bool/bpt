@@ -271,7 +271,7 @@ struct metadata_provider {
                            "Invalid 'using' on non-existent requirement library",
                            used,
                            pkg);
-                extend(more_uses, lib_it->intra_uses | stdv::transform(&intra_usage::lib));
+                extend(more_uses, lib_it->intra_using);
             }
             if (sr::includes(uses, more_uses)) {
                 break;

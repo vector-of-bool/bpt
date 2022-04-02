@@ -670,8 +670,8 @@ TEST_CASE("Check parse results") {
              .libraries    = {lib_meta{
                  .name         = mk_name("foo"),
                  .path         = ".",
-                 .intra_uses   = {},
-                 .intra_test_uses = {},
+                 .intra_using   = {},
+                 .intra_test_using = {},
                  .dependencies = {dependency{
                      .name = mk_name("bar"),
                      .acceptable_versions

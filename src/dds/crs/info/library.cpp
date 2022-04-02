@@ -6,26 +6,6 @@ using namespace dds;
 using namespace dds::crs;
 using namespace dds::walk_utils;
 
-namespace {
-
-crs::intra_usage intra_usage_from_data(const json5::data& data) {
-    intra_usage ret;
-    using namespace semester::walk_ops;
-
-    walk(data,
-         require_mapping{"'using' values must be JSON objects"},
-         mapping{
-             required_key{"lib",
-                          "A 'lib' string is required",
-                          require_str{"'lib' must be a value usage string"},
-                          put_into{ret.lib, name_from_string{}}},
-             if_key{"_comment", just_accept},
-         });
-    return ret;
-}
-
-}  // namespace
-
 library_info library_info::from_data(const json5::data& data) {
     library_info ret;
 
@@ -62,13 +42,13 @@ library_info library_info::from_data(const json5::data& data) {
                           "A 'using' array is required",
                           require_array{"A library's 'using' must be an array of usage objects"},
                           for_each{
-                              put_into{std::back_inserter(ret.intra_uses), intra_usage_from_data}}},
+                              put_into{std::back_inserter(ret.intra_using), name_from_string{}}}},
              required_key{"test-using",
                           "A 'test-using' array is required",
                           require_array{
                               "A library's 'test-using' must be an array of usage objects"},
-                          for_each{put_into{std::back_inserter(ret.intra_test_uses),
-                                            intra_usage_from_data}}},
+                          for_each{put_into{std::back_inserter(ret.intra_test_using),
+                                            name_from_string{}}}},
              required_key{"dependencies",
                           "A 'dependencies' array is required",
                           require_array{"'dependencies' must be an array of dependency objects"},

@@ -18,8 +18,8 @@ struct project_library {
     /// The relative path to the library root from the root of the project
     std::filesystem::path relpath;
     /// Libraries in the same project that are used by this library
-    std::vector<crs::intra_usage> intra_uses;
-    std::vector<crs::intra_usage> intra_test_uses;
+    std::vector<dds::name> intra_using;
+    std::vector<dds::name> intra_test_using;
     /// Dependencies for this specific library
     std::vector<project_dependency> lib_dependencies;
     std::vector<project_dependency> test_dependencies;

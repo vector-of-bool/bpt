@@ -57,8 +57,8 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
                     return crs::library_info{
                         .name              = lib.name,
                         .path              = lib.relpath,
-                        .intra_uses        = lib.intra_uses,
-                        .intra_test_uses   = lib.intra_test_uses,
+                        .intra_using       = lib.intra_using,
+                        .intra_test_using  = lib.intra_test_using,
                         .dependencies      = std::move(deps),
                         .test_dependencies = std::move(test_deps),
                     };
@@ -68,8 +68,8 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
         ret.libraries.push_back(crs::library_info{
             .name              = name,
             .path              = ".",
-            .intra_uses        = {},
-            .intra_test_uses   = {},
+            .intra_using       = {},
+            .intra_test_using  = {},
             .dependencies      = {},
             .test_dependencies = {},
         });

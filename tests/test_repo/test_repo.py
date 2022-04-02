@@ -246,7 +246,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
                 'path': '.',
                 'name': 'foo',
                 'test-using': [],
-                'using': [{'lib': 'bar'}],
+                'using': ['bar'],
                 'dependencies': [],
                 'test-dependencies': [],
             }, {
