@@ -16,6 +16,8 @@ from _pytest.config import Config as PyTestConfig
 from pytest import FixtureRequest, TempPathFactory
 from typing_extensions import Literal, TypedDict
 
+from dds_ci.testing.fs import DirRenderer, TreeData
+
 from .. import paths, toolchain
 from ..dds import DDSWrapper
 from ..proc import check_run
@@ -321,12 +323,13 @@ class ProjectOpener():
     A test fixture that opens project directories for testing
     """
 
-    def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str,
-                 tmp_path_factory: TempPathFactory) -> None:
+    def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str, tmp_path_factory: TempPathFactory,
+                 dir_renderer: DirRenderer) -> None:
         self.dds = dds
         self._request = request
         self._worker_id = worker
         self._tmppath_fac = tmp_path_factory
+        self._dir_render = dir_renderer
 
     @property
     def test_name(self) -> str:
@@ -372,16 +375,20 @@ class ProjectOpener():
 
         return Project(proj_copy, new_dds)
 
+    def render(self, name: str, tree: TreeData) -> Project:
+        dirpath = self._dir_render.get_or_render(name, tree)
+        return self.open(dirpath)
+
 
 @pytest.fixture()
-def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper,
-                   tmp_path_factory: TempPathFactory) -> ProjectOpener:
+def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper, tmp_path_factory: TempPathFactory,
+                   dir_renderer: DirRenderer) -> ProjectOpener:
     """
     A fixture factory that can open directories as Project objects for building
     and testing. Duplicates the project directory into a temporary location so
     that the original test directory remains unchanged.
     """
-    opener = ProjectOpener(dds, request, worker_id, tmp_path_factory)
+    opener = ProjectOpener(dds, request, worker_id, tmp_path_factory, dir_renderer)
     return opener
 
 
