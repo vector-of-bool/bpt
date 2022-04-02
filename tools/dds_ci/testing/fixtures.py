@@ -209,7 +209,10 @@ class _WritebackData:
         self._writeback()
 
     def _writeback(self) -> None:
-        self._fpath.write_text(json.dumps(self._data, indent=2))
+        self._fpath.write_text(json.dumps(self._root, indent=2))
+
+    def __repr__(self) -> str:
+        return f'<WriteBackData file=[{self._fpath}] data={self._data!r}>'
 
 
 _WritebackData(Path(''), {}, {})

@@ -22,7 +22,8 @@ dependencies:
   - boost.leaf^1.78.0
   - magic_enum+0.7.3
   - sqlite3^3.35.2
-  - catch2@2.13.5 using main for test
   - yaml-cpp@0.7.0
+test-dependencies:
+  - catch2@2.13.5 using main
 lib:
   name: dds
