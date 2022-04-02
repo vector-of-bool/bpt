@@ -121,6 +121,10 @@ int dds::cli::handle_build_error(std::function<int()> fn) {
         write_error_marker("compile-failed");
         throw;
     }
+    dds_leaf_catch(user_error<errc::link_failure>)->int {
+        write_error_marker("link-failed");
+        throw;
+    }
     dds_leaf_catch(user_error<errc::test_failure> exc) {
         write_error_marker("build-failed-test-failed");
         dds_log(error, "{}", exc.what());
