@@ -163,8 +163,10 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
                     'pkg-version': 1,
                     'libraries': [{
                         'name': 'foo',
-                        'using': [],
                         'path': '.',
+                        'test-using': [],
+                        'using': [],
+                        'test-dependencies': [],
                         'dependencies': [],
                     }]
                 }),
@@ -187,14 +189,15 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
                     'pkg-version': 1,
                     'libraries': [{
                         'name': 'bar',
-                        'using': [],
                         'path': '.',
+                        'using': [],
+                        'test-using': [],
                         'dependencies': [{
                             'name': 'foo',
                             'versions': [{'low': '1.2.3', 'high': '1.2.4'}],
                             'using': ['foo'],
-                            'for': 'lib',
                         }],
+                        'test-dependencies': [],
                     }]
                 }),
                 'src': {

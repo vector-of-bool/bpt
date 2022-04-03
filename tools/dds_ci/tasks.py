@@ -149,6 +149,25 @@ async def build__test() -> DDSWrapper:
     return await _build_with_tc(dds, test_build_dir.get(), test_tc.get(), args=PRIOR_CACHE_ARGS)
 
 
+which_file = option.add('compile-file', Path, doc='Which file will be compiled by the "compile-file" task')
+
+
+@task.define(depends=[bootstrap, build__init_ci_repo])
+async def compile_file() -> None:
+    dds = await task.result_of(bootstrap)
+    with fixup_toolchain(test_tc.get()) as tc:
+        await proc.run([
+            dds.path,
+            'compile-file',
+            which_file.get(),
+            f'--toolchain={tc}',
+            f'--tweaks-dir={paths.TWEAKS_DIR}',
+            f'--out={test_build_dir.get()}',
+            f'--project={paths.PROJECT_ROOT}',
+            PRIOR_CACHE_ARGS,
+        ])
+
+
 @task.define(depends=[build__test])
 async def test() -> None:
     basetemp = Path('/tmp/dds-ci')

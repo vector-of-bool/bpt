@@ -76,9 +76,6 @@ library_plan library_plan::create(path_ref                    pkg_base,
         header_sources.clear();
     }
 
-    ///  Predicate for if a '.kind' member is equal to the given kidn
-    auto kind_is_for = [](crs::usage_kind k) { return [k](auto& l) { return l.kind == k; }; };
-
     auto pkg_dep_to_usages = [&](crs::dependency const& dep) {
         neo_assert(invariant,
                    dep.uses.is<crs::explicit_uses_list>(),
@@ -91,24 +88,24 @@ library_plan library_plan::create(path_ref                    pkg_base,
                });
     };
 
-    auto usages_of_kind = [&](crs::usage_kind k) -> neo::ranges::range_of<lm::usage> auto {
-        auto intra = lib.intra_uses               //
-            | std::views::filter(kind_is_for(k))  //
+    auto usages_of_kind
+        = [&](auto intra_ptr, auto deps_ptr) -> neo::ranges::range_of<lm::usage> auto {
+        auto intra = std::invoke(intra_ptr, lib)  //
             | std::views::transform([&](auto& use) {
-                         return lm::usage{pkg.id.name.str, use.lib.str};
+                         return lm::usage{pkg.id.name.str, use.str};
                      });
         auto from_dep                                   //
-            = lib.dependencies                          //
-            | std::views::filter(kind_is_for(k))        //
+            = std::invoke(deps_ptr, lib)                //
             | std::views::transform(pkg_dep_to_usages)  //
             | std::views::join;
         neo::ranges::range_of<lm::usage> auto ret_uses = ranges::views::concat(intra, from_dep);
         return ret_uses | neo::to_vector;
     };
 
-    auto lib_uses  = usages_of_kind(crs::usage_kind::lib);
-    auto test_uses = usages_of_kind(crs::usage_kind::test);
-    //! auto app_uses  = usages_of_kind(crs::usage_kind::app);
+    auto lib_uses
+        = usages_of_kind(&crs::library_info::intra_using, &crs::library_info::dependencies);
+    auto test_uses = usages_of_kind(&crs::library_info::intra_test_using,
+                                    &crs::library_info::test_dependencies);
 
     // Load up the compile rules
     shared_compile_file_rules compile_rules;

@@ -15,12 +15,6 @@ namespace dds::crs {
 
 using version_range_set = pubgrub::interval_set<semver::version>;
 
-enum class usage_kind {
-    lib,
-    test,
-    app,
-};
-
 struct explicit_uses_list {
     std::vector<dds::name> uses;
 
@@ -43,7 +37,6 @@ struct dependency_uses : sbs::variant_wrapper<implicit_uses_all, explicit_uses_l
 struct dependency {
     dds::name         name;
     version_range_set acceptable_versions;
-    usage_kind        kind;
     dependency_uses   uses;
 
     static dependency from_data(const json5::data&);

@@ -5,6 +5,7 @@ import pytest
 from dds_ci import paths
 from dds_ci.testing import Project, PkgYAML
 from dds_ci.testing.error import expect_error_marker
+from dds_ci.testing.fixtures import ProjectOpener
 
 
 def test_build_empty(tmp_project: Project) -> None:
@@ -121,3 +122,54 @@ def test_project_with_meta(tmp_project: Project) -> None:
         'license': 'MIT',  # A valid license string
     }
     tmp_project.build()
+
+
+def test_link_interdep(project_opener: ProjectOpener) -> None:
+    proj = project_opener.render(
+        'test-interdep', {
+            'foo': {
+                'src': {
+                    'foo.test.cpp':
+                    r'''
+                    #include <stdexcept>
+
+                    extern int bar_func();
+
+                    int main() {
+                        if (bar_func() != 1729) {
+                            std::terminate();
+                        }
+                    }
+                    '''
+                },
+            },
+            'bar': {
+                'src': {
+                    'bar.cpp':
+                    r'''
+                    int bar_func() {
+                        return 1729;
+                    }
+                    ''',
+                },
+            },
+        })
+    proj.pkg_yaml = {
+        'name': 'test',
+        'version': '1.2.3',
+        'libs': [{
+            'path': 'foo',
+            'name': 'foo',
+        }, {
+            'path': 'bar',
+            'name': 'bar',
+        }]
+    }
+    with expect_error_marker('link-failed'):
+        proj.build()
+
+    # Update with a 'using' of the library that was required:
+    proj.pkg_yaml['libs'][0]['using'] = ['bar']
+    print(proj.pkg_yaml)
+    # Build is okay now
+    proj.build()

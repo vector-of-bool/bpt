@@ -26,8 +26,6 @@ struct project_dependency {
     dds::name dep_name;
     /// A set of version ranges that are acceptable
     crs::version_range_set acceptable_versions;
-    /// The kind of the dependency (lib, test, or app)
-    crs::usage_kind kind = crs::usage_kind::lib;
     /// Libraries from the dependency that will be explicitly used
     std::optional<std::vector<dds::name>> explicit_uses = std::nullopt;
 

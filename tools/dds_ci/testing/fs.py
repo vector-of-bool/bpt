@@ -8,7 +8,7 @@ import base64
 import json
 import shutil
 
-from dds_ci.testing.fixtures import TempPathFactory
+from pytest import TempPathFactory
 
 from ..util import Pathish
 from ..paths import PROJECT_ROOT

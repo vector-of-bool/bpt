@@ -158,7 +158,7 @@ struct requirement {
     }
 
     std::string decl_to_string() const noexcept {
-        return crs::dependency{name, versions, crs::usage_kind::lib, uses}.decl_to_string();
+        return crs::dependency{name, versions, uses}.decl_to_string();
     }
 
     friend std::ostream& operator<<(std::ostream& out, const requirement& self) noexcept {
@@ -271,10 +271,7 @@ struct metadata_provider {
                            "Invalid 'using' on non-existent requirement library",
                            used,
                            pkg);
-                extend(more_uses,
-                       lib_it->intra_uses
-                           | stdv::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-                           | stdv::transform(&crs::intra_usage::lib));
+                extend(more_uses, lib_it->intra_using);
             }
             if (sr::includes(uses, more_uses)) {
                 break;
@@ -286,8 +283,7 @@ struct metadata_provider {
             | stdv::filter([&](auto&& lib) { return uses.contains(lib.name); })  //
             | stdv::transform(NEO_TL(_1.dependencies))                           //
             | stdv::join                                                         //
-            | stdv::filter(NEO_TL(_1.kind == dds::crs::usage_kind::lib))
-            | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))  //
+            | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))             //
             | neo::to_vector;
         for (auto&& r : reqs) {
             dds_log(trace, "  Requires: {}", r.decl_to_string());

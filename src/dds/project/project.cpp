@@ -48,29 +48,35 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
 
     auto libs = libraries  //
         | std::views::transform([&](project_library lib) {
-                    auto deps = lib.lib_dependencies
-                        | std::views::transform(&project_dependency::as_crs_dependency)
-                        | neo::to_vector;
-                    extend(deps,
-                           root_dependencies
-                               | std::views::transform(&project_dependency::as_crs_dependency));
+                    auto deps_as_crs
+                        = std::views::transform(&project_dependency::as_crs_dependency);
+                    auto deps = lib.lib_dependencies | deps_as_crs | neo::to_vector;
+                    extend(deps, root_dependencies | deps_as_crs);
+                    auto test_deps = lib.test_dependencies | deps_as_crs | neo::to_vector;
+                    extend(test_deps, root_test_dependencies | deps_as_crs);
                     return crs::library_info{
-                        .name         = lib.name,
-                        .path         = lib.relpath,
-                        .intra_uses   = lib.intra_uses.value_or(std::vector<crs::intra_usage>{}),
-                        .dependencies = std::move(deps),
+                        .name              = lib.name,
+                        .path              = lib.relpath,
+                        .intra_using       = lib.intra_using,
+                        .intra_test_using  = lib.intra_test_using,
+                        .dependencies      = std::move(deps),
+                        .test_dependencies = std::move(test_deps),
                     };
                 });
     ret.libraries = neo::to_vector(libs);
     if (ret.libraries.empty()) {
         ret.libraries.push_back(crs::library_info{
-            .name         = name,
-            .path         = ".",
-            .intra_uses   = {},
-            .dependencies = {},
+            .name              = name,
+            .path              = ".",
+            .intra_using       = {},
+            .intra_test_using  = {},
+            .dependencies      = {},
+            .test_dependencies = {},
         });
         extend(ret.libraries.back().dependencies,
                root_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
+        extend(ret.libraries.back().test_dependencies,
+               root_test_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
     }
 
     auto meta_obj = json5::data::object_type();

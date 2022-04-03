@@ -41,15 +41,21 @@ def test_repo_import(dds: DDSWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
     tmp_project.write(
         'pkg.json',
         json.dumps({
-            'schema-version': 1,
-            'name': 'meow',
-            'version': '1.2.3',
-            'pkg-version': 1,
+            'schema-version':
+            1,
+            'name':
+            'meow',
+            'version':
+            '1.2.3',
+            'pkg-version':
+            1,
             'libraries': [{
                 'name': 'test',
                 'path': '.',
                 'using': [],
+                'test-using': [],
                 'dependencies': [],
+                'test-dependencies': [],
             }],
         }))
     tmp_crs_repo.import_(tmp_project.root)
@@ -207,15 +213,21 @@ def test_repo_validate_empty(tmp_crs_repo: CRSRepo) -> None:
 def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
     tmp_path.joinpath('pkg.json').write_text(
         json.dumps({
-            'name': 'foo',
-            'version': '1.2.3',
-            'pkg-version': 1,
-            'schema-version': 1,
+            'name':
+            'foo',
+            'version':
+            '1.2.3',
+            'pkg-version':
+            1,
+            'schema-version':
+            1,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
                 'using': [],
+                'test-using': [],
                 'dependencies': [],
+                'test-dependencies': [],
             }],
         }))
     tmp_crs_repo.import_(tmp_path)
@@ -233,13 +245,17 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
-                'using': [{'lib': 'bar', 'for': 'lib'}],
+                'test-using': [],
+                'using': ['bar'],
                 'dependencies': [],
+                'test-dependencies': [],
             }, {
                 'path': 'bar',
                 'name': 'bar',
                 'using': [],
+                'test-using': [],
                 'dependencies': [],
+                'test-dependencies': [],
             }],
         }))
     # yapf: enable

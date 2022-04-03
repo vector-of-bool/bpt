@@ -16,6 +16,8 @@ from _pytest.config import Config as PyTestConfig
 from pytest import FixtureRequest, TempPathFactory
 from typing_extensions import Literal, TypedDict
 
+from dds_ci.testing.fs import DirRenderer, TreeData
+
 from .. import paths, toolchain
 from ..dds import DDSWrapper
 from ..proc import check_run
@@ -106,7 +108,7 @@ class Library:
 
     def write(self, path: Pathish, content: str) -> Path:
         """
-        Write the given `content` to `path`. If `path` is relative, it will
+        Write the given ``content`` to ``path``. If ``path`` is relative, it will
         be resolved relative to the root directory of this library.
         """
         path = Path(path)
@@ -209,7 +211,10 @@ class _WritebackData:
         self._writeback()
 
     def _writeback(self) -> None:
-        self._fpath.write_text(json.dumps(self._data, indent=2))
+        self._fpath.write_text(json.dumps(self._root, indent=2))
+
+    def __repr__(self) -> str:
+        return f'<WriteBackData file=[{self._fpath}] data={self._data!r}>'
 
 
 _WritebackData(Path(''), {}, {})
@@ -228,7 +233,7 @@ class Project:
     @property
     def pkg_yaml(self) -> PkgYAML:
         """
-        Get/set the content of the `pkg.yaml` file for the project.
+        Get/set the content of the ``pkg.yaml`` file for the project.
         """
         dat = json.loads(self.root.joinpath('pkg.yaml').read_text())
         return cast(PkgYAML, _WritebackData(self.root.joinpath('pkg.yaml'), dat, dat))
@@ -298,7 +303,7 @@ class Project:
 
     def write(self, path: Pathish, content: str) -> Path:
         """
-        Write the given `content` to `path`. If `path` is relative, it will
+        Write the given ``content`` to ``path``. If ``path`` is relative, it will
         be resolved relative to the root directory of this project.
         """
         return self.__root_library.write(path, content)
@@ -310,7 +315,16 @@ def test_parent_dir(request: FixtureRequest) -> Path:
     :class:`pathlib.Path` fixture pointing to the parent directory of the file
     containing the test that is requesting the current fixture
     """
-    return Path(request.fspath).parent
+    return fixture_fspath(request).parent
+
+
+def fixture_fspath(req: FixtureRequest) -> Path:
+    """
+    Return the ``fspath`` associated with the given test fixture request.
+
+    .. note:: This function is only a workaround for a missing type annotation on ``FixtureRequest``
+    """
+    return Path(getattr(req, 'fspath'))
 
 
 class ProjectOpener():
@@ -318,12 +332,14 @@ class ProjectOpener():
     A test fixture that opens project directories for testing
     """
 
-    def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str,
-                 tmp_path_factory: TempPathFactory) -> None:
+    # pylint: disable=too-many-arguments
+    def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str, tmp_path_factory: TempPathFactory,
+                 dir_renderer: DirRenderer) -> None:
         self.dds = dds
         self._request = request
         self._worker_id = worker
         self._tmppath_fac = tmp_path_factory
+        self._dir_render = dir_renderer
 
     @property
     def test_name(self) -> str:
@@ -334,7 +350,7 @@ class ProjectOpener():
     @property
     def test_dir(self) -> Path:
         """The directory that contains the test that requested this opener"""
-        return Path(self._request.fspath).parent
+        return fixture_fspath(self._request).parent
 
     def open(self, dirpath: Pathish) -> Project:
         """
@@ -369,16 +385,20 @@ class ProjectOpener():
 
         return Project(proj_copy, new_dds)
 
+    def render(self, name: str, tree: TreeData) -> Project:
+        dirpath = self._dir_render.get_or_render(name, tree)
+        return self.open(dirpath)
+
 
 @pytest.fixture()
-def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper,
-                   tmp_path_factory: TempPathFactory) -> ProjectOpener:
+def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper, tmp_path_factory: TempPathFactory,
+                   dir_renderer: DirRenderer) -> ProjectOpener:
     """
     A fixture factory that can open directories as Project objects for building
     and testing. Duplicates the project directory into a temporary location so
     that the original test directory remains unchanged.
     """
-    opener = ProjectOpener(dds, request, worker_id, tmp_path_factory)
+    opener = ProjectOpener(dds, request, worker_id, tmp_path_factory, dir_renderer)
     return opener
 
 
