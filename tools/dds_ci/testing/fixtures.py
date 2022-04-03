@@ -108,7 +108,7 @@ class Library:
 
     def write(self, path: Pathish, content: str) -> Path:
         """
-        Write the given `content` to `path`. If `path` is relative, it will
+        Write the given ``content`` to ``path``. If ``path`` is relative, it will
         be resolved relative to the root directory of this library.
         """
         path = Path(path)
@@ -233,7 +233,7 @@ class Project:
     @property
     def pkg_yaml(self) -> PkgYAML:
         """
-        Get/set the content of the `pkg.yaml` file for the project.
+        Get/set the content of the ``pkg.yaml`` file for the project.
         """
         dat = json.loads(self.root.joinpath('pkg.yaml').read_text())
         return cast(PkgYAML, _WritebackData(self.root.joinpath('pkg.yaml'), dat, dat))
@@ -303,7 +303,7 @@ class Project:
 
     def write(self, path: Pathish, content: str) -> Path:
         """
-        Write the given `content` to `path`. If `path` is relative, it will
+        Write the given ``content`` to ``path``. If ``path`` is relative, it will
         be resolved relative to the root directory of this project.
         """
         return self.__root_library.write(path, content)
@@ -315,7 +315,16 @@ def test_parent_dir(request: FixtureRequest) -> Path:
     :class:`pathlib.Path` fixture pointing to the parent directory of the file
     containing the test that is requesting the current fixture
     """
-    return Path(request.fspath).parent
+    return fixture_fspath(request).parent
+
+
+def fixture_fspath(req: FixtureRequest) -> Path:
+    """
+    Return the ``fspath`` associated with the given test fixture request.
+
+    .. note:: This function is only a workaround for a missing type annotation on ``FixtureRequest``
+    """
+    return Path(getattr(req, 'fspath'))
 
 
 class ProjectOpener():
@@ -323,6 +332,7 @@ class ProjectOpener():
     A test fixture that opens project directories for testing
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str, tmp_path_factory: TempPathFactory,
                  dir_renderer: DirRenderer) -> None:
         self.dds = dds
@@ -340,7 +350,7 @@ class ProjectOpener():
     @property
     def test_dir(self) -> Path:
         """The directory that contains the test that requested this opener"""
-        return Path(self._request.fspath).parent
+        return fixture_fspath(self._request).parent
 
     def open(self, dirpath: Pathish) -> Project:
         """

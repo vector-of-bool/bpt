@@ -1,5 +1,4 @@
 from pathlib import PurePath
-from os import PathLike
 from typing import Union, MutableSequence, MutableMapping
 
 #: A path, string, or convertible-to-Path object
