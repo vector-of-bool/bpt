@@ -1,7 +1,7 @@
 #include "./repo.hpp"
 
-#include <bpt/crs/error.hpp>
 #include <bpt/bpt.test.hpp>
+#include <bpt/crs/error.hpp>
 #include <bpt/error/try_catch.hpp>
 #include <bpt/temp.hpp>
 
