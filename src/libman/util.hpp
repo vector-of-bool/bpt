@@ -1,7 +1,7 @@
 #pragma once
 
-#include <dds/util/fs/path.hpp>
-#include <dds/util/string.hpp>
+#include <bpt/util/fs/path.hpp>
+#include <bpt/util/string.hpp>
 
 namespace lm {
 

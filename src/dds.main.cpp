@@ -1,9 +1,9 @@
-#include <dds/cli/dispatch_main.hpp>
-#include <dds/cli/options.hpp>
-#include <dds/util/env.hpp>
-#include <dds/util/log.hpp>
-#include <dds/util/output.hpp>
-#include <dds/util/signal.hpp>
+#include <bpt/cli/dispatch_main.hpp>
+#include <bpt/cli/options.hpp>
+#include <bpt/util/env.hpp>
+#include <bpt/util/log.hpp>
+#include <bpt/util/output.hpp>
+#include <bpt/util/signal.hpp>
 
 #include <debate/debate.hpp>
 #include <debate/enum.hpp>

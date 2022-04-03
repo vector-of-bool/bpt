@@ -1,7 +1,7 @@
 #include "./argument_parser.hpp"
 
 /// XXX: Refactor this after pulling debate:: out of dds
-#include <dds/dym.hpp>
+#include <bpt/dym.hpp>
 
 #include <boost/leaf/error.hpp>
 #include <boost/leaf/exception.hpp>

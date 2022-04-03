@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dds/error/result_fwd.hpp>
+#include <bpt/error/result_fwd.hpp>
 
 #include <iosfwd>
 #include <string>
