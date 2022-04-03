@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Tuple
 import platform
 
-from dds_ci.bpt import BPTWrapper
-from dds_ci.testing import ProjectOpener, Project, error, CRSRepo
+from bpt_ci.bpt import BPTWrapper
+from bpt_ci.testing import ProjectOpener, Project, error, CRSRepo
 
 
 @pytest.fixture()

@@ -2,10 +2,10 @@ import json
 import pytest
 from pathlib import Path
 
-from dds_ci.testing import ProjectOpener, error, CRSRepo, CRSRepoFactory
-from dds_ci import proc, paths, toolchain
-from dds_ci.testing.fs import DirRenderer, render_into
-from dds_ci.testing.repo import make_simple_crs
+from bpt_ci.testing import ProjectOpener, error, CRSRepo, CRSRepoFactory
+from bpt_ci import proc, paths, toolchain
+from bpt_ci.testing.fs import DirRenderer, render_into
+from bpt_ci.testing.repo import make_simple_crs
 
 
 @pytest.fixture(scope='session')

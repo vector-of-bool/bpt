@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Iterable, TypeVar
 
-from dds_ci.util import Pathish
+from bpt_ci.util import Pathish
 
 from . import proc
 from . import toolchain as tc_mod

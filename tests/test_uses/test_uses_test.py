@@ -2,8 +2,8 @@ import pytest
 import shutil
 from pathlib import Path
 
-from dds_ci.testing import ProjectOpener, CRSRepo, CRSRepoFactory, error, fs
-from dds_ci.testing.fixtures import Project
+from bpt_ci.testing import ProjectOpener, CRSRepo, CRSRepoFactory, error, fs
+from bpt_ci.testing.fixtures import Project
 
 
 @pytest.fixture(scope='module')

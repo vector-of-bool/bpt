@@ -1,4 +1,4 @@
-from dds_ci.testing import Project, error
+from bpt_ci.testing import Project, error
 
 
 def test_self_referential_uses_fails(tmp_project: Project) -> None:

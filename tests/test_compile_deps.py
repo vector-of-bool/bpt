@@ -2,8 +2,8 @@ import subprocess
 
 import pytest
 
-from dds_ci.testing import ProjectOpener, Project
-from dds_ci import proc, paths
+from bpt_ci.testing import ProjectOpener, Project
+from bpt_ci import proc, paths
 
 ## #############################################################################
 ## #############################################################################

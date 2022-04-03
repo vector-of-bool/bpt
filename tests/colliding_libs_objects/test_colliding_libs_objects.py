@@ -1,5 +1,5 @@
-from dds_ci.testing import ProjectOpener
-from dds_ci.testing.error import expect_error_marker
+from bpt_ci.testing import ProjectOpener
+from bpt_ci.testing.error import expect_error_marker
 
 
 def test_compile_libs_with_colliding_object_files(project_opener: ProjectOpener) -> None:

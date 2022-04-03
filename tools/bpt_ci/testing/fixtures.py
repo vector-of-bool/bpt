@@ -16,7 +16,7 @@ from _pytest.config import Config as PyTestConfig
 from pytest import FixtureRequest, TempPathFactory
 from typing_extensions import Literal, TypedDict
 
-from dds_ci.testing.fs import DirRenderer, TreeData
+from bpt_ci.testing.fs import DirRenderer, TreeData
 
 from .. import paths, toolchain
 from ..bpt import BPTWrapper
@@ -424,7 +424,7 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
 @pytest.fixture(scope='session')
 def bpt(bpt_exe: Path) -> BPTWrapper:
     """
-    A :class:`~dds_ci.bpt.BPTWrapper` around the bpt executable under test
+    A :class:`~bpt_ci.bpt.BPTWrapper` around the bpt executable under test
     """
     wr = BPTWrapper(bpt_exe)
     return wr

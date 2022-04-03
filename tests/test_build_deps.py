@@ -2,11 +2,11 @@ import json
 
 import pytest
 
-from dds_ci.testing import Project, ProjectOpener
-from dds_ci.testing.error import expect_error_marker
-from dds_ci.testing.fs import DirRenderer
-from dds_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
-from dds_ci import proc
+from bpt_ci.testing import Project, ProjectOpener
+from bpt_ci.testing.error import expect_error_marker
+from bpt_ci.testing.fs import DirRenderer
+from bpt_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
+from bpt_ci import proc
 
 
 @pytest.fixture(scope='session')

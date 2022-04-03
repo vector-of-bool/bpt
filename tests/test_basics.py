@@ -2,10 +2,10 @@ import time
 from subprocess import CalledProcessError
 
 import pytest
-from dds_ci import paths
-from dds_ci.testing import Project, PkgYAML
-from dds_ci.testing.error import expect_error_marker
-from dds_ci.testing.fixtures import ProjectOpener
+from bpt_ci import paths
+from bpt_ci.testing import Project, PkgYAML
+from bpt_ci.testing.error import expect_error_marker
+from bpt_ci.testing.fixtures import ProjectOpener
 
 
 def test_build_empty(tmp_project: Project) -> None:

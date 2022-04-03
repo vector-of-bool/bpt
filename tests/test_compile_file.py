@@ -1,6 +1,6 @@
 import time
 
-from dds_ci.testing import Project, error
+from bpt_ci.testing import Project, error
 
 
 def test_compile_file_missing(tmp_project: Project) -> None:

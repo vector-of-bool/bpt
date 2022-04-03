@@ -6,9 +6,9 @@ import json
 
 from typing_extensions import TypedDict, Protocol
 
-from dds_ci.testing import CRSRepo, Project, error
-from dds_ci.testing.fs import DirRenderer, TreeData
-from dds_ci.testing.repo import RepoCloner, make_simple_crs
+from bpt_ci.testing import CRSRepo, Project, error
+from bpt_ci.testing.fs import DirRenderer, TreeData
+from bpt_ci.testing.repo import RepoCloner, make_simple_crs
 
 _RepoPackageLibraryItem_Opt = TypedDict(
     '_RepoPackageLibraryItem_Opt',

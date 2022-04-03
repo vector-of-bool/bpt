@@ -44,7 +44,7 @@ Here is a simple test that simple executes ``bpt`` with ``--help``::
       bpt.run(['--help'])
 
 In this test function, :func:`the bpt object is a test fixture
-<dds_ci.testing.fixtures.bpt>` that wraps the ``bpt`` executable under test.
+<bpt_ci.testing.fixtures.bpt>` that wraps the ``bpt`` executable under test.
 
 
 Testing Error Handling
@@ -63,7 +63,7 @@ contexts, should appear near the log messages that issue diagnostics, and should
 be specific to the error at hand.
 
 To write a test that checks for a given error-handling path, use the
-:func:`~dds_ci.testing.error.expect_error_marker` context manager function::
+:func:`~bpt_ci.testing.error.expect_error_marker` context manager function::
 
   def test_sdist_invalid_project(tmp_project: Project) -> None:
     # Trying to create a package archive from a project without a

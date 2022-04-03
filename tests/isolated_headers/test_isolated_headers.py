@@ -1,7 +1,7 @@
 import pytest
 import subprocess
 
-from dds_ci.testing import ProjectOpener, error
+from bpt_ci.testing import ProjectOpener, error
 
 
 def test_dependent_src_header_fails(project_opener: ProjectOpener) -> None:

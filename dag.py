@@ -1,1 +1,1 @@
-import dds_ci.tasks
+import bpt_ci.tasks

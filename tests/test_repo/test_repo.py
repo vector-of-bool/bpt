@@ -5,12 +5,12 @@ import pytest
 import json
 import sqlite3
 
-from dds_ci.bpt import BPTWrapper
-from dds_ci.paths import PROJECT_ROOT
-from dds_ci.testing.http import HTTPServerFactory
-from dds_ci.testing import Project
-from dds_ci.testing.error import expect_error_marker
-from dds_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
+from bpt_ci.bpt import BPTWrapper
+from bpt_ci.paths import PROJECT_ROOT
+from bpt_ci.testing.http import HTTPServerFactory
+from bpt_ci.testing import Project
+from bpt_ci.testing.error import expect_error_marker
+from bpt_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
 
 
 def test_repo_init(tmp_crs_repo: CRSRepo) -> None:

@@ -6,126 +6,126 @@ Test Fixtures
 
 The following test fixtures are defined:
 
-- :func:`~dds_ci.testing.fixtures.bpt` - :class:`dds_ci.bpt.BPTWrapper` - A
+- :func:`~bpt_ci.testing.fixtures.bpt` - :class:`bpt_ci.bpt.BPTWrapper` - A
   wrapper around the ``bpt`` executable under test.
-- :func:`~dds_ci.testing.fixtures.tmp_project` -
-  :class:`dds_ci.testing.fixtures.Project` - Create a new empty directory to be
+- :func:`~bpt_ci.testing.fixtures.tmp_project` -
+  :class:`bpt_ci.testing.fixtures.Project` - Create a new empty directory to be
   used as a test project for ``bpt`` to execute.
-- :func:`~dds_ci.testing.repo.http_crs_repo` -
-  :class:`dds_ci.testing.repo.CRSRepoServer` - Create a new bpt repository and
+- :func:`~bpt_ci.testing.repo.http_crs_repo` -
+  :class:`bpt_ci.testing.repo.CRSRepoServer` - Create a new bpt repository and
   spawn an HTTP server to serve it.
 
 
-Module: ``dds_ci``
+Module: ``bpt_ci``
 ******************
 
-.. automodule:: dds_ci
+.. automodule:: bpt_ci
   :members:
 
 
 
-Module: ``dds_ci.bootstrap``
+Module: ``bpt_ci.bootstrap``
 ****************************
 
-.. automodule:: dds_ci.bootstrap
+.. automodule:: bpt_ci.bootstrap
   :members:
 
 
-Module: ``dds_ci.bpt``
+Module: ``bpt_ci.bpt``
 **********************
 
-.. automodule:: dds_ci.bpt
+.. automodule:: bpt_ci.bpt
   :members:
 
 
-Module: ``dds_ci.docs``
+Module: ``bpt_ci.docs``
 ***********************
 
-.. automodule:: dds_ci.docs
+.. automodule:: bpt_ci.docs
   :members:
 
 
-Module: ``dds_ci.msvs``
+Module: ``bpt_ci.msvs``
 ***********************
 
-.. automodule:: dds_ci.msvs
+.. automodule:: bpt_ci.msvs
   :members:
 
 
-Module: ``dds_ci.paths``
+Module: ``bpt_ci.paths``
 ************************
 
-.. automodule:: dds_ci.paths
+.. automodule:: bpt_ci.paths
   :members:
 
 
-Module: ``dds_ci.proc``
+Module: ``bpt_ci.proc``
 ***********************
 
-.. automodule:: dds_ci.proc
+.. automodule:: bpt_ci.proc
   :members:
 
 
-Module: ``dds_ci.tasks``
+Module: ``bpt_ci.tasks``
 ************************
 
-.. automodule:: dds_ci.tasks
+.. automodule:: bpt_ci.tasks
   :members:
 
 
-Module: ``dds_ci.util``
+Module: ``bpt_ci.util``
 ***********************
 
-.. automodule:: dds_ci.util
+.. automodule:: bpt_ci.util
   :members:
 
 
-Module: ``dds_ci.toolchain``
+Module: ``bpt_ci.toolchain``
 ****************************
 
-.. automodule:: dds_ci.toolchain
+.. automodule:: bpt_ci.toolchain
   :members:
 
 
-Module: ``dds_ci.testing``
+Module: ``bpt_ci.testing``
 **************************
 
-.. automodule:: dds_ci.testing
+.. automodule:: bpt_ci.testing
   :members:
 
 
-Module: ``dds_ci.testing.error``
+Module: ``bpt_ci.testing.error``
 *******************************
 
-.. automodule:: dds_ci.testing.error
+.. automodule:: bpt_ci.testing.error
   :members:
 
 
-Module: ``dds_ci.testing.fixtures``
+Module: ``bpt_ci.testing.fixtures``
 ***********************************
 
-.. automodule:: dds_ci.testing.fixtures
+.. automodule:: bpt_ci.testing.fixtures
   :members:
 
 
-Module: ``dds_ci.testing.fs``
+Module: ``bpt_ci.testing.fs``
 ***********************************
 
-.. automodule:: dds_ci.testing.fs
+.. automodule:: bpt_ci.testing.fs
   :members:
 
 
-Module: ``dds_ci.testing.http``
+Module: ``bpt_ci.testing.http``
 *******************************
 
-.. automodule:: dds_ci.testing.http
+.. automodule:: bpt_ci.testing.http
   :members:
 
 
-Module: ``dds_ci.testing.repo``
+Module: ``bpt_ci.testing.repo``
 ***********************************
 
-.. automodule:: dds_ci.testing.repo
+.. automodule:: bpt_ci.testing.repo
   :members:
 
 
