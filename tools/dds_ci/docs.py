@@ -9,8 +9,8 @@ import difflib
 
 from . import paths
 
-DOCS_REF_RE = re.compile(r'(?<!define )SBS_DOC_REF\s*\((.*?)\)')
-DOCS_ERR_RE = re.compile(r'(?<!define )SBS_ERR_REF\s*\((.*?)\)')
+DOCS_REF_RE = re.compile(r'(?<!define )BPT_DOC_REF\s*\((.*?)\)')
+DOCS_ERR_RE = re.compile(r'(?<!define )BPT_ERR_REF\s*\((.*?)\)')
 
 
 def doc_refs_in_code(code: str) -> Iterable[str]:

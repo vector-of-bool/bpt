@@ -9,8 +9,8 @@
 #include <catch2/catch.hpp>
 
 static json5::data parse_and_convert(std::string_view data) {
-    auto node = sbs::parse_yaml_string(data);
-    return sbs::yaml_as_json5_data(node);
+    auto node = bpt::parse_yaml_string(data);
+    return bpt::yaml_as_json5_data(node);
 }
 
 TEST_CASE("Convert some simple scalars") {

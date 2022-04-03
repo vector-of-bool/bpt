@@ -4,8 +4,8 @@
 
 #include <yaml-cpp/node/node.h>
 
-namespace sbs {
+namespace bpt {
 
 json5::data yaml_as_json5_data(const YAML::Node&);
 
-}  // namespace sbs
+}  // namespace bpt

@@ -285,7 +285,7 @@ void builder::build(const build_params& params) const {
         if (!test_failures.empty()) {
             BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::test_failure>(),
                                        test_failures,
-                                       SBS_ERR_REF("test-failure"));
+                                       BPT_ERR_REF("test-failure"));
         }
 
         if (params.emit_lmi) {

@@ -42,7 +42,7 @@ crs::pkg_id crs::pkg_id::parse(const std::string_view sv) {
         auto version = semver::version::parse(ver_str);
         return crs::pkg_id{name, version, pkg_version};
     } catch (const semver::invalid_version& exc) {
-        BOOST_LEAF_THROW_EXCEPTION(exc, SBS_ERR_REF("invalid-version-string"));
+        BOOST_LEAF_THROW_EXCEPTION(exc, BPT_ERR_REF("invalid-version-string"));
     }
 }
 

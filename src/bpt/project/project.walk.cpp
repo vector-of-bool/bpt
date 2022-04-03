@@ -141,7 +141,7 @@ project_manifest::from_json_data(const json5::data&                          dat
              if_key{"license",
                     require_str("Project 'license' must be an SPDX license expression string"),
                     put_into(ret.license,
-                             [](std::string s) { return sbs::spdx_license_expression::parse(s); })},
+                             [](std::string s) { return bpt::spdx_license_expression::parse(s); })},
              if_key{"authors",
                     require_array{"Project 'authors' must be an array of strings"},
                     for_each{require_str{"Each element of project 'authors' must be a string"},

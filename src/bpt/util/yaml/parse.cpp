@@ -11,15 +11,15 @@
 
 #include <fstream>
 
-using namespace sbs;
+using namespace bpt;
 
-YAML::Node sbs::parse_yaml_file(const std::filesystem::path& fpath) {
+YAML::Node bpt::parse_yaml_file(const std::filesystem::path& fpath) {
     DDS_E_SCOPE(e_parse_yaml_file_path{fpath});
     auto content = dds::read_file(fpath);
     return parse_yaml_string(content);
 }
 
-YAML::Node sbs::parse_yaml_string(std::string_view sv) {
+YAML::Node bpt::parse_yaml_string(std::string_view sv) {
     DDS_E_SCOPE(e_parse_yaml_string{std::string(sv)});
     try {
         return YAML::Load(sv.data());

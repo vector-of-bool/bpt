@@ -25,7 +25,7 @@ struct implicit_uses_all {
     bool operator==(const implicit_uses_all&) const noexcept = default;
 };
 
-struct dependency_uses : sbs::variant_wrapper<implicit_uses_all, explicit_uses_list> {
+struct dependency_uses : bpt::variant_wrapper<implicit_uses_all, explicit_uses_list> {
     using variant_wrapper::variant_wrapper;
 
     using variant_wrapper::as;

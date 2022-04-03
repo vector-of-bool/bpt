@@ -138,7 +138,7 @@ sdist sdist::from_directory(path_ref where) {
                     "No pkg.json nor project manifest in the project directory"),
                 e_missing_pkg_json{pkg_json},
                 e_missing_project_yaml{where / "pkg.yaml"},
-                SBS_ERR_REF("invalid-pkg-filesystem"));
+                BPT_ERR_REF("invalid-pkg-filesystem"));
         }
         meta = proj.manifest->as_crs_package_meta();
     }

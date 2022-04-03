@@ -387,7 +387,7 @@ std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
         BOOST_LEAF_THROW_EXCEPTION(error,
                                    dds::e_dependency_solve_failure{},
                                    DDS_E_ARG(generate_failure_explanation(exc.matched)),
-                                   SBS_ERR_REF("dep-res-failure"));
+                                   BPT_ERR_REF("dep-res-failure"));
     };
     return sln
         | stdv::transform(NEO_TL(crs::pkg_id{

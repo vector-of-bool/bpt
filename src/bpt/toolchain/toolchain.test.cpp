@@ -11,7 +11,7 @@ TEST_CASE("Builtin toolchains reject multiple standards") {
         dds::toolchain::get_builtin("c++11:c++14:gcc");
         FAIL_CHECK("Did not throw");
     }
-    dds_leaf_catch(sbs::e_doc_ref ref, sbs::e_builtin_toolchain_str given) {
+    dds_leaf_catch(bpt::e_doc_ref ref, bpt::e_builtin_toolchain_str given) {
         CHECK(ref.value == "err/invalid-builtin-toolchain.html");
         CHECK(given.value == "c++11:c++14:gcc");
     }

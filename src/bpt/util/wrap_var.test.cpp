@@ -2,7 +2,7 @@
 
 #include <string>
 
-struct wrapped : sbs::variant_wrapper<std::string, int> {
+struct wrapped : bpt::variant_wrapper<std::string, int> {
     using variant_wrapper::variant_wrapper;
 };
 

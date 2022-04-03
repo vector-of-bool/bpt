@@ -28,7 +28,7 @@ use_repo(dds::crs::cache_db& meta_db, const cli::options& opts, std::string_view
     auto check_cache_after_error = [&] {
         if (opts.repo_sync_mode == cli::repo_sync_mode::always) {
             // We should always sync package listings, so this is a hard error
-            sbs::throw_system_exit(1);
+            bpt::throw_system_exit(1);
         }
         auto rid = meta_db.get_remote(url);
         if (rid.has_value()) {
@@ -41,7 +41,7 @@ use_repo(dds::crs::cache_db& meta_db, const cli::options& opts, std::string_view
                 error,
                 "We have no cached metadata for .bold.red[{}], and were unable to obtain any."_styled,
                 url.to_string());
-            sbs::throw_system_exit(1);
+            bpt::throw_system_exit(1);
         }
     };
     dds_leaf_try {

@@ -34,8 +34,8 @@ project project::open_directory(path_ref path_) {
         return project{path, std::nullopt};
     }
     DDS_E_SCOPE(e_parse_project_manifest_path{pkg_yaml});
-    auto yml  = sbs::parse_yaml_file(pkg_yaml);
-    auto data = sbs::yaml_as_json5_data(yml);
+    auto yml  = bpt::parse_yaml_file(pkg_yaml);
+    auto data = bpt::yaml_as_json5_data(yml);
     auto man  = project_manifest::from_json_data(data, path);
     return project{path, man};
 }

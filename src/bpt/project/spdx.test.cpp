@@ -4,8 +4,8 @@
 #include <bpt/dds.test.hpp>
 
 auto parse_spdx(std::string_view sv) {
-    return REQUIRES_LEAF_NOFAIL(sbs::spdx_license_expression::parse(sv));
-    // return sbs::spdx_license_expression::parse(sv);
+    return REQUIRES_LEAF_NOFAIL(bpt::spdx_license_expression::parse(sv));
+    // return bpt::spdx_license_expression::parse(sv);
 }
 
 TEST_CASE("Parse a license string") {

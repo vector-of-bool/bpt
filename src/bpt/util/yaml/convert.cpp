@@ -10,7 +10,7 @@
 #include <yaml-cpp/node/iterator.h>
 #include <yaml-cpp/yaml.h>
 
-using namespace sbs;
+using namespace bpt;
 
 template <typename T>
 static T try_decode(const YAML::Node& node) {
@@ -21,7 +21,7 @@ static T try_decode(const YAML::Node& node) {
     }
 }
 
-json5::data sbs::yaml_as_json5_data(const YAML::Node& node) {
+json5::data bpt::yaml_as_json5_data(const YAML::Node& node) {
     std::string_view tag = node.Tag();
     DDS_E_SCOPE(e_yaml_tag{std::string(tag)});
     if (node.IsNull()) {

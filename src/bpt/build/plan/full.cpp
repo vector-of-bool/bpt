@@ -89,7 +89,7 @@ void build_plan::compile_files(const build_env&             env,
     auto okay = dds::compile_all(comps, env, njobs);
     if (!okay) {
         BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::compile_failure>(),
-                                   SBS_ERR_REF("compile-failure"));
+                                   BPT_ERR_REF("compile-failure"));
     }
 }
 
@@ -121,7 +121,7 @@ void build_plan::link_all(const build_env& env, int njobs) const {
     });
     if (!okay) {
         BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::link_failure>(),
-                                   SBS_ERR_REF("link-failure"));
+                                   BPT_ERR_REF("link-failure"));
     }
 }
 

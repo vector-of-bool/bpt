@@ -32,7 +32,7 @@ struct project_manifest {
     std::optional<std::filesystem::path>        readme;
     std::optional<neo::url>                     homepage;
     std::optional<neo::url>                     repository;
-    std::optional<sbs::spdx_license_expression> license;
+    std::optional<bpt::spdx_license_expression> license;
     std::optional<std::filesystem::path>        license_file;
 
     bool is_private = false;

@@ -13,24 +13,24 @@
 
 #include <ranges>
 
-using namespace sbs;
+using namespace bpt;
 
 namespace {
 
-const sbs::spdx_license_info ALL_LICENSES[] = {
-#define SPDX_LICENSE(ID, Name) sbs::spdx_license_info{.id = ID, .name = Name},
+const bpt::spdx_license_info ALL_LICENSES[] = {
+#define SPDX_LICENSE(ID, Name) bpt::spdx_license_info{.id = ID, .name = Name},
 #include "./spdx.inl"
 };
 
-const sbs::spdx_exception_info ALL_EXCEPTIONS[] = {
-#define SPDX_EXCEPTION(ID, Name) sbs::spdx_exception_info{.id = ID, .name = Name},
+const bpt::spdx_exception_info ALL_EXCEPTIONS[] = {
+#define SPDX_EXCEPTION(ID, Name) bpt::spdx_exception_info{.id = ID, .name = Name},
 #include "./spdx-exc.inl"
 };
 
 }  // namespace
 
-const std::span<const sbs::spdx_license_info>   sbs::spdx_license_info::all   = ALL_LICENSES;
-const std::span<const sbs::spdx_exception_info> sbs::spdx_exception_info::all = ALL_EXCEPTIONS;
+const std::span<const bpt::spdx_license_info>   bpt::spdx_license_info::all   = ALL_LICENSES;
+const std::span<const bpt::spdx_exception_info> bpt::spdx_exception_info::all = ALL_EXCEPTIONS;
 
 namespace {
 
@@ -79,7 +79,7 @@ struct license_id_plus {
 struct license_ref {};
 
 struct simple_expression
-    : sbs::variant_wrapper<just_license_id, license_id_plus /* , license_ref */> {
+    : bpt::variant_wrapper<just_license_id, license_id_plus /* , license_ref */> {
     using variant_wrapper::variant_wrapper;
     using variant_wrapper::visit;
 
@@ -121,7 +121,7 @@ struct paren_grouped {
     std::shared_ptr<compound_expression> expr;
 };
 
-struct compound_expression : sbs::variant_wrapper<simple_expression,
+struct compound_expression : bpt::variant_wrapper<simple_expression,
                                                   and_license,
                                                   or_license,
                                                   paren_grouped,

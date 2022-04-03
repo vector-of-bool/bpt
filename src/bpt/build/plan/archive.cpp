@@ -67,6 +67,6 @@ void create_archive_plan::archive(const build_env& env) const {
                                        "Creating static library archive [{}] failed for '{}'",
                                        out_relpath,
                                        _qual_name),
-                                   SBS_ERR_REF("archive-failure"));
+                                   BPT_ERR_REF("archive-failure"));
     }
 }

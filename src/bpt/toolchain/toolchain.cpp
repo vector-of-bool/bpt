@@ -234,7 +234,7 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
 }
 
 toolchain toolchain::get_builtin(const std::string_view tc_id_) {
-    DDS_E_SCOPE(sbs::e_builtin_toolchain_str{std::string(tc_id_)});
+    DDS_E_SCOPE(bpt::e_builtin_toolchain_str{std::string(tc_id_)});
     auto tc_id = tc_id_;
     using namespace std::literals;
 
@@ -322,7 +322,7 @@ toolchain toolchain::get_builtin(const std::string_view tc_id_) {
     if (!opt_triple) {
         BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("Invalid toolchain string '{}'",
                                                              tc_id)},
-                                   SBS_ERR_REF("invalid-builtin-toolchain"));
+                                   BPT_ERR_REF("invalid-builtin-toolchain"));
     }
 
     root_map.emplace("c_compiler", opt_triple->c);
@@ -351,5 +351,5 @@ dds::toolchain dds::toolchain::get_default() {
         }
     }
     BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("No default toolchain")},
-                               SBS_ERR_REF("no-default-toolchain"));
+                               BPT_ERR_REF("no-default-toolchain"));
 }

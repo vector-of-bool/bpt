@@ -55,7 +55,7 @@ package_info package_info::from_json_data(const json5::data& data) {
     dds_leaf_catch(const semver::invalid_version& e)->noreturn_t {
         BOOST_LEAF_THROW_EXCEPTION(
             e_invalid_meta_data{neo::ufmt("Invalid semantic version string '{}'", e.string())},
-            SBS_ERR_REF("invalid-version-string"));
+            BPT_ERR_REF("invalid-version-string"));
     }
     dds_leaf_catch(e_name_str invalid_name, invalid_name_reason why)->noreturn_t {
         current_error().load(e_invalid_meta_data{neo::ufmt("Invalid name string '{}': {}",

@@ -5,7 +5,7 @@
 #include <concepts>
 #include <variant>
 
-namespace sbs {
+namespace bpt {
 
 /**
  * @brief Use as a base class to create a type that wraps a variant in an alternative interface
@@ -83,4 +83,4 @@ protected:
     }
 };
 
-}  // namespace sbs
+}  // namespace bpt

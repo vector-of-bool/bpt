@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-namespace sbs {
+namespace bpt {
 
 struct e_parse_yaml_file_path {
     std::filesystem::path value;
@@ -29,4 +29,4 @@ struct e_yaml_invalid_spelling {
     std::string value;
 };
 
-}  // namespace sbs
+}  // namespace bpt

@@ -4,7 +4,7 @@
 #include <span>
 #include <string>
 
-namespace sbs {
+namespace bpt {
 
 struct e_spdx_license_str {
     std::string value;
@@ -42,4 +42,4 @@ public:
     std::string to_string() const noexcept;
 };
 
-}  // namespace sbs
+}  // namespace bpt

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace sbs {
+namespace bpt {
 
 /**
  * @brief Error object telling the top-level error handler to exit normally with the given exit code
@@ -15,4 +15,4 @@ struct e_exit {
  */
 [[noreturn]] void throw_system_exit(int value);
 
-}  // namespace sbs
+}  // namespace bpt

@@ -450,7 +450,7 @@ toolchain dds::cli::options::load_toolchain() const {
         auto default_tc = tc_str.substr(1);
         return dds::toolchain::get_builtin(default_tc);
     } else {
-        DDS_E_SCOPE(sbs::e_toolchain_filepath{tc_str});
+        DDS_E_SCOPE(bpt::e_toolchain_filepath{tc_str});
         return parse_toolchain_json5(dds::read_file(tc_str));
     }
 }

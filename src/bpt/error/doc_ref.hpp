@@ -2,19 +2,19 @@
 
 #include <string>
 
-namespace sbs {
+namespace bpt {
 
 /**
  * @brief A reference to a documentation page.
  *
- * Do not construct one directly. Use SBS_DOC_REF and SBS_ERROR_REF, which can be audited
+ * Do not construct one directly. Use BPT_DOC_REF and BPT_ERROR_REF, which can be audited
  * automatically for spelling errors and staleness.
  */
 struct e_doc_ref {
     std::string value;
 };
 
-}  // namespace sbs
+}  // namespace bpt
 
-#define SBS_DOC_REF(Page) (::sbs::e_doc_ref{::std::string(Page ".html")})
-#define SBS_ERR_REF(Page) (::sbs::e_doc_ref{::std::string("err/" Page ".html")})
+#define BPT_DOC_REF(Page) (::bpt::e_doc_ref{::std::string(Page ".html")})
+#define BPT_ERR_REF(Page) (::bpt::e_doc_ref{::std::string("err/" Page ".html")})

@@ -59,7 +59,7 @@ auto handlers = std::tuple(  //
         return 1;
     },
     [](e_sdist_from_directory       sdist_dirpath,
-       sbs::e_yaml_parse_error      error,
+       bpt::e_yaml_parse_error      error,
        const std::filesystem::path* maybe_fpath) {
         dds_log(
             error,
@@ -103,8 +103,8 @@ auto handlers = std::tuple(  //
             exc.what());
         return 1;
     },
-    [](sbs::e_bad_spdx_expression err,
-       sbs::e_spdx_license_str    spdx_str,
+    [](bpt::e_bad_spdx_expression err,
+       bpt::e_spdx_license_str    spdx_str,
        e_sdist_from_directory,
        e_parse_project_manifest_path pkg_yaml) {
         dds_log(error,
@@ -140,7 +140,7 @@ auto handlers = std::tuple(  //
         }
         return 1;
     },
-    [](const std::system_error& err, e_loading_toolchain, sbs::e_toolchain_filepath* tc_file) {
+    [](const std::system_error& err, e_loading_toolchain, bpt::e_toolchain_filepath* tc_file) {
         dds_log(error, "Failed to load toolchain: .br.yellow[{}]"_styled, err.code().message());
         if (tc_file) {
             dds_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
@@ -230,7 +230,7 @@ auto handlers = std::tuple(  //
         write_error_marker("no-such-library");
         return 1;
     },
-    [](sbs::e_exit ex, boost::leaf::verbose_diagnostic_info const& info) {
+    [](bpt::e_exit ex, boost::leaf::verbose_diagnostic_info const& info) {
         dds_log(trace, "Additional error information: {}", info);
         return ex.value;
     },
