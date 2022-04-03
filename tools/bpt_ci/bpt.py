@@ -13,7 +13,9 @@ from . import proc
 from . import toolchain as tc_mod
 
 T = TypeVar('T')
-
+"""
+A generic unbounded type parameter
+"""
 
 class BPTWrapper:
     """
@@ -29,7 +31,7 @@ class BPTWrapper:
         self.crs_cache_dir = crs_cache_dir
         "The directory in which the CRS cache data will be stored"
 
-    def clone(self: T) -> T:
+    def clone(self) -> BPTWrapper:
         "Create a clone of this object"
         return copy.deepcopy(self)
 

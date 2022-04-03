@@ -4,6 +4,7 @@
 import os
 from pathlib import Path
 from typing import Any
+import sys
 
 import hoverxref.extension
 from sphinx.util.fileutil import copy_asset
@@ -36,8 +37,10 @@ intersphinx_mapping = {
 }
 nitpicky = True
 
-autodoc_warningiserror = False
-autodoc_typehints = 'none'
+if sys.version_info < (3, 10):
+    # Sphinx in older Python fails to handle many typing annotations
+    autodoc_warningiserror = False
+    autodoc_typehints = 'none'
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'nature'

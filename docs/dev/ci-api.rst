@@ -66,13 +66,6 @@ Module: ``bpt_ci.proc``
   :members:
 
 
-Module: ``bpt_ci.tasks``
-************************
-
-.. automodule:: bpt_ci.tasks
-  :members:
-
-
 Module: ``bpt_ci.util``
 ***********************
 
@@ -95,7 +88,7 @@ Module: ``bpt_ci.testing``
 
 
 Module: ``bpt_ci.testing.error``
-*******************************
+********************************
 
 .. automodule:: bpt_ci.testing.error
   :members:
@@ -146,3 +139,13 @@ scripts.
 .. class:: _pytest.config.Config
 
   .. seealso:: :class:`pytest.Config`
+
+.. class:: Pathish
+
+  A type alias for objects that can be treated as paths. Includes any subclass
+  of `PurePath`. `str`, and types providing an ``__fspath__`` method.
+
+.. class:: dagon.proc.CommandLine
+
+  A sequence of command-line-argument compatible types, including `Pathish`,
+  `int`, `float`, and recursive `CommandLine` arrays.

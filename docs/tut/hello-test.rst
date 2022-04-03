@@ -60,6 +60,8 @@ downstream library consumers will not see the dependency.
 To declare dependencies, we return to the ``pkg.yaml`` file. We'll declare a
 dependency on the `Catch2`_ C and C++ unit testing framework:
 
+.. _Catch2: https://github.com/catchorg/Catch2
+
 .. code-block:: yaml
   :caption: ``<root>/pkg.yaml``
   :emphasize-lines: 3,4

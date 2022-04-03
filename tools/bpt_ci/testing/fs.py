@@ -37,6 +37,10 @@ def _b64_encode_tree(tree: TreeData) -> _B64TreeData:
 
 class GetResult(NamedTuple):
     ready_path: Optional[Path]
+    """
+    If not `None`, the path to the already-generated directory. Returned by
+    `DirRenderer.get_or_prepare`
+    """
     prep_path: Optional[Path]
 
     final_dest: Path
@@ -62,13 +66,24 @@ def render_into(root: Pathish, tree: TreeData) -> Path:
 
 
 class DirRenderer:
+    """
+    Utility for generating filesystem structures and restoring them from a cache.
 
-    def __init__(self, cache_root: Pathish, tmp_root: Pathish, tmp_factory: TempPathFactory) -> None:
+    :param cache_root: The root directory where rendered content will be stored.
+    :param tmp_root: Root directory for temporary files.
+    """
+
+    def __init__(self, cache_root: Pathish, tmp_root: Pathish) -> None:
         self._cache_path = Path(cache_root)
         self._tmp_path = Path(tmp_root)
-        self._tmp_factory = tmp_factory
 
     def get_or_prepare(self, key: str) -> ContextManager[GetResult]:
+        """
+        Open a context manager to a directory that may or may not already be cached.
+
+        If `GetResult.ready_path` is not :data:`None`, the directory is already
+        present in the cache.
+        """
         return self._get_or_prepare(key)
 
     @contextmanager
@@ -110,7 +125,7 @@ class DirRenderer:
 @pytest.fixture(scope='session')
 def dir_renderer(fs_render_cache_dir: Path, tmp_path_factory: TempPathFactory) -> DirRenderer:
     tp: Path = tmp_path_factory.mktemp('render-clones')
-    return DirRenderer(fs_render_cache_dir, tp, tmp_path_factory)
+    return DirRenderer(fs_render_cache_dir, tp)
 
 
 TempCloner = Callable[[str, Pathish], Path]
