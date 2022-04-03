@@ -393,7 +393,7 @@ pylint = proc.cmd_task('pylint', [sys.executable, '-m', 'pylint', paths.TOOLS_DI
 
 py = task.gather('py', [format__py__check, pylint, pyright])
 
-ci = task.gather('ci', [test, build__main, py, format__check])
+ci = task.gather('ci', [test, build__main, py])
 
 if os.name == 'nt':
     # Workaround: Older Python does not set the event loop such that Windows can
