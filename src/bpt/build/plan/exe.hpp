@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 class library_plan;
 
@@ -24,7 +24,7 @@ struct test_failure {
 };
 
 /**
- * Stores information about an executable that should be linked. An executable in DDS consists of a
+ * Stores information about an executable that should be linked. An executable in BPT consists of a
  * single source file defines the entry point and some set of linker inputs.
  */
 class link_executable_plan {
@@ -81,4 +81,4 @@ public:
     bool is_app() const noexcept;
 };
 
-}  // namespace dds
+}  // namespace bpt

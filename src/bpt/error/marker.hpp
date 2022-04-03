@@ -2,8 +2,8 @@
 
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 void write_error_marker(std::string_view) noexcept;
 
-}  // namespace dds
+}  // namespace bpt

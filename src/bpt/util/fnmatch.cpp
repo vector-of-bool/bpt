@@ -7,7 +7,7 @@
 
 using charptr = const char*;
 
-namespace dds::detail::fnmatch {
+namespace bpt::detail::fnmatch {
 
 namespace {
 
@@ -177,13 +177,13 @@ public:
     }
 };
 
-}  // namespace dds::detail::fnmatch
+}  // namespace bpt::detail::fnmatch
 
-dds::fnmatch::pattern dds::fnmatch::compile(std::string_view str) {
+bpt::fnmatch::pattern bpt::fnmatch::compile(std::string_view str) {
     return pattern{std::make_shared<detail::fnmatch::pattern_impl>(str)};
 }
 
-bool dds::fnmatch::pattern::_match(charptr first, charptr last) const noexcept {
+bool bpt::fnmatch::pattern::_match(charptr first, charptr last) const noexcept {
     assert(_impl);
     return _impl->match(first, last);
 }

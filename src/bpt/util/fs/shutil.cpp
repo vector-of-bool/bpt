@@ -11,10 +11,10 @@
 
 #include <system_error>
 
-using namespace dds;
+using namespace bpt;
 
-result<void> dds::ensure_absent(path_ref path) noexcept {
-    DDS_E_SCOPE(e_remove_file{path});
+result<void> bpt::ensure_absent(path_ref path) noexcept {
+    BPT_E_SCOPE(e_remove_file{path});
     std::error_code ec;
     fs::remove_all(path, ec);
     if (ec && ec != std::errc::no_such_file_or_directory) {
@@ -23,8 +23,8 @@ result<void> dds::ensure_absent(path_ref path) noexcept {
     return {};
 }
 
-result<void> dds::remove_file(path_ref path) noexcept {
-    DDS_E_SCOPE(e_remove_file{path});
+result<void> bpt::remove_file(path_ref path) noexcept {
+    BPT_E_SCOPE(e_remove_file{path});
     std::error_code ec;
     fs::remove(path, ec);
     if (ec) {
@@ -33,10 +33,10 @@ result<void> dds::remove_file(path_ref path) noexcept {
     return {};
 }
 
-result<void> dds::move_file(path_ref source, path_ref dest) {
+result<void> bpt::move_file(path_ref source, path_ref dest) {
     std::error_code ec;
-    DDS_E_SCOPE(e_move_file{source, dest});
-    DDS_E_SCOPE(ec);
+    BPT_E_SCOPE(e_move_file{source, dest});
+    BPT_E_SCOPE(ec);
 
     fs::rename(source, dest, ec);
     if (!ec) {
@@ -47,8 +47,8 @@ result<void> dds::move_file(path_ref source, path_ref dest) {
         BOOST_LEAF_NEW_ERROR();
     }
 
-    auto tmp = dds_leaf_try_some { return dds::temporary_dir::create_in(dest.parent_path()); }
-    dds_leaf_catch(const std::system_error& exc) { return BOOST_LEAF_NEW_ERROR(exc, exc.code()); };
+    auto tmp = bpt_leaf_try_some { return bpt::temporary_dir::create_in(dest.parent_path()); }
+    bpt_leaf_catch(const std::system_error& exc) { return BOOST_LEAF_NEW_ERROR(exc, exc.code()); };
     BOOST_LEAF_CHECK(tmp);
 
     fs::copy(source, tmp->path(), fs::copy_options::recursive, ec);
@@ -64,10 +64,10 @@ result<void> dds::move_file(path_ref source, path_ref dest) {
     return {};
 }
 
-result<void> dds::copy_file(path_ref source, path_ref dest, fs::copy_options opts) noexcept {
+result<void> bpt::copy_file(path_ref source, path_ref dest, fs::copy_options opts) noexcept {
     std::error_code ec;
-    DDS_E_SCOPE(e_copy_file{source, dest});
-    DDS_E_SCOPE(ec);
+    BPT_E_SCOPE(e_copy_file{source, dest});
+    BPT_E_SCOPE(ec);
     opts &= ~fs::copy_options::recursive;
     fs::copy_file(source, dest, opts, ec);
     if (ec) {
@@ -76,10 +76,10 @@ result<void> dds::copy_file(path_ref source, path_ref dest, fs::copy_options opt
     return {};
 }
 
-result<void> dds::create_symlink(path_ref target, path_ref symlink) noexcept {
+result<void> bpt::create_symlink(path_ref target, path_ref symlink) noexcept {
     std::error_code ec;
-    DDS_E_SCOPE(e_symlink{symlink, target});
-    DDS_E_SCOPE(ec);
+    BPT_E_SCOPE(e_symlink{symlink, target});
+    BPT_E_SCOPE(ec);
     /// XXX: 'target' might not refer to an existing file, or might be a relative path from the
     /// symlink dest dir.
     if (fs::is_directory(target)) {
@@ -109,14 +109,14 @@ static result<void> copy_tree_1(path_ref source, path_ref dest, fs::copy_options
         if (entry.is_directory()) {
             BOOST_LEAF_CHECK(copy_tree_1(entry.path(), subdest, opts));
         } else {
-            BOOST_LEAF_CHECK(dds::copy_file(entry.path(), subdest, opts));
+            BOOST_LEAF_CHECK(bpt::copy_file(entry.path(), subdest, opts));
         }
     }
     return {};
 }
 
-result<void> dds::copy_tree(path_ref source, path_ref dest, fs::copy_options opts) noexcept {
-    DDS_E_SCOPE(e_copy_tree{source, dest});
+result<void> bpt::copy_tree(path_ref source, path_ref dest, fs::copy_options opts) noexcept {
+    BPT_E_SCOPE(e_copy_tree{source, dest});
     BOOST_LEAF_AUTO(src, resolve_path_strong(source));
     auto dst = resolve_path_weak(dest);
     return copy_tree_1(src, dst, opts);

@@ -8,7 +8,7 @@
 #include <bpt/crs/repo.hpp>
 #include <bpt/util/url.hpp>
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 int pkg_prefetch(const options& opts) {
     auto cache = open_ready_cache(opts);
@@ -19,4 +19,4 @@ int pkg_prefetch(const options& opts) {
     return 0;
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

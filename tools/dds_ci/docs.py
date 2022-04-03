@@ -62,7 +62,7 @@ def nearest(given: str, cands: Iterable[str]) -> str | None:
 
 def audit_docrefs_main():
     """
-    Entrypoint of ``dds-audit-docrefs``. Finds documentation pages referred to
+    Entrypoint of ``bpt-audit-docrefs``. Finds documentation pages referred to
     in the source code, searching for spelling errors, and searches for any
     error pages that are not referenced anywhere in the source files.
     """

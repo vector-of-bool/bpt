@@ -2,9 +2,9 @@
 
 #include <bpt/util/json_walk.hpp>
 
-using namespace dds;
-using namespace dds::crs;
-using namespace dds::walk_utils;
+using namespace bpt;
+using namespace bpt::crs;
+using namespace bpt::walk_utils;
 
 library_info library_info::from_data(const json5::data& data) {
     library_info ret;

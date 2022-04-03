@@ -3,7 +3,7 @@
 
 #include "./errors.hpp"
 
-#include <bpt/dds.test.hpp>
+#include <bpt/bpt.test.hpp>
 #include <bpt/error/try_catch.hpp>
 
 #include <catch2/catch.hpp>

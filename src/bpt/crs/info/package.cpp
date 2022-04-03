@@ -21,18 +21,18 @@
 #include <range/v3/view/concat.hpp>
 #include <semester/walk.hpp>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 
 package_info package_info::from_json_str(std::string_view json) {
-    DDS_E_SCOPE(e_given_meta_json_str{std::string(json)});
+    BPT_E_SCOPE(e_given_meta_json_str{std::string(json)});
     auto data = parse_json_str(json);
     return from_json_data(nlohmann_json_as_json5(data));
 }
 
 package_info package_info::from_json_data(const json5::data& data) {
-    DDS_E_SCOPE(e_given_meta_json_data{data});
-    return dds_leaf_try {
+    BPT_E_SCOPE(e_given_meta_json_data{data});
+    return bpt_leaf_try {
         if (!data.is_object()) {
             throw(semester::walk_error{"Root of CRS manifest must be a JSON object"});
         }
@@ -45,19 +45,19 @@ package_info package_info::from_json_data(const json5::data& data) {
         }
         return from_json_data_v1(data);
     }
-    dds_leaf_catch(lm::e_invalid_usage_string e)->noreturn_t {
+    bpt_leaf_catch(lm::e_invalid_usage_string e)->noreturn_t {
         current_error().load(e_invalid_meta_data{neo::ufmt("Invalid usage string '{}'", e.value)});
         throw;
     }
-    dds_leaf_catch(catch_<semester::walk_error> e)->noreturn_t {
+    bpt_leaf_catch(catch_<semester::walk_error> e)->noreturn_t {
         BOOST_LEAF_THROW_EXCEPTION(e.matched, e_invalid_meta_data{e.matched.what()});
     }
-    dds_leaf_catch(const semver::invalid_version& e)->noreturn_t {
+    bpt_leaf_catch(const semver::invalid_version& e)->noreturn_t {
         BOOST_LEAF_THROW_EXCEPTION(
             e_invalid_meta_data{neo::ufmt("Invalid semantic version string '{}'", e.string())},
             BPT_ERR_REF("invalid-version-string"));
     }
-    dds_leaf_catch(e_name_str invalid_name, invalid_name_reason why)->noreturn_t {
+    bpt_leaf_catch(e_name_str invalid_name, invalid_name_reason why)->noreturn_t {
         current_error().load(e_invalid_meta_data{neo::ufmt("Invalid name string '{}': {}",
                                                            invalid_name.value,
                                                            invalid_name_reason_str(why))});
@@ -68,9 +68,9 @@ package_info package_info::from_json_data(const json5::data& data) {
 std::string package_info::to_json(int indent) const noexcept {
     using json              = nlohmann::ordered_json;
     json ret_libs           = json::array();
-    auto names_as_str_array = [](neo::ranges::range_of<dds::name> auto&& names) {
+    auto names_as_str_array = [](neo::ranges::range_of<bpt::name> auto&& names) {
         auto arr = json::array();
-        extend(arr, names | std::views::transform(&dds::name::str));
+        extend(arr, names | std::views::transform(&bpt::name::str));
         return arr;
     };
     auto deps_as_json_array = [this](neo::ranges::range_of<crs::dependency> auto&& deps) {
@@ -86,7 +86,7 @@ std::string package_info::to_json(int indent) const noexcept {
             json uses = json::array();
             dep.uses.visit(neo::overload{
                 [&](explicit_uses_list const& l) {
-                    extend(uses, l.uses | std::views::transform(&dds::name::str));
+                    extend(uses, l.uses | std::views::transform(&bpt::name::str));
                 },
                 [&](implicit_uses_all) {
                     neo_assert(invariant,

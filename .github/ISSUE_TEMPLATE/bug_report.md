@@ -30,11 +30,11 @@ Thank you!
 2. Second step
 3. Third step
 
-**`dds` Output**
+**`bpt` Output**
 
 <!--
 
-If applicable, include the output from `dds`.
+If applicable, include the output from `bpt`.
 
 PLEASE paste the output in-between the triple-backticks to keep the output
 formatted correctly!
@@ -55,7 +55,7 @@ List the platform(s) and toolsets which are applicable to the issue, and all of 
 
  - Operating System: [e.g. macOS, Linux, Windows]
  - Compiler: [e.g. MSVC, GCC, Clang]
- - `dds` Version: [e.g. `0.1.0-alpha.6`]
+ - `bpt` Version: [e.g. `0.1.0-alpha.6`]
 
 **Additional context**
 

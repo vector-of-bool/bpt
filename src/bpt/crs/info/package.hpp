@@ -8,7 +8,7 @@
 
 #include <filesystem>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 struct e_invalid_meta_data {
     std::string value;
@@ -46,7 +46,7 @@ struct package_info {
     std::string to_json() const noexcept { return to_json(0); }
 
     friend void do_repr(auto out, const package_info* self) noexcept {
-        out.type("dds::crs::package_info");
+        out.type("bpt::crs::package_info");
         if (self) {
             out.bracket_value("id={}, libraries={}",
                               self->id.to_string(),
@@ -55,4 +55,4 @@ struct package_info {
     }
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

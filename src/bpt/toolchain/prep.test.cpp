@@ -3,7 +3,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("Hash the toolchain") {
-    dds::toolchain_prep prep;
+    bpt::toolchain_prep prep;
     CHECK(prep.compute_hash() == 0x174b6917312d24b2);
 
     prep.c_compile = {"gcc"};

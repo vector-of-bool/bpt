@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-using namespace dds;
+using namespace bpt;
 
 compile_command_info compile_file_plan::generate_compile_command(build_env_ref env) const {
     compile_file_spec spec{_source.path, calc_object_file_path(env)};
@@ -31,7 +31,7 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
     // Avoid huge command lines by shrinking down the list of #include dirs
     sort_unique_erase(spec.external_include_dirs);
     sort_unique_erase(spec.include_dirs);
-    return env.toolchain.create_compile_command(spec, dds::fs::current_path(), env.knobs);
+    return env.toolchain.create_compile_command(spec, bpt::fs::current_path(), env.knobs);
 }
 
 fs::path compile_file_plan::calc_object_file_path(const build_env& env) const noexcept {

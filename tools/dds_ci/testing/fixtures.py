@@ -1,5 +1,5 @@
 """
-Test fixtures used by DDS in pytest
+Test fixtures used by BPT in pytest
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from typing_extensions import Literal, TypedDict
 from dds_ci.testing.fs import DirRenderer, TreeData
 
 from .. import paths, toolchain
-from ..dds import DDSWrapper
+from ..bpt import BPTWrapper
 from ..proc import check_run
 from ..util import JSONishArray, JSONishDict, JSONishValue, Pathish
 
@@ -225,8 +225,8 @@ class Project:
     Utilities to access a project being used as a test.
     """
 
-    def __init__(self, dirpath: Path, dds: DDSWrapper) -> None:
-        self.dds = dds.clone()
+    def __init__(self, dirpath: Path, bpt: BPTWrapper) -> None:
+        self.bpt = bpt.clone()
         self.root = dirpath
         self.build_root = dirpath / '_build'
 
@@ -268,13 +268,13 @@ class Project:
               repos: Sequence[Pathish] = (),
               log_level: Literal['info', 'debug', 'trace'] = 'trace') -> None:
         """
-        Execute 'dds build' on the project
+        Execute 'bpt build' on the project
         """
         with ExitStack() as scope:
             if fixup_toolchain:
                 toolchain = scope.enter_context(tc_mod.fixup_toolchain(toolchain
                                                                        or tc_mod.get_default_test_toolchain()))
-            self.dds.build(root=self.root,
+            self.bpt.build(root=self.root,
                            build_root=self.build_root,
                            toolchain=toolchain,
                            jobs=jobs,
@@ -286,11 +286,11 @@ class Project:
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:
-            self.dds.compile_file(paths, toolchain=tc, build_root=self.build_root, root=self.root)
+            self.bpt.compile_file(paths, toolchain=tc, build_root=self.build_root, root=self.root)
 
     def pkg_create(self, *, dest: Optional[Pathish] = None, if_exists: Optional[str] = None) -> None:
         self.build_root.mkdir(exist_ok=True, parents=True)
-        self.dds.run(
+        self.bpt.run(
             [
                 'pkg',
                 'create',
@@ -333,9 +333,9 @@ class ProjectOpener():
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, dds: DDSWrapper, request: FixtureRequest, worker: str, tmp_path_factory: TempPathFactory,
+    def __init__(self, bpt: BPTWrapper, request: FixtureRequest, worker: str, tmp_path_factory: TempPathFactory,
                  dir_renderer: DirRenderer) -> None:
-        self.dds = dds
+        self.bpt = bpt
         self._request = request
         self._worker_id = worker
         self._tmppath_fac = tmp_path_factory
@@ -372,18 +372,18 @@ class ProjectOpener():
             self._request.addfinalizer(lambda: ensure_absent(proj_copy))
 
         shutil.copytree(dirpath, proj_copy)
-        new_dds = self.dds.clone()
+        new_bpt = self.bpt.clone()
 
         if self._worker_id == 'master':
             crs_dir = self.test_dir / '__test_crs'
         else:
             crs_dir: Path = self._tmppath_fac.mktemp('test-crs-') / self.test_name
 
-        new_dds.crs_cache_dir = crs_dir
-        new_dds.default_cwd = proj_copy
+        new_bpt.crs_cache_dir = crs_dir
+        new_bpt.default_cwd = proj_copy
         self._request.addfinalizer(lambda: ensure_absent(crs_dir))
 
-        return Project(proj_copy, new_dds)
+        return Project(proj_copy, new_bpt)
 
     def render(self, name: str, tree: TreeData) -> Project:
         dirpath = self._dir_render.get_or_render(name, tree)
@@ -391,14 +391,14 @@ class ProjectOpener():
 
 
 @pytest.fixture()
-def project_opener(request: FixtureRequest, worker_id: str, dds: DDSWrapper, tmp_path_factory: TempPathFactory,
+def project_opener(request: FixtureRequest, worker_id: str, bpt: BPTWrapper, tmp_path_factory: TempPathFactory,
                    dir_renderer: DirRenderer) -> ProjectOpener:
     """
     A fixture factory that can open directories as Project objects for building
     and testing. Duplicates the project directory into a temporary location so
     that the original test directory remains unchanged.
     """
-    opener = ProjectOpener(dds, request, worker_id, tmp_path_factory, dir_renderer)
+    opener = ProjectOpener(bpt, request, worker_id, tmp_path_factory, dir_renderer)
     return opener
 
 
@@ -422,18 +422,18 @@ def tmp_project(request: FixtureRequest, worker_id: str, project_opener: Project
 
 
 @pytest.fixture(scope='session')
-def dds(dds_exe: Path) -> DDSWrapper:
+def bpt(bpt_exe: Path) -> BPTWrapper:
     """
-    A :class:`~dds_ci.dds.DDSWrapper` around the dds executable under test
+    A :class:`~dds_ci.bpt.BPTWrapper` around the bpt executable under test
     """
-    wr = DDSWrapper(dds_exe)
+    wr = BPTWrapper(bpt_exe)
     return wr
 
 
 @pytest.fixture(scope='session')
-def dds_exe(pytestconfig: PyTestConfig) -> Path:
-    """A :class:`pathlib.Path` pointing to the DDS executable under test"""
-    opt = pytestconfig.getoption('--dds-exe') or paths.BUILD_DIR / 'for-test/dds'
+def bpt_exe(pytestconfig: PyTestConfig) -> Path:
+    """A :class:`pathlib.Path` pointing to the BPT executable under test"""
+    opt = pytestconfig.getoption('--bpt-exe') or paths.BUILD_DIR / 'for-test/bpt'
     assert isinstance(opt, (Path, str))
     return Path(opt)
 
@@ -466,7 +466,7 @@ def tmp_git_repo_factory(tmp_path_factory: TempPathFactory, pytestconfig: PyTest
         check_run([git, 'checkout', '-b', 'tmp_git_repo'], cwd=repo)
         check_run([git, 'add', '-A'], cwd=repo)
         check_run(
-            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='dds@example.org'", 'commit', '-m', 'Initial commit'],
+            [git, '-c', "user.name='Tmp Git'", '-c', "user.email='bpt@example.org'", 'commit', '-m', 'Initial commit'],
             cwd=repo)
 
         return repo

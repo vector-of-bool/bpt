@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace dds {
+namespace bpt {
 
 class temporary_dir {
     struct impl {
@@ -32,4 +32,4 @@ public:
     path_ref path() const noexcept { return _ptr->path; }
 };
 
-}  // namespace dds
+}  // namespace bpt

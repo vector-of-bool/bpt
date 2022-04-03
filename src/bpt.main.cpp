@@ -21,7 +21,7 @@
 using namespace fansi::literals;
 
 static void load_locale() {
-    auto lang = dds::getenv("LANG");
+    auto lang = bpt::getenv("LANG");
     if (!lang) {
         return;
     }
@@ -34,15 +34,15 @@ static void load_locale() {
 }
 
 int main_fn(std::string_view program_name, const std::vector<std::string>& argv) {
-    dds::log::init_logger();
-    neo::listener log_listener = &dds::log::ev_log::print;
+    bpt::log::init_logger();
+    neo::listener log_listener = &bpt::log::ev_log::print;
     load_locale();
     std::setlocale(LC_CTYPE, ".utf8");
 
-    dds::install_signal_handlers();
-    dds::enable_ansi_console();
+    bpt::install_signal_handlers();
+    bpt::enable_ansi_console();
 
-    dds::cli::options       opts;
+    bpt::cli::options       opts;
     debate::argument_parser parser;
     opts.setup_parser(parser);
 
@@ -138,8 +138,8 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         // Non-null result from argument parsing, return that value immediately.
         return *result;
     }
-    dds::log::current_log_level = opts.log_level;
-    return dds::cli::dispatch_main(opts);
+    bpt::log::current_log_level = opts.log_level;
+    return bpt::cli::dispatch_main(opts);
 }
 
 #if NEO_OS_IS_WINDOWS

@@ -7,9 +7,9 @@
 #include <optional>
 #include <vector>
 
-using namespace dds;
+using namespace bpt;
 
-std::optional<source_kind> dds::infer_source_kind(path_ref p) noexcept {
+std::optional<source_kind> bpt::infer_source_kind(path_ref p) noexcept {
     static std::vector<std::string_view> header_exts = {
         ".H",
         ".H++",

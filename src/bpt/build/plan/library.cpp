@@ -18,7 +18,7 @@
 #include <ranges>
 #include <string>
 
-using namespace dds;
+using namespace bpt;
 using namespace fansi::literals;
 
 library_plan library_plan::create(path_ref                    pkg_base,
@@ -37,7 +37,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
 
     // Collect the source for this library. This will look for any compilable sources in the
     // `src/` subdirectory of the library.
-    auto src_dir = dds::source_root(pkg_base / lib.path / "src");
+    auto src_dir = bpt::source_root(pkg_base / lib.path / "src");
     if (src_dir.exists()) {
         // Sort each source file between the three source arrays, depending on
         // the kind of source that we are looking at.
@@ -57,12 +57,12 @@ library_plan library_plan::create(path_ref                    pkg_base,
         }
     }
 
-    auto include_dir = dds::source_root{pkg_base / lib.path / "include"};
+    auto include_dir = bpt::source_root{pkg_base / lib.path / "include"};
     if (include_dir.exists()) {
         auto all_sources = include_dir.collect_sources();
         for (const auto& sfile : all_sources) {
             if (!is_header(sfile.kind)) {
-                dds_log(
+                bpt_log(
                     warn,
                     "Public include/ should only contain header files. Not a header: [.br.yellow[{}]]"_styled,
                     sfile.path.string());
@@ -116,7 +116,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
 
     auto public_header_compile_rules          = compile_rules.clone();
     public_header_compile_rules.syntax_only() = true;
-    public_header_compile_rules.defs().push_back("__dds_header_check=1");
+    public_header_compile_rules.defs().push_back("__bpt_header_check=1");
     auto src_header_compile_rules = public_header_compile_rules.clone();
     if (include_dir.exists()) {
         compile_rules.include_dirs().push_back(src_dir.path);
@@ -151,10 +151,10 @@ library_plan library_plan::create(path_ref                    pkg_base,
     // for this library
     std::optional<create_archive_plan> archive_plan;
     if (!lib_compile_files.empty()) {
-        dds_log(debug, "Generating an archive library for {}", qual_name);
+        bpt_log(debug, "Generating an archive library for {}", qual_name);
         archive_plan.emplace(lib.name.str, qual_name, out_dir, std::move(lib_compile_files));
     } else {
-        dds_log(debug,
+        bpt_log(debug,
                 "Library {} has no compiled inputs, so no archive will be generated",
                 qual_name);
     }

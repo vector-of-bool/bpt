@@ -23,8 +23,8 @@
 #include <neo/tar/util.hpp>
 #include <neo/ufmt.hpp>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 using namespace neo::sqlite3::literals;
 
 using path_ref = const std::filesystem::path&;
@@ -58,9 +58,9 @@ void ensure_migrated(unique_database& db) {
 }
 
 void copy_source_tree(path_ref from_dir, path_ref to_dir) {
-    dds_log(debug, "Copy source tree [{}] -> [{}]", from_dir.string(), to_dir.string());
+    bpt_log(debug, "Copy source tree [{}] -> [{}]", from_dir.string(), to_dir.string());
     fs::create_directories(to_dir.parent_path());
-    dds::copy_tree(from_dir, to_dir, fs::copy_options::recursive).value();
+    bpt::copy_tree(from_dir, to_dir, fs::copy_options::recursive).value();
 }
 
 void copy_library(path_ref lib_root, path_ref to_root) {
@@ -90,19 +90,19 @@ void repository::_vacuum_and_compress() const {
                !_db.sqlite3_db().is_transaction_active(),
                "Database cannot be recompressed while a transaction is open");
     db_exec(_prepare("VACUUM"_sql)).value();
-    dds::compress_file_gz(_dirpath / "repo.db", _dirpath / "repo.db.gz").value();
+    bpt::compress_file_gz(_dirpath / "repo.db", _dirpath / "repo.db.gz").value();
 }
 
 repository repository::create(path_ref dirpath, std::string_view name) {
-    DDS_E_SCOPE(e_repo_open_path{dirpath});
+    BPT_E_SCOPE(e_repo_open_path{dirpath});
     std::filesystem::create_directories(dirpath);
     auto db = unique_database::open((dirpath / "repo.db").string()).value();
     ensure_migrated(db);
-    dds_leaf_try {
+    bpt_leaf_try {
         db_exec(db.prepare("INSERT INTO crs_repo_self (rowid, name) VALUES (1729, ?)"_sql), name)
             .value();
     }
-    dds_leaf_catch(matchv<neo::sqlite3::errc::constraint_primary_key>) {
+    bpt_leaf_catch(matchv<neo::sqlite3::errc::constraint_primary_key>) {
         BOOST_LEAF_THROW_EXCEPTION(current_error(), e_repo_already_init{});
     };
     auto r = repository{std::move(db), dirpath};
@@ -111,7 +111,7 @@ repository repository::create(path_ref dirpath, std::string_view name) {
 }
 
 repository repository::open_existing(path_ref dirpath) {
-    DDS_E_SCOPE(e_repo_open_path{dirpath});
+    BPT_E_SCOPE(e_repo_open_path{dirpath});
     auto db = unique_database::open_existing((dirpath / "repo.db").string()).value();
     ensure_migrated(db);
     return repository{std::move(db), dirpath};
@@ -132,18 +132,18 @@ fs::path repository::subdir_of(const package_info& pkg) const noexcept {
 }
 
 void repository::import_dir(path_ref dirpath) {
-    DDS_E_SCOPE(e_repo_importing_dir{dirpath});
+    BPT_E_SCOPE(e_repo_importing_dir{dirpath});
     auto  sd  = sdist::from_directory(dirpath);
     auto& pkg = sd.pkg;
-    DDS_E_SCOPE(e_repo_importing_package{pkg});
+    BPT_E_SCOPE(e_repo_importing_package{pkg});
     auto dest_dir = subdir_of(pkg);
     fs::create_directories(dest_dir);
 
     // Copy the package into a temporary directory
-    auto prep_dir = dds::temporary_dir::create_in(dest_dir);
+    auto prep_dir = bpt::temporary_dir::create_in(dest_dir);
     archive_package_libraries(dirpath, prep_dir.path(), pkg);
     fs::create_directories(prep_dir.path());
-    dds::write_file(prep_dir.path() / "pkg.json", pkg.to_json(2));
+    bpt::write_file(prep_dir.path() / "pkg.json", pkg.to_json(2));
 
     auto tmp_tgz = pkg_dir() / (prep_dir.path().filename().string() + ".tgz");
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
@@ -155,7 +155,7 @@ void repository::import_dir(path_ref dirpath) {
     }
 
     neo::sqlite3::transaction_guard tr{_db.sqlite3_db()};
-    dds_leaf_try {
+    bpt_leaf_try {
         db_exec(  //
             _prepare(R"(
                 INSERT INTO crs_repo_packages (meta_json)
@@ -164,12 +164,12 @@ void repository::import_dir(path_ref dirpath) {
             std::string_view(pkg.to_json()))
             .value();
     }
-    dds_leaf_catch(matchv<neo::sqlite3::errc::constraint_unique>) {
+    bpt_leaf_catch(matchv<neo::sqlite3::errc::constraint_unique>) {
         BOOST_LEAF_THROW_EXCEPTION(current_error(), e_repo_import_pkg_already_present{});
     };
 
     move_file(tmp_tgz, dest_dir / "pkg.tgz").value();
-    dds::copy_file(prep_dir.path() / "pkg.json", dest_dir / "pkg.json").value();
+    bpt::copy_file(prep_dir.path() / "pkg.json", dest_dir / "pkg.json").value();
     tr.commit();
     _vacuum_and_compress();
 

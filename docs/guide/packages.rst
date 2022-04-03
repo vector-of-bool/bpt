@@ -1,15 +1,15 @@
 Packages and Layout
 ###################
 
-The units of distribution in ``dds`` are *packages*. A single package consists
+The units of distribution in ``bpt`` are *packages*. A single package consists
 of one or more *libraries*. In the simplest case, a package will contain a
 single library.
 
 It may be easiest to work from the bottom-up when trying to understand how
-``dds`` understands code.
+``bpt`` understands code.
 
-The layout expected by ``dds`` is based on the `Pitchfork layout`_ (PFL).
-``dds`` does not make use of every provision of the layout document, but the
+The layout expected by ``bpt`` is based on the `Pitchfork layout`_ (PFL).
+``bpt`` does not make use of every provision of the layout document, but the
 features it does have are based on PFL.
 
 .. _Pitchfork layout: https://api.csswg.org/bikeshed/?force=1&url=https://raw.githubusercontent.com/vector-of-bool/pitchfork/develop/data/spec.bs
@@ -19,7 +19,7 @@ In particular, the following directories are used:
 - ``src/``
 - ``include/``
 - ``libs/``
-- ``_build/`` (the default build output directory used by ``dds``).
+- ``_build/`` (the default build output directory used by ``bpt``).
 
 Note that the ``libs/*/`` directories can contain their own ``src/`` and
 ``include/`` directories, the purposes and behaviors of which match those of
@@ -29,13 +29,13 @@ their top-level counterparts.
 Source Files
 ************
 
-The smallest subdivision of code that ``dds`` recognizes is the *source file*,
+The smallest subdivision of code that ``bpt`` recognizes is the *source file*,
 which is exactly as it sounds: A single file containing some amount of code.
 
 Source files can be grouped on a few axes, the most fundamental of which is
 "Is this compiled?"
 
-``dds`` uses source file extensions to determine whether a source file should
+``bpt`` uses source file extensions to determine whether a source file should
 be fed to the compiler. All of the common C and C++ file extensions are
 supported:
 
@@ -51,11 +51,11 @@ supported:
       * ``.H``, ``.H++``, ``.h``, ``.h++``, ``.hh``, ``.hpp``, ``.hxx``,
         ``.ipp``, ``.inc``, and ``.inl``
 
-If a file's extension is not listed in the table above, ``dds`` will ignore it.
+If a file's extension is not listed in the table above, ``bpt`` will ignore it.
 
 .. note::
     Although headers are not compiled, this does not mean they are ignored.
-    ``dds`` still understands and respects headers, and they are collected
+    ``bpt`` still understands and respects headers, and they are collected
     together as part of a *source distribution*.
 
 
@@ -64,7 +64,7 @@ If a file's extension is not listed in the table above, ``dds`` will ignore it.
 Applications and Tests
 **********************
 
-``dds`` will recognize certain compilable source files as belonging to
+``bpt`` will recognize certain compilable source files as belonging to
 applications and tests, depending on the filenames "stem," which is the part of
 the filename not including the outer-most file extension. If a compilable source
 filename stem ends with ``.main`` or ``.test``, that source file is assumed to
@@ -99,17 +99,17 @@ For example:
     a text executable.
   - The stem of ``cats.musical.test`` is ``cats.musical``, so we will generate
     an executable named ``cats.musical``.
-  - Note that the dot in ``cats.musical`` is not significant, as ``dds`` does
+  - Note that the dot in ``cats.musical`` is not significant, as ``bpt`` does
     strip any further extensions.
 
 .. note::
-    ``dds`` will automatically append the appropriate filename extension to the
+    ``bpt`` will automatically append the appropriate filename extension to the
     generated executables based on the host and toolchain.
 
 An *application* source file is a source file whose file stem ends with
-``.main``. ``dds`` will assume this source file to contain a program entry
+``.main``. ``bpt`` will assume this source file to contain a program entry
 point function and not include it as part of the main library build. Instead,
-when ``dds`` is generating applications, the source file will be compiled, and
+when ``bpt`` is generating applications, the source file will be compiled, and
 the resulting object will be linked together with the enclosing library into an
 executable.
 
@@ -117,11 +117,11 @@ A *test* source file is a source file whose file stem ends with ``.test``. Like
 application sources, a *test* source file is omitted from the main library, and
 it will be used to generate tests. The exact behavior of tests is determined by
 the ``test_driver`` setting for the package, but the default is that each test
-source file will generate a single test executable that is executed by ``dds``
+source file will generate a single test executable that is executed by ``bpt``
 when running unit tests.
 
 The building of tests and applications can be controlled when running
-``dds build``. If tests are built, ``dds`` will automatically execute those
+``bpt build``. If tests are built, ``bpt`` will automatically execute those
 tests in parallel once the executables have been generated.
 
 In any case, the executables are associated with a *library*, and, when those
@@ -196,7 +196,7 @@ location rather than modifying their source code.
 
 .. _pkgs.source-root:
 
-Source Roots in ``dds``
+Source Roots in ``bpt``
 =======================
 
 To avoid ambiguity and aide in portability, the following rules should be
@@ -206,10 +206,10 @@ strictly adhered to:
 #. Only source roots will be added to the *include-search-path*.
 #. All ``#include``-directives are relative to a source root.
 
-By construction, ``dds`` cannot build a project that has nested source roots,
+By construction, ``bpt`` cannot build a project that has nested source roots,
 and it will only ever add source roots to the *include-search-path*.
 
-``dds`` supports either one or two source roots in a library.
+``bpt`` supports either one or two source roots in a library.
 
 
 .. _pkgs.lib-roots:
@@ -217,16 +217,16 @@ and it will only ever add source roots to the *include-search-path*.
 Library Roots
 *************
 
-In ``dds``, a *library root* is a directory that contains a ``src/`` directory,
-an ``include/`` directory, or both. ``dds`` will treat both directories as
+In ``bpt``, a *library root* is a directory that contains a ``src/`` directory,
+an ``include/`` directory, or both. ``bpt`` will treat both directories as
 source roots, but behaves differently between the two. The ``src/`` and
 ``include/`` directories are themselves *source roots*.
 
-``dds`` distinguishes between a *public* include-directory, and a *private*
-include-directory. When ``dds`` is compiling a library, both its *private* and
+``bpt`` distinguishes between a *public* include-directory, and a *private*
+include-directory. When ``bpt`` is compiling a library, both its *private* and
 its *public* include-paths will be added to the compiler's
 *include-search-path*. When a downstream user of a library is compiling against
-a library managed by ``dds``, only the *public* include-directory will be
+a library managed by ``bpt``, only the *public* include-directory will be
 added to the compiler's *include-search-path*. This has the effect that only
 the files that are children of the source root that is the *public*
 include-directory will be available when compiling consumers.
@@ -237,19 +237,19 @@ include-directory will be available when compiling consumers.
     include-directory attempt to use headers from the *private*
     include-directory, as they **will not** be visible.
 
-If both ``src/`` and ``include/`` are present in a library root, then ``dds``
+If both ``src/`` and ``include/`` are present in a library root, then ``bpt``
 will use ``include/`` as the *public* include-directory and ``src/`` as the
 *private* include-directory. If only one of the two is present, then that
 directory will be treated as the *public* include-directory, and there will be
 no *private* include-directory.
 
-When ``dds`` exports a library, the header files from the *public*
+When ``bpt`` exports a library, the header files from the *public*
 include-directory source root will be collected together and distributed as
 that library's header tree. The path to the individual header files relative to
 their source root will be retained as part of the library distribution.
 
-``dds`` will compile every compilable source file that appears in the ``src/``
-directory. ``dds`` will not compile compilable source files that appear in the
+``bpt`` will compile every compilable source file that appears in the ``src/``
+directory. ``bpt`` will not compile compilable source files that appear in the
 ``include/`` directory and will issue a warning on each file found.
 
 
@@ -258,18 +258,18 @@ directory. ``dds`` will not compile compilable source files that appear in the
 Libraries
 *********
 
-The *library* is a fundamental unit of consumable code, and ``dds`` is
-specifically built to work with them. When you are in ``dds``, the library is
+The *library* is a fundamental unit of consumable code, and ``bpt`` is
+specifically built to work with them. When you are in ``bpt``, the library is
 the center of everything.
 
 A single *library root* will always correspond to exactly one library. If the
-library has any compilable sources then ``dds`` will use those sources to
+library has any compilable sources then ``bpt`` will use those sources to
 generate a static library file that is linked into runtime binaries. If a
-library contains only headers then ``dds`` will not generate an archive to be
+library contains only headers then ``bpt`` will not generate an archive to be
 included in downstream binaries, but it will still generate link rules for the
 dependencies of a header-only library.
 
-In order for ``dds`` to be able to distribute and interlink libraries, a
+In order for ``bpt`` to be able to distribute and interlink libraries, a
 ``library.json5`` file must be present at the corresponding library root. The
 only required key in a ``library.json5`` file is ``name``:
 
@@ -291,7 +291,7 @@ A *package root* is a directory that contains some number of library roots. If
 the package root contains a ``src/`` and/or ``include/`` directory then the
 package root is itself a library root, and a library is defined at the root of
 the package. This is intended to be the most common and simplest method of
-creating libraries with ``dds``.
+creating libraries with ``bpt``.
 
 If the package root contains a ``libs/`` directory, then each subdirectory of
 the ``libs/`` directory is checked to be a library root. Each direct child of
@@ -307,7 +307,7 @@ Packages
 A package is defined by some *package root*, and contains some number of
 *libraries*.
 
-The primary distribution format of packages that is used by ``dds`` is the
+The primary distribution format of packages that is used by ``bpt`` is the
 *source distribution*. Refer to the page :doc:`source-dists`.
 
 Packages are identified by a name/version pair, joined together by an ``@``
@@ -315,7 +315,7 @@ symbol. The version of a package must be a semantic version string. Together,
 the ``name@version`` string forms the *package ID*, and it must be unique within
 a repository or local package cache.
 
-In order for a package to be exported by ``dds`` it must have a
+In order for a package to be exported by ``bpt`` it must have a
 ``package.json5`` file at its package root. Three keys are required to be
 present in the ``package.json5`` file: ``name``, ``version``, and ``namespace``:
 

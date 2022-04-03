@@ -25,6 +25,6 @@ struct usage {
     }
 };
 
-dds::result<usage> split_usage_string(std::string_view);
+bpt::result<usage> split_usage_string(std::string_view);
 
 }  // namespace lm

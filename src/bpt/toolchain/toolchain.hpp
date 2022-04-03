@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 enum class language {
     automatic,
@@ -108,4 +108,4 @@ public:
     static toolchain get_default();
 };
 
-}  // namespace dds
+}  // namespace bpt

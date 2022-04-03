@@ -23,7 +23,7 @@
 #include <mutex>
 #include <thread>
 
-using namespace dds;
+using namespace bpt;
 
 namespace {
 
@@ -43,7 +43,7 @@ struct pending_file {
 }  // namespace
 
 void build_plan::compile_all(const build_env& env, int njobs) const {
-    auto okay = dds::compile_all(iter_compilations(*this), env, njobs);
+    auto okay = bpt::compile_all(iter_compilations(*this), env, njobs);
     if (!okay) {
         throw_user_error<errc::compile_failure>();
     }
@@ -60,7 +60,7 @@ void build_plan::compile_files(const build_env&             env,
           })
         | ranges::to_vector;
 
-    dds::sort_unique_erase(as_pending);
+    bpt::sort_unique_erase(as_pending);
 
     auto check_compilation = [&](const compile_file_plan& comp) {
         return ranges::any_of(as_pending, [&](pending_file& f) {
@@ -86,7 +86,7 @@ void build_plan::compile_files(const build_env&             env,
         BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::compile_failure>(), missing_files);
     }
 
-    auto okay = dds::compile_all(comps, env, njobs);
+    auto okay = bpt::compile_all(comps, env, njobs);
     if (!okay) {
         BOOST_LEAF_THROW_EXCEPTION(make_user_error<errc::compile_failure>(),
                                    BPT_ERR_REF("compile-failure"));

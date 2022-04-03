@@ -27,7 +27,7 @@ stages:
               echo Executing Build and Tests
               reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
               poetry run dagon ci || exit 1
-              move _build\dds.exe _build\dds-win-x64.exe || exit 1
+              move _build\bpt.exe _build\bpt-win-x64.exe || exit 1
             displayName: Build and Test
           - task: PublishTestResults@2
             displayName: Publish Tests
@@ -36,9 +36,9 @@ stages:
               testResultsFiles: '**/pytest-junit.xml'
               failTaskOnFailedTests: true
               testRunTitle: Windows Tests
-          - publish: _build\dds-win-x64.exe
+          - publish: _build\bpt-win-x64.exe
             displayName: Publish
-            artifact: dds-win-x64
+            artifact: bpt-win-x64
 
       - job: linux_gcc10
         displayName: Linux - GCC 10
@@ -54,9 +54,9 @@ stages:
               testResultsFiles: '**/pytest-junit.xml'
               failTaskOnFailedTests: true
               testRunTitle: Linux Tests
-          - publish: _build/dds-linux-x64
+          - publish: _build/bpt-linux-x64
             displayName: Publish
-            artifact: dds-linux-x64
+            artifact: bpt-linux-x64
 
       - job: macos_gcc10
         displayName: macOS - GCC 10
@@ -78,9 +78,9 @@ stages:
               testResultsFiles: '**/pytest-junit.xml'
               failTaskOnFailedTests: true
               testRunTitle: macOS Tests
-          - publish: _build/dds-macos-x64
+          - publish: _build/bpt-macos-x64
             displayName: Publish
-            artifact: dds-macos-x64
+            artifact: bpt-macos-x64
 
   - stage: deploy_build
     displayName: Deploy

@@ -8,9 +8,9 @@
 
 #include <string>
 
-using namespace dds;
-using namespace dds::crs;
-using namespace dds::walk_utils;
+using namespace bpt;
+using namespace bpt::crs;
+using namespace bpt::walk_utils;
 
 namespace {
 

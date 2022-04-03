@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace dds {
+namespace bpt {
 
 class shared_compile_file_rules;
 
@@ -84,4 +84,4 @@ public:
     }
 };
 
-}  // namespace dds
+}  // namespace bpt

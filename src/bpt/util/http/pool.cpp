@@ -19,7 +19,7 @@
 
 #include <map>
 
-namespace dds::detail {
+namespace bpt::detail {
 
 struct http_client_impl {
     network_origin origin;
@@ -58,7 +58,7 @@ struct http_client_impl {
     }
 
     void connect() {
-        DDS_E_SCOPE(origin);
+        BPT_E_SCOPE(origin);
         auto addr = neo::address::resolve(origin.hostname, std::to_string(origin.port));
         auto sock = neo::socket::open_connected(addr, neo::socket::type::stream);
 
@@ -100,7 +100,7 @@ struct http_client_impl {
             .parse_tail = {},
         };
 
-        dds_log(debug,
+        bpt_log(debug,
                 " --> HTTP {} {}://{}:{}{}",
                 params.method,
                 origin.protocol,
@@ -116,7 +116,7 @@ struct http_client_impl {
             {"Content-Length", "0"},
             {"TE", "gzip, chunked"},
             {"Connection", "keep-alive"},
-            {"User-Agent", "dds 0.1.0-alpha.6"},
+            {"User-Agent", "bpt 0.1.0-alpha.6"},
         };
         if (!params.prior_etag.empty()) {
             headers.push_back({"If-None-Match", params.prior_etag});
@@ -149,7 +149,7 @@ struct http_client_impl {
         }
         bool disconnect = false;
         if (r.version == neo::http::version::v1_0) {
-            dds_log(trace, "     HTTP/1.0 server will disconnect by default");
+            bpt_log(trace, "     HTTP/1.0 server will disconnect by default");
             disconnect = true;
         } else if (r.version == neo::http::version::v1_1) {
             disconnect = r.header_value("Connection") == "close";
@@ -158,7 +158,7 @@ struct http_client_impl {
             disconnect = true;
         }
         _peer_disconnected = disconnect;
-        dds_log(debug, " <-- HTTP {} {}", r.status, r.status_message);
+        bpt_log(debug, " <-- HTTP {} {}", r.status, r.status_message);
         return r;
     }
 };
@@ -174,9 +174,9 @@ struct http_pool_impl {
     std::multimap<network_origin, std::shared_ptr<http_client_impl>, origin_order> _clients;
 };
 
-}  // namespace dds::detail
+}  // namespace bpt::detail
 
-using namespace dds;
+using namespace bpt;
 
 using client_impl_ptr = std::shared_ptr<detail::http_client_impl>;
 
@@ -193,7 +193,7 @@ http_client::~http_client() {
     }
     if (_impl->_state != detail::http_client_impl::_state_t::ready
         && _n_exceptions != std::uncaught_exceptions()) {
-        dds_log(debug, "NOTE: An http_client was dropped due to an exception");
+        bpt_log(debug, "NOTE: An http_client was dropped due to an exception");
         return;
     }
     neo_assert(expects,
@@ -233,7 +233,7 @@ http_client http_pool::client_for_origin(const network_origin& origin) {
     ret._pool = _impl;
     if (iter == _impl->_clients.end()) {
         // Nothing for this origin yet
-        dds_log(debug,
+        bpt_log(debug,
                 "Opening new connection to {}://{}:{}",
                 origin.protocol,
                 origin.hostname,
@@ -242,7 +242,7 @@ http_client http_pool::client_for_origin(const network_origin& origin) {
         ptr->connect();
         ret._impl = ptr;
     } else {
-        dds_log(debug,
+        bpt_log(debug,
                 "Reusing existing connection to {}://{}:{}",
                 origin.protocol,
                 origin.hostname,
@@ -376,22 +376,22 @@ std::unique_ptr<erased_message_body> http_client::_make_body_reader(const http_r
     return _impl->_do_io([&](auto&& source) -> std::unique_ptr<erased_message_body> {
         using source_type = decltype(source);
         if (res.content_length() == 0) {
-            dds_log(trace, "Empty response body");
+            bpt_log(trace, "Empty response body");
             _set_ready();
             return std::make_unique<recv_none_state>();
         } else if (res.transfer_encoding() == "chunked") {
-            dds_log(trace, "Chunked response body");
+            bpt_log(trace, "Chunked response body");
             return std::make_unique<recv_chunked_state<source_type>>(source, _impl);
         } else if (res.transfer_encoding() == "gzip") {
-            dds_log(trace, "GZip encoded response body");
+            bpt_log(trace, "GZip encoded response body");
             return std::make_unique<recv_gzip_state<source_type>>(source, _impl);
         } else if (!res.transfer_encoding().has_value() && res.content_length() > 0) {
-            dds_log(trace, "Plain response body");
+            bpt_log(trace, "Plain response body");
             return std::make_unique<recv_plain_state<source_type>>(source,
                                                                    *res.content_length(),
                                                                    _impl);
         } else if (res.version == neo::http::version::v1_0) {
-            dds_log(trace, "HTTP/1.0 response body");
+            bpt_log(trace, "HTTP/1.0 response body");
             return std::make_unique<recv_http_v1_0_state<source_type>>(source, _impl);
         } else {
             neo_assert(invariant, false, "Unimplemented", res.transfer_encoding());
@@ -425,7 +425,7 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
     auto url = url_.normalized();
     neo_assertion_breadcrumbs("Issuing HTTP request", url.to_string());
     for (auto i = 0; i <= 100; ++i) {
-        DDS_E_SCOPE(url);
+        BPT_E_SCOPE(url);
         params.path  = url.path;
         params.query = url.query.value_or("");
 
@@ -434,11 +434,11 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
 
         client.send_head(params);
         auto resp = client.recv_head();
-        DDS_E_SCOPE(resp);
+        BPT_E_SCOPE(resp);
 
-        if (dds::log::level_enabled(dds::log::level::trace)) {
+        if (bpt::log::level_enabled(bpt::log::level::trace)) {
             for (auto hdr : resp.headers) {
-                dds_log(trace, "  -- {}: {}", hdr.key, hdr.value);
+                bpt_log(trace, "  -- {}: {}", hdr.key, hdr.value);
             }
         }
 
@@ -470,7 +470,7 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
                                       "'Location' header"),
                     e_http_status{resp.status});
             }
-            dds_log(debug,
+            bpt_log(debug,
                     "HTTP {} {} [{}] -> [{}]",
                     resp.status,
                     resp.status_message,
@@ -479,7 +479,7 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
             if (loc->value.starts_with("/")) {
                 url.path = std::string(loc->value);
             } else {
-                url = dds::parse_url(loc->value);
+                url = bpt::parse_url(loc->value);
             }
             continue;
         }
@@ -489,7 +489,7 @@ request_result http_pool::request(neo::url_view url_, http_request_params params
     neo::unreachable();
 }
 
-void dds::request_result::save_file(const std::filesystem::path& dest) {
+void bpt::request_result::save_file(const std::filesystem::path& dest) {
     auto out = neo::file_stream::open(dest, neo::open_mode::write);
     client.recv_body_into(resp, neo::stream_io_buffers(out));
 }

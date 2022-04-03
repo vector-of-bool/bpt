@@ -9,8 +9,8 @@
 #include <bpt/util/json_walk.hpp>
 #include <semver/range.hpp>
 
-using namespace dds;
-using namespace dds::walk_utils;
+using namespace bpt;
+using namespace bpt::walk_utils;
 
 static auto parse_version_range = [](const json5::data& range) {
     semver::version low;
@@ -45,7 +45,7 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
     project_dependency ret;
 
     bool                       got_versions_key = false;
-    std::vector<dds::name>     explicit_uses;
+    std::vector<bpt::name>     explicit_uses;
     bool                       got_using_key = false;
     std::vector<semver::range> ver_ranges;
 

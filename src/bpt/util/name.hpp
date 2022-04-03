@@ -5,7 +5,7 @@
 #include <iosfwd>
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 enum class invalid_name_reason {
     empty,
@@ -41,11 +41,11 @@ struct name {
     }
 
     friend void do_repr(auto out, const name* self) {
-        out.type("dds::name");
+        out.type("bpt::name");
         if (self) {
             out.value("{}", out.repr_value(self->str));
         }
     }
 };
 
-}  // namespace dds
+}  // namespace bpt

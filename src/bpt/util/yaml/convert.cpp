@@ -23,7 +23,7 @@ static T try_decode(const YAML::Node& node) {
 
 json5::data bpt::yaml_as_json5_data(const YAML::Node& node) {
     std::string_view tag = node.Tag();
-    DDS_E_SCOPE(e_yaml_tag{std::string(tag)});
+    BPT_E_SCOPE(e_yaml_tag{std::string(tag)});
     if (node.IsNull()) {
         return json5::data::null_type{};
     } else if (node.IsSequence()) {

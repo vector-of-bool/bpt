@@ -22,7 +22,7 @@ specifically addressed in the prior example:
 #. The *source roots* of a library are added to the compiler's ``#include``
    search-path. In our example, this is only the ``src/`` directory of the
    project.
-#. ``dds`` also supports a top-level directory named ``include/``. Both
+#. ``bpt`` also supports a top-level directory named ``include/``. Both
    ``include/`` and ``src/`` may be present in a single library, but there are
    some important differences. Refer to :ref:`pkgs.lib-roots` in the layout
    guide.
@@ -34,5 +34,5 @@ specifically addressed in the prior example:
 .. seealso::
 
     Like flossing, we all know we *should* be writing tests, but it can be such
-    a hassle. Fortunately, ``dds`` makes it simple. Read on to:
+    a hassle. Fortunately, ``bpt`` makes it simple. Read on to:
     :doc:`hello-test`.

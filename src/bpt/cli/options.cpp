@@ -11,16 +11,16 @@
 #include <debate/enum.hpp>
 #include <fansi/styled.hpp>
 
-using namespace dds;
+using namespace bpt;
 using namespace debate;
 using namespace fansi::literals;
 
 namespace {
 
 struct setup {
-    dds::cli::options& opts;
+    bpt::cli::options& opts;
 
-    explicit setup(dds::cli::options& opts)
+    explicit setup(bpt::cli::options& opts)
         : opts(opts) {}
 
     // Util argument common to a lot of operations
@@ -140,14 +140,14 @@ struct setup {
             .long_spellings  = {"log-level"},
             .short_spellings = {"l"},
             .help            = ""
-                    "Set the dds logging level. One of 'trace', 'debug', 'info', \n"
+                    "Set the bpt logging level. One of 'trace', 'debug', 'info', \n"
                     "'warn', 'error', 'critical', or 'silent'",
             .valname = "<level>",
             .action  = put_into(opts.log_level),
         });
         parser.add_argument({
             .long_spellings = {"crs-cache-dir"},
-            .help           = "(Advanced) Override dds's CRS caching directory.",
+            .help           = "(Advanced) Override bpt's CRS caching directory.",
             .valname        = "<directory>",
             .action         = put_into(opts.crs_cache_dir),
         });
@@ -181,7 +181,7 @@ struct setup {
         }));
         setup_install_yourself_cmd(group.add_parser({
             .name = "install-yourself",
-            .help = "Have this dds executable install itself onto your PATH",
+            .help = "Have this bpt executable install itself onto your PATH",
         }));
     }
 
@@ -208,7 +208,7 @@ struct setup {
             .action         = debate::store_false(opts.build.want_apps),
         });
         build_cmd.add_argument(no_warn_arg.dup());
-        build_cmd.add_argument(out_arg.dup()).help = "Directory where dds will write build results";
+        build_cmd.add_argument(out_arg.dup()).help = "Directory where bpt will write build results";
 
         build_cmd.add_argument(lm_index_arg.dup()).help
             = "Path to a libman index file to use for loading project dependencies";
@@ -425,7 +425,7 @@ struct setup {
         });
         install_yourself_cmd.add_argument({
             .long_spellings = {"symlink"},
-            .help = "Create a symlink at the installed location to the existing 'dds' executable\n"
+            .help = "Create a symlink at the installed location to the existing 'bpt' executable\n"
                     "instead of copying the executable file",
             .nargs  = 0,
             .action = store_true(opts.install_yourself.symlink),
@@ -439,18 +439,18 @@ void cli::options::setup_parser(debate::argument_parser& parser) noexcept {
     setup{*this}.do_setup(parser);
 }
 
-toolchain dds::cli::options::load_toolchain() const {
+toolchain bpt::cli::options::load_toolchain() const {
     if (!toolchain) {
-        return dds::toolchain::get_default();
+        return bpt::toolchain::get_default();
     }
     // Convert the given string to a toolchain
     auto& tc_str = *toolchain;
-    DDS_E_SCOPE(e_loading_toolchain{tc_str});
+    BPT_E_SCOPE(e_loading_toolchain{tc_str});
     if (tc_str.starts_with(":")) {
         auto default_tc = tc_str.substr(1);
-        return dds::toolchain::get_builtin(default_tc);
+        return bpt::toolchain::get_builtin(default_tc);
     } else {
-        DDS_E_SCOPE(bpt::e_toolchain_filepath{tc_str});
-        return parse_toolchain_json5(dds::read_file(tc_str));
+        BPT_E_SCOPE(bpt::e_toolchain_filepath{tc_str});
+        return parse_toolchain_json5(bpt::read_file(tc_str));
     }
 }

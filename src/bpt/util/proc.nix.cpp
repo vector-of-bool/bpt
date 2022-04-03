@@ -19,7 +19,7 @@
 #include <iostream>
 #include <system_error>
 
-using namespace dds;
+using namespace bpt;
 
 namespace {
 
@@ -41,7 +41,7 @@ void check_rc(bool b, std::string_view s) {
 
     std::string workdir = opts.cwd.value_or(fs::current_path()).string();
     auto        not_found_err
-        = fmt::format("[dds child executor] The requested executable [{}] could not be found.",
+        = fmt::format("[bpt child executor] The requested executable [{}] could not be found.",
                       strings[0]);
 
     auto child_pid = ::fork();
@@ -64,7 +64,7 @@ void check_rc(bool b, std::string_view s) {
         std::_Exit(-1);
     }
 
-    std::fputs("[dds child executor] execvp returned! This is a fatal error: ", stderr);
+    std::fputs("[bpt child executor] execvp returned! This is a fatal error: ", stderr);
     std::fputs(std::strerror(errno), stderr);
     std::fputs("\n", stderr);
     std::_Exit(-1);
@@ -72,8 +72,8 @@ void check_rc(bool b, std::string_view s) {
 
 }  // namespace
 
-proc_result dds::run_proc(const proc_options& opts) {
-    dds_log(debug, "Spawning subprocess: {}", quote_command(opts.command));
+proc_result bpt::run_proc(const proc_options& opts) {
+    bpt_log(debug, "Spawning subprocess: {}", quote_command(opts.command));
     int  stdio_pipe[2] = {};
     auto rc            = ::pipe(stdio_pipe);
     check_rc(rc == 0, "Create stdio pipe for subprocess");
@@ -113,7 +113,7 @@ proc_result dds::run_proc(const proc_options& opts) {
             ::kill(child, SIGINT);
             timeout       = -1ms;
             res.timed_out = true;
-            dds_log(debug, "Subprocess [{}] timed out", quote_command(opts.command));
+            bpt_log(debug, "Subprocess [{}] timed out", quote_command(opts.command));
             continue;
         }
         std::string buffer;

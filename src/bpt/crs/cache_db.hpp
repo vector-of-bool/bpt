@@ -10,7 +10,7 @@
 #include <neo/sqlite3/fwd.hpp>
 #include <neo/url/url.hpp>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 struct e_no_such_remote_url {
     std::string value;
@@ -28,9 +28,9 @@ struct e_no_such_remote_url {
  * locally available packages.
  */
 class cache_db {
-    neo::ref_member<dds::unique_database> _db;
+    neo::ref_member<bpt::unique_database> _db;
 
-    explicit cache_db(dds::unique_database& db) noexcept
+    explicit cache_db(bpt::unique_database& db) noexcept
         : _db(db) {}
 
     // Convenience method to return a prepared statement
@@ -87,7 +87,7 @@ public:
      * @param version The version of the package
      */
     [[nodiscard]] neo::any_input_range<package_entry>
-    for_package(dds::name const& name, semver::version const& version) const;
+    for_package(bpt::name const& name, semver::version const& version) const;
 
     /**
      * @brief Obtain a list of package entries for the given name.
@@ -96,7 +96,7 @@ public:
      *
      * @param name The name of a package.
      */
-    [[nodiscard]] neo::any_input_range<package_entry> for_package(dds::name const& name) const;
+    [[nodiscard]] neo::any_input_range<package_entry> for_package(bpt::name const& name) const;
 
     /**
      * @brief Iterate over all package entries that are currently available in any enabled remote.
@@ -115,4 +115,4 @@ public:
     neo::sqlite3::connection_ref sqlite3_db() const noexcept;
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

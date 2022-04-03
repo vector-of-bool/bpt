@@ -15,17 +15,17 @@ from . import toolchain as tc_mod
 T = TypeVar('T')
 
 
-class DDSWrapper:
+class BPTWrapper:
     """
-    Wraps a 'dds' executable with some convenience APIs that invoke various
-    'dds' subcommands.
+    Wraps a 'bpt' executable with some convenience APIs that invoke various
+    'bpt' subcommands.
     """
 
     def __init__(self, path: Path, *, crs_cache_dir: Pathish | None = None, default_cwd: Pathish | None = None) -> None:
         self.path = path
-        "The path to the wrapped ``dds`` executable"
+        "The path to the wrapped ``bpt`` executable"
         self.default_cwd = Path(default_cwd or Path.cwd())
-        "The directory in which ``dds`` commands will execute unless otherwise specified"
+        "The directory in which ``bpt`` commands will execute unless otherwise specified"
         self.crs_cache_dir = crs_cache_dir
         "The directory in which the CRS cache data will be stored"
 
@@ -35,7 +35,7 @@ class DDSWrapper:
 
     @property
     def always_args(self) -> proc.CommandLine:
-        """Arguments that are always given to every dds subcommand"""
+        """Arguments that are always given to every bpt subcommand"""
         return [self.crs_cache_dir_arg]
 
     @property
@@ -59,9 +59,9 @@ class DDSWrapper:
 
     def run(self, args: proc.CommandLine, *, cwd: Pathish | None = None, timeout: float | None = None) -> None:
         """
-        Execute the 'dds' executable with the given arguments
+        Execute the 'bpt' executable with the given arguments
 
-        :param args: The command arguments to give to ``dds``.
+        :param args: The command arguments to give to ``bpt``.
         :param cwd: The working directory of the subprocess.
         :param timeout: A timeout for the subprocess's execution.
         """
@@ -69,11 +69,11 @@ class DDSWrapper:
         proc.check_run([self.path, self.always_args, args], cwd=cwd or self.default_cwd, env=env, timeout=timeout)
 
     def pkg_prefetch(self, *, repos: Iterable[Pathish], pkgs: Iterable[str] = ()) -> None:
-        "Execute the ``dds pkg prefetch`` subcommand"
+        "Execute the ``bpt pkg prefetch`` subcommand"
         self.run(['pkg', 'prefetch', '--no-default-repo', (f'--use-repo={r}' for r in repos), pkgs])
 
     def pkg_solve(self, *, repos: Iterable[Pathish], pkgs: Iterable[str]) -> None:
-        "Execute the ``dds pkg solve`` subcommand"
+        "Execute the ``bpt pkg solve`` subcommand"
         self.run(['pkg', 'solve', '--no-default-repo', (f'--use-repo={r}' for r in repos), pkgs])
 
     def build(self,
@@ -88,7 +88,7 @@ class DDSWrapper:
               more_args: proc.CommandLine | None = None,
               timeout: float | None = None) -> None:
         """
-        Run 'dds build' with the given arguments.
+        Run 'bpt build' with the given arguments.
 
         :param root: The root project directory.
         :param toolchain: The toolchain to use for the build.
@@ -127,7 +127,7 @@ class DDSWrapper:
                      build_root: Pathish | None = None,
                      more_args: proc.CommandLine = ()) -> None:
         """
-        Run 'dds compile-file' for the given paths.
+        Run 'bpt compile-file' for the given paths.
 
         .. seealso: :func:`build` for additional parameter information
         """
@@ -148,7 +148,7 @@ class DDSWrapper:
                    repos: Iterable[Pathish] = (),
                    toolchain: Pathish | None = None) -> None:
         """
-        run the ``dds build-deps`` subcommand.
+        run the ``bpt build-deps`` subcommand.
 
         .. seealso: :func:`build` for additional parameter information.
         """

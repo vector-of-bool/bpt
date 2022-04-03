@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 struct e_nonesuch {
     std::string                given;
@@ -16,4 +16,4 @@ struct e_nonesuch {
     void log_error(std::string_view fmt) const noexcept;
 };
 
-}  // namespace dds
+}  // namespace bpt

@@ -3,9 +3,9 @@
 #include <neo/assert.hpp>
 #include <nlohmann/json.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-nlohmann::json dds::json5_as_nlohmann_json(const json5::data& dat) noexcept {
+nlohmann::json bpt::json5_as_nlohmann_json(const json5::data& dat) noexcept {
     if (dat.is_null()) {
         return nullptr;
     } else if (dat.is_string()) {
@@ -31,7 +31,7 @@ nlohmann::json dds::json5_as_nlohmann_json(const json5::data& dat) noexcept {
     }
 }
 
-json5::data dds::nlohmann_json_as_json5(const nlohmann::json& data) noexcept {
+json5::data bpt::nlohmann_json_as_json5(const nlohmann::json& data) noexcept {
     if (data.is_null()) {
         return nullptr;
     } else if (data.is_string()) {

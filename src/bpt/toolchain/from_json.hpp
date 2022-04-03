@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 toolchain parse_toolchain_json5(std::string_view json5,
                                 std::string_view context = "Loading toolchain JSON");
@@ -14,4 +14,4 @@ toolchain parse_toolchain_json5(std::string_view json5,
 toolchain parse_toolchain_json_data(const json5::data& data,
                                     std::string_view   context = "Loading toolchain JSON");
 
-}  // namespace dds
+}  // namespace bpt

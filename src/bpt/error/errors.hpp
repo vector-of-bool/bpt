@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 enum class errc {
     none = 0,
@@ -101,4 +101,4 @@ template <errc ErrorCode>
     throw make_external_error<ErrorCode>(std::string(default_error_string(ErrorCode)));
 }
 
-}  // namespace dds
+}  // namespace bpt

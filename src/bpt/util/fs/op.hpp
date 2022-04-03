@@ -2,8 +2,8 @@
 
 #include <filesystem>
 
-namespace dds {
+namespace bpt {
 
 bool file_exists(const std::filesystem::path&);
 
-}  // namespace dds
+}  // namespace bpt

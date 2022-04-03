@@ -5,7 +5,7 @@
 #include <chrono>
 #include <utility>
 
-namespace dds {
+namespace bpt {
 
 class stopwatch {
 public:
@@ -44,4 +44,4 @@ auto timed(Func&& fn) noexcept(noexcept(NEO_FWD(fn)())) {
     }
 }
 
-}  // namespace dds
+}  // namespace bpt

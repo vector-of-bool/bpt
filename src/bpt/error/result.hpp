@@ -6,9 +6,9 @@
 #include <boost/leaf/error.hpp>
 #include <boost/leaf/result.hpp>
 
-namespace dds {
+namespace bpt {
 
 using boost::leaf::current_error;
 using boost::leaf::new_error;
 
-}  // namespace dds
+}  // namespace bpt

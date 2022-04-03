@@ -16,7 +16,7 @@
 #include <sstream>
 #include <stdexcept>
 
-using namespace dds;
+using namespace bpt;
 using namespace std::chrono_literals;
 
 namespace {
@@ -39,10 +39,10 @@ std::wstring widen(std::string_view s) {
 
 }  // namespace
 
-proc_result dds::run_proc(const proc_options& opts) {
+proc_result bpt::run_proc(const proc_options& opts) {
     auto cmd_str  = quote_command(opts.command);
     auto cmd_wide = widen(cmd_str);
-    dds_log(debug, "Spawning subprocess: {}", cmd_str);
+    bpt_log(debug, "Spawning subprocess: {}", cmd_str);
 
     ::SECURITY_ATTRIBUTES security = {};
     security.bInheritHandle        = TRUE;

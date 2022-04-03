@@ -13,8 +13,8 @@
 
 #include <fstream>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 
 namespace {
 
@@ -24,7 +24,7 @@ neo::url calc_pkg_url(neo::url_view from, pkg_id pkg) {
 }
 
 void expand_tgz(path_ref tgz_path, path_ref into) {
-    auto infile = dds::open_file(tgz_path, std::ios::binary | std::ios::in);
+    auto infile = bpt::open_file(tgz_path, std::ios::binary | std::ios::in);
     fs::create_directories(into);
     neo::expand_directory_targz(
         neo::expand_options{
@@ -37,7 +37,7 @@ void expand_tgz(path_ref tgz_path, path_ref into) {
 }  // namespace
 
 void crs::pull_pkg_ar_from_remote(path_ref dest, neo::url_view from, pkg_id pkg) {
-    dds_log(trace,
+    bpt_log(trace,
             "Pulling package archive from remote {} for {} to {}",
             from.to_string(),
             pkg.to_string(),
@@ -48,11 +48,11 @@ void crs::pull_pkg_ar_from_remote(path_ref dest, neo::url_view from, pkg_id pkg)
 
     if (from.scheme == "file") {
         auto local_path = fs::path{tgz_url.path};
-        dds::copy_file(local_path, dest).value();
+        bpt::copy_file(local_path, dest).value();
         return;
     }
 
-    auto tmp = dest.parent_path() / ".dds-download.tmp";
+    auto tmp = dest.parent_path() / ".bpt-download.tmp";
     neo_defer { std::ignore = ensure_absent(tmp); };
 
     {
@@ -61,14 +61,14 @@ void crs::pull_pkg_ar_from_remote(path_ref dest, neo::url_view from, pkg_id pkg)
         reqres.save_file(tmp);
     }
 
-    dds::ensure_absent(dest).value();
-    dds::move_file(tmp, dest).value();
+    bpt::ensure_absent(dest).value();
+    bpt::move_file(tmp, dest).value();
 }
 
 void crs::pull_pkg_from_remote(path_ref expand_into, neo::url_view from, pkg_id pkg) {
     fs::path expand_tgz_path;
     if (from.scheme == "file") {
-        dds_log(debug,
+        bpt_log(debug,
                 "Expanding package archive of {} from remote [{}] in-place into [{}]",
                 pkg.to_string(),
                 from.to_string(),
@@ -78,7 +78,7 @@ void crs::pull_pkg_from_remote(path_ref expand_into, neo::url_view from, pkg_id 
         expand_tgz(tgz_path, expand_into);
     } else {
         // Create a tempdir, download into it, and expand that
-        auto tmpdir   = dds::temporary_dir::create_in(expand_into.parent_path());
+        auto tmpdir   = bpt::temporary_dir::create_in(expand_into.parent_path());
         auto tgz_path = tmpdir.path() / neo::ufmt("~{}.tgz", pkg.to_string());
         // Download:
         pull_pkg_ar_from_remote(tgz_path, from, pkg);

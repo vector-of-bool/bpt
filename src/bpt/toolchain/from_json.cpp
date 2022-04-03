@@ -13,7 +13,7 @@
 
 #include <string>
 
-using namespace dds;
+using namespace bpt;
 
 using std::optional;
 using std::string;
@@ -41,12 +41,12 @@ template <typename... Args>
 
 }  // namespace
 
-toolchain dds::parse_toolchain_json5(std::string_view j5_str, std::string_view context) {
+toolchain bpt::parse_toolchain_json5(std::string_view j5_str, std::string_view context) {
     auto dat = json5::parse_data(j5_str);
     return parse_toolchain_json_data(dat, context);
 }
 
-toolchain dds::parse_toolchain_json_data(const json5::data& dat, std::string_view context) {
+toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_view context) {
     using namespace semester;
 
     opt_string     compiler_id;

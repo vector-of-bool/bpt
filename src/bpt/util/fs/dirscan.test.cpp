@@ -7,10 +7,10 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("Create a simple scanner") {
-    auto this_dir = dds::fs::path(__FILE__).lexically_normal().parent_path();
-    auto db       = dds::unique_database::open(":memory:");
+    auto this_dir = bpt::fs::path(__FILE__).lexically_normal().parent_path();
+    auto db       = bpt::unique_database::open(":memory:");
     REQUIRE(db);
-    auto finder = dds::file_collector::create(*db);
+    auto finder = bpt::file_collector::create(*db);
     CHECK_FALSE(finder.has_cached(this_dir));
     auto found = finder.collect(this_dir) | neo::to_vector;
     CHECK_FALSE(found.empty());

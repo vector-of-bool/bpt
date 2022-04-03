@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 namespace detail {
 
@@ -61,4 +61,4 @@ public:
     std::string_view string() const noexcept;
 };
 
-}  // namespace dds
+}  // namespace bpt

@@ -5,10 +5,10 @@
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("Create an empty pool") { dds::http_pool pool; }
+TEST_CASE("Create an empty pool") { bpt::http_pool pool; }
 
 TEST_CASE("Connect to a remote") {
-    dds::http_pool pool;
+    bpt::http_pool pool;
     // auto           client = pool.access();
     auto cl = pool.client_for_origin({"https", "www.google.com", 443});
     cl.send_head({.method = "GET", .path = "/"});
@@ -19,7 +19,7 @@ TEST_CASE("Connect to a remote") {
 }
 
 TEST_CASE("Issue a request on a pool") {
-    dds::http_pool pool;
+    bpt::http_pool pool;
     auto           resp = pool.request(neo::url::parse("https://www.google.com"));
     resp.discard_body();
 }

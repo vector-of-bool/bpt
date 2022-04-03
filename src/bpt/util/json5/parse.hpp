@@ -6,11 +6,11 @@
 #include <filesystem>
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 nlohmann::json parse_json_str(std::string_view);
 nlohmann::json parse_json_file(std::filesystem::path const&);
 json5::data    parse_json5_str(std::string_view);
 json5::data    parse_json5_file(std::filesystem::path const&);
 
-}  // namespace dds
+}  // namespace bpt

@@ -45,7 +45,7 @@ constexpr bool is_idstring_char(char32_t c) noexcept {
 }
 
 std::string_view next_token(std::string_view sv) {
-    sv      = dds::trim_view(sv);
+    sv      = bpt::trim_view(sv);
     auto it = sv.begin();
     if (it == sv.end()) {
         return sv;
@@ -56,7 +56,7 @@ std::string_view next_token(std::string_view sv) {
     while (it != sv.end() && is_idstring_char(*it)) {
         ++it;
     }
-    return dds::sview(sv.begin(), it);
+    return bpt::sview(sv.begin(), it);
 }
 
 template <typename T>
@@ -84,7 +84,7 @@ struct simple_expression
     using variant_wrapper::visit;
 
     static simple_expression parse(std::string_view& sv) {
-        sv           = dds::trim_view(sv);
+        sv           = bpt::trim_view(sv);
         auto tok     = next_token(sv);
         auto license = find_with_id<spdx_license_info>(tok);
         if (!license) {
@@ -131,11 +131,11 @@ struct compound_expression : bpt::variant_wrapper<simple_expression,
     using variant_wrapper::visit;
 
     static compound_expression parse(std::string_view& sv) {
-        sv = dds::trim_view(sv);
+        sv = bpt::trim_view(sv);
         if (next_token(sv) == "(") {
             sv.remove_prefix(1);
             auto inner = parse(sv);
-            sv         = dds::trim_view(sv);
+            sv         = bpt::trim_view(sv);
             if (next_token(sv) != ")") {
                 BOOST_LEAF_THROW_EXCEPTION(e_bad_spdx_expression{"Missing closing parenthesis"});
             }
@@ -143,7 +143,7 @@ struct compound_expression : bpt::variant_wrapper<simple_expression,
             return paren_grouped{neo::copy_shared(inner)};
         }
         auto simple = simple_expression::parse(sv);
-        sv          = dds::trim_view(sv);
+        sv          = bpt::trim_view(sv);
         auto next   = next_token(sv);
         if (next == "OR") {
             sv.remove_prefix(2);
@@ -198,11 +198,11 @@ struct spdx_license_expression::impl {
 };
 
 spdx_license_expression spdx_license_expression::parse(std::string_view const sv) {
-    DDS_E_SCOPE(e_spdx_license_str{std::string(sv)});
+    BPT_E_SCOPE(e_spdx_license_str{std::string(sv)});
 
     auto sv1 = sv;
     auto r   = compound_expression::parse(sv1);
-    if (!dds::trim_view(sv1).empty()) {
+    if (!bpt::trim_view(sv1).empty()) {
         BOOST_LEAF_THROW_EXCEPTION(
             e_bad_spdx_expression{neo::ufmt("Unknown trailing string content '{}'", sv1)}, r);
     }

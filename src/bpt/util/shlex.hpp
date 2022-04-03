@@ -4,8 +4,8 @@
 #include <string_view>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 std::vector<std::string> split_shell_string(std::string_view s);
 
-}  // namespace dds
+}  // namespace bpt

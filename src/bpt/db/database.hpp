@@ -14,7 +14,7 @@
 #include <shared_mutex>
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 struct completed_compilation {
     std::string  quoted_command;
@@ -56,4 +56,4 @@ public:
     std::optional<completed_compilation>        command_of(path_ref file) const;
 };
 
-}  // namespace dds
+}  // namespace bpt

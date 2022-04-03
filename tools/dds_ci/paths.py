@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 PROJECT_ROOT = Path(__file__).absolute().parent.parent.parent
-'The root directory of the dds project'
+'The root directory of the bpt project'
 TOOLS_DIR = PROJECT_ROOT / 'tools'
 'The ``<repo>/tools`` directory'
 TESTS_DIR = PROJECT_ROOT / 'tests'
@@ -20,10 +20,10 @@ PREBUILT_DIR = PROJECT_ROOT / '_prebuilt'
 'The directory were prebuild/bootstrapped results will go, and scratch space for the build'
 EXE_SUFFIX = '.exe' if os.name == 'nt' else ''
 'The suffix of executable files on this system'
-PREBUILT_DDS = (PREBUILT_DIR / 'dds').with_suffix(EXE_SUFFIX)
-'The path to the prebuilt ``dds`` executable'
-CUR_BUILT_DDS = (BUILD_DIR / 'dds').with_suffix(EXE_SUFFIX)
-'The path to the main built ``dds`` executable'
+PREBUILT_BPT = (PREBUILT_DIR / 'bpt').with_suffix(EXE_SUFFIX)
+'The path to the prebuilt ``bpt`` executable'
+CUR_BUILT_BPT = (BUILD_DIR / 'bpt').with_suffix(EXE_SUFFIX)
+'The path to the main built ``bpt`` executable'
 
 
 @contextmanager

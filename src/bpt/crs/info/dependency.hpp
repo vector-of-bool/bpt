@@ -11,12 +11,12 @@
 
 #include <string>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 using version_range_set = pubgrub::interval_set<semver::version>;
 
 struct explicit_uses_list {
-    std::vector<dds::name> uses;
+    std::vector<bpt::name> uses;
 
     bool operator==(explicit_uses_list const&) const noexcept = default;
 };
@@ -35,7 +35,7 @@ struct dependency_uses : bpt::variant_wrapper<implicit_uses_all, explicit_uses_l
 };
 
 struct dependency {
-    dds::name         name;
+    bpt::name         name;
     version_range_set acceptable_versions;
     dependency_uses   uses;
 
@@ -44,11 +44,11 @@ struct dependency {
     std::string decl_to_string() const noexcept;
 
     friend void do_repr(auto out, const dependency* self) noexcept {
-        out.type("dds::crs::dependency");
+        out.type("bpt::crs::dependency");
         if (self) {
             out.value("{}", self->decl_to_string());
         }
     }
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

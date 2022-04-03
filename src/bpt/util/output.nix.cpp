@@ -4,12 +4,12 @@
 
 #include <unistd.h>
 
-using namespace dds;
+using namespace bpt;
 
-void dds::enable_ansi_console() noexcept {
+void bpt::enable_ansi_console() noexcept {
     // unix consoles generally already support ANSI control chars by default
 }
 
-bool dds::stdout_is_a_tty() noexcept { return ::isatty(STDOUT_FILENO) != 0; }
+bool bpt::stdout_is_a_tty() noexcept { return ::isatty(STDOUT_FILENO) != 0; }
 
 #endif

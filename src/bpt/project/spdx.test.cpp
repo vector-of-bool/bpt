@@ -1,7 +1,7 @@
 #include "./spdx.hpp"
 
 #include <catch2/catch.hpp>
-#include <bpt/dds.test.hpp>
+#include <bpt/bpt.test.hpp>
 
 auto parse_spdx(std::string_view sv) {
     return REQUIRES_LEAF_NOFAIL(bpt::spdx_license_expression::parse(sv));

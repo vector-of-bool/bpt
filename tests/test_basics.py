@@ -9,12 +9,12 @@ from dds_ci.testing.fixtures import ProjectOpener
 
 
 def test_build_empty(tmp_project: Project) -> None:
-    """Check that dds is okay with building an empty project directory"""
+    """Check that bpt is okay with building an empty project directory"""
     tmp_project.build()
 
 
 def test_lib_with_app_only(tmp_project: Project) -> None:
-    """Test that dds can build a simple application"""
+    """Test that bpt can build a simple application"""
     tmp_project.write('src/foo.main.cpp', r'int main() {}')
     tmp_project.build()
     assert (tmp_project.build_root / f'foo{paths.EXE_SUFFIX}').is_file()
@@ -22,7 +22,7 @@ def test_lib_with_app_only(tmp_project: Project) -> None:
 
 def test_build_simple(tmp_project: Project) -> None:
     """
-    Test that dds can build a simple library, and handles rebuilds correctly.
+    Test that bpt can build a simple library, and handles rebuilds correctly.
     """
     # Build a bad project
     tmp_project.write('src/f.cpp', 'syntax error')
@@ -40,7 +40,7 @@ def test_build_simple(tmp_project: Project) -> None:
 
 def test_simple_lib(tmp_project: Project) -> None:
     """
-    Test that dds can build a simple library withsome actual content, and that
+    Test that bpt can build a simple library withsome actual content, and that
     the manifest files will affect the output name.
     """
     tmp_project.write('src/foo.cpp', 'int the_answer() { return 42; }')
@@ -80,7 +80,7 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-pkg-dep-name'):
         tmp_project.pkg_create()
     with expect_error_marker('invalid-dep-shorthand'):
-        tmp_project.dds.build_deps(['invalid name@1.2.3'])
+        tmp_project.bpt.build_deps(['invalid name@1.2.3'])
 
     tmp_project.pkg_yaml['name'] = 'invalid name'
     tmp_project.pkg_yaml['dependencies'] = []

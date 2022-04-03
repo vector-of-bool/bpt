@@ -11,7 +11,7 @@
 
 #include <cassert>
 
-using namespace dds;
+using namespace bpt;
 
 namespace {
 

@@ -7,7 +7,7 @@
 using namespace neo::sqlite3::literals;
 
 TEST_CASE("Open a database") {
-    auto db = dds::unique_database::open(":memory:");
+    auto db = bpt::unique_database::open(":memory:");
     CHECK(db);
     db->exec_script(R"(
         CREATE TABLE foo (bar TEXT, baz INTEGER);

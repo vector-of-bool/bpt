@@ -7,10 +7,10 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("Try some invalid names") {
-    using reason = dds::invalid_name_reason;
+    using reason = bpt::invalid_name_reason;
     struct case_ {
         std::string_view         invalid_name;
-        dds::invalid_name_reason error;
+        bpt::invalid_name_reason error;
     };
     auto given = GENERATE(Catch::Generators::values<case_>({
         {"", reason::empty},
@@ -46,7 +46,7 @@ TEST_CASE("Try some invalid names") {
     boost::leaf::context<reason> err_ctx;
     err_ctx.activate();
     CAPTURE(given.invalid_name);
-    auto res = dds::name::from_string(given.invalid_name);
+    auto res = bpt::name::from_string(given.invalid_name);
     err_ctx.deactivate();
     CHECKED_IF(!res) {
         err_ctx.handle_error<void>(
@@ -67,6 +67,6 @@ TEST_CASE("Try some valid names") {
         "q",
     }));
 
-    auto res = dds::name::from_string(given);
+    auto res = bpt::name::from_string(given);
     CHECK(res->str == given);
 }

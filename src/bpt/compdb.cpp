@@ -7,9 +7,9 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-void dds::generate_compdb(const build_plan& plan, build_env_ref env) {
+void bpt::generate_compdb(const build_plan& plan, build_env_ref env) {
     auto compdb = nlohmann::json::array();
 
     for (const compile_file_plan& cf : iter_compilations(plan)) {
@@ -24,6 +24,6 @@ void dds::generate_compdb(const build_plan& plan, build_env_ref env) {
 
     fs::create_directories(env.output_root);
     auto compdb_file = env.output_root / "compile_commands.json";
-    auto ostream     = dds::open_file(compdb_file, std::ios::binary | std::ios::out);
+    auto ostream     = bpt::open_file(compdb_file, std::ios::binary | std::ios::out);
     ostream << compdb.dump(2);
 }

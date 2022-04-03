@@ -5,7 +5,7 @@
 
 #include <filesystem>
 
-namespace dds {
+namespace bpt {
 
 struct e_parse_project_manifest_path {
     std::filesystem::path value;
@@ -23,4 +23,4 @@ struct e_bad_pkg_yaml_key : e_nonesuch {
     using e_nonesuch::e_nonesuch;
 };
 
-}  // namespace dds
+}  // namespace bpt

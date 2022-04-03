@@ -2,11 +2,11 @@
 
 #include <catch2/catch.hpp>
 
-using namespace dds;
+using namespace bpt;
 
 #define CHECK_SPLIT(str, key, ...)                                                                 \
     do {                                                                                           \
-        CHECK(dds::split(str, key) == std::vector<std::string>(__VA_ARGS__));                      \
+        CHECK(bpt::split(str, key) == std::vector<std::string>(__VA_ARGS__));                      \
     } while (0)
 
 TEST_CASE("starts_with") {

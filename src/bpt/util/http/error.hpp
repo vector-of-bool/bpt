@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 struct http_error : std::runtime_error {
 private:
@@ -33,4 +33,4 @@ struct e_http_request_url {
 
 enum class e_http_status : int {};
 
-}  // namespace dds
+}  // namespace bpt

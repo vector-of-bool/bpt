@@ -10,12 +10,12 @@ RUN ln -s $(type -P gcc) /usr/local/bin/gcc-10 && \
 
 # We want the UID in the container to match the UID on the outside, for minimal
 # fuss with file permissions
-ARG DDS_USER_UID=1000
+ARG BPT_USER_UID=1000
 
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py \
     | env POETRY_HOME=/opt/poetry python3 -u - --no-modify-path && \
     ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry && \
     chmod a+x /opt/poetry/bin/poetry && \
-    adduser --disabled-password --uid=${DDS_USER_UID} dds
+    adduser --disabled-password --uid=${BPT_USER_UID} bpt
 
-USER dds
+USER bpt

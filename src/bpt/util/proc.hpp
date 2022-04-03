@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 bool needs_quoting(std::string_view);
 
@@ -51,4 +51,4 @@ inline proc_result run_proc(std::vector<std::string> args) {
     return run_proc(proc_options{.command = std::move(args)});
 }
 
-}  // namespace dds
+}  // namespace bpt

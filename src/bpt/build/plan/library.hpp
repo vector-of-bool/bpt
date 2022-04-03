@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 /**
  * The parameters that tweak the behavior of building a library
@@ -139,4 +139,4 @@ public:
                                const library_build_params& params);
 };
 
-}  // namespace dds
+}  // namespace bpt

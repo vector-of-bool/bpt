@@ -1,7 +1,7 @@
 Testing with ``pytest``
 #######################
 
-For ``dds``'s more rigorous test suite, we use the ``pytest`` testing framework.
+For ``bpt``'s more rigorous test suite, we use the ``pytest`` testing framework.
 These tests are stored in the ``tests/`` directory and written in ``test_*.py``
 files.
 
@@ -24,7 +24,7 @@ parallel jobs to execute.
 Writing Tests
 *************
 
-If a particular aspect of ``dds`` can be tested in isolation and within a few
+If a particular aspect of ``bpt`` can be tested in isolation and within a few
 dozen milliseconds, you should prefer to test it as a unit test in a
 ``*.test.cpp`` file. The ``pytest`` tests are intended to perform full
 end-to-end feature and error handling tests.
@@ -34,31 +34,31 @@ Python file containing tests must have a filename beginning with ``test_``.
 Individual test functions should begin with ``test_``. All test functions should
 be properly type-annotated and successfully check via ``pyright``.
 
-The ``dds`` test suite has access to a set of test fixtures that can be used
+The ``bpt`` test suite has access to a set of test fixtures that can be used
 throughout tests to perform complex setup and teardown for complete test-by-test
 isolation.
 
-Here is a simple test that simple executes ``dds`` with ``--help``::
+Here is a simple test that simple executes ``bpt`` with ``--help``::
 
-  def test_get_help(dds: DDSWrapper) -> None:
-      dds.run(['--help'])
+  def test_get_help(bpt: BPTWrapper) -> None:
+      bpt.run(['--help'])
 
-In this test function, :func:`the dds object is a test fixture
-<dds_ci.testing.fixtures.dds>` that wraps the ``dds`` executable under test.
+In this test function, :func:`the bpt object is a test fixture
+<dds_ci.testing.fixtures.bpt>` that wraps the ``bpt`` executable under test.
 
 
 Testing Error Handling
 **********************
 
-It is important that ``dds`` handle errors correctly, of course, including user
+It is important that ``bpt`` handle errors correctly, of course, including user
 error. It is not simply enough to check that a certain operation fails: We must
 be sure that it fails *correctly*. To check that the correct code path is
-executed, ``dds`` can write a file containing a simple constant string
+executed, ``bpt`` can write a file containing a simple constant string
 designating the error handling path that was taken. The file will be written to
-the path indicated by the ``DDS_WRITE_ERROR_MARKER`` environment variable.
+the path indicated by the ``BPT_WRITE_ERROR_MARKER`` environment variable.
 
 For examples of these error strings, search for usage of ``write_error_marker``
-in the ``dds`` source code. These should only execute within error-handling
+in the ``bpt`` source code. These should only execute within error-handling
 contexts, should appear near the log messages that issue diagnostics, and should
 be specific to the error at hand.
 

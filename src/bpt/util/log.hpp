@@ -4,7 +4,7 @@
 
 #include <string_view>
 
-namespace dds::log {
+namespace bpt::log {
 
 enum class level : int {
     trace,
@@ -50,11 +50,11 @@ void trace(std::string_view s, const Args&... args) {
     log(level::trace, s, args...);
 }
 
-#define dds_log(Level, str, ...)                                                                   \
+#define bpt_log(Level, str, ...)                                                                   \
     do {                                                                                           \
-        if (int(dds::log::level::Level) >= int(dds::log::current_log_level)) {                     \
-            ::dds::log::log(::dds::log::level::Level, str __VA_OPT__(, ) __VA_ARGS__);             \
+        if (int(bpt::log::level::Level) >= int(bpt::log::current_log_level)) {                     \
+            ::bpt::log::log(::bpt::log::level::Level, str __VA_OPT__(, ) __VA_ARGS__);             \
         }                                                                                          \
     } while (0)
 
-}  // namespace dds::log
+}  // namespace bpt::log

@@ -6,7 +6,7 @@
 
 #include <ostream>
 
-namespace dds {
+namespace bpt {
 
 struct e_remove_file {
     fs::path value;
@@ -98,4 +98,4 @@ copy_tree(path_ref source, path_ref dest, fs::copy_options opts = {}) noexcept;
  */
 [[nodiscard]] result<void> create_symlink(path_ref target, path_ref symlink) noexcept;
 
-}  // namespace dds
+}  // namespace bpt

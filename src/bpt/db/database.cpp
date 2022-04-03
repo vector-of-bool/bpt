@@ -14,7 +14,7 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 
-using namespace dds;
+using namespace bpt;
 
 namespace nsql = neo::sqlite3;
 using nsql::exec;
@@ -25,34 +25,34 @@ namespace {
 
 void migrate_1(nsql::connection& db) {
     db.exec(R"(
-        DROP TABLE IF EXISTS dds_deps;
-        DROP TABLE IF EXISTS dds_file_commands;
-        DROP TABLE IF EXISTS dds_files;
-        DROP TABLE IF EXISTS dds_compile_deps;
-        DROP TABLE IF EXISTS dds_compilations;
-        DROP TABLE IF EXISTS dds_source_files;
-        CREATE TABLE dds_source_files (
+        DROP TABLE IF EXISTS bpt_deps;
+        DROP TABLE IF EXISTS bpt_file_commands;
+        DROP TABLE IF EXISTS bpt_files;
+        DROP TABLE IF EXISTS bpt_compile_deps;
+        DROP TABLE IF EXISTS bpt_compilations;
+        DROP TABLE IF EXISTS bpt_source_files;
+        CREATE TABLE bpt_source_files (
             file_id INTEGER PRIMARY KEY,
             path TEXT NOT NULL UNIQUE
         );
-        CREATE TABLE dds_compilations (
+        CREATE TABLE bpt_compilations (
             compile_id INTEGER PRIMARY KEY,
             file_id
                 INTEGER NOT NULL
-                UNIQUE REFERENCES dds_source_files(file_id),
+                UNIQUE REFERENCES bpt_source_files(file_id),
             command TEXT NOT NULL,
             output TEXT NOT NULL,
             toolchain_hash INTEGER NOT NULL,
             n_compilations INTEGER NOT NULL DEFAULT 0,
             avg_duration INTEGER NOT NULL DEFAULT 0
         );
-        CREATE TABLE dds_compile_deps (
+        CREATE TABLE bpt_compile_deps (
             input_file_id
                 INTEGER NOT NULL
-                REFERENCES dds_source_files(file_id),
+                REFERENCES bpt_source_files(file_id),
             output_file_id
                 INTEGER NOT NULL
-                REFERENCES dds_source_files(file_id),
+                REFERENCES bpt_source_files(file_id),
             input_mtime INTEGER NOT NULL,
             UNIQUE(input_file_id, output_file_id)
         );
@@ -63,27 +63,27 @@ void migrate_1(nsql::connection& db) {
 void ensure_migrated(nsql::connection& db) {
     db.exec(R"(
         PRAGMA foreign_keys = 1;
-        DROP TABLE IF EXISTS dds_meta;
-        CREATE TABLE IF NOT EXISTS dds_meta_1 AS
+        DROP TABLE IF EXISTS bpt_meta;
+        CREATE TABLE IF NOT EXISTS bpt_meta_1 AS
             WITH init (version) AS (VALUES (''))
             SELECT * FROM init;
         )")
         .throw_if_error();
     nsql::transaction_guard tr{db};
 
-    auto version_st  = *db.prepare("SELECT version FROM dds_meta_1");
+    auto version_st  = *db.prepare("SELECT version FROM bpt_meta_1");
     auto version_str = *nsql::one_cell<std::string>(version_st);
 
     const auto cur_version = "alpha-5-dev1"sv;
     if (cur_version != version_str) {
         if (!version_str.empty()) {
-            dds_log(info, "NOTE: A prior version of the project build database was found.");
-            dds_log(info, "This is not an error, but incremental builds will be invalidated.");
-            dds_log(info, "The database is being upgraded, and no further action is necessary.");
+            bpt_log(info, "NOTE: A prior version of the project build database was found.");
+            bpt_log(info, "This is not an error, but incremental builds will be invalidated.");
+            bpt_log(info, "The database is being upgraded, and no further action is necessary.");
         }
         migrate_1(db);
     }
-    nsql::exec(*db.prepare("UPDATE dds_meta_1 SET version=?"), cur_version).throw_if_error();
+    nsql::exec(*db.prepare("UPDATE bpt_meta_1 SET version=?"), cur_version).throw_if_error();
 }
 
 }  // namespace
@@ -93,7 +93,7 @@ database database::open(const std::string& db_path) {
     try {
         ensure_migrated(db);
     } catch (const nsql::error& e) {
-        dds_log(
+        bpt_log(
             error,
             "Failed to load the databsae. It appears to be invalid/corrupted. We'll delete it and "
             "create a new one. The exception message is: {}",
@@ -103,7 +103,7 @@ database database::open(const std::string& db_path) {
         try {
             ensure_migrated(db);
         } catch (const nsql::error& e) {
-            dds_log(critical,
+            bpt_log(critical,
                     "Failed to apply database migrations to recovery database. This is a critical "
                     "error. The exception message is: {}",
                     e.what());
@@ -117,14 +117,14 @@ database::database(nsql::connection db)
     : _db(std::move(db)) {}
 
 std::int64_t database::_record_file(path_ref path_) {
-    auto path = dds::normalize_path(path_);
+    auto path = bpt::normalize_path(path_);
 
     auto found = _stored_file_ids_cache.find(path);
     if (found != _stored_file_ids_cache.end()) {
         return found->second;
     }
     auto& st   = _stmt_cache(R"(
-        INSERT INTO dds_source_files (path)
+        INSERT INTO bpt_source_files (path)
         VALUES (?1)
         ON CONFLICT (path) DO UPDATE SET path=path
         RETURNING file_id
@@ -138,7 +138,7 @@ void database::record_dep(path_ref input, path_ref output, fs::file_time_type in
     auto  in_id  = _record_file(input);
     auto  out_id = _record_file(output);
     auto& st     = _stmt_cache(R"(
-        INSERT OR REPLACE INTO dds_compile_deps (input_file_id, output_file_id, input_mtime)
+        INSERT OR REPLACE INTO bpt_compile_deps (input_file_id, output_file_id, input_mtime)
         VALUES (?, ?, ?)
     )"_sql);
     nsql::exec(st, in_id, out_id, input_mtime.time_since_epoch().count()).throw_if_error();
@@ -148,7 +148,7 @@ void database::record_compilation(path_ref file, const completed_compilation& cm
     auto file_id = _record_file(file);
 
     auto& st = _stmt_cache(R"(
-        INSERT INTO dds_compilations
+        INSERT INTO bpt_compilations
                 (file_id, command, output, n_compilations, toolchain_hash, avg_duration)
             VALUES
                 (:file_id, :command, :output, 1, :toolchain_hash, :duration)
@@ -178,10 +178,10 @@ void database::forget_inputs_of(path_ref file) {
     auto& st = _stmt_cache(R"(
         WITH id_to_delete AS (
             SELECT file_id
-            FROM dds_source_files
+            FROM bpt_source_files
             WHERE path = ?
         )
-        DELETE FROM dds_compile_deps
+        DELETE FROM bpt_compile_deps
          WHERE output_file_id IN id_to_delete
     )"_sql);
     nsql::exec(st, fs::weakly_canonical(file).generic_string()).throw_if_error();
@@ -192,12 +192,12 @@ std::optional<std::vector<input_file_info>> database::inputs_of(path_ref file_) 
     auto& st   = _stmt_cache(R"(
         WITH file AS (
             SELECT file_id
-              FROM dds_source_files
+              FROM bpt_source_files
              WHERE path = ?
         )
         SELECT path, input_mtime
-          FROM dds_compile_deps
-          JOIN dds_source_files ON input_file_id = file_id
+          FROM bpt_compile_deps
+          JOIN bpt_source_files ON input_file_id = file_id
          WHERE output_file_id IN file
     )"_sql);
     st.reset();
@@ -221,11 +221,11 @@ std::optional<completed_compilation> database::command_of(path_ref file_) const 
     auto& st   = _stmt_cache(R"(
         WITH file AS (
             SELECT file_id
-              FROM dds_source_files
+              FROM bpt_source_files
              WHERE path = ?
         )
         SELECT command, output, avg_duration, toolchain_hash
-          FROM dds_compilations
+          FROM bpt_compilations
          WHERE file_id IN file
     )"_sql);
     st.reset();

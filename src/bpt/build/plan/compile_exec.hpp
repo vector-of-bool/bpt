@@ -7,7 +7,7 @@
 #include <functional>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 namespace detail {
 
@@ -32,4 +32,4 @@ bool compile_all(Range&& rng, build_env_ref env, int njobs) {
     return detail::compile_all(cfps, env, njobs);
 }
 
-}  // namespace dds
+}  // namespace bpt

@@ -15,7 +15,7 @@
 #include <string>
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 using boost::leaf::current_error;
 using boost::leaf::error_id;
@@ -29,4 +29,4 @@ constexpr T value_or(const result<T>& res, U&& arg) {
 
 void write_error_marker(std::string_view error) noexcept;
 
-}  // namespace dds
+}  // namespace bpt

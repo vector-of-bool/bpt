@@ -9,20 +9,20 @@
 #include <filesystem>
 #include <vector>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 struct library_info {
-    dds::name               name;
+    bpt::name               name;
     std::filesystem::path   path;
-    std::vector<dds::name>  intra_using;
-    std::vector<dds::name>  intra_test_using;
+    std::vector<bpt::name>  intra_using;
+    std::vector<bpt::name>  intra_test_using;
     std::vector<dependency> dependencies;
     std::vector<dependency> test_dependencies;
 
     static library_info from_data(const json5::data& data);
 
     friend void do_repr(auto out, const library_info* self) noexcept {
-        out.type("dds::crs::library_info");
+        out.type("bpt::crs::library_info");
         if (self) {
             out.bracket_value(
                 "name={}, path={}, intra_using={}, intra_test_using={}, dependencies={}, "
@@ -37,4 +37,4 @@ struct library_info {
     }
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

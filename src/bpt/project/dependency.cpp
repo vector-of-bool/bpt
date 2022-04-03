@@ -12,7 +12,7 @@
 #include <neo/utility.hpp>
 #include <semver/range.hpp>
 
-using namespace dds;
+using namespace bpt;
 
 crs::dependency project_dependency::as_crs_dependency() const noexcept {
     return crs::dependency{
@@ -24,7 +24,7 @@ crs::dependency project_dependency::as_crs_dependency() const noexcept {
 }
 
 project_dependency project_dependency::parse_dep_range_shorthand(std::string_view const sv) {
-    DDS_E_SCOPE(e_parse_dep_range_shorthand_string{std::string(sv)});
+    BPT_E_SCOPE(e_parse_dep_range_shorthand_string{std::string(sv)});
 
     project_dependency ret;
 
@@ -34,7 +34,7 @@ project_dependency project_dependency::parse_dep_range_shorthand(std::string_vie
             e_human_message{"Expected one of '=@^~+' in name+version shorthand"});
     }
 
-    ret.dep_name = dds::name::from_string(sv.substr(0, sep_pos)).value();
+    ret.dep_name = bpt::name::from_string(sv.substr(0, sep_pos)).value();
 
     auto range_str = std::string(sv.substr(sep_pos));
     if (range_str.front() == '@') {
@@ -63,7 +63,7 @@ static std::string_view next_token(std::string_view sv) noexcept {
 }
 
 project_dependency project_dependency::from_shorthand_string(const std::string_view sv) {
-    DDS_E_SCOPE(e_parse_dep_shorthand_string{std::string(sv)});
+    BPT_E_SCOPE(e_parse_dep_shorthand_string{std::string(sv)});
     std::string_view remain    = sv;
     std::string_view tok       = remain.substr(0, 0);
     auto             adv_token = [&] {
@@ -97,7 +97,7 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
                 BOOST_LEAF_THROW_EXCEPTION(
                     e_human_message{"Unexpected extra comma in dependency specifier"});
             }
-            ret.explicit_uses->emplace_back(*dds::name::from_string(tok));
+            ret.explicit_uses->emplace_back(*bpt::name::from_string(tok));
             if (adv_token() != ",") {
                 break;
             }

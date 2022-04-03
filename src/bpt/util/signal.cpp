@@ -10,11 +10,11 @@ void handle_signal(int sig) { got_signal = sig; }
 
 }  // namespace
 
-using namespace dds;
+using namespace bpt;
 
-void dds::notify_cancel() noexcept { got_signal = SIGINT; }
+void bpt::notify_cancel() noexcept { got_signal = SIGINT; }
 
-void dds::install_signal_handlers() noexcept {
+void bpt::install_signal_handlers() noexcept {
     std::signal(SIGINT, handle_signal);
     std::signal(SIGTERM, handle_signal);
 
@@ -30,8 +30,8 @@ void dds::install_signal_handlers() noexcept {
 #endif
 }
 
-bool dds::is_cancelled() noexcept { return got_signal != 0; }
-void dds::cancellation_point() {
+bool bpt::is_cancelled() noexcept { return got_signal != 0; }
+void bpt::cancellation_point() {
     if (is_cancelled()) {
         throw user_cancelled();
     }

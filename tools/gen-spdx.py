@@ -36,7 +36,7 @@ def render_exception(dat: Any) -> str:
 lic_lines = (render_license(l) for l in sorted(licenses['licenses'], key=itemgetter('licenseId')))
 exc_lines = (render_exception(e) for e in sorted(exceptions['exceptions'], key=itemgetter('licenseExceptionId')))
 
-proj_dir = Path(__file__).resolve().parent.parent / 'src/dds/project'
+proj_dir = Path(__file__).resolve().parent.parent / 'src/bpt/project'
 print('Writing license content')
 proj_dir.joinpath('spdx.inl').write_text('\n'.join(lic_lines), encoding='utf-8')
 proj_dir.joinpath('spdx-exc.inl').write_text('\n'.join(exc_lines), encoding='utf-8')

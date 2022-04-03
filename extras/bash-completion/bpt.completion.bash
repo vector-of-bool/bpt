@@ -1,11 +1,11 @@
-# A bash completion script for dds
+# A bash completion script for bpt
 
 # Method:
 # Keep a separate pointer $CWORDI (evaluated result stored in $CWORD)
 #   which iterates over the $COMP_WORDS array.
 # Use $CWORD to run the "state machine" that keeps track of where in
 #   the command line we are. That is, we use the information to
-#   call the appropriate _dds_complete_* function.
+#   call the appropriate _bpt_complete_* function.
 # Subcommands are implemented as functions.
 # Each command can have FLAGS, POSITIONAL, and SUBCOMMANDS.
 
@@ -19,7 +19,7 @@
 #                                space-separated "some list"
 #  - "some list" - Requires one of these enumerated values
 #  - " " - Use no completion for this argument
-_dds_complete_single_arg()
+_bpt_complete_single_arg()
 {
   case $ARG in
   "directory")
@@ -40,10 +40,10 @@ _dds_complete_single_arg()
 
 # Evaluates the completion for a positional argument.
 # Input: POS_ARG
-# POS_ARG may have the same values as in _dds_complete_single_arg, but also:
-#  - "repeat:..." where the "..." is any of the valid _dds_complete_single_arg specifiers.
+# POS_ARG may have the same values as in _bpt_complete_single_arg, but also:
+#  - "repeat:..." where the "..." is any of the valid _bpt_complete_single_arg specifiers.
 #    This will consume all remaining commandline arguments to follow the specified schema.
-_dds_complete_positional_arg()
+_bpt_complete_positional_arg()
 {
   if [[ $CWORDI -ge $COMP_CWORD ]]; then
     local ARG
@@ -60,7 +60,7 @@ _dds_complete_positional_arg()
       ;;
     esac
 
-    _dds_complete_single_arg
+    _bpt_complete_single_arg
     return
   fi
 
@@ -70,8 +70,8 @@ _dds_complete_positional_arg()
 
 # Evaluates the completion for a flag argument
 # If ARG is an empty string, assumes the flag takes no arguments.
-# ARG can also be any of what is specified in _dds_complete_single_arg
-_dds_complete_flags()
+# ARG can also be any of what is specified in _bpt_complete_single_arg
+_bpt_complete_flags()
 {
   local ARG
   ARG="${FLAGS[$CWORD]}"
@@ -80,7 +80,7 @@ _dds_complete_flags()
 
   if [[ -n "$ARG" ]]; then
     if [[ $CWORDI -ge $COMP_CWORD ]]; then
-      _dds_complete_single_arg
+      _bpt_complete_single_arg
     else
       ((CWORDI=CWORDI+1))
       CWORD="${COMP_WORDS[$CWORDI]}"
@@ -91,11 +91,11 @@ _dds_complete_flags()
 # General completion function.
 # Inputs:
 #  - SUBCOMMANDS - Associative Array: SubcommandString -> Function
-#  - FLAGS - Associative Array: FlagString -> ARG specifier (see _dds_complete_flags)
-#  - POSITIONAL - Array: List of POS_ARG specifiers (see _dds_complete_positional_arg)
+#  - FLAGS - Associative Array: FlagString -> ARG specifier (see _bpt_complete_flags)
+#  - POSITIONAL - Array: List of POS_ARG specifiers (see _bpt_complete_positional_arg)
 # Only one of SUBCOMMANDS or POSITIONAL can contain elements at the same time
 # Output: COMPREPLY
-_dds_complete_command()
+_bpt_complete_command()
 {
   local RESULT_WORDS SUBCOMMAND FLAG
   if [[ ${#POSITIONAL[@]} -eq 0 ]]; then
@@ -121,9 +121,9 @@ _dds_complete_command()
     FLAG="${FLAGS[$CWORD]}"
     if [[ -n $FLAG || $CWORD == "-"* ]]; then
       # If $CWORD is a flag or partial flag, parse it as a flag
-      _dds_complete_flags
+      _bpt_complete_flags
       # After parsing a flag, we should behave as if we are still parsing the command:
-      _dds_complete_command
+      _bpt_complete_command
     elif [[ -n $SUBCOMMAND ]]; then
       # Drop the subcommand word
       ((CWORDI=CWORDI+1))
@@ -142,10 +142,10 @@ _dds_complete_command()
       while [[ $CWORDI -lt $COMP_CWORD && $CONTINUE -eq 1 ]]; do
         FLAG="${FLAGS[$CWORD]}"
         if [[ -n $FLAG || $CWORD == "-"* ]]; then
-          _dds_complete_flags
+          _bpt_complete_flags
           CONTINUE=1
         else
-          _dds_complete_positional_arg
+          _bpt_complete_positional_arg
           CONTINUE=0 # break; we need to advance POS_ARG
         fi
       done
@@ -155,7 +155,7 @@ _dds_complete_command()
         # i.e. that we have reached the completing argument.
 
         # Fill out COMPREPLY with the completions for this POS_ARG
-        _dds_complete_positional_arg
+        _bpt_complete_positional_arg
 
         # Also add any relevant flags
         if [[ $CWORD == "-"* || -z "${COMPREPLY[@]}" ]]; then
@@ -171,13 +171,13 @@ _dds_complete_command()
     local POSITIONAL
     POSITIONAL=()
     # This will hit the SUBCOMMANDS branch, but as SUBCOMMANDS is empty, it works fine.
-    _dds_complete_command
+    _bpt_complete_command
   fi
 } &&
 
-# Computes the dds builtin toolchains
+# Computes the bpt builtin toolchains
 # Output: BUILTIN_TOOLCHAINS
-_dds_complete_get_builtin_toolchains()
+_bpt_complete_get_builtin_toolchains()
 {
   local gccs clangs cxxstds base ccached debugged cxx98 cxx03 cxx11 cxx14 cxx17 cxx20
 
@@ -203,13 +203,13 @@ _dds_complete_get_builtin_toolchains()
   BUILTIN_TOOLCHAINS="${BUILTIN_TOOLCHAINS[@]} $debugged"
 } &&
 
-# dds build
-_dds_complete_build()
+# bpt build
+_bpt_complete_build()
 {
   local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
 
-  _dds_complete_get_builtin_toolchains
+  _bpt_complete_get_builtin_toolchains
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -227,16 +227,16 @@ _dds_complete_build()
   )
   POSITIONAL=()
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds compile-file
-_dds_complete_compile_file()
+# bpt compile-file
+_bpt_complete_compile_file()
 {
   local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
 
-  _dds_complete_get_builtin_toolchains
+  _bpt_complete_get_builtin_toolchains
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -253,13 +253,13 @@ _dds_complete_compile_file()
   )
 } &&
 
-# dds build-deps
-_dds_complete_build_deps()
+# bpt build-deps
+_bpt_complete_build_deps()
 {
   local BUILTIN_TOOLCHAINS RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
 
-  _dds_complete_get_builtin_toolchains
+  _bpt_complete_get_builtin_toolchains
 
   SUBCOMMANDS=()
   FLAGS=(
@@ -275,11 +275,11 @@ _dds_complete_build_deps()
     # <dependency> ... # No completion implemented
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds pkg create
-_dds_complete_pkg_create()
+# bpt pkg create
+_bpt_complete_pkg_create()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -292,11 +292,11 @@ _dds_complete_pkg_create()
   )
   POSITIONAL=()
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds pkg prefetch
-_dds_complete_pkg_prefetch()
+# bpt pkg prefetch
+_bpt_complete_pkg_prefetch()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -307,16 +307,16 @@ _dds_complete_pkg_prefetch()
     # <pkg-id> ... # No completion implemented
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
 
-# dds pkg search
-_dds_complete_pkg_search()
+# bpt pkg search
+_bpt_complete_pkg_search()
 {
   local RESULT_WORDS POSITIONAL PACKAGES
-  if [[ -x "$(command -v dds)" ]]; then
-    PACKAGES=$(dds pkg search | grep Name: | sed -E 's/Name://g')
+  if [[ -x "$(command -v bpt)" ]]; then
+    PACKAGES=$(bpt pkg search | grep Name: | sed -E 's/Name://g')
   else
     PACKAGES=""
   fi
@@ -328,29 +328,29 @@ _dds_complete_pkg_search()
     "$PACKAGES"
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 }
 
-# dds pkg
-_dds_complete_pkg()
+# bpt pkg
+_bpt_complete_pkg()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=(
     [init-db]=:
     [ls]=:
-    [create]=_dds_complete_pkg_create
-    [prefetch]=_dds_complete_pkg_prefetch
-    [search]=_dds_complete_pkg_search
+    [create]=_bpt_complete_pkg_create
+    [prefetch]=_bpt_complete_pkg_prefetch
+    [search]=_bpt_complete_pkg_search
   )
   FLAGS=()
   POSITIONAL=()
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds repo init
-_dds_complete_repo_init()
+# bpt repo init
+_bpt_complete_repo_init()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -364,11 +364,11 @@ _dds_complete_repo_init()
     'directory' # <repo-dir>
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds repo ls
-_dds_complete_repo_ls()
+# bpt repo ls
+_bpt_complete_repo_ls()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -379,12 +379,12 @@ _dds_complete_repo_ls()
     'directory' # <repo-dir>
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
 
-# dds repo import
-_dds_complete_repo_import()
+# bpt repo import
+_bpt_complete_repo_import()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -397,11 +397,11 @@ _dds_complete_repo_import()
     'repeat:file' # <sdist-file-path> ...
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds repo remove
-_dds_complete_repo_remove()
+# bpt repo remove
+_bpt_complete_repo_remove()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -412,29 +412,29 @@ _dds_complete_repo_remove()
     # <pkg-id> ... # No completion implemented
   )
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds repo
-_dds_complete_repo()
+# bpt repo
+_bpt_complete_repo()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
   local RESULT_WORDS
   SUBCOMMANDS=(
-    [init]=_dds_complete_repo_init
-    [ls]=_dds_complete_repo_ls
-    [import]=_dds_complete_repo_import
-    [remove]=_dds_complete_repo_remove
+    [init]=_bpt_complete_repo_init
+    [ls]=_bpt_complete_repo_ls
+    [import]=_bpt_complete_repo_import
+    [remove]=_bpt_complete_repo_remove
   )
   FLAGS=()
   POSITIONAL=()
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds install-yourself
-_dds_complete_install_yourself()
+# bpt install-yourself
+_bpt_complete_install_yourself()
 {
   local RESULT_WORDS POSITIONAL
   declare -A SUBCOMMANDS FLAGS
@@ -448,21 +448,21 @@ _dds_complete_install_yourself()
   )
   POSITIONAL=()
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-# dds
-_dds_complete_impl()
+# bpt
+_bpt_complete_impl()
 {
   local POSITIONAL
   declare -A SUBCOMMANDS FLAGS
   SUBCOMMANDS=(
-    [build]=_dds_complete_build
-    [compile-file]=_dds_complete_compile_file
-    [build-deps]=_dds_complete_build_deps
-    [pkg]=_dds_complete_pkg
-    [repo]=_dds_complete_repo
-    [install-yourself]=_dds_complete_install_yourself
+    [build]=_bpt_complete_build
+    [compile-file]=_bpt_complete_compile_file
+    [build-deps]=_bpt_complete_build_deps
+    [pkg]=_bpt_complete_pkg
+    [repo]=_bpt_complete_repo
+    [install-yourself]=_bpt_complete_install_yourself
   )
   FLAGS=(
     [--log-level]='trace debug info warn error critical silent'
@@ -470,16 +470,16 @@ _dds_complete_impl()
   )
   POSITIONAL=()
 
-  _dds_complete_command
+  _bpt_complete_command
 } &&
 
-_dds_complete()
+_bpt_complete()
 {
   local CWORDI CWORD
   COMPREPLY=()
   CWORDI=1
   CWORD="${COMP_WORDS[$CWORDI]}"
-  _dds_complete_impl
+  _bpt_complete_impl
   return 0
 } &&
-complete -F _dds_complete dds
+complete -F _bpt_complete bpt

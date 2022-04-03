@@ -2,9 +2,9 @@
 
 #include <boost/leaf/result.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-fs::path dds::normalize_path(path_ref p_) noexcept {
+fs::path bpt::normalize_path(path_ref p_) noexcept {
     auto p = p_.lexically_normal();
     while (!p.empty() && p.filename().empty()) {
         p = p.parent_path();
@@ -12,11 +12,11 @@ fs::path dds::normalize_path(path_ref p_) noexcept {
     return p;
 }
 
-fs::path dds::resolve_path_weak(path_ref p) noexcept {
+fs::path bpt::resolve_path_weak(path_ref p) noexcept {
     return normalize_path(fs::weakly_canonical(p));
 }
 
-result<fs::path> dds::resolve_path_strong(path_ref p_) noexcept {
+result<fs::path> bpt::resolve_path_strong(path_ref p_) noexcept {
     std::error_code ec;
     auto            p = fs::canonical(p_, ec);
     if (ec) {

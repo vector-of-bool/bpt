@@ -5,17 +5,17 @@
 #include <filesystem>
 #include <functional>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 class cache;
 struct pkg_id;
 struct package_info;
 
-}  // namespace dds::crs
+}  // namespace bpt::crs
 
-namespace dds::cli {
+namespace bpt::cli {
 
-dds::builder create_project_builder(const options& opts);
+bpt::builder create_project_builder(const options& opts);
 
 int handle_build_error(std::function<int()>);
 
@@ -40,4 +40,4 @@ crs::package_info fetch_cache_load_dependency(crs::cache&                  cache
                                               builder&                     b,
                                               const std::filesystem::path& subdir_base);
 
-}  // namespace dds::cli
+}  // namespace bpt::cli

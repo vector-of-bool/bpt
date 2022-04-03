@@ -43,10 +43,10 @@ release-build: poetry-setup
 	poetry run dagon clean build.main
 
 macos-ci: full-ci
-	mv _build/dds _build/dds-macos-x64
+	mv _build/bpt _build/bpt-macos-x64
 
 linux-ci: full-ci
-	mv _build/dds _build/dds-linux-x64
+	mv _build/bpt _build/bpt-linux-x64
 
 _alpine-static-ci:
 	poetry install --no-dev
@@ -64,12 +64,12 @@ _alpine-static-ci:
 		--interface simple \
 		--fail-cancels \
 		build.main
-	mv _build/dds _build/dds-linux-x64
+	mv _build/bpt _build/bpt-linux-x64
 
 alpine-static-ci:
 	docker build \
-		--build-arg DDS_USER_UID=$(shell id -u) \
-		-t dds-builder \
+		--build-arg BPT_USER_UID=$(shell id -u) \
+		-t bpt-builder \
 		-f tools/Dockerfile.alpine \
 		tools/
 	docker run \
@@ -77,7 +77,7 @@ alpine-static-ci:
 		-u $(shell id -u) \
 		-v $(PWD):/host -w /host \
 		-e CCACHE_DIR=/host/.docker-ccache \
-		dds-builder \
+		bpt-builder \
 		make _alpine-static-ci
 
 vagrant-freebsd-ci:
@@ -89,7 +89,7 @@ vagrant-freebsd-ci:
 		make full-ci \
 		'
 	mkdir -p _build/
-	vagrant scp freebsd11:/vagrant/_build/dds _build/dds-freebsd-x64
+	vagrant scp freebsd11:/vagrant/_build/bpt _build/bpt-freebsd-x64
 	vagrant halt
 
 site: docs

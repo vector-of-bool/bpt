@@ -11,7 +11,7 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/transform.hpp>
 
-using namespace dds;
+using namespace bpt;
 using namespace fansi::literals;
 
 fs::path create_archive_plan::calc_archive_file_path(const toolchain& tc) const noexcept {
@@ -40,7 +40,7 @@ void create_archive_plan::archive(const build_env& env) const {
     // Different archiving tools behave differently between platforms depending on whether the
     // archive file exists. Make it uniform by simply removing the prior copy.
     if (fs::exists(ar.out_path)) {
-        dds_log(debug, "Remove prior archive file [{}]", ar.out_path.string());
+        bpt_log(debug, "Remove prior archive file [{}]", ar.out_path.string());
         fs::remove(ar.out_path);
     }
 
@@ -48,18 +48,18 @@ void create_archive_plan::archive(const build_env& env) const {
     fs::create_directories(ar.out_path.parent_path());
 
     // Do it!
-    dds_log(info, "[{}] Archive: {}", _qual_name, out_relpath);
+    bpt_log(info, "[{}] Archive: {}", _qual_name, out_relpath);
     auto&& [dur_ms, ar_res] = timed<std::chrono::milliseconds>(
         [&] { return run_proc(proc_options{.command = ar_cmd, .cwd = ar_cwd}); });
-    dds_log(info, "[{}] Archive: {} - {:L}ms", _qual_name, out_relpath, dur_ms.count());
+    bpt_log(info, "[{}] Archive: {} - {:L}ms", _qual_name, out_relpath, dur_ms.count());
 
     // Check, log, and throw
     if (!ar_res.okay()) {
-        dds_log(error,
+        bpt_log(error,
                 "Creating static library archive [{}] failed for '{}'",
                 out_relpath,
                 _qual_name);
-        dds_log(error,
+        bpt_log(error,
                 "Subcommand FAILED: .bold.yellow[{}]\n{}"_styled,
                 quote_command(ar_cmd),
                 ar_res.output);

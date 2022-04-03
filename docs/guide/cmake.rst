@@ -1,17 +1,17 @@
 .. highlight:: cmake
 
-Using ``dds`` in a CMake Project
+Using ``bpt`` in a CMake Project
 ################################
 
-One of ``dds``'s primary goals is to inter-operate with other build systems
-cleanly. Because of CMakes ubiquity, ``dds`` includes built-in support for
+One of ``bpt``'s primary goals is to inter-operate with other build systems
+cleanly. Because of CMakes ubiquity, ``bpt`` includes built-in support for
 emitting files that can be imported into CMake.
 
 .. seealso::
 
   Before reading this page, be sure to read the :ref:`build-deps.gen-libman`
   section of the :doc:`build-deps` page, which will discuss how to use the
-  ``dds build-deps`` subcommand.
+  ``bpt build-deps`` subcommand.
 
 .. seealso::
 
@@ -31,7 +31,7 @@ file to ``<path>`` that can be ``include()``'d into a CMake project:
 
 .. code-block:: bash
 
-  $ dds build-deps "neo-sqlite3^0.2.0" --cmake=deps.cmake
+  $ bpt build-deps "neo-sqlite3^0.2.0" --cmake=deps.cmake
 
 This will write a file ``./deps.cmake`` that we can ``include()`` from a CMake
 project, which will then expose the ``neo-sqlite3`` package as a set of imported
@@ -41,16 +41,16 @@ targets.
 Using the CMake Import File
 ===========================
 
-Once we have generated the CMake import file using ``dds build-deps``, we can
+Once we have generated the CMake import file using ``bpt build-deps``, we can
 simply import it in our ``CMakeLists.txt``::
 
   include(deps.cmake)
 
-Like with ``dds``, CMake wants us to explicitly declare how our build targets
+Like with ``bpt``, CMake wants us to explicitly declare how our build targets
 *use* other libraries. When we ``include()`` the generated CMake file, it will
 generate ``IMPORTED`` targets that can be linked against.
 
-In ``dds`` (and in libman), a library is identified by a combination of
+In ``bpt`` (and in libman), a library is identified by a combination of
 *namespace* and *name*, joined together with a slash ``/`` character. This
 *qualified name* of a library is decided by the original package author, and
 should be documented. In the case of ``neo-sqlite3``, the only library is
@@ -71,12 +71,12 @@ with any other target::
 ************************
 
 `PMM`_ is the *package package manager*, and can be used to control and access
-package managers from within CMake scripts. This includes controlling ``dds``.
+package managers from within CMake scripts. This includes controlling ``bpt``.
 With PMM, we can automate all of the previous steps into a single line.
 
-For a complete rundown on using PMM to get dependencies via ``dds``, refer to
+For a complete rundown on using PMM to get dependencies via ``bpt``, refer to
 the :doc:`/howto/cmake` page.
 
 Using PMM removes the requirement that we write a separate dependencies file,
-and we no longer need to invoke ``dds build-deps`` externally, as it is all
+and we no longer need to invoke ``bpt build-deps`` externally, as it is all
 handled by PMM.

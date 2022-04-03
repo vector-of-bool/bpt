@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 struct e_parse_dep_shorthand_string {
     std::string value;
@@ -23,11 +23,11 @@ struct e_parse_dep_range_shorthand_string {
  */
 struct project_dependency {
     /// The name of the dependency package
-    dds::name dep_name;
+    bpt::name dep_name;
     /// A set of version ranges that are acceptable
     crs::version_range_set acceptable_versions;
     /// Libraries from the dependency that will be explicitly used
-    std::optional<std::vector<dds::name>> explicit_uses = std::nullopt;
+    std::optional<std::vector<bpt::name>> explicit_uses = std::nullopt;
 
     static project_dependency parse_dep_range_shorthand(std::string_view sv);
     static project_dependency from_shorthand_string(std::string_view sv);
@@ -36,4 +36,4 @@ struct project_dependency {
     crs::dependency as_crs_dependency() const noexcept;
 };
 
-}  // namespace dds
+}  // namespace bpt

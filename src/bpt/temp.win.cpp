@@ -8,7 +8,7 @@
 
 #include <cassert>
 
-using namespace dds;
+using namespace bpt;
 
 temporary_dir temporary_dir::create_in(path_ref base) {
     ::UUID uuid;
@@ -21,7 +21,7 @@ temporary_dir temporary_dir::create_in(path_ref base) {
     std::string uuid_std_str(reinterpret_cast<const char*>(uuid_str));
     ::RpcStringFree(&uuid_str);
 
-    auto            new_dir = base / ("dds-" + uuid_std_str);
+    auto            new_dir = base / ("bpt-" + uuid_std_str);
     std::error_code ec;
     fs::create_directories(new_dir);
     return std::make_shared<impl>(std::move(new_dir));

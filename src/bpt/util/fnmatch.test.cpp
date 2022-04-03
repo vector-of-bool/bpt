@@ -3,7 +3,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("Basic fnmatch matching") {
-    auto pat = dds::fnmatch::compile("foo.bar");
+    auto pat = bpt::fnmatch::compile("foo.bar");
     CHECK_FALSE(pat.match("foo.baz"));
     CHECK_FALSE(pat.match("foo."));
     CHECK_FALSE(pat.match("foo.barz"));
@@ -11,7 +11,7 @@ TEST_CASE("Basic fnmatch matching") {
     CHECK_FALSE(pat.match(" foo.bar"));
     CHECK(pat.match("foo.bar"));
 
-    pat = dds::fnmatch::compile("foo.*");
+    pat = bpt::fnmatch::compile("foo.*");
     CHECK(pat.match("foo."));
     auto m = pat.match("foo.b");
     CHECK(m);
@@ -19,7 +19,7 @@ TEST_CASE("Basic fnmatch matching") {
     CHECK_FALSE(pat.match("foo"));
     CHECK_FALSE(pat.match(" foo.bar"));
 
-    pat = dds::fnmatch::compile("foo.*.cpp");
+    pat = bpt::fnmatch::compile("foo.*.cpp");
     for (auto fname : {"foo.bar.cpp", "foo..cpp", "foo.cat.cpp"}) {
         auto m = pat.match(fname);
         CHECK(m);

@@ -8,7 +8,7 @@ from typing import Any, Callable, Iterable, NamedTuple, Union
 import pytest
 from typing_extensions import Literal
 
-from ..dds import DDSWrapper
+from ..bpt import BPTWrapper
 from .fixtures import TempPathFactory
 from .fs import TempCloner
 from .http import HTTPServerFactory, ServerInfo
@@ -19,9 +19,9 @@ class CRSRepo:
     A CRS repository directory
     """
 
-    def __init__(self, path: Path, dds: DDSWrapper) -> None:
+    def __init__(self, path: Path, bpt: BPTWrapper) -> None:
         self.path = path
-        self.dds = dds
+        self.bpt = bpt
 
     def import_(self,
                 path: Union[Path, Iterable[Path]],
@@ -30,7 +30,7 @@ class CRSRepo:
                 validate: bool = True) -> None:
         if isinstance(path, Path):
             path = [path]
-        self.dds.run([
+        self.bpt.run([
             '-ldebug',
             'repo',
             'import',
@@ -42,19 +42,19 @@ class CRSRepo:
             self.validate()
 
     def validate(self) -> None:
-        self.dds.run(['repo', 'validate', self.path, '-ldebug'])
+        self.bpt.run(['repo', 'validate', self.path, '-ldebug'])
 
 
 CRSRepoFactory = Callable[[str], CRSRepo]
 
 
 @pytest.fixture(scope='session')
-def crs_repo_factory(tmp_path_factory: TempPathFactory, dds: DDSWrapper) -> CRSRepoFactory:
+def crs_repo_factory(tmp_path_factory: TempPathFactory, bpt: BPTWrapper) -> CRSRepoFactory:
 
     def _make(name: str) -> CRSRepo:
         tmpdir = Path(tmp_path_factory.mktemp('crs-repo-'))
-        dds.run(['repo', 'init', tmpdir, f'--name={name}'])
-        return CRSRepo(tmpdir, dds)
+        bpt.run(['repo', 'init', tmpdir, f'--name={name}'])
+        return CRSRepo(tmpdir, bpt)
 
     return _make
 
@@ -72,7 +72,7 @@ def clone_repo(tmp_clone_dir: TempCloner) -> RepoCloner:
 
     def _clone(repo: CRSRepo) -> CRSRepo:
         clone = tmp_clone_dir('repo', repo.path)
-        return CRSRepo(clone, repo.dds)
+        return CRSRepo(clone, repo.bpt)
 
     return _clone
 

@@ -12,14 +12,14 @@
 
 #include <neo/memory.hpp>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 using namespace neo::sqlite3::literals;
 using namespace fansi::literals;
 
 struct cache::impl {
     fs::path        root_dir;
-    unique_database db = unique_database::open((root_dir / "dds-metadata.db").string()).value();
+    unique_database db = unique_database::open((root_dir / "bpt-metadata.db").string()).value();
     cache_db        metadata_db = cache_db::open(db);
     file_collector  fcoll       = file_collector::create(db);
 
@@ -58,9 +58,9 @@ fs::path cache::prefetch(const pkg_id& pid_) {
                remote.has_value(),
                "Unable to get the remote of a just-obtained package entry",
                pid.to_string());
-    dds_log(info, "Fetching package .br.cyan[{}]"_styled, pid.to_string());
+    bpt_log(info, "Fetching package .br.cyan[{}]"_styled, pid.to_string());
     crs::pull_pkg_from_remote(pkg_dir, remote->url, pid);
     return pkg_dir;
 }
 
-fs::path cache::default_path() noexcept { return dds::dds_cache_dir() / "crs"; }
+fs::path cache::default_path() noexcept { return bpt::bpt_cache_dir() / "crs"; }

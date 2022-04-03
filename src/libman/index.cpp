@@ -25,7 +25,7 @@ lm::index index::from_file(path_ref fpath) {
          read_accumulate("Package", package_lines));
 
     for (const auto& pkg_line : package_lines) {
-        auto items = dds::split(pkg_line, ";");
+        auto items = bpt::split(pkg_line, ";");
         std::transform(items.begin(), items.end(), items.begin(), [](auto s) {
             return std::string(trim_view(s));
         });

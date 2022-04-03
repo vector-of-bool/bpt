@@ -4,7 +4,7 @@
 
 #include <neo/http/headers.hpp>
 
-namespace dds {
+namespace bpt {
 
 struct http_request_params {
     std::string_view method = "GET";
@@ -17,4 +17,4 @@ struct http_request_params {
     std::string_view last_modified{};
 };
 
-}  // namespace dds
+}  // namespace bpt

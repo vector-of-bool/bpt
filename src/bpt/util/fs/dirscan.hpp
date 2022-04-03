@@ -9,7 +9,7 @@
 #include <functional>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 class file_collector {
     std::reference_wrapper<unique_database> _db;
@@ -29,4 +29,4 @@ public:
     [[nodiscard]] bool has_cached(path_ref) noexcept;
 };
 
-}  // namespace dds
+}  // namespace bpt

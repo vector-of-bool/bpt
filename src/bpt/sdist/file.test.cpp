@@ -2,10 +2,10 @@
 
 #include <catch2/catch.hpp>
 
-using dds::source_kind;
+using bpt::source_kind;
 
 TEST_CASE("Infer source kind") {
-    using dds::infer_source_kind;
+    using bpt::infer_source_kind;
     auto k = infer_source_kind("foo.h");
     CHECK(k == source_kind::header);
     CHECK(infer_source_kind("foo.hpp") == source_kind::header);

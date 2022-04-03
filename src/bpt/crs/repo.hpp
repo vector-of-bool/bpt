@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <string_view>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 class repository {
     unique_database       _db;
@@ -48,4 +48,4 @@ struct ev_repo_imported_package {
     package_info const&          pkg_meta;
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

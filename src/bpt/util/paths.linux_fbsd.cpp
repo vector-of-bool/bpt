@@ -7,38 +7,38 @@
 
 #include <cstdlib>
 
-using namespace dds;
+using namespace bpt;
 
-fs::path dds::user_home_dir() {
+fs::path bpt::user_home_dir() {
     static auto ret = []() -> fs::path {
-        return fs::absolute(dds::getenv("HOME", [] {
-            dds_log(error, "No HOME environment variable set!");
+        return fs::absolute(bpt::getenv("HOME", [] {
+            bpt_log(error, "No HOME environment variable set!");
             return "/";
         }));
     }();
     return ret;
 }
 
-fs::path dds::user_data_dir() {
+fs::path bpt::user_data_dir() {
     static auto ret = []() -> fs::path {
         return fs::absolute(
-            dds::getenv("XDG_DATA_HOME", [] { return user_home_dir() / ".local/share"; }));
+            bpt::getenv("XDG_DATA_HOME", [] { return user_home_dir() / ".local/share"; }));
     }();
     return ret;
 }
 
-fs::path dds::user_cache_dir() {
+fs::path bpt::user_cache_dir() {
     static auto ret = []() -> fs::path {
         return fs::absolute(
-            dds::getenv("XDG_CACHE_HOME", [] { return user_home_dir() / ".cache"; }));
+            bpt::getenv("XDG_CACHE_HOME", [] { return user_home_dir() / ".cache"; }));
     }();
     return ret;
 }
 
-fs::path dds::user_config_dir() {
+fs::path bpt::user_config_dir() {
     static auto ret = []() -> fs::path {
         return fs::absolute(
-            dds::getenv("XDG_CONFIG_HOME", [] { return user_home_dir() / ".config"; }));
+            bpt::getenv("XDG_CONFIG_HOME", [] { return user_home_dir() / ".config"; }));
     }();
     return ret;
 }

@@ -16,10 +16,10 @@ enum glob_coro_ret {
 
 }  // namespace
 
-namespace dds::detail {
+namespace bpt::detail {
 
 struct rglob_item {
-    std::optional<dds::fnmatch::pattern> pattern;
+    std::optional<bpt::fnmatch::pattern> pattern;
 };
 
 struct glob_impl {
@@ -134,14 +134,14 @@ struct glob_iter_state {
 
         CONTINUE();
     }
-};  // namespace dds::detail
+};  // namespace bpt::detail
 
-}  // namespace dds::detail
+}  // namespace bpt::detail
 
 namespace {
 
-dds::detail::glob_impl compile_glob_expr(std::string_view pattern) {
-    using namespace dds::detail;
+bpt::detail::glob_impl compile_glob_expr(std::string_view pattern) {
+    using namespace bpt::detail;
 
     glob_impl acc{};
     acc.spelling = std::string(pattern);
@@ -158,7 +158,7 @@ dds::detail::glob_impl compile_glob_expr(std::string_view pattern) {
         if (next_part == "**") {
             acc.items.emplace_back();
         } else {
-            acc.items.push_back({dds::fnmatch::compile(next_part)});
+            acc.items.push_back({bpt::fnmatch::compile(next_part)});
         }
     }
 
@@ -171,7 +171,7 @@ dds::detail::glob_impl compile_glob_expr(std::string_view pattern) {
 
 }  // namespace
 
-dds::glob_iterator::glob_iterator(dds::glob gl, dds::path_ref root)
+bpt::glob_iterator::glob_iterator(bpt::glob gl, bpt::path_ref root)
     : _impl(gl._impl)
     , _done(false) {
 
@@ -179,7 +179,7 @@ dds::glob_iterator::glob_iterator(dds::glob gl, dds::path_ref root)
     increment();
 }
 
-void dds::glob_iterator::increment() {
+void bpt::glob_iterator::increment() {
     auto st = reenter_again;
     while (st == reenter_again) {
         st = _state->reenter();
@@ -187,20 +187,20 @@ void dds::glob_iterator::increment() {
     _done = st == done;
 }
 
-dds::fs::directory_entry dds::glob_iterator::dereference() const noexcept {
+bpt::fs::directory_entry bpt::glob_iterator::dereference() const noexcept {
     return _state->get_entry();
 }
 
-dds::glob dds::glob::compile(std::string_view pattern) {
+bpt::glob bpt::glob::compile(std::string_view pattern) {
     glob ret;
-    ret._impl = std::make_shared<dds::detail::glob_impl>(compile_glob_expr(pattern));
+    ret._impl = std::make_shared<bpt::detail::glob_impl>(compile_glob_expr(pattern));
     return ret;
 }
 
 namespace {
 
-using path_iter = dds::fs::path::const_iterator;
-using pat_iter  = std::vector<dds::detail::rglob_item>::const_iterator;
+using path_iter = bpt::fs::path::const_iterator;
+using pat_iter  = std::vector<bpt::detail::rglob_item>::const_iterator;
 
 bool check_matches(path_iter       elem_it,
                    const path_iter elem_stop,
@@ -236,11 +236,11 @@ bool check_matches(path_iter       elem_it,
 
 }  // namespace
 
-bool dds::glob::match(dds::path_ref filepath) const noexcept {
+bool bpt::glob::match(bpt::path_ref filepath) const noexcept {
     return check_matches(filepath.begin(),
                          filepath.end(),
                          _impl->items.cbegin(),
                          _impl->items.cend());
 }
 
-std::string_view dds::glob::string() const noexcept { return _impl->spelling; }
+std::string_view bpt::glob::string() const noexcept { return _impl->spelling; }

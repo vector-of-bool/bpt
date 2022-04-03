@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 class toolchain;
 
@@ -42,4 +42,4 @@ struct toolchain_prep {
     [[nodiscard]] std::uint64_t compute_hash() const noexcept;
 };
 
-}  // namespace dds
+}  // namespace bpt

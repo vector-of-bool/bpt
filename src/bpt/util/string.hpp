@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 inline namespace string_utils {
 
@@ -103,4 +103,4 @@ inline std::string joinstr(std::string_view joiner, Range&& rng) {
 
 }  // namespace string_utils
 
-}  // namespace dds
+}  // namespace bpt

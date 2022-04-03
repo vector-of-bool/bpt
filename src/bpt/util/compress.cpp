@@ -8,11 +8,11 @@
 #include <neo/io/stream/buffers.hpp>
 #include <neo/io/stream/file.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-result<void> dds::compress_file_gz(fs::path in_path, fs::path out_path) noexcept {
-    DDS_E_SCOPE(e_read_file_path{in_path});
-    DDS_E_SCOPE(e_write_file_path{out_path});
+result<void> bpt::compress_file_gz(fs::path in_path, fs::path out_path) noexcept {
+    BPT_E_SCOPE(e_read_file_path{in_path});
+    BPT_E_SCOPE(e_write_file_path{out_path});
     std::error_code ec;
 
     auto in_file = neo::file_stream::open(in_path, neo::open_mode::read, ec);
@@ -38,9 +38,9 @@ result<void> dds::compress_file_gz(fs::path in_path, fs::path out_path) noexcept
     return {};
 }
 
-result<void> dds::decompress_file_gz(fs::path gz_path, fs::path plain_path) noexcept {
-    DDS_E_SCOPE(e_read_file_path{gz_path});
-    DDS_E_SCOPE(e_write_file_path{plain_path});
+result<void> bpt::decompress_file_gz(fs::path gz_path, fs::path plain_path) noexcept {
+    BPT_E_SCOPE(e_read_file_path{gz_path});
+    BPT_E_SCOPE(e_write_file_path{plain_path});
 
     std::error_code ec;
     auto            in_file = neo::file_stream::open(gz_path, neo::open_mode::read, ec);

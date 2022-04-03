@@ -9,9 +9,9 @@ class result;
 
 }  // namespace boost::leaf
 
-namespace dds {
+namespace bpt {
 
 using boost::leaf::bad_result;
 using boost::leaf::result;
 
-}  // namespace dds
+}  // namespace bpt

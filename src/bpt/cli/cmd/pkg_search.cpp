@@ -37,23 +37,23 @@ pkg_search_results search_impl(nsql::connection_ref db, std::optional<std::strin
         SELECT pkg.name,
                group_concat(version, ';;'),
                remote.url
-          FROM dds_crs_packages AS pkg
-          JOIN dds_crs_remotes AS remote USING(remote_id)
+          FROM bpt_crs_packages AS pkg
+          JOIN bpt_crs_remotes AS remote USING(remote_id)
          WHERE lower(pkg.name) GLOB lower(:pattern)
-               AND remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes)
+               AND remote_id IN (SELECT remote_id FROM bpt_crs_enabled_remotes)
       GROUP BY pkg.name, remote_id
       ORDER BY remote.unique_name, pkg.name
     )");
     // If no pattern, grab _everything_
     auto final_pattern = pattern.value_or("*");
-    dds_log(debug, "Searching for packages matching pattern '{}'", final_pattern);
+    bpt_log(debug, "Searching for packages matching pattern '{}'", final_pattern);
     search_st.bindings()[1] = final_pattern;
     auto rows               = nsql::iter_tuples<std::string, std::string, std::string>(search_st);
 
     std::vector<pkg_group_search_result> found;
     for (auto [name, versions, remote_url] : rows) {
-        dds_log(debug, "Found: {} with versions {} [{}]", name, versions, remote_url);
-        auto version_strs = dds::split(versions, ";;");
+        bpt_log(debug, "Found: {} with versions {} [{}]", name, versions, remote_url);
+        auto version_strs = bpt::split(versions, ";;");
         auto versions_semver
             = version_strs | std::views::transform(&semver::version::parse) | neo::to_vector;
         std::ranges::sort(versions_semver);
@@ -67,15 +67,15 @@ pkg_search_results search_impl(nsql::connection_ref db, std::optional<std::strin
     if (found.empty()) {
         BOOST_LEAF_THROW_EXCEPTION([&] {
             auto names_st  = *db.prepare(R"(
-                SELECT DISTINCT name from dds_crs_packages
-                 WHERE remote_id IN (SELECT remote_id FROM dds_crs_enabled_remotes)
+                SELECT DISTINCT name from bpt_crs_packages
+                 WHERE remote_id IN (SELECT remote_id FROM bpt_crs_enabled_remotes)
                 )");
             auto tups      = nsql::iter_tuples<std::string>(names_st);
             auto names_vec = tups
                 | std::views::transform([](auto&& row) { return row.template get<0>(); })
                 | neo::to_vector;
-            auto nearest = dds::did_you_mean(final_pattern, names_vec);
-            return dds::e_nonesuch{final_pattern, nearest};
+            auto nearest = bpt::did_you_mean(final_pattern, names_vec);
+            return bpt::e_nonesuch{final_pattern, nearest};
         });
     }
 
@@ -83,7 +83,7 @@ pkg_search_results search_impl(nsql::connection_ref db, std::optional<std::strin
 }
 }  // namespace
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 static int _pkg_search(const options& opts) {
     auto cache = open_ready_cache(opts);
@@ -113,4 +113,4 @@ int pkg_search(const options& opts) {
         });
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

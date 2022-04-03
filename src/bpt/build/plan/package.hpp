@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 /**
  * A package is a top-level component with a name, namespace, and some number of associated
@@ -43,4 +43,4 @@ public:
     auto& libraries() const noexcept { return _libraries; }
 };
 
-}  // namespace dds
+}  // namespace bpt

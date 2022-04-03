@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace dds {
+namespace bpt {
 
 /**
  * Exception thrown to indicate a compile failure
@@ -136,4 +136,4 @@ public:
     compile_command_info generate_compile_command(build_env_ref) const;
 };
 
-}  // namespace dds
+}  // namespace bpt

@@ -7,7 +7,7 @@
 #include <string>
 #include <type_traits>
 
-namespace dds {
+namespace bpt {
 
 namespace fnmatch {
 
@@ -96,7 +96,7 @@ constexpr auto compile_next(String s) {
     constexpr auto str      = s();
     constexpr auto cur_char = str[Cur];
     if constexpr (Cur == Len) {
-        return dds::fnmatch::ct_pattern<Matchers...>();
+        return bpt::fnmatch::ct_pattern<Matchers...>();
     } else if constexpr (cur_char == '*') {
         return compile_next<Cur + 1, Len, Matchers..., star>(s);
     } else if constexpr (cur_char == '?') {
@@ -303,7 +303,7 @@ public:
     }
 
     bool match(const char* str) const {
-        return match(str, str + dds::detail::fnmatch::length(str));
+        return match(str, str + bpt::detail::fnmatch::length(str));
     }
 
     template <typename Seq>
@@ -318,4 +318,4 @@ public:
 
 }  // namespace fnmatch
 
-}  // namespace dds
+}  // namespace bpt

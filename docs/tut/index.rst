@@ -2,7 +2,7 @@ Tutorials and Beginner's Guide
 ##############################
 
 The child pages here contain introductory material for getting started with
-using ``dds``. If you don't know where to start, this will be a good
+using ``bpt``. If you don't know where to start, this will be a good
 place to begin!
 
 .. seealso::

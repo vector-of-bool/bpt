@@ -2,10 +2,10 @@
 
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 struct e_loading_toolchain {
     std::string value;
 };
 
-}  // namespace dds
+}  // namespace bpt

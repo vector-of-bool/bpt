@@ -588,27 +588,27 @@ TEST_CASE("Reject bad meta informations") {
     }));
     INFO("Parsing data: " << given);
     CAPTURE(expect_error);
-    dds_leaf_try {
-        dds::crs::package_info::from_json_str(given);
+    bpt_leaf_try {
+        bpt::crs::package_info::from_json_str(given);
         FAIL("Expected a failure, but no failure occurred");
     }
-    dds_leaf_catch(dds::e_json_parse_error                     err,
-                   dds::crs::e_given_meta_json_str const*      json_str,
+    bpt_leaf_catch(bpt::e_json_parse_error                     err,
+                   bpt::crs::e_given_meta_json_str const*      json_str,
                    boost::leaf::verbose_diagnostic_info const& diag_info) {
         CAPTURE(diag_info);
         CHECKED_IF(json_str) { CHECK(json_str->value == given); }
         CHECK_THAT(err.value, Catch::Matchers::Contains(expect_error));
     }
-    dds_leaf_catch(dds::crs::e_given_meta_json_str const*      error_str,
-                   dds::crs::e_given_meta_json_data const*     error_data,
-                   dds::crs::e_invalid_meta_data               e,
+    bpt_leaf_catch(bpt::crs::e_given_meta_json_str const*      error_str,
+                   bpt::crs::e_given_meta_json_data const*     error_data,
+                   bpt::crs::e_invalid_meta_data               e,
                    boost::leaf::verbose_diagnostic_info const& diag_info) {
         CAPTURE(diag_info);
         CHECKED_IF(error_str) { CHECK(error_str->value == given); }
         CHECK(error_data);
         CHECK_THAT(e.value, Catch::Matchers::Contains(expect_error));
     }
-    dds_leaf_catch_all {  //
+    bpt_leaf_catch_all {  //
         FAIL_CHECK("Unexpected error: " << diagnostic_info);
     };
 }
@@ -628,16 +628,16 @@ TEST_CASE("Check some valid meta JSON") {
              }],
              "schema-version": 1
          })");
-    REQUIRE_NOTHROW(dds::crs::package_info::from_json_str(given));
+    REQUIRE_NOTHROW(bpt::crs::package_info::from_json_str(given));
 }
 
-auto mk_name = [](std::string_view s) { return dds::name::from_string(s).value(); };
+auto mk_name = [](std::string_view s) { return bpt::name::from_string(s).value(); };
 
 #ifndef _MSC_VER  // MSVC struggles with compiling this test
 TEST_CASE("Check parse results") {
-    using pkg_meta   = dds::crs::package_info;
-    using lib_meta   = dds::crs::library_info;
-    using dependency = dds::crs::dependency;
+    using pkg_meta   = bpt::crs::package_info;
+    using lib_meta   = bpt::crs::library_info;
+    using dependency = bpt::crs::dependency;
     const auto [given, expect] = GENERATE(Catch::Generators::table<std::string, pkg_meta>({
         {R"({
              "name": "foo",
@@ -662,7 +662,7 @@ TEST_CASE("Check parse results") {
              "schema-version": 1
          })",
          pkg_meta{
-             .id=dds::crs::pkg_id{
+             .id=bpt::crs::pkg_id{
                 .name         = mk_name("foo"),
                 .version      = semver::version::parse("1.2.3"),
                 .revision = 1,
@@ -675,9 +675,9 @@ TEST_CASE("Check parse results") {
                  .dependencies = {dependency{
                      .name = mk_name("bar"),
                      .acceptable_versions
-                     = dds::crs::version_range_set{semver::version::parse("1.0.0"),
+                     = bpt::crs::version_range_set{semver::version::parse("1.0.0"),
                                                    semver::version::parse("1.5.1")},
-                     .uses = dds::crs::explicit_uses_list{{dds::name{"baz"}}},
+                     .uses = bpt::crs::explicit_uses_list{{bpt::name{"baz"}}},
                  }},
                  .test_dependencies ={},
              }},
@@ -686,8 +686,8 @@ TEST_CASE("Check parse results") {
          }},
     }));
 
-    auto meta = dds_leaf_try { return dds::crs::package_info::from_json_str(given); }
-    dds_leaf_catch_all->dds::noreturn_t {
+    auto meta = bpt_leaf_try { return bpt::crs::package_info::from_json_str(given); }
+    bpt_leaf_catch_all->bpt::noreturn_t {
         FAIL("Unexpected error: " << diagnostic_info);
         std::terminate();
     };

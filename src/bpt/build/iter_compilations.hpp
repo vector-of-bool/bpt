@@ -7,7 +7,7 @@
 #include <range/v3/view/join.hpp>
 #include <range/v3/view/transform.hpp>
 
-namespace dds {
+namespace bpt {
 
 /**
  * Iterate over every library defined as part of the build plan
@@ -49,4 +49,4 @@ inline auto iter_compilations(const build_plan& plan) {
     return ranges::views::concat(lib_compiles, header_compiles, exe_compiles);
 }
 
-}  // namespace dds
+}  // namespace bpt

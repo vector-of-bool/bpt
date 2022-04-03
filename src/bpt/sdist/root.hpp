@@ -8,7 +8,7 @@
 #include <ranges>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 struct collected_sources : neo::any_range<source_file, std::input_iterator_tag>,
                            std::ranges::view_interface<collected_sources> {
@@ -36,4 +36,4 @@ struct source_root {
     bool exists() const noexcept { return fs::exists(path); }
 };
 
-}  // namespace dds
+}  // namespace bpt

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 namespace fs = std::filesystem;
 class toolchain;
@@ -16,7 +16,7 @@ class toolchain;
 namespace cli {
 
 /**
- * @brief Top-level dds subcommands
+ * @brief Top-level bpt subcommands
  */
 enum class subcommand {
     _none_,
@@ -29,7 +29,7 @@ enum class subcommand {
 };
 
 /**
- * @brief 'dds pkg' subcommands
+ * @brief 'bpt pkg' subcommands
  */
 enum class pkg_subcommand {
     _none_,
@@ -40,7 +40,7 @@ enum class pkg_subcommand {
 };
 
 /**
- * @brief 'dds pkg repo' subcommands
+ * @brief 'bpt pkg repo' subcommands
  */
 enum class pkg_repo_subcommand {
     _none_,
@@ -51,7 +51,7 @@ enum class pkg_repo_subcommand {
 };
 
 /**
- * @brief 'dds repo' subcommands
+ * @brief 'bpt repo' subcommands
  *
  */
 enum class repo_subcommand {
@@ -84,7 +84,7 @@ enum class repo_sync_mode {
 };
 
 /**
- * @brief Complete aggregate of all dds command-line options, and some utilities
+ * @brief Complete aggregate of all bpt command-line options, and some utilities
  */
 struct options {
     using path       = fs::path;
@@ -126,13 +126,13 @@ struct options {
     cli::if_missing if_missing = cli::if_missing::fail;
 
     /**
-     * @brief Load a dds toolchain as specified by the user, or a default.
-     * @return dds::toolchain
+     * @brief Load a bpt toolchain as specified by the user, or a default.
+     * @return bpt::toolchain
      */
-    dds::toolchain load_toolchain() const;
+    bpt::toolchain load_toolchain() const;
 
     /**
-     * @brief Parameters specific to 'dds build'
+     * @brief Parameters specific to 'bpt build'
      */
     struct {
         bool     want_tests = true;
@@ -142,7 +142,7 @@ struct options {
     } build;
 
     /**
-     * @brief Parameters specific to 'dds compile-file'
+     * @brief Parameters specific to 'bpt compile-file'
      */
     struct {
         /// The files that the user has requested to be compiled
@@ -150,7 +150,7 @@ struct options {
     } compile_file;
 
     /**
-     * @brief Parameters specific to 'dds build-deps'
+     * @brief Parameters specific to 'bpt build-deps'
      */
     struct {
         /// Files listed with '--deps-file'
@@ -162,15 +162,15 @@ struct options {
     } build_deps;
 
     /**
-     * @brief Parameters and subcommands for 'dds pkg'
+     * @brief Parameters and subcommands for 'bpt pkg'
      *
      */
     struct {
-        /// The 'dds pkg' subcommand
+        /// The 'bpt pkg' subcommand
         pkg_subcommand subcommand;
 
         /**
-         * @brief Paramters for 'dds pkg prefetch'
+         * @brief Paramters for 'bpt pkg prefetch'
          */
         struct {
             /// Package IDs to download
@@ -178,7 +178,7 @@ struct options {
         } prefetch;
 
         /**
-         * @brief Parameters for 'dds pkg search'
+         * @brief Parameters for 'bpt pkg search'
          */
         struct {
             /// The search pattern, if provided
@@ -186,7 +186,7 @@ struct options {
         } search;
 
         /**
-         * @brief Paramters for 'dds pkg solve'
+         * @brief Paramters for 'bpt pkg solve'
          */
         struct {
             /// Requirements listed to solve
@@ -195,7 +195,7 @@ struct options {
     } pkg;
 
     /**
-     * @brief Parameters for 'dds repo'
+     * @brief Parameters for 'bpt repo'
      */
     struct {
         /// Shared parameter between repo subcommands: The directory we are acting upon
@@ -204,19 +204,19 @@ struct options {
         /// The actual operation we are performing on the repository dir
         repo_subcommand subcommand;
 
-        /// Options for 'dds repo init'
+        /// Options for 'bpt repo init'
         struct {
             /// The name of the new repository. If not provided, a random one will be generated
             string name;
         } init;
 
-        /// Options for 'dds repo import'
+        /// Options for 'bpt repo import'
         struct {
             /// sdist tarball file paths to import into the repository
             std::vector<fs::path> files;
         } import;
 
-        /// Options for 'dds repo remove'
+        /// Options for 'bpt repo remove'
         struct {
             /// Package IDs of packages to remove
             std::vector<string> pkgs;
@@ -241,4 +241,4 @@ struct options {
 };
 
 }  // namespace cli
-}  // namespace dds
+}  // namespace bpt

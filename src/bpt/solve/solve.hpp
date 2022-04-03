@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 namespace crs {
 
@@ -30,4 +30,4 @@ struct e_nonesuch_package : e_nonesuch {
 
 std::vector<crs::pkg_id> solve(crs::cache_db const&, neo::any_input_range<crs::dependency>);
 
-}  // namespace dds
+}  // namespace bpt

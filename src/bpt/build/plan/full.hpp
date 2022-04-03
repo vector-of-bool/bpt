@@ -3,7 +3,7 @@
 #include <bpt/build/plan/exe.hpp>
 #include <bpt/build/plan/package.hpp>
 
-namespace dds {
+namespace bpt {
 
 /**
  * Encompases an entire build plan.
@@ -52,4 +52,4 @@ public:
     std::vector<test_failure> run_all_tests(build_env_ref env, int njobs) const;
 };
 
-}  // namespace dds
+}  // namespace bpt

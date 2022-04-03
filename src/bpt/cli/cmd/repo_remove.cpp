@@ -10,14 +10,14 @@
 
 #include <iostream>
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 int repo_remove(const options& opts) {
-    auto repo = dds::crs::repository::open_existing(opts.repo.repo_dir);
+    auto repo = bpt::crs::repository::open_existing(opts.repo.repo_dir);
     for (auto pkg : opts.repo.remove.pkgs) {
-        auto pkg_id = dds::crs::pkg_id::parse(pkg);
+        auto pkg_id = bpt::crs::pkg_id::parse(pkg);
         /// We only need the name and version info to do the removal
-        dds::crs::package_info meta;
+        bpt::crs::package_info meta;
         meta.id = pkg_id;
         // Zero to remove all package revisions
         meta.id.revision = 0;
@@ -26,4 +26,4 @@ int repo_remove(const options& opts) {
     return 0;
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

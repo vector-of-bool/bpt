@@ -9,7 +9,7 @@
 
 #include <windows.h>
 
-using namespace dds;
+using namespace bpt;
 
 namespace {
 
@@ -37,7 +37,7 @@ getenv_wstr(std::wstring varname, std::wstring default_val, std::size_t size_hin
 
 }  // namespace
 
-fs::path dds::user_home_dir() {
+fs::path bpt::user_home_dir() {
     static auto ret = []() -> fs::path {
         std::wstring userprofile_env = getenv_wstr(L"UserProfile", L"/");
         return fs::absolute(fs::path(userprofile_env));
@@ -59,8 +59,8 @@ fs::path appdata_dir() {
 
 }  // namespace
 
-fs::path dds::user_data_dir() { return appdatalocal_dir(); }
-fs::path dds::user_cache_dir() { return appdatalocal_dir(); }
-fs::path dds::user_config_dir() { return appdata_dir(); }
+fs::path bpt::user_data_dir() { return appdatalocal_dir(); }
+fs::path bpt::user_cache_dir() { return appdatalocal_dir(); }
+fs::path bpt::user_config_dir() { return appdata_dir(); }
 
 #endif

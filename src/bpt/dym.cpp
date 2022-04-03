@@ -9,9 +9,9 @@
 
 #include <cassert>
 
-using namespace dds;
+using namespace bpt;
 
-std::size_t dds::lev_edit_distance(std::string_view a, std::string_view b) noexcept {
+std::size_t bpt::lev_edit_distance(std::string_view a, std::string_view b) noexcept {
     const auto n_rows    = b.size() + 1;
     const auto n_columns = a.size() + 1;
 

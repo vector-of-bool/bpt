@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 std::size_t lev_edit_distance(std::string_view a, std::string_view b) noexcept;
 
@@ -28,4 +28,4 @@ did_you_mean(std::string_view given, std::initializer_list<std::string_view> str
     return did_you_mean(given, ranges::views::all(strings));
 }
 
-}  // namespace dds
+}  // namespace bpt

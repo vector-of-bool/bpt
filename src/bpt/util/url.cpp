@@ -6,14 +6,14 @@
 
 #include <filesystem>
 
-using namespace dds;
+using namespace bpt;
 
-neo::url dds::parse_url(std::string_view sv) {
-    DDS_E_SCOPE(e_url_string{std::string(sv)});
+neo::url bpt::parse_url(std::string_view sv) {
+    BPT_E_SCOPE(e_url_string{std::string(sv)});
     return neo::url::parse(sv);
 }
 
-neo::url dds::guess_url_from_string(std::string_view sv) {
+neo::url bpt::guess_url_from_string(std::string_view sv) {
     /// We can probably be a lot smarter about this...
     std::filesystem::path as_path{sv};
     if (not as_path.empty()
@@ -24,7 +24,7 @@ neo::url dds::guess_url_from_string(std::string_view sv) {
 
     if (sv.find("://") == sv.npos) {
         std::string s   = "https://" + std::string(sv);
-        auto        url = dds::parse_url(s);
+        auto        url = bpt::parse_url(s);
         if (url.host == neo::oper::any_of("localhost", "127.0.0.1", "[::1]")) {
             url.scheme = "http";
         }
@@ -34,7 +34,7 @@ neo::url dds::guess_url_from_string(std::string_view sv) {
     auto host = neo::url::host_t::parse(sv);
     if (host.has_value()) {
         std::string s = "https://" + std::string(sv);
-        return dds::parse_url(s);
+        return bpt::parse_url(s);
     }
 
     auto parsed = neo::url::try_parse(sv);
@@ -47,8 +47,8 @@ neo::url dds::guess_url_from_string(std::string_view sv) {
         host       = neo::url::host_t::parse(first);
         if (host.has_value()) {
             std::string s = "https://" + std::string(sv);
-            return dds::parse_url(s);
+            return bpt::parse_url(s);
         }
     }
-    return dds::parse_url(sv);
+    return bpt::parse_url(sv);
 }

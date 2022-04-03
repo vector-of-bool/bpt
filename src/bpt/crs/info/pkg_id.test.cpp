@@ -3,7 +3,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("Parse a pkg_id string") {
-    auto pid = dds::crs::pkg_id::parse("foo@1.2.3");
+    auto pid = bpt::crs::pkg_id::parse("foo@1.2.3");
     CHECK(pid.name.str == "foo");
 }
 
@@ -19,7 +19,7 @@ TEST_CASE("Package package ID strings") {
         {"foo@1.2.3-alpha~0", "foo", "1.2.3-alpha"},
     }));
 
-    auto pk_id = dds::crs::pkg_id::parse(id_str);
+    auto pk_id = bpt::crs::pkg_id::parse(id_str);
     CHECK(pk_id.to_string() == id_str);
     CHECK(pk_id.name.str == exp_name);
     CHECK(pk_id.version.to_string() == exp_ver);
@@ -49,8 +49,8 @@ TEST_CASE("Package ordering") {
         {"foo@0.1.2-alpha", less_than, "foo@1.0.0"},
     }));
 
-    auto lhs = dds::crs::pkg_id::parse(lhs_str);
-    auto rhs = dds::crs::pkg_id::parse(rhs_str);
+    auto lhs = bpt::crs::pkg_id::parse(lhs_str);
+    auto rhs = bpt::crs::pkg_id::parse(rhs_str);
 
     if (ord == less_than) {
         CHECK(lhs < rhs);

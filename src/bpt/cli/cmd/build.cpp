@@ -6,9 +6,9 @@
 #include <bpt/error/errors.hpp>
 #include <bpt/toolchain/from_json.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 static int _build(const options& opts) {
     auto builder = create_project_builder(opts);
@@ -28,4 +28,4 @@ int build(const options& opts) {
     return handle_build_error([&] { return _build(opts); });
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

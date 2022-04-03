@@ -2,8 +2,8 @@
 
 #include <functional>
 
-namespace dds {
+namespace bpt {
 
 int handle_cli_errors(std::function<int()>) noexcept;
 
-}  // namespace dds
+}  // namespace bpt

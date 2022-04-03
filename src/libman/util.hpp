@@ -5,8 +5,8 @@
 
 namespace lm {
 
-namespace fs = dds::fs;
-using dds::path_ref;
-using namespace dds::string_utils;
+namespace fs = bpt::fs;
+using bpt::path_ref;
+using namespace bpt::string_utils;
 
 }  // namespace lm

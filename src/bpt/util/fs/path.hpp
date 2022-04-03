@@ -4,7 +4,7 @@
 
 #include <filesystem>
 
-namespace dds {
+namespace bpt {
 
 namespace fs = std::filesystem;
 
@@ -21,12 +21,12 @@ struct e_resolve_path {
 };
 
 /**
- * @brief Convert a path to its most-normal form based on dds's path-equivalence.
+ * @brief Convert a path to its most-normal form based on bpt's path-equivalence.
  *
  * @param p A path to be normalized.
  * @return fs::path The normal form of the path
  *
- * Two paths are "equivalent" (in dds) if they would resolve to the same entity on disk from a given
+ * Two paths are "equivalent" (in bpt) if they would resolve to the same entity on disk from a given
  * base location. This removes redundant path elements (dots and dot-dots), removes trailing
  * directory separators, and converts the path to it's POSIX (generic) form.
  */
@@ -42,4 +42,4 @@ struct e_resolve_path {
  */
 [[nodiscard]] result<fs::path> resolve_path_strong(path_ref p) noexcept;
 
-}  // namespace dds
+}  // namespace bpt

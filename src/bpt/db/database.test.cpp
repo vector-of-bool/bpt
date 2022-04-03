@@ -4,4 +4,4 @@
 
 using namespace std::literals;
 
-TEST_CASE("Create a database") { auto db = dds::database::open(":memory:"s); }
+TEST_CASE("Create a database") { auto db = bpt::database::open(":memory:"s); }

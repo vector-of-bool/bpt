@@ -3,7 +3,7 @@
 Library and Package Dependencies
 ################################
 
-``dds`` considers that all libraries belong to a single *package*, but a single
+``bpt`` considers that all libraries belong to a single *package*, but a single
 package may contain one or more *libraries*. For this reason, and to better
 interoperate with other build and packaging tools, we consider the issues of
 package dependencies and library dependencies separately.
@@ -65,7 +65,7 @@ additional ``depends`` items:
         ],
     }
 
-When ``dds`` attempts to build a project, it will first build the dependency
+When ``bpt`` attempts to build a project, it will first build the dependency
 solution by iteratively scanning the dependencies of the containing project and
 all transitive dependencies.
 
@@ -79,12 +79,12 @@ When specifying a dependency on a package, one will want to specify which
 versions of the dependency are supported.
 
 .. note::
-    Unlike other packaging tools, ``dds`` will find a solution with the
+    Unlike other packaging tools, ``bpt`` will find a solution with the
     *lowest* possible version that satisfies the given requirements for each
     package. This decision is not incidental: It's entirely intentional.
     Refer to: :ref:`deps.ranges.why-lowest`.
 
-``dds`` compatible-version ranges are similar to the shorthand range specifiers
+``bpt`` compatible-version ranges are similar to the shorthand range specifiers
 supported by ``npm`` and ``npm``-like tools. There are four version range kinds
 available, listed in order of most-to-least restrictive:
 
@@ -119,7 +119,7 @@ A dependency string is simply the name of the package with the range suffix appe
 Why Pull the *Lowest* Matching Version?
 ---------------------------------------
 
-When resolving dependencies, ``dds`` will pull the version of the dependency
+When resolving dependencies, ``bpt`` will pull the version of the dependency
 that is the lowest version that satisfies the given range. In most cases,
 this will be the same version that is the base of the version range.
 
@@ -195,7 +195,7 @@ just fine!
 Library Dependencies
 ********************
 
-In ``dds``, library interdependencies are tracked separately from the packages
+In ``bpt``, library interdependencies are tracked separately from the packages
 that contain them. A library must declare its intent to use another library
 in the ``library.json5`` at its library root. The minimal content of a
 ``library.json5`` is the ``name`` key:
@@ -241,6 +241,6 @@ It is the responsibility of package authors to document the ``namespace`` and
     However, it is essential that the ``<namespace>/<name>`` pair be
     universally unique, so choose wisely!
 
-Once the ``uses`` key appears in the ``library.dds`` file of a library, ``dds``
+Once the ``uses`` key appears in the ``library.bpt`` file of a library, ``bpt``
 will make available the headers for the library being used, and will
 transitively propagate that usage requirement to users of the library.

@@ -10,7 +10,7 @@ library. If the ``using`` is not within a dependency declaration, then the
 contains the ``using`` library. If the ``using`` keyword appears within a
 dependency declaration, that ``using`` must specify a library that belongs to
 the package that is identified by the dependency. If a ``using`` does not
-correspond to a known library, ``dds`` will not be able to resolve the usage
+correspond to a known library, ``bpt`` will not be able to resolve the usage
 requirements, and will generate an error.
 
 To fix this issue, ensure that you have correctly spelled the library identifier

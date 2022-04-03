@@ -6,7 +6,7 @@
 #include <bit>
 #include <cstdint>
 
-namespace dds {
+namespace bpt {
 
 /**
  * @brief Implementation of SipHash that computes a 64-bit digest
@@ -120,4 +120,4 @@ public:
     [[nodiscard]] constexpr std::uint64_t digest() const { return _digest; }
 };
 
-}  // namespace dds
+}  // namespace bpt

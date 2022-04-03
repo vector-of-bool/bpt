@@ -2,7 +2,7 @@
 
 #include <bpt/crs/cache.hpp>
 
-namespace dds::cli {
+namespace bpt::cli {
 
 struct options;
 
@@ -12,6 +12,6 @@ struct options;
  *
  * @param opts The options given by the user.
  */
-dds::crs::cache open_ready_cache(const options& opts);
+bpt::crs::cache open_ready_cache(const options& opts);
 
-}  // namespace dds::cli
+}  // namespace bpt::cli

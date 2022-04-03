@@ -1,4 +1,4 @@
-DDS CI Scripts Python API
+BPT CI Scripts Python API
 #########################
 
 Test Fixtures
@@ -6,13 +6,13 @@ Test Fixtures
 
 The following test fixtures are defined:
 
-- :func:`~dds_ci.testing.fixtures.dds` - :class:`dds_ci.dds.DDSWrapper` - A
-  wrapper around the ``dds`` executable under test.
+- :func:`~dds_ci.testing.fixtures.bpt` - :class:`dds_ci.bpt.BPTWrapper` - A
+  wrapper around the ``bpt`` executable under test.
 - :func:`~dds_ci.testing.fixtures.tmp_project` -
   :class:`dds_ci.testing.fixtures.Project` - Create a new empty directory to be
-  used as a test project for ``dds`` to execute.
+  used as a test project for ``bpt`` to execute.
 - :func:`~dds_ci.testing.repo.http_crs_repo` -
-  :class:`dds_ci.testing.repo.CRSRepoServer` - Create a new dds repository and
+  :class:`dds_ci.testing.repo.CRSRepoServer` - Create a new bpt repository and
   spawn an HTTP server to serve it.
 
 
@@ -31,10 +31,10 @@ Module: ``dds_ci.bootstrap``
   :members:
 
 
-Module: ``dds_ci.dds``
+Module: ``dds_ci.bpt``
 **********************
 
-.. automodule:: dds_ci.dds
+.. automodule:: dds_ci.bpt
   :members:
 
 

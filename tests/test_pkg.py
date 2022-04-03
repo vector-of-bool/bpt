@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Tuple
 import platform
 
-from dds_ci.dds import DDSWrapper
+from dds_ci.bpt import BPTWrapper
 from dds_ci.testing import ProjectOpener, Project, error, CRSRepo
 
 
@@ -56,9 +56,9 @@ def test_sdist_invalid_project(tmp_project: Project) -> None:
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='We know this fails on Linux')
-def test_sdist_unreadable_dir(dds: DDSWrapper) -> None:
+def test_sdist_unreadable_dir(bpt: BPTWrapper) -> None:
     with error.expect_error_marker('sdist-open-fail-generic'):
-        dds.run(['pkg', 'create', '--project=/root'])
+        bpt.run(['pkg', 'create', '--project=/root'])
 
 
 def test_sdist_invalid_yml(tmp_project: Project) -> None:
@@ -69,14 +69,14 @@ def test_sdist_invalid_yml(tmp_project: Project) -> None:
 
 def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
     with error.expect_error_marker('pkg-search-no-result'):
-        tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
+        tmp_project.bpt.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
     tmp_project.pkg_yaml = {
         'name': 'test-pkg',
         'version': '0.1.2',
     }
     tmp_crs_repo.import_(tmp_project.root)
     # No error now:
-    tmp_project.dds.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
+    tmp_project.bpt.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
 
 
 def test_pkg_spdx(tmp_project: Project) -> None:

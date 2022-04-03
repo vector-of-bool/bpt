@@ -8,7 +8,7 @@
 
 using namespace lm;
 
-dds::result<library> library::from_file(path_ref fpath) {
+bpt::result<library> library::from_file(path_ref fpath) {
     auto pairs = parse_file(fpath);
 
     library ret;

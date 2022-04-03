@@ -3,13 +3,13 @@
 #include <cassert>
 #include <stdexcept>
 
-using namespace dds;
+using namespace bpt;
 
 namespace {
 
-std::string error_url_prefix = "https://vector-of-bool.github.io/docs/dds/err/";
+std::string error_url_prefix = "https://vector-of-bool.github.io/docs/bpt/err/";
 
-std::string error_url_suffix(dds::errc ec) noexcept {
+std::string error_url_suffix(bpt::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return "invalid-builtin-toolchain.html";
@@ -40,24 +40,24 @@ std::string error_url_suffix(dds::errc ec) noexcept {
 
 }  // namespace
 
-std::string dds::error_reference_of(dds::errc ec) noexcept {
+std::string bpt::error_reference_of(bpt::errc ec) noexcept {
     return error_url_prefix + error_url_suffix(ec);
 }
 
-std::string_view dds::explanation_of(dds::errc ec) noexcept {
+std::string_view bpt::explanation_of(bpt::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return R"(
 If you start your toolchain name (The `-t` or `--toolchain` argument)
-with a leading colon, dds will interpret it as a reference to a built-in
+with a leading colon, bpt will interpret it as a reference to a built-in
 toolchain. (Toolchain file paths cannot begin with a leading colon).
 
-These toolchain names are encoded into the dds executable and cannot be
+These toolchain names are encoded into the bpt executable and cannot be
 modified.
 )";
     case errc::no_default_toolchain:
         return R"(
-`dds` requires a toolchain to be specified in order to execute the build. `dds`
+`bpt` requires a toolchain to be specified in order to execute the build. `bpt`
 will not perform a "best-guess" at a default toolchain. You may either pass the
 name of a built-in toolchain, or write a "default toolchain" file to one of the
 supported filepaths. Refer to the documentation for more information.
@@ -89,13 +89,13 @@ for this error. Refer to the documentation for more information.
         return R"(The given package/remote URL is invalid)";
     case errc::invalid_pkg_filesystem:
         return R"(
-`dds` prescribes a specific filesystem structure that must be obeyed by
+`bpt` prescribes a specific filesystem structure that must be obeyed by
 libraries and packages. Refer to the documentation for an explanation and
 reference on these prescriptions.
 )";
     case errc::sdist_exists:
         return R"(
-By default, `dds` will not overwrite source distributions that already exist
+By default, `bpt` will not overwrite source distributions that already exist
 (either in the repository or a filesystem path). Such an action could
 potentially destroy important data.
 )";
@@ -108,13 +108,13 @@ library does not refer to the library itself.
     case errc::none:
         break;
     }
-    assert(false && "Unexpected execution path during error explanation. This is a DDS bug");
+    assert(false && "Unexpected execution path during error explanation. This is a BPT bug");
     std::terminate();
 }
 
-#define BUG_STRING_SUFFIX " <- (Seeing this text is a `dds` bug. Please report it.)"
+#define BUG_STRING_SUFFIX " <- (Seeing this text is a `bpt` bug. Please report it.)"
 
-std::string_view dds::default_error_string(dds::errc ec) noexcept {
+std::string_view bpt::default_error_string(bpt::errc ec) noexcept {
     switch (ec) {
     case errc::invalid_builtin_toolchain:
         return "The built-in toolchain name is invalid";
@@ -139,6 +139,6 @@ std::string_view dds::default_error_string(dds::errc ec) noexcept {
     case errc::none:
         break;
     }
-    assert(false && "Unexpected execution path during error message creation. This is a DDS bug");
+    assert(false && "Unexpected execution path during error message creation. This is a BPT bug");
     std::terminate();
 }

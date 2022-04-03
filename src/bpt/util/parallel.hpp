@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 void log_exception(std::exception_ptr) noexcept;
 
@@ -66,4 +66,4 @@ bool parallel_run(Range&& rng, int n_jobs, Func&& fn) {
     return exceptions.empty();
 }
 
-}  // namespace dds
+}  // namespace bpt

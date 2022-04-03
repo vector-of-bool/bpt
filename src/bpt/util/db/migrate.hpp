@@ -6,7 +6,7 @@
 
 #include <bpt/error/result.hpp>
 
-namespace dds {
+namespace bpt {
 
 class unique_database;
 
@@ -68,4 +68,4 @@ apply_db_migrations(unique_database& db, std::string_view tablename, Func&&... f
     return detail::do_migrations(db, tablename, detail::migration_fn<Func>{fn}...);
 }
 
-}  // namespace dds
+}  // namespace bpt

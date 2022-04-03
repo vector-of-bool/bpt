@@ -33,8 +33,8 @@
 
 #include <charconv>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 using namespace neo::sqlite3::literals;
 using namespace fansi::literals;
 using std::optional;
@@ -49,9 +49,9 @@ neo::sqlite3::statement& cache_db::_prepare(neo::sqlite3::sql_string_literal sql
 }
 
 cache_db cache_db::open(unique_database& db) {
-    dds::apply_db_migrations(db, "dds_crs_meta", [](auto& db) {
+    bpt::apply_db_migrations(db, "bpt_crs_meta", [](auto& db) {
         db.exec_script(R"(
-            CREATE TABLE dds_crs_remotes (
+            CREATE TABLE bpt_crs_remotes (
                 remote_id INTEGER PRIMARY KEY,
                 url TEXT NOT NULL,
                 unique_name TEXT NOT NULL UNIQUE,
@@ -66,11 +66,11 @@ cache_db cache_db::open(unique_database& db) {
                 cache_control TEXT
             );
 
-            CREATE TABLE dds_crs_packages (
+            CREATE TABLE bpt_crs_packages (
                 pkg_id INTEGER PRIMARY KEY,
                 json TEXT NOT NULL,
                 remote_id INTEGER NOT NULL
-                    REFERENCES dds_crs_remotes
+                    REFERENCES bpt_crs_remotes
                     ON DELETE CASCADE,
                 remote_revno INTEGER NOT NULL,
                 name TEXT NOT NULL
@@ -88,21 +88,21 @@ cache_db cache_db::open(unique_database& db) {
                 UNIQUE (name, version, pkg_version, remote_id)
             );
 
-            CREATE TABLE dds_crs_libraries (
+            CREATE TABLE bpt_crs_libraries (
                 lib_id INTEGER PRIMARY KEY,
                 pkg_id INTEGER NOT NULL
-                    REFERENCES dds_crs_packages
+                    REFERENCES bpt_crs_packages
                     ON DELETE CASCADE,
                 name TEXT NOT NULL,
                 path TEXT NOT NULL,
                 UNIQUE (pkg_id, name)
             );
 
-            CREATE TRIGGER dds_crs_libraries_auto_insert
-                AFTER INSERT ON dds_crs_packages
+            CREATE TRIGGER bpt_crs_libraries_auto_insert
+                AFTER INSERT ON bpt_crs_packages
                 FOR EACH ROW
                 BEGIN
-                    INSERT INTO dds_crs_libraries (pkg_id, name, path)
+                    INSERT INTO bpt_crs_libraries (pkg_id, name, path)
                         WITH libraries AS (
                             SELECT value FROM json_each(new.json, '$.libraries')
                         )
@@ -113,13 +113,13 @@ cache_db cache_db::open(unique_database& db) {
                         FROM libraries AS lib;
                 END;
 
-            CREATE TRIGGER dds_crs_libraries_auto_update
-                AFTER UPDATE ON dds_crs_packages
+            CREATE TRIGGER bpt_crs_libraries_auto_update
+                AFTER UPDATE ON bpt_crs_packages
                 FOR EACH ROW WHEN new.json != old.json
                 BEGIN
-                    DELETE FROM dds_crs_libraries
+                    DELETE FROM bpt_crs_libraries
                         WHERE pkg_id = new.pkg_id;
-                    INSERT INTO dds_crs_libraries (pkg_id, name, path)
+                    INSERT INTO bpt_crs_libraries (pkg_id, name, path)
                         WITH libraries AS (
                             SELECT value FROM json_each(new.json, '$.libraries')
                         )
@@ -132,14 +132,14 @@ cache_db cache_db::open(unique_database& db) {
         )"_sql);
     }).value();
     db.exec_script(R"(
-        CREATE TEMPORARY TABLE IF NOT EXISTS dds_crs_enabled_remotes (
+        CREATE TEMPORARY TABLE IF NOT EXISTS bpt_crs_enabled_remotes (
             enablement_id INTEGER PRIMARY KEY,
-            remote_id INTEGER NOT NULL -- references main.dds_crs_remotes
+            remote_id INTEGER NOT NULL -- references main.bpt_crs_remotes
                 UNIQUE ON CONFLICT IGNORE
         );
         CREATE TEMPORARY VIEW IF NOT EXISTS enabled_packages AS
-            SELECT * FROM dds_crs_packages
-            JOIN dds_crs_enabled_remotes USING (remote_id)
+            SELECT * FROM bpt_crs_packages
+            JOIN bpt_crs_enabled_remotes USING (remote_id)
             ORDER BY enablement_id ASC
     )"_sql);
     return cache_db{db};
@@ -153,22 +153,22 @@ static cache_db::package_entry pkg_entry_from_row(auto&& row) noexcept {
                                    .pkg        = std::move(meta)};
 }
 
-void cache_db::forget_all() { db_exec(_prepare("DELETE FROM dds_crs_remotes"_sql)).value(); }
+void cache_db::forget_all() { db_exec(_prepare("DELETE FROM bpt_crs_remotes"_sql)).value(); }
 
 namespace {
 
 neo::any_input_range<cache_db::package_entry>
 cache_entries_for_query(neo::sqlite3::statement&& st) {
-    return dds_leaf_try->result<neo::any_input_range<cache_db::package_entry>> {
+    return bpt_leaf_try->result<neo::any_input_range<cache_db::package_entry>> {
         auto pin = neo::copy_shared(std::move(st));
         return neo::sqlite3::iter_tuples<std::int64_t, std::int64_t, string_view>(*pin)
             | std::views::transform([pin](auto row) { return pkg_entry_from_row(row); })  //
             ;
     }
-    dds_leaf_catch(catch_<neo::sqlite3::error> err)->noreturn_t {
+    bpt_leaf_catch(catch_<neo::sqlite3::error> err)->noreturn_t {
         BOOST_LEAF_THROW_EXCEPTION(err, err.matched.code());
     }
-    dds_leaf_catch_all->noreturn_t {
+    bpt_leaf_catch_all->noreturn_t {
         neo_assert(invariant,
                    false,
                    "Unexpected exception while loading from CRS cache database",
@@ -179,7 +179,7 @@ cache_entries_for_query(neo::sqlite3::statement&& st) {
 }  // namespace
 
 neo::any_input_range<cache_db::package_entry>
-cache_db::for_package(dds::name const& name, semver::version const& version) const {
+cache_db::for_package(bpt::name const& name, semver::version const& version) const {
     neo_assertion_breadcrumbs("Loading package cache entries for name+version",
                               name.str,
                               version.to_string());
@@ -192,7 +192,7 @@ cache_db::for_package(dds::name const& name, semver::version const& version) con
     return cache_entries_for_query(std::move(st));
 }
 
-neo::any_input_range<cache_db::package_entry> cache_db::for_package(dds::name const& name) const {
+neo::any_input_range<cache_db::package_entry> cache_db::for_package(bpt::name const& name) const {
     neo_assertion_breadcrumbs("Loading package cache entries for name", name.str);
     auto st       = *_db.get().sqlite3_db().prepare(R"(
         SELECT pkg_id, remote_id, json
@@ -212,32 +212,32 @@ neo::any_input_range<cache_db::package_entry> cache_db::all_enabled() const {
 }
 
 optional<cache_db::remote_entry> cache_db::get_remote(neo::url_view const& url_) const {
-    return dds_leaf_try->optional<cache_db::remote_entry> {
+    return bpt_leaf_try->optional<cache_db::remote_entry> {
         auto url = url_.normalized();
         auto row = db_single<std::int64_t, string, string>(  //
                        _prepare(R"(
                             SELECT remote_id, url, unique_name
-                            FROM dds_crs_remotes
+                            FROM bpt_crs_remotes
                             WHERE url = ?
                        )"_sql),
                        string_view(url.to_string()))
                        .value();
         auto [rowid, url_str, name] = row;
-        return cache_db::remote_entry{rowid, dds::parse_url(url_str), name};
+        return cache_db::remote_entry{rowid, bpt::parse_url(url_str), name};
     }
-    dds_leaf_catch(matchv<neo::sqlite3::errc::done>) { return std::nullopt; };
+    bpt_leaf_catch(matchv<neo::sqlite3::errc::done>) { return std::nullopt; };
 }
 
 optional<cache_db::remote_entry> cache_db::get_remote_by_id(std::int64_t rowid) const {
     auto row = neo::sqlite3::one_row<string, string>(  //
         _prepare(R"(
             SELECT url, unique_name
-            FROM dds_crs_remotes WHERE remote_id = ?
+            FROM bpt_crs_remotes WHERE remote_id = ?
         )"_sql),
         rowid);
     if (row.has_value()) {
         auto [url_str, name] = *row;
-        return remote_entry{rowid, dds::parse_url(url_str), name};
+        return remote_entry{rowid, bpt::parse_url(url_str), name};
     }
     return std::nullopt;
 }
@@ -246,9 +246,9 @@ void cache_db::enable_remote(neo::url_view const& url_) {
     auto url = url_.normalized();
     auto res = neo::sqlite3::one_row(  //
         _prepare(R"(
-            INSERT INTO dds_crs_enabled_remotes (remote_id)
+            INSERT INTO bpt_crs_enabled_remotes (remote_id)
             SELECT remote_id
-              FROM dds_crs_remotes
+              FROM bpt_crs_remotes
              WHERE url = ?
             RETURNING remote_id
         )"_sql),
@@ -277,18 +277,18 @@ struct remote_repo_db_info {
  * @param resource_time The create-time of the resource. This may be affected by the 'Age' header.
  */
 bool should_revalidate(std::string_view cache_control, steady_time_point resource_time) {
-    auto parts = dds::split_view(cache_control, ", ");
+    auto parts = bpt::split_view(cache_control, ", ");
     if (std::ranges::find(parts, "no-cache", trim_view) != parts.end()) {
         // Always revalidate
         return true;
     }
     if (auto max_age = std::ranges::find_if(parts, NEO_TL(_1.starts_with("max-age=")));
         max_age != parts.end()) {
-        auto age_str     = dds::trim_view(max_age->substr(std::strlen("max-age=")));
+        auto age_str     = bpt::trim_view(max_age->substr(std::strlen("max-age=")));
         int  max_age_int = 0;
         auto r = std::from_chars(age_str.data(), age_str.data() + age_str.size(), max_age_int);
         if (r.ec != std::errc{}) {
-            dds_log(warn,
+            bpt_log(warn,
                     "Malformed max-age integer '{}' in stored cache-control header '{}'",
                     age_str,
                     cache_control);
@@ -300,8 +300,8 @@ bool should_revalidate(std::string_view cache_control, steady_time_point resourc
             return true;
         } else {
             // The cached item is still fresh
-            dds_log(debug, "Cached repo data is still within its max-age.");
-            dds_log(debug,
+            bpt_log(debug, "Cached repo data is still within its max-age.");
+            bpt_log(debug,
                     "Repository data will expire in {} seconds",
                     chrono::duration_cast<chrono::seconds>(stale_time - steady_clock::now())
                         .count());
@@ -312,10 +312,10 @@ bool should_revalidate(std::string_view cache_control, steady_time_point resourc
     return true;
 }
 
-neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, neo::url url) {
+neo::co_resource<remote_repo_db_info> get_remote_db(bpt::unique_database& db, neo::url url) {
     if (url.scheme == "file") {
         auto path = fs::path(url.path);
-        dds_log(info, "Importing local repository .cyan[{}] ..."_styled, url.path);
+        bpt_log(info, "Importing local repository .cyan[{}] ..."_styled, url.path);
         auto info = remote_repo_db_info{
             .local_path    = path / "repo.db",
             .etag          = std::nullopt,
@@ -326,21 +326,21 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
         };
         co_yield info;
     } else {
-        dds::http_request_params params;
+        bpt::http_request_params params;
         auto&                    prio_info_st = db.prepare(
             "SELECT etag, last_modified, resource_time, cache_control "
-            "FROM dds_crs_remotes "
+            "FROM bpt_crs_remotes "
             "WHERE url=?"_sql);
         auto url_str = url.to_string();
         neo_assertion_breadcrumbs("Pulling remote repository metadata", url_str);
-        dds_log(debug, "Syncing repository [{}] via HTTP", url_str);
+        bpt_log(debug, "Syncing repository [{}] via HTTP", url_str);
         neo::sqlite3::reset_and_bind(prio_info_st, std::string_view(url_str)).throw_if_error();
         auto prior_info = neo::sqlite3::one_row<std::optional<std::string>,
                                                 std::optional<std::string>,
                                                 std::int64_t,
                                                 std::optional<std::string>>(prio_info_st);
         if (prior_info.has_value()) {
-            dds_log(debug, "Seen this remote repository before. Checking for updates.");
+            bpt_log(debug, "Seen this remote repository before. Checking for updates.");
             const auto& [etag, last_mod, prev_rc_time_, cache_control] = *prior_info;
             if (etag.has_value()) {
                 params.prior_etag = *etag;
@@ -351,7 +351,7 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
             // Check if the cached item is stale according to the server.
             const auto prev_rc_time = steady_time_point(steady_clock::duration(prev_rc_time_));
             if (cache_control and not should_revalidate(*cache_control, prev_rc_time)) {
-                dds_log(info, "Repository data from .cyan[{}] is fresh"_styled, url_str);
+                bpt_log(info, "Repository data from .cyan[{}] is fresh"_styled, url_str);
                 auto info = remote_repo_db_info{
                     .local_path    = "",
                     .etag          = etag,
@@ -369,7 +369,7 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
             prior_info.throw_error();
         }
 
-        auto& pool = dds::http_pool::thread_local_pool();
+        auto& pool = bpt::http_pool::thread_local_pool();
 
         auto repo_db_gz_url = url / "repo.db.gz";
 
@@ -402,7 +402,7 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
         };
 
         if (rinfo.resp.not_modified()) {
-            dds_log(info, "Repository data from .cyan[{}] is up-to-date"_styled, url_str);
+            bpt_log(info, "Repository data from .cyan[{}] is up-to-date"_styled, url_str);
             do_discard = false;
             rinfo.discard_body();
             yield_info.up_to_date = true;
@@ -410,7 +410,7 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
             co_return;
         }
 
-        dds_log(info, "Syncing repository .cyan[{}] ..."_styled, url_str);
+        bpt_log(info, "Syncing repository .cyan[{}] ..."_styled, url_str);
 
         // pool.request() will resolve redirects and errors
         neo_assert(invariant,
@@ -420,14 +420,14 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
                    !rinfo.resp.is_error(),
                    "Did not expect an HTTP error at this IO layer");
 
-        auto tmpdir    = dds::temporary_dir::create();
+        auto tmpdir    = bpt::temporary_dir::create();
         auto dest_file = tmpdir.path() / "repo.db.gz";
         std::filesystem::create_directories(tmpdir.path());
         rinfo.save_file(dest_file);
         do_discard = false;
 
         auto repo_db = tmpdir.path() / "repo.db";
-        dds::decompress_file_gz(dest_file, repo_db).value();
+        bpt::decompress_file_gz(dest_file, repo_db).value();
         yield_info.local_path = repo_db;
         co_yield yield_info;
     }
@@ -436,16 +436,16 @@ neo::co_resource<remote_repo_db_info> get_remote_db(dds::unique_database& db, ne
 }  // namespace
 
 void cache_db::sync_remote(const neo::url_view& url_) const {
-    dds::unique_database& db  = _db;
+    bpt::unique_database& db  = _db;
     auto                  url = url_.normalized();
-    DDS_E_SCOPE(e_sync_remote{url});
+    BPT_E_SCOPE(e_sync_remote{url});
     auto remote_db = get_remote_db(_db, url);
 
     auto rc_time = remote_db->resource_time;
 
     if (remote_db->up_to_date) {
         neo::sqlite3::exec(  //
-            db.prepare("UPDATE dds_crs_remotes "
+            db.prepare("UPDATE bpt_crs_remotes "
                        "SET resource_time = ?1, cache_control = ?2"_sql),
             rc_time ? std::make_optional(rc_time->time_since_epoch().count()) : std::nullopt,
             remote_db->cache_control)
@@ -462,7 +462,7 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     neo::sqlite3::transaction_guard tr{db.sqlite3_db()};
 
     auto& update_remote_st         = db.prepare(R"(
-        INSERT INTO dds_crs_remotes
+        INSERT INTO bpt_crs_remotes
             (url, unique_name, revno, etag, last_modified, resource_time, cache_control)
         VALUES (
             ?1,  -- url
@@ -496,31 +496,31 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
         )"_sql))
         | std::views::transform([](auto tup) -> std::optional<package_info> {
               auto [json_str] = tup;
-              return dds_leaf_try->std::optional<package_info> {
+              return bpt_leaf_try->std::optional<package_info> {
                   auto meta = package_info::from_json_str(json_str);
                   if (meta.id.revision < 1) {
-                      dds_log(warn,
+                      bpt_log(warn,
                               "Remote package {} has an invalid 'pkg-version' of {}.",
                               meta.id.to_string(),
                               meta.id.revision);
-                      dds_log(warn, "  The corresponding package will not be available.");
-                      dds_log(debug, "  The bad JSON content is: {}", json_str);
+                      bpt_log(warn, "  The corresponding package will not be available.");
+                      bpt_log(debug, "  The bad JSON content is: {}", json_str);
                       return std::nullopt;
                   }
                   return meta;
               }
-              dds_leaf_catch(e_invalid_meta_data err) {
-                  dds_log(warn, "Remote package has an invalid JSON entry: {}", err.value);
-                  dds_log(warn, "  The corresponding package will not be available.");
-                  dds_log(debug, "  The bad JSON content is: {}", json_str);
+              bpt_leaf_catch(e_invalid_meta_data err) {
+                  bpt_log(warn, "Remote package has an invalid JSON entry: {}", err.value);
+                  bpt_log(warn, "  The corresponding package will not be available.");
+                  bpt_log(debug, "  The bad JSON content is: {}", json_str);
                   return std::nullopt;
               };
           });
 
     auto n_before = *neo::sqlite3::one_cell<std::int64_t>(
-        db.prepare("SELECT count(*) FROM dds_crs_packages"_sql));
+        db.prepare("SELECT count(*) FROM bpt_crs_packages"_sql));
     auto& update_pkg_st = db.prepare(R"(
-        INSERT INTO dds_crs_packages (json, remote_id, remote_revno)
+        INSERT INTO bpt_crs_packages (json, remote_id, remote_revno)
             VALUES (?1, ?2, ?3)
         ON CONFLICT(name, version, pkg_version, remote_id) DO UPDATE
             SET json=excluded.json,
@@ -534,21 +534,21 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
             .throw_if_error();
     }
     auto n_after = *neo::sqlite3::one_cell<std::int64_t>(
-        db.prepare("SELECT count(*) FROM dds_crs_packages"_sql));
+        db.prepare("SELECT count(*) FROM bpt_crs_packages"_sql));
     const std::int64_t n_added = n_after - n_before;
 
     auto& delete_old_st = db.prepare(R"(
-        DELETE FROM dds_crs_packages
+        DELETE FROM bpt_crs_packages
             WHERE remote_id = ? AND remote_revno < ?
     )"_sql);
     neo::sqlite3::reset_and_bind(delete_old_st, remote_id, remote_revno).throw_if_error();
     neo::sqlite3::exec(delete_old_st).throw_if_error();
     const auto n_deleted = db.sqlite3_db().changes();
 
-    dds_log(debug, "Running integrity check");
+    bpt_log(debug, "Running integrity check");
     db.exec_script("PRAGMA main.integrity_check"_sql);
 
-    dds_log(info,
+    bpt_log(info,
             "Syncing repository .cyan[{}] Done: {} added, {} deleted"_styled,
             url.to_string(),
             n_added,

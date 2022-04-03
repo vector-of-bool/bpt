@@ -8,14 +8,14 @@
 
 #include <neo/ranges.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-file_deps_info dds::parse_mkfile_deps_file(path_ref where) {
-    auto content = dds::read_file(where);
+file_deps_info bpt::parse_mkfile_deps_file(path_ref where) {
+    auto content = bpt::read_file(where);
     return parse_mkfile_deps_str(content);
 }
 
-file_deps_info dds::parse_mkfile_deps_str(std::string_view str) {
+file_deps_info bpt::parse_mkfile_deps_str(std::string_view str) {
     file_deps_info ret;
 
     // Remove escaped newlines
@@ -25,14 +25,14 @@ file_deps_info dds::parse_mkfile_deps_str(std::string_view str) {
     auto iter  = split.begin();
     auto stop  = split.end();
     if (iter == stop) {
-        dds_log(critical,
+        bpt_log(critical,
                 "Invalid deps listing. Shell split was empty. This is almost certainly a bug.");
         return ret;
     }
     auto& head = *iter;
     ++iter;
     if (!ends_with(head, ":")) {
-        dds_log(
+        bpt_log(
             critical,
             "Invalid deps listing. Leader item is not colon-terminated. This is probably a bug. "
             "(Are you trying to use C++ Modules? That's not ready yet, sorry. Set `Deps-Mode` to "
@@ -44,7 +44,7 @@ file_deps_info dds::parse_mkfile_deps_str(std::string_view str) {
     return ret;
 }
 
-msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::string_view leader) {
+msvc_deps_info bpt::parse_msvc_output_for_deps(std::string_view output, std::string_view leader) {
     auto           lines = split_view(output, "\n");
     std::string    cleaned_output;
     file_deps_info deps;
@@ -65,7 +65,7 @@ msvc_deps_info dds::parse_msvc_output_for_deps(std::string_view output, std::str
     return {deps, cleaned_output};
 }
 
-void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps) {
+void bpt::update_deps_info(neo::output<database> db_, const file_deps_info& deps) {
     database& db = db_;
     db.record_compilation(deps.output, deps.command);
     db.forget_inputs_of(deps.output);
@@ -75,7 +75,7 @@ void dds::update_deps_info(neo::output<database> db_, const file_deps_info& deps
     }
 }
 
-std::optional<prior_compilation> dds::get_prior_compilation(const database& db,
+std::optional<prior_compilation> bpt::get_prior_compilation(const database& db,
                                                             path_ref        output_path) {
     auto cmd_ = db.command_of(output_path);
     if (!cmd_) {

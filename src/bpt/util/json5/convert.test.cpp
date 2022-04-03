@@ -10,7 +10,7 @@ TEST_CASE("Convert to JSON5") {
         {"address", "Main Street"},
     });
 
-    auto j5 = dds::nlohmann_json_as_json5(data);
+    auto j5 = bpt::nlohmann_json_as_json5(data);
     REQUIRE(j5.is_object());
     auto& map = j5.as_object();
 

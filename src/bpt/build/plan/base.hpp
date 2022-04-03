@@ -6,10 +6,10 @@
 
 #include <filesystem>
 
-namespace dds {
+namespace bpt {
 
 struct build_env {
-    dds::toolchain        toolchain;
+    bpt::toolchain        toolchain;
     std::filesystem::path output_root;
     database&             db;
 
@@ -20,4 +20,4 @@ struct build_env {
 
 using build_env_ref = const build_env&;
 
-}  // namespace dds
+}  // namespace bpt

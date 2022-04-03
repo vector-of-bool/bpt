@@ -21,7 +21,7 @@
 #include <neo/sqlite3/error.hpp>
 #include <neo/tl.hpp>
 
-using namespace dds;
+using namespace bpt;
 using namespace fansi::literals;
 
 static void resolve_implicit_usages(crs::package_info& proj_meta, crs::package_info& dep_meta) {
@@ -33,12 +33,12 @@ static void resolve_implicit_usages(crs::package_info& proj_meta, crs::package_i
         | std::views::filter(NEO_TL(_1.template is<crs::implicit_uses_all>()))  //
         | neo::ranges::each([&](crs::dependency_uses& item) {
               item = crs::explicit_uses_list{dep_meta.libraries
-                                             | std::views::transform(&dds::crs::library_info::name)
+                                             | std::views::transform(&bpt::crs::library_info::name)
                                              | neo::to_vector};
           });
 }
 
-builder dds::cli::create_project_builder(const dds::cli::options& opts) {
+builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
     sdist_build_params main_params = {
         .subdir          = "",
         .build_tests     = opts.build.want_tests,
@@ -50,8 +50,8 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     auto  cache   = open_ready_cache(opts);
     auto& meta_db = cache.db();
 
-    sdist proj_sd = dds_leaf_try { return sdist::from_directory(opts.project_dir); }
-    dds_leaf_catch(dds::e_missing_pkg_json, dds::e_missing_project_yaml) {
+    sdist proj_sd = bpt_leaf_try { return sdist::from_directory(opts.project_dir); }
+    bpt_leaf_catch(bpt::e_missing_pkg_json, bpt::e_missing_project_yaml) {
         crs::package_info default_meta;
         default_meta.id.name.str = "anon";
         default_meta.id.revision = 0;
@@ -72,7 +72,7 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
                        | std::views::join);
         }
 
-        auto sln = dds::solve(meta_db, crs_deps);
+        auto sln = bpt::solve(meta_db, crs_deps);
         for (auto&& pkg : sln) {
             auto dep_meta = fetch_cache_load_dependency(cache, pkg, builder, "_deps");
             resolve_implicit_usages(proj_sd.pkg, dep_meta);
@@ -82,31 +82,31 @@ builder dds::cli::create_project_builder(const dds::cli::options& opts) {
     return builder;
 }
 
-crs::package_info dds::cli::fetch_cache_load_dependency(crs::cache&        cache,
+crs::package_info bpt::cli::fetch_cache_load_dependency(crs::cache&        cache,
                                                         crs::pkg_id const& pkg,
-                                                        dds::builder&      builder,
+                                                        bpt::builder&      builder,
                                                         path_ref           subdir_base) {
-    dds_log(debug, "Loading package '{}' for build", pkg.to_string());
+    bpt_log(debug, "Loading package '{}' for build", pkg.to_string());
     auto local_dir        = cache.prefetch(pkg);
     auto pkg_json_path    = local_dir / "pkg.json";
-    auto pkg_json_content = dds::read_file(pkg_json_path);
-    DDS_E_SCOPE(crs::e_pkg_json_path{pkg_json_path});
+    auto pkg_json_content = bpt::read_file(pkg_json_path);
+    BPT_E_SCOPE(crs::e_pkg_json_path{pkg_json_path});
     auto crs_meta = crs::package_info::from_json_str(pkg_json_content);
 
-    dds::sdist         sd{crs_meta, local_dir};
+    bpt::sdist         sd{crs_meta, local_dir};
     sdist_build_params params;
     params.subdir = subdir_base / sd.pkg.id.to_string();
     builder.add(sd, params);
     return crs_meta;
 }
 
-int dds::cli::handle_build_error(std::function<int()> fn) {
-    return dds_leaf_try { return fn(); }
-    dds_leaf_catch(e_dependency_solve_failure,
+int bpt::cli::handle_build_error(std::function<int()> fn) {
+    return bpt_leaf_try { return fn(); }
+    bpt_leaf_catch(e_dependency_solve_failure,
                    e_dependency_solve_failure_explanation explain,
                    const std::vector<e_nonesuch_package>& missing_pkgs)
         ->int {
-        dds_log(
+        bpt_log(
             error,
             "No dependency solution is possible with the known package information: \n{}"_styled,
             explain.value);
@@ -117,19 +117,19 @@ int dds::cli::handle_build_error(std::function<int()> fn) {
         write_error_marker("no-dependency-solution");
         return 1;
     }
-    dds_leaf_catch(user_error<errc::compile_failure>)->int {
+    bpt_leaf_catch(user_error<errc::compile_failure>)->int {
         write_error_marker("compile-failed");
         throw;
     }
-    dds_leaf_catch(user_error<errc::link_failure>)->int {
+    bpt_leaf_catch(user_error<errc::link_failure>)->int {
         write_error_marker("link-failed");
         throw;
     }
-    dds_leaf_catch(user_error<errc::test_failure> exc) {
+    bpt_leaf_catch(user_error<errc::test_failure> exc) {
         write_error_marker("build-failed-test-failed");
-        dds_log(error, "{}", exc.what());
-        dds_log(error, "{}", exc.explanation());
-        dds_log(error, "Refer: {}", exc.error_reference());
+        bpt_log(error, "{}", exc.what());
+        bpt_log(error, "{}", exc.explanation());
+        bpt_log(error, "Refer: {}", exc.error_reference());
         return 1;
     };
 }

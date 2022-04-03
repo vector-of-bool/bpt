@@ -40,7 +40,7 @@ TEST_CASE("Calculate some hashes") {
         auto k0     = UINT64_C(0x0706050403020100);
         auto k1     = UINT64_C(0x0f0e0d0c0b0a0908);
         auto part   = neo::as_buffer(plain, i);
-        auto digest = dds::siphash64(k0, k1, part).digest();
+        auto digest = bpt::siphash64(k0, k1, part).digest();
         CHECK(digest == flip_endian(vectors_sip64[i]));
     }
 }

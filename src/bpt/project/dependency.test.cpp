@@ -1,18 +1,18 @@
 #include "./dependency.hpp"
 
-#include <bpt/dds.test.hpp>
+#include <bpt/bpt.test.hpp>
 
 #include <catch2/catch.hpp>
 
-dds::crs::version_range_set simple_ver_range(std::string_view from, std::string_view until) {
-    return dds::crs::version_range_set(semver::version::parse(from), semver::version::parse(until));
+bpt::crs::version_range_set simple_ver_range(std::string_view from, std::string_view until) {
+    return bpt::crs::version_range_set(semver::version::parse(from), semver::version::parse(until));
 }
 
 #ifndef _MSC_VER  // MSVC struggles with compiling this test case
 TEST_CASE("Parse a shorthand") {
     struct case_ {
         std::string_view        given;
-        dds::project_dependency expect;
+        bpt::project_dependency expect;
     };
     auto [given, expect] = GENERATE(Catch::Generators::values<case_>({
         {
@@ -31,11 +31,11 @@ TEST_CASE("Parse a shorthand") {
             .given  = "foo@1.2.3 using bar , baz",
             .expect = {"foo",
                        simple_ver_range("1.2.3", "2.0.0"),
-                       std::vector({dds::name{"bar"}, dds::name{"baz"}})},
+                       std::vector({bpt::name{"bar"}, bpt::name{"baz"}})},
         },
     }));
 
-    auto dep = REQUIRES_LEAF_NOFAIL(dds::project_dependency::from_shorthand_string(given));
+    auto dep = REQUIRES_LEAF_NOFAIL(bpt::project_dependency::from_shorthand_string(given));
 
     CHECK(dep.dep_name == expect.dep_name);
     CHECK(dep.explicit_uses == expect.explicit_uses);

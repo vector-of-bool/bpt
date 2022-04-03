@@ -39,7 +39,7 @@ public:
 }  // namespace
 
 TEST_CASE("Cyclic dependencies are rejected") {
-    dds::usage_requirement_map reqs;
+    bpt::usage_requirement_map reqs;
     {
         std::vector<lm::usage> previous;
         for (int i = 0; i < 10; ++i) {
@@ -55,20 +55,20 @@ TEST_CASE("Cyclic dependencies are rejected") {
     reqs.add({"dep2", "dep2"}, lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
     reqs.add({"dep3", "dep3"}, lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
 
-    REQUIRE_THROWS_WITH(dds::usage_requirements(reqs),
+    REQUIRE_THROWS_WITH(bpt::usage_requirements(reqs),
                         Contains("'dep1/dep1' uses 'dep2/dep2' uses 'dep3/dep3' uses 'dep1/dep1'"));
 }
 
 TEST_CASE("Self-referential `uses` are rejected") {
-    dds::usage_requirement_map reqs;
+    bpt::usage_requirement_map reqs;
 
     reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep1", "dep1"}}});
 
-    REQUIRE_THROWS_WITH(dds::usage_requirements(reqs), Contains("'dep1/dep1' uses 'dep1/dep1'"));
+    REQUIRE_THROWS_WITH(bpt::usage_requirements(reqs), Contains("'dep1/dep1' uses 'dep1/dep1'"));
 }
 
 TEST_CASE("Cyclic dependencies can be found - Self-referential") {
-    dds::usage_requirement_map reqs;
+    bpt::usage_requirement_map reqs;
     reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep1", "dep1"}}});
 
     auto cycle = reqs.find_usage_cycle();
@@ -77,7 +77,7 @@ TEST_CASE("Cyclic dependencies can be found - Self-referential") {
 }
 
 TEST_CASE("Cyclic dependencies can be found - Longer loops") {
-    dds::usage_requirement_map reqs;
+    bpt::usage_requirement_map reqs;
     reqs.add({"dep1", "dep1"}, lm::library{.name = "dep1", .uses = {lm::usage{"dep2", "dep2"}}});
     reqs.add({"dep2", "dep2"}, lm::library{.name = "dep2", .uses = {lm::usage{"dep3", "dep3"}}});
     reqs.add({"dep3", "dep3"}, lm::library{.name = "dep3", .uses = {lm::usage{"dep1", "dep1"}}});
@@ -91,7 +91,7 @@ TEST_CASE("Cyclic dependencies can be found - Longer loops") {
 }
 
 TEST_CASE("Cyclic dependencies can be found - larger case") {
-    dds::usage_requirement_map reqs;
+    bpt::usage_requirement_map reqs;
 
     {
         std::vector<lm::usage> previous;

@@ -1,8 +1,8 @@
 {
     "$schema": "./res/package-schema.json",
-    "name": "dds",
+    "name": "bpt",
     "version": "0.1.0-alpha.6",
-    "namespace": "dds",
+    "namespace": "bpt",
     "depends": [
         "spdlog@1.7.0",
         "ms-wil@2020.3.16",

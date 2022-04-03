@@ -11,7 +11,7 @@ from dagon import fs, option, proc, task, ui
 
 from . import paths
 from .bootstrap import BootstrapMode, get_bootstrap_exe, pin_exe
-from .dds import DDSWrapper
+from .bpt import BPTWrapper
 from .toolchain import (fixup_toolchain, get_default_audit_toolchain, get_default_toolchain)
 from .util import Pathish
 
@@ -20,7 +20,7 @@ FRAC_RE = re.compile(r'(\d+)/(\d+)')
 bootstrap_mode = option.add('bootstrap-mode',
                             BootstrapMode,
                             default=BootstrapMode.Lazy,
-                            doc='How should we obtain the prior version of dds?')
+                            doc='How should we obtain the prior version of bpt?')
 
 main_tc = option.add('main-toolchain',
                      Path,
@@ -62,11 +62,11 @@ def _progress(record: proc.ProcessOutputItem) -> None:
     ui.progress(int(num) / int(denom))
 
 
-async def _build_with_tc(dds: DDSWrapper, into: Pathish, tc: Path, *, args: proc.CommandLine = ()) -> DDSWrapper:
+async def _build_with_tc(bpt: BPTWrapper, into: Pathish, tc: Path, *, args: proc.CommandLine = ()) -> BPTWrapper:
     into = Path(into)
-    with pin_exe(dds.path) as pinned:
+    with pin_exe(bpt.path) as pinned:
         with fixup_toolchain(tc) as tc1:
-            ui.print(f'Generating a build of dds using the [{tc1}] toolchain.')
+            ui.print(f'Generating a build of bpt using the [{tc1}] toolchain.')
             ui.print(f'  This build result will be written to [{into}]')
             await proc.run(
                 [
@@ -84,7 +84,7 @@ async def _build_with_tc(dds: DDSWrapper, into: Pathish, tc: Path, *, args: proc
                 on_output=_progress,
                 print_output_on_finish='always',
             )
-    return DDSWrapper(into / 'dds')
+    return BPTWrapper(into / 'bpt')
 
 
 @task.define()
@@ -103,8 +103,8 @@ async def clean():
 
 
 @task.define(order_only_depends=[clean])
-async def bootstrap() -> DDSWrapper:
-    ui.status('Obtaining prior DDS version')
+async def bootstrap() -> BPTWrapper:
+    ui.status('Obtaining prior BPT version')
     d = get_bootstrap_exe(bootstrap_mode.get())
     ui.status('Loading legacy repository information')
     await proc.run(
@@ -124,10 +124,10 @@ async def bootstrap() -> DDSWrapper:
 @task.define(depends=[bootstrap])
 async def build__init_ci_repo() -> None:
     "Runs a compile-file just to get the CI repository available"
-    dds = await task.result_of(bootstrap)
+    bpt = await task.result_of(bootstrap)
     await proc.run(
         [
-            dds.path,
+            bpt.path,
             PRIOR_CACHE_ARGS,
             'compile-file',
             '-t',
@@ -138,15 +138,15 @@ async def build__init_ci_repo() -> None:
 
 
 @task.define(depends=[bootstrap, build__init_ci_repo])
-async def build__main() -> DDSWrapper:
-    dds = await task.result_of(bootstrap)
-    return await _build_with_tc(dds, main_build_dir.get(), main_tc.get(), args=[PRIOR_CACHE_ARGS, '--no-tests'])
+async def build__main() -> BPTWrapper:
+    bpt = await task.result_of(bootstrap)
+    return await _build_with_tc(bpt, main_build_dir.get(), main_tc.get(), args=[PRIOR_CACHE_ARGS, '--no-tests'])
 
 
 @task.define(depends=[bootstrap, build__init_ci_repo])
-async def build__test() -> DDSWrapper:
-    dds = await task.result_of(bootstrap)
-    return await _build_with_tc(dds, test_build_dir.get(), test_tc.get(), args=PRIOR_CACHE_ARGS)
+async def build__test() -> BPTWrapper:
+    bpt = await task.result_of(bootstrap)
+    return await _build_with_tc(bpt, test_build_dir.get(), test_tc.get(), args=PRIOR_CACHE_ARGS)
 
 
 which_file = option.add('compile-file', Path, doc='Which file will be compiled by the "compile-file" task')
@@ -154,10 +154,10 @@ which_file = option.add('compile-file', Path, doc='Which file will be compiled b
 
 @task.define(depends=[bootstrap, build__init_ci_repo])
 async def compile_file() -> None:
-    dds = await task.result_of(bootstrap)
+    bpt = await task.result_of(bootstrap)
     with fixup_toolchain(test_tc.get()) as tc:
         await proc.run([
-            dds.path,
+            bpt.path,
             'compile-file',
             which_file.get(),
             f'--toolchain={tc}',
@@ -170,9 +170,9 @@ async def compile_file() -> None:
 
 @task.define(depends=[build__test])
 async def test() -> None:
-    basetemp = Path('/tmp/dds-ci')
+    basetemp = Path('/tmp/bpt-ci')
     basetemp.mkdir(exist_ok=True, parents=True)
-    dds = await task.result_of(build__test)
+    bpt = await task.result_of(build__test)
     await proc.run(
         [
             sys.executable,
@@ -182,7 +182,7 @@ async def test() -> None:
             '--durations=10',
             f'-n{jobs.get()}',
             f'--basetemp={basetemp}',
-            f'--dds-exe={dds.path}',
+            f'--bpt-exe={bpt.path}',
             f'--junit-xml={paths.BUILD_DIR}/pytest-junit.xml',
             paths.PROJECT_ROOT / 'tests',
         ],
@@ -233,9 +233,9 @@ async def __get_catch2() -> Path:
 
 @task.define(depends=[build__test, __get_catch2])
 async def self_build_repo() -> Path:
-    dds = await task.result_of(build__test)
+    bpt = await task.result_of(build__test)
     repo_dir = paths.PREBUILT_DIR / '_crs-repo'
-    await proc.run([dds.path, NEW_CACHE_ARGS, 'repo', 'init', repo_dir, '--name=.tmp.', '--if-exists=ignore'])
+    await proc.run([bpt.path, NEW_CACHE_ARGS, 'repo', 'init', repo_dir, '--name=.tmp.', '--if-exists=ignore'])
     packages = [
         "spdlog@1.7.0",
         "ms-wil@2020.3.16",
@@ -261,11 +261,11 @@ async def self_build_repo() -> Path:
         "zlib@1.2.9",
     ]
     for pkg in packages:
-        await _repo_import_pkg(dds, pkg, repo_dir)
+        await _repo_import_pkg(bpt, pkg, repo_dir)
     catch2 = await task.result_of(__get_catch2)
-    await _repo_build_and_import_dir(dds, catch2, repo_dir)
+    await _repo_build_and_import_dir(bpt, catch2, repo_dir)
     ui.status('Validating repository')
-    await proc.run([dds.path, 'repo', 'validate', repo_dir])
+    await proc.run([bpt.path, 'repo', 'validate', repo_dir])
     return repo_dir
 
 
@@ -279,7 +279,7 @@ SELF_REPO_DEPS = {
 }
 
 
-async def _repo_import_pkg(dds: DDSWrapper, pkg: str, repo_dir: Path) -> None:
+async def _repo_import_pkg(bpt: BPTWrapper, pkg: str, repo_dir: Path) -> None:
     mat = re.match(r'(.+)[@=+~^](.+)', pkg)
     assert mat, pkg
     name, ver = mat.groups()
@@ -293,20 +293,20 @@ async def _repo_import_pkg(dds: DDSWrapper, pkg: str, repo_dir: Path) -> None:
             'dependencies': SELF_REPO_DEPS.get(name, []),
         }))
     ui.status(f'Importing package: {pkg}')
-    await _repo_build_and_import_dir(dds, pulled, repo_dir)
+    await _repo_build_and_import_dir(bpt, pulled, repo_dir)
 
 
-async def _repo_build_and_import_dir(dds: DDSWrapper, proj: Path, repo_dir: Path) -> None:
-    # await proc.run([dds.path, NEW_CACHE_ARGS, 'build', '-p', repo_dir, '-t', test_tc.get(), '-o', proj / '_build'])
-    await proc.run([dds.path, NEW_CACHE_ARGS, 'repo', 'import', repo_dir, proj, '--if-exists=replace'])
+async def _repo_build_and_import_dir(bpt: BPTWrapper, proj: Path, repo_dir: Path) -> None:
+    # await proc.run([bpt.path, NEW_CACHE_ARGS, 'build', '-p', repo_dir, '-t', test_tc.get(), '-o', proj / '_build'])
+    await proc.run([bpt.path, NEW_CACHE_ARGS, 'repo', 'import', repo_dir, proj, '--if-exists=replace'])
 
 
 @task.define(depends=[build__test, self_build_repo])
-async def self_build() -> DDSWrapper:
-    dds = await task.result_of(build__test)
+async def self_build() -> BPTWrapper:
+    bpt = await task.result_of(build__test)
     self_repo = await task.result_of(self_build_repo)
     return await _build_with_tc(
-        dds,
+        bpt,
         test_build_dir.get() / 'self',
         main_tc.get(),
         args=[f'--use-repo={self_repo.as_uri()}', NEW_CACHE_ARGS, '--no-default-repo'],

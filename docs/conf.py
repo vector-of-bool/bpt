@@ -9,7 +9,7 @@ import hoverxref.extension
 from sphinx.util.fileutil import copy_asset
 
 # -- Project information -----------------------------------------------------
-project = 'dds'
+project = 'bpt'
 copyright = '2020, vector-of-bool'
 author = 'vector-of-bool'
 

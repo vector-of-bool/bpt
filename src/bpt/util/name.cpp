@@ -7,7 +7,7 @@
 
 #include <ctre.hpp>
 
-using namespace dds;
+using namespace bpt;
 
 using err_reason = invalid_name_reason;
 
@@ -39,7 +39,7 @@ static err_reason calc_invalid_name_reason(std::string_view str) noexcept {
     }
 }
 
-std::string_view dds::invalid_name_reason_str(err_reason e) noexcept {
+std::string_view bpt::invalid_name_reason_str(err_reason e) noexcept {
     switch (e) {
     case err_reason::capital:
         return "Uppercase letters are not valid in names";
@@ -65,14 +65,14 @@ result<name> name::from_string(std::string_view str) noexcept {
     auto mat = ctre::match<name_re>(str);
 
     if (!mat) {
-        return new_error(DDS_E_ARG(e_name_str{std::string(str)}),
-                         DDS_E_ARG(calc_invalid_name_reason(str)));
+        return new_error(BPT_E_ARG(e_name_str{std::string(str)}),
+                         BPT_E_ARG(calc_invalid_name_reason(str)));
     }
 
     return name{std::string(str)};
 }
 
-std::ostream& dds::operator<<(std::ostream& out, invalid_name_reason r) {
+std::ostream& bpt::operator<<(std::ostream& out, invalid_name_reason r) {
     out << invalid_name_reason_str(r);
     return out;
 }

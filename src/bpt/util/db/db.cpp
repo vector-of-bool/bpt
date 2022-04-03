@@ -12,7 +12,7 @@
 
 #include <filesystem>
 
-using namespace dds;
+using namespace bpt;
 namespace nsql = neo::sqlite3;
 
 struct unique_database::impl {
@@ -28,11 +28,11 @@ unique_database::unique_database(unique_database&&) noexcept = default;
 unique_database& unique_database::operator=(unique_database&&) noexcept = default;
 
 static result<nsql::connection> _open_db(neo::zstring_view str, nsql::openmode mode) noexcept {
-    DDS_E_SCOPE(e_db_open_path{std::string(str)});
+    BPT_E_SCOPE(e_db_open_path{std::string(str)});
     auto db = nsql::connection::open(str, mode);
     if (!db.has_value()) {
         auto ec = nsql::make_error_code(db.errc());
-        dds_log(debug, "Error opening SQLite database [{}]: {}", str, ec.message());
+        bpt_log(debug, "Error opening SQLite database [{}]: {}", str, ec.message());
         return new_error(db.error(), e_db_open_ec{ec});
     }
     auto e = db->exec(R"(
@@ -42,21 +42,21 @@ static result<nsql::connection> _open_db(neo::zstring_view str, nsql::openmode m
     )");
     if (e.is_error()) {
         auto ec = nsql::make_error_code(e.errc());
-        dds_log(debug, "Error initializing SQLite database [{}]: {}", str, ec.message());
+        bpt_log(debug, "Error initializing SQLite database [{}]: {}", str, ec.message());
         return new_error(e.error(), e_db_open_ec{ec});
     }
-    dds_log(trace, "Successfully opened SQLite database [{}]", str);
+    bpt_log(trace, "Successfully opened SQLite database [{}]", str);
     return std::move(*db);
 }
 
 result<unique_database> unique_database::open(neo::zstring_view str) noexcept {
-    dds_log(debug, "Opening/creating SQLite database [{}]", str);
+    bpt_log(debug, "Opening/creating SQLite database [{}]", str);
     BOOST_LEAF_AUTO(db, _open_db(str, nsql::openmode::readwrite | nsql::openmode::create));
     return unique_database{std::make_unique<impl>(std::move(db))};
 }
 
 result<unique_database> unique_database::open_existing(neo::zstring_view str) noexcept {
-    dds_log(debug, "Opening existing SQLite database [{}]", str);
+    bpt_log(debug, "Opening existing SQLite database [{}]", str);
     BOOST_LEAF_AUTO(db, _open_db(str, nsql::openmode::readwrite));
     return unique_database{std::make_unique<impl>(std::move(db))};
 }

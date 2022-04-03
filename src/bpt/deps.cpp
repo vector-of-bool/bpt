@@ -4,13 +4,13 @@
 #include <bpt/util/json5/parse.hpp>
 #include <bpt/util/json_walk.hpp>
 
-using namespace dds;
+using namespace bpt;
 
 dependency_manifest dependency_manifest::from_file(path_ref fpath) {
-    auto data = dds::parse_json5_file(fpath);
+    auto data = bpt::parse_json5_file(fpath);
 
     dependency_manifest ret;
-    using namespace dds::walk_utils;
+    using namespace bpt::walk_utils;
 
     key_dym_tracker dym{{"dependencies"}};
 

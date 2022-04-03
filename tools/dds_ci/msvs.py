@@ -13,8 +13,8 @@ class Arguments(Protocol):
 
 
 def gen_task_json_data() -> Dict[str, Any]:
-    dds_ci_exe = paths.find_exe('dagon')
-    assert dds_ci_exe, 'Unable to find the dagon executable. This command should be run in a Poetry'
+    dagon_exe = paths.find_exe('dagon')
+    assert dagon_exe, 'Unable to find the dagon executable. This command should be run in a Poetry'
     envs = {key: os.environ[key]
             for key in (
                 'CL',
@@ -27,7 +27,7 @@ def gen_task_json_data() -> Dict[str, Any]:
     task = {
         'label': 'MSVC Build',
         'type': 'process',
-        'command': str(dds_ci_exe.resolve()),
+        'command': str(dagon_exe.resolve()),
         'args': ['build.test'],
         'group': {
             'kind': 'build',

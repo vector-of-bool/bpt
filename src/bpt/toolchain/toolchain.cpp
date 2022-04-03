@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-using namespace dds;
+using namespace bpt;
 
 using std::optional;
 using std::string;
@@ -95,7 +95,7 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
 
     fs::path in_file = spec.source_path;
 
-    dds_log(trace,
+    bpt_log(trace,
             "Calculate compile command for source file [{}] to object file [{}]",
             spec.source_path.string(),
             spec.out_path.string());
@@ -111,46 +111,46 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
 
     vector<string> flags;
     if (knobs.is_tty) {
-        dds_log(trace, "Enabling TTY flags.");
+        bpt_log(trace, "Enabling TTY flags.");
         extend(flags, _tty_flags);
     }
 
     if (knobs.cache_buster) {
         // This is simply a CPP definition that is used to "bust" any caches that rely on inspecting
         // the command-line of the compiler (including our own).
-        auto def = replace(_def_template, "[def]", "__dds_cachebust=" + *knobs.cache_buster);
+        auto def = replace(_def_template, "[def]", "__bpt_cachebust=" + *knobs.cache_buster);
         extend(flags, def);
     }
 
     if (spec.syntax_only) {
-        dds_log(trace, "Enabling syntax-only mode");
+        bpt_log(trace, "Enabling syntax-only mode");
         extend(flags, _syntax_only_flags);
         extend(flags, lang == language::c ? _c_source_type_flags : _cxx_source_type_flags);
 
         in_file = spec.out_path.parent_path() / spec.source_path.filename();
         in_file += ".syncheck";
-        dds_log(trace, "Syntax check file: {}", in_file);
+        bpt_log(trace, "Syntax check file: {}", in_file);
 
         fs::create_directories(in_file.parent_path());
-        dds::write_file(in_file, fmt::format("#include \"{}\"", spec.source_path.string()));
+        bpt::write_file(in_file, fmt::format("#include \"{}\"", spec.source_path.string()));
     }
 
-    dds_log(trace, "#include-search dirs:");
+    bpt_log(trace, "#include-search dirs:");
     for (auto&& inc_dir : spec.include_dirs) {
-        dds_log(trace, "  - search: {}", inc_dir.string());
+        bpt_log(trace, "  - search: {}", inc_dir.string());
         auto shortest = shortest_path_from(inc_dir, cwd);
         auto inc_args = include_args(shortest);
         extend(flags, inc_args);
     }
 
     for (auto&& ext_inc_dir : spec.external_include_dirs) {
-        dds_log(trace, "  - search (external): {}", ext_inc_dir.string());
+        bpt_log(trace, "  - search (external): {}", ext_inc_dir.string());
         auto inc_args = external_include_args(ext_inc_dir);
         extend(flags, inc_args);
     }
 
     if (knobs.tweaks_dir) {
-        dds_log(trace, "  - search (tweaks): {}", knobs.tweaks_dir->string());
+        bpt_log(trace, "  - search (tweaks): {}", knobs.tweaks_dir->string());
         auto shortest       = shortest_path_from(*knobs.tweaks_dir, cwd);
         auto tweak_inc_args = include_args(shortest);
         extend(flags, tweak_inc_args);
@@ -198,13 +198,13 @@ vector<string> toolchain::create_archive_command(const archive_spec& spec,
                                                  path_ref            cwd,
                                                  toolchain_knobs) const noexcept {
     vector<string> cmd;
-    dds_log(trace, "Creating archive command [output: {}]", spec.out_path.string());
+    bpt_log(trace, "Creating archive command [output: {}]", spec.out_path.string());
     auto out_arg = shortest_path_from(spec.out_path, cwd).string();
     for (auto& arg : _link_archive) {
         if (arg == "[in]") {
-            dds_log(trace, "Expand [in] placeholder:");
+            bpt_log(trace, "Expand [in] placeholder:");
             for (auto&& in : spec.input_files) {
-                dds_log(trace, "  - input: [{}]", in.string());
+                bpt_log(trace, "  - input: [{}]", in.string());
             }
             extend(cmd, shortest_path_args(cwd, spec.input_files));
         } else {
@@ -218,12 +218,12 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
                                                          path_ref             cwd,
                                                          toolchain_knobs) const noexcept {
     vector<string> cmd;
-    dds_log(trace, "Creating link command [output: {}]", spec.output.string());
+    bpt_log(trace, "Creating link command [output: {}]", spec.output.string());
     for (auto& arg : _link_exe) {
         if (arg == "[in]") {
-            dds_log(trace, "Expand [in] placeholder:");
+            bpt_log(trace, "Expand [in] placeholder:");
             for (auto&& in : spec.inputs) {
-                dds_log(trace, "  - input: [{}]", in.string());
+                bpt_log(trace, "  - input: [{}]", in.string());
             }
             extend(cmd, shortest_path_args(cwd, spec.inputs));
         } else {
@@ -234,7 +234,7 @@ vector<string> toolchain::create_link_executable_command(const link_exe_spec& sp
 }
 
 toolchain toolchain::get_builtin(const std::string_view tc_id_) {
-    DDS_E_SCOPE(bpt::e_builtin_toolchain_str{std::string(tc_id_)});
+    BPT_E_SCOPE(bpt::e_builtin_toolchain_str{std::string(tc_id_)});
     auto tc_id = tc_id_;
     using namespace std::literals;
 
@@ -331,23 +331,23 @@ toolchain toolchain::get_builtin(const std::string_view tc_id_) {
     return parse_toolchain_json_data(tc_data);
 }
 
-dds::toolchain dds::toolchain::get_default() {
+bpt::toolchain bpt::toolchain::get_default() {
     auto candidates = {
         fs::current_path() / "toolchain.json5",
         fs::current_path() / "toolchain.jsonc",
         fs::current_path() / "toolchain.json",
-        dds_config_dir() / "toolchain.json5",
-        dds_config_dir() / "toolchain.jsonc",
-        dds_config_dir() / "toolchain.json",
+        bpt_config_dir() / "toolchain.json5",
+        bpt_config_dir() / "toolchain.jsonc",
+        bpt_config_dir() / "toolchain.json",
         user_home_dir() / "toolchain.json5",
         user_home_dir() / "toolchain.jsonc",
         user_home_dir() / "toolchain.json",
     };
     for (auto&& cand : candidates) {
-        dds_log(trace, "Checking for default toolchain at [{}]", cand.string());
+        bpt_log(trace, "Checking for default toolchain at [{}]", cand.string());
         if (fs::exists(cand)) {
-            dds_log(debug, "Using default toolchain file: {}", cand.string());
-            return parse_toolchain_json5(dds::read_file(cand));
+            bpt_log(debug, "Using default toolchain file: {}", cand.string());
+            return parse_toolchain_json5(bpt::read_file(cand));
         }
     }
     BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("No default toolchain")},

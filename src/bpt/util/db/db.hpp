@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace dds {
+namespace bpt {
 
 struct e_db_open_path {
     std::string value;
@@ -43,4 +43,4 @@ public:
     void exec_script(neo::sqlite3::sql_string_literal);
 };
 
-}  // namespace dds
+}  // namespace bpt

@@ -22,7 +22,7 @@ public:
     std::vector<usage>       links{};
     std::vector<std::string> special_uses{};
 
-    static dds::result<library> from_file(path_ref);
+    static bpt::result<library> from_file(path_ref);
 };
 
 }  // namespace lm

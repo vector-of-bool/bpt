@@ -1,10 +1,10 @@
 #include "./project.hpp"
 
-#include <bpt/dds.test.hpp>
+#include <bpt/bpt.test.hpp>
 
 #include <catch2/catch.hpp>
 
 TEST_CASE("Open a project directory") {
     auto proj = REQUIRES_LEAF_NOFAIL(
-        dds::project::open_directory(dds::testing::DATA_DIR / "projects/simple"));
+        bpt::project::open_directory(bpt::testing::DATA_DIR / "projects/simple"));
 }

@@ -21,7 +21,7 @@
 #include <cassert>
 #include <thread>
 
-using namespace dds;
+using namespace bpt;
 using namespace ranges;
 using namespace fansi::literals;
 
@@ -64,7 +64,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
                    compile.plan.get().source_path(),
                    quote_command(compile.command.command));
         auto& prior = *compile.prior_command;
-        if (dds::trim_view(prior.output).empty()) {
+        if (bpt::trim_view(prior.output).empty()) {
             // Nothing to show
             return {};
         }
@@ -73,12 +73,12 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
             // this block will be hit when the source file belongs to an external dependency. Rather
             // than continually spam the user with warnings that belong to dependencies, don't
             // repeatedly show them.
-            dds_log(trace,
+            bpt_log(trace,
                     "Cached compiler output suppressed for file with disabled warnings ({})",
                     compile.plan.get().source_path().string());
             return {};
         }
-        dds_log(
+        bpt_log(
             warn,
             "While compiling file .bold.cyan[{}] [.bold.yellow[{}]] (.br.blue[cached compiler output]):\n{}"_styled,
             compile.plan.get().source_path().string(),
@@ -101,12 +101,12 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
                       fs::relative(source_path, compile.plan.get().source().basis_path).string());
 
     // Do it!
-    dds_log(info, msg);
+    bpt_log(info, msg);
     auto start_time = fs::file_time_type::clock::now();
     auto&& [dur_ms, proc_res]
         = timed<std::chrono::milliseconds>([&] { return run_proc(compile.command.command); });
     auto nth = counter.n.fetch_add(1);
-    dds_log(info,
+    bpt_log(info,
             "{:60} - {:>7L}ms [{:{}}/{}]",
             msg,
             dur_ms.count(),
@@ -131,13 +131,13 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
         assert(compile.command.gnu_depfile_path.has_value());
         auto& df_path = *compile.command.gnu_depfile_path;
         if (!fs::is_regular_file(df_path)) {
-            dds_log(critical,
+            bpt_log(critical,
                     "The expected Makefile deps were not generated on disk. This is a bug! "
                     "(Expected file to exist: [{}])",
                     df_path.string());
         } else {
-            dds_log(trace, "Loading compilation dependencies from {}", df_path.string());
-            auto dep_info = dds::parse_mkfile_deps_file(df_path);
+            bpt_log(trace, "Loading compilation dependencies from {}", df_path.string());
+            auto dep_info = bpt::parse_mkfile_deps_file(df_path);
             neo_assert(invariant,
                        dep_info.output == compile.object_file_path,
                        "Generated mkfile deps output path does not match the object file path that "
@@ -151,7 +151,7 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
         }
     } else if (env.toolchain.deps_mode() == file_deps_mode::msvc) {
         // Uglier deps generation by parsing the output from cl.exe
-        dds_log(trace, "Parsing compilation dependencies from MSVC output");
+        bpt_log(trace, "Parsing compilation dependencies from MSVC output");
         /// TODO: Handle different #include Note: prefixes, since those are localized
         auto msvc_deps = parse_msvc_output_for_deps(compiler_output, "Note: including file:");
         // parse_msvc_output_for_deps will return the compile output without the /showIncludes notes
@@ -194,14 +194,14 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
     if (!compiled_okay) {
         std::string_view compilation_failure_msg
             = compile.is_syntax_only ? "Syntax check failed" : "Compilation failed";
-        dds_log(error, "{}: .bold.cyan[{}]"_styled, compilation_failure_msg, source_path.string());
-        dds_log(error,
+        bpt_log(error, "{}: .bold.cyan[{}]"_styled, compilation_failure_msg, source_path.string());
+        bpt_log(error,
                 "Subcommand .bold.red[FAILED] [Exited {}]: .bold.yellow[{}]\n{}"_styled,
                 compile_retc,
                 quote_command(compile.command.command),
                 compiler_output);
         if (compile_signal) {
-            dds_log(error, "Process exited via signal {}", compile_signal);
+            bpt_log(error, "Process exited via signal {}", compile_signal);
         }
         /// XXX: Use different error based on if a syntax-only check failed
         throw_user_error<errc::compile_failure>("{} [{}]",
@@ -210,8 +210,8 @@ handle_compilation(const compile_ticket& compile, build_env_ref env, compile_cou
     }
 
     // Print any compiler output, sans whitespace
-    if (!dds::trim_view(compiler_output).empty()) {
-        dds_log(warn,
+    if (!bpt::trim_view(compiler_output).empty()) {
+        bpt_log(warn,
                 "While compiling file .bold.cyan[{}] [.bold.yellow[{}]]:\n{}"_styled,
                 source_path.string(),
                 quote_command(compile.command.command),
@@ -237,28 +237,28 @@ compile_ticket mk_compile_ticket(const compile_file_plan& plan, build_env_ref en
 
     auto rb_info = get_prior_compilation(env.db, ret.object_file_path);
     if (!rb_info) {
-        dds_log(trace, "Compile {}: No recorded compilation info", plan.source_path().string());
+        bpt_log(trace, "Compile {}: No recorded compilation info", plan.source_path().string());
         ret.needs_recompile = true;
     } else if (!fs::exists(ret.object_file_path) && !ret.is_syntax_only) {
-        dds_log(trace, "Compile {}: Output does not exist", plan.source_path().string());
+        bpt_log(trace, "Compile {}: Output does not exist", plan.source_path().string());
         // The output file simply doesn't exist. We have to recompile, of course.
         ret.needs_recompile = true;
     } else if (!rb_info->newer_inputs.empty()) {
         // Inputs to this file have changed from a prior execution.
-        dds_log(trace,
+        bpt_log(trace,
                 "Recompile {}: Inputs have changed (or no input information)",
                 plan.source_path().string());
         for (auto& in : rb_info->newer_inputs) {
-            dds_log(trace, "  - Newer input: [{}]", in.string());
+            bpt_log(trace, "  - Newer input: [{}]", in.string());
         }
         ret.needs_recompile = true;
     } else if (quote_command(ret.command.command) != rb_info->previous_command.quoted_command) {
-        dds_log(trace, "Recompile {}: Compile command has changed", plan.source_path().string());
+        bpt_log(trace, "Recompile {}: Compile command has changed", plan.source_path().string());
         // The command used to generate the output is new
         ret.needs_recompile = true;
     } else {
         // Nope. This file is up-to-date.
-        dds_log(debug,
+        bpt_log(debug,
                 "Skip compilation of {} (Result is up-to-date)",
                 plan.source_path().string());
     }
@@ -270,7 +270,7 @@ compile_ticket mk_compile_ticket(const compile_file_plan& plan, build_env_ref en
 
 }  // namespace
 
-bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compiles,
+bool bpt::detail::compile_all(const ref_vector<const compile_file_plan>& compiles,
                               build_env_ref                              env,
                               int                                        njobs) {
     auto each_realized =  //
@@ -300,13 +300,13 @@ bool dds::detail::compile_all(const ref_vector<const compile_file_plan>& compile
     });
 
     // Update compile dependency information
-    dds::stopwatch update_timer;
+    bpt::stopwatch update_timer;
     auto           tr = env.db.transaction();
     for (auto& info : all_new_deps) {
-        dds_log(trace, "Update dependency info on {}", info.output.string());
+        bpt_log(trace, "Update dependency info on {}", info.output.string());
         update_deps_info(neo::into(env.db), info);
     }
-    dds_log(debug, "Dependency update took {:L}ms", update_timer.elapsed_ms().count());
+    bpt_log(debug, "Dependency update took {:L}ms", update_timer.elapsed_ms().count());
 
     cancellation_point();
     // Return whether or not there were any failures.

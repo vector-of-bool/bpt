@@ -16,10 +16,10 @@
 #include <optional>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 struct project_manifest {
-    dds::name       name;
+    bpt::name       name;
     semver::version version;
 
     std::vector<project_library>    libraries;
@@ -50,4 +50,4 @@ struct project {
     static project open_directory(const std::filesystem::path&);
 };
 
-}  // namespace dds
+}  // namespace bpt

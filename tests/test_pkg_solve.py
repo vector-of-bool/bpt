@@ -78,9 +78,9 @@ class QuickRepo(NamedTuple):
     repo: CRSRepo
 
     def pkg_solve(self, *pkgs: str) -> None:
-        dds = self.repo.dds.clone()
-        dds.crs_cache_dir = self.repo.path / '_dds-cache'
-        dds.pkg_solve(repos=[self.repo.path], pkgs=pkgs)
+        bpt = self.repo.bpt.clone()
+        bpt.crs_cache_dir = self.repo.path / '_bpt-cache'
+        bpt.pkg_solve(repos=[self.repo.path], pkgs=pkgs)
 
     @property
     def path(self):
@@ -184,7 +184,7 @@ def test_solve_1(solve_repo_1: QuickRepo) -> None:
 def test_solve_upgrade_pkg_version(make_quick_repo: QuickRepoFactory, tmp_project: Project,
                                    dir_renderer: DirRenderer) -> None:
     '''
-    Test that dds will pull a new copy of a package if its pkg_version is updated,
+    Test that bpt will pull a new copy of a package if its pkg_version is updated,
     even if the version proper is not changed.
     '''
     # yapf: disable

@@ -14,13 +14,13 @@
 using namespace bpt;
 
 YAML::Node bpt::parse_yaml_file(const std::filesystem::path& fpath) {
-    DDS_E_SCOPE(e_parse_yaml_file_path{fpath});
-    auto content = dds::read_file(fpath);
+    BPT_E_SCOPE(e_parse_yaml_file_path{fpath});
+    auto content = bpt::read_file(fpath);
     return parse_yaml_string(content);
 }
 
 YAML::Node bpt::parse_yaml_string(std::string_view sv) {
-    DDS_E_SCOPE(e_parse_yaml_string{std::string(sv)});
+    BPT_E_SCOPE(e_parse_yaml_string{std::string(sv)});
     try {
         return YAML::Load(sv.data());
     } catch (YAML::Exception const& exc) {

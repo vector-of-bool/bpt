@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 enum class source_kind {
     // Pure header files, e.g. .h
@@ -42,4 +42,4 @@ struct source_file {
     fs::path relative_path() const noexcept { return fs::relative(path, basis_path); }
 };
 
-}  // namespace dds
+}  // namespace bpt

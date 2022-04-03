@@ -15,7 +15,7 @@
 #include <filesystem>
 #include <memory>
 
-namespace dds {
+namespace bpt {
 
 namespace detail {
 
@@ -133,4 +133,4 @@ public:
     auto           request(neo::url_view url) { return request(url, http_request_params{}); }
 };
 
-}  // namespace dds
+}  // namespace bpt

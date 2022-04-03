@@ -7,9 +7,9 @@
 
 #include <sstream>
 
-using namespace dds;
-using namespace dds::crs;
-using namespace dds::walk_utils;
+using namespace bpt;
+using namespace bpt::crs;
+using namespace bpt::walk_utils;
 
 namespace {
 
@@ -42,7 +42,7 @@ semver::version next_minor(semver::version const& v) {
 
 }  // namespace
 
-std::string dds::crs::dependency::decl_to_string() const noexcept {
+std::string bpt::crs::dependency::decl_to_string() const noexcept {
     std::stringstream strm;
     strm << name.str;
     if (acceptable_versions.num_intervals() == 1) {
@@ -79,7 +79,7 @@ std::string dds::crs::dependency::decl_to_string() const noexcept {
     uses.visit(neo::overload{
         [&](implicit_uses_all) { strm << "/*"; },
         [&](explicit_uses_list const& u) {
-            strm << '/' << joinstr(",", u.uses | std::views::transform(&dds::name::str));
+            strm << '/' << joinstr(",", u.uses | std::views::transform(&bpt::name::str));
         },
     });
     return strm.str();
@@ -90,7 +90,7 @@ dependency dependency::from_data(const json5::data& data) {
 
     using namespace semester::walk_ops;
     std::vector<semver::range> ver_ranges;
-    std::vector<dds::name>     uses;
+    std::vector<bpt::name>     uses;
 
     auto parse_version_range = [&](const json5::data& range) {
         semver::version low;

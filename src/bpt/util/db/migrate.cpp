@@ -10,7 +10,7 @@
 #include <neo/sqlite3/statement.hpp>
 #include <neo/sqlite3/transaction.hpp>
 
-using namespace dds;
+using namespace bpt;
 namespace nsql = neo::sqlite3;
 
 result<void> detail::do_migrations_1(unique_database&                                 db,
@@ -87,7 +87,7 @@ result<void> detail::do_migrations_1(unique_database&                           
     return {};
 }
 
-result<int> dds::get_migration_version(unique_database& db, std::string_view tablename) {
+result<int> bpt::get_migration_version(unique_database& db, std::string_view tablename) {
     auto q  = fmt::format("SELECT version FROM \"{}\"", tablename);
     auto st = db.sqlite3_db().prepare(q);
     if (!st.has_value()) {

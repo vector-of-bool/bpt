@@ -4,7 +4,7 @@
 
 #include <windows.h>
 
-void dds::enable_ansi_console() noexcept {
+void bpt::enable_ansi_console() noexcept {
     auto stdio_console = ::GetStdHandle(STD_OUTPUT_HANDLE);
     if (stdio_console == INVALID_HANDLE_VALUE) {
         // Oh well...
@@ -20,7 +20,7 @@ void dds::enable_ansi_console() noexcept {
     ::SetConsoleMode(stdio_console, mode);
 }
 
-bool dds::stdout_is_a_tty() noexcept {
+bool bpt::stdout_is_a_tty() noexcept {
     auto stdio_console = ::GetStdHandle(STD_OUTPUT_HANDLE);
     if (stdio_console == INVALID_HANDLE_VALUE) {
         return false;

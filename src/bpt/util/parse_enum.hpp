@@ -7,7 +7,7 @@
 
 #include <ranges>
 
-namespace dds {
+namespace bpt {
 
 template <typename E>
 struct e_invalid_enum {
@@ -35,11 +35,11 @@ constexpr auto parse_enum_str = [](const std::string& sv) {
         [&] {
             auto        names = magic_enum::enum_names<E>();
             std::string acc
-                = dds::joinstr(", ", names | std::views::transform([](auto n) {
+                = bpt::joinstr(", ", names | std::views::transform([](auto n) {
                                          return std::string{"\""} + std::string(n) + "\"";
                                      }));
             return e_enum_options{acc};
         });
 };
 
-}  // namespace dds
+}  // namespace bpt

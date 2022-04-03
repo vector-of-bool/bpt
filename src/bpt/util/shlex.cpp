@@ -7,9 +7,9 @@
 using std::string;
 using std::vector;
 
-using namespace dds;
+using namespace bpt;
 
-vector<string> dds::split_shell_string(std::string_view shell) {
+vector<string> bpt::split_shell_string(std::string_view shell) {
     char cur_quote  = 0;
     bool is_escaped = false;
 

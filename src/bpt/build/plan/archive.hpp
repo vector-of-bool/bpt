@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-namespace dds {
+namespace bpt {
 
 /**
  * Represents the intention to create an library archive. This also contains
@@ -68,4 +68,4 @@ public:
     void archive(build_env_ref env) const;
 };
 
-}  // namespace dds
+}  // namespace bpt

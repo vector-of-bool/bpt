@@ -1,9 +1,9 @@
 #pragma once
 
-namespace dds::cli {
+namespace bpt::cli {
 
 struct options;
 
 int dispatch_main(const options&) noexcept;
 
-}  // namespace dds::cli
+}  // namespace bpt::cli

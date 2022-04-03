@@ -4,14 +4,14 @@
 
 #include <bpt/util/log.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-void dds::log_exception(std::exception_ptr eptr) noexcept {
+void bpt::log_exception(std::exception_ptr eptr) noexcept {
     try {
         std::rethrow_exception(eptr);
-    } catch (const dds::user_cancelled&) {
+    } catch (const bpt::user_cancelled&) {
         // Don't log this one. The user knows what they did
     } catch (const std::exception& e) {
-        dds_log(error, "{}", e.what());
+        bpt_log(error, "{}", e.what());
     }
 }

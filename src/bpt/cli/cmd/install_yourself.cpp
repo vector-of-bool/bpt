@@ -27,7 +27,7 @@
 
 using namespace fansi::literals;
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 namespace {
 
@@ -79,9 +79,9 @@ fs::path current_executable() {
 
 fs::path user_binaries_dir() noexcept {
 #if _WIN32
-    return dds::user_data_dir() / "bin";
+    return bpt::user_data_dir() / "bin";
 #else
-    return dds::user_home_dir() / ".local/bin";
+    return bpt::user_home_dir() / ".local/bin";
 #endif
 }
 
@@ -133,15 +133,15 @@ void fixup_path_env(const options& opts, const wil::unique_hkey& env_hkey, fs::p
     auto       path_elems   = split_view(path_env_str, ";");
     const bool any_match    = std::any_of(path_elems.cbegin(), path_elems.cend(), [&](auto view) {
         auto existing = fs::weakly_canonical(view).make_preferred().lexically_normal();
-        dds_log(trace, "Existing PATH entry: '{}'", existing.string());
+        bpt_log(trace, "Existing PATH entry: '{}'", existing.string());
         return existing.native() == want_entry.native();
     });
     if (any_match) {
-        dds_log(info, "PATH is up-to-date");
+        bpt_log(info, "PATH is up-to-date");
         return;
     }
     if (opts.dry_run) {
-        dds_log(info, "The PATH environment variable would be modified.");
+        bpt_log(info, "The PATH environment variable would be modified.");
         return;
     }
     // It's not there. Add it now.
@@ -160,11 +160,11 @@ void fixup_path_env(const options& opts, const wil::unique_hkey& env_hkey, fs::p
         throw std::system_error(std::error_code(err, std::system_category()),
                                 "Failed to modify PATH environment variable");
     }
-    dds_log(
+    bpt_log(
         info,
         "The directory [.br.cyan[{}]] has been added to your PATH environment variables."_styled,
         want_path.string());
-    dds_log(
+    bpt_log(
         info,
         ".bold.cyan[NOTE:] You may need to restart running applications to see this change!"_styled);
 }
@@ -192,21 +192,21 @@ void fixup_system_path(const options& opts [[maybe_unused]]) {
 
 void fixup_user_path(const options& opts) {
 #if !_WIN32
-    auto profile_file    = dds::user_home_dir() / ".profile";
-    auto profile_content = dds::read_file(profile_file);
-    if (dds::contains(profile_content, "$HOME/.local/bin")) {
+    auto profile_file    = bpt::user_home_dir() / ".profile";
+    auto profile_content = bpt::read_file(profile_file);
+    if (bpt::contains(profile_content, "$HOME/.local/bin")) {
         // We'll assume that this is properly loading .local/bin for .profile
-        dds_log(info, "[.br.cyan[{}]] is okay"_styled, profile_file.string());
+        bpt_log(info, "[.br.cyan[{}]] is okay"_styled, profile_file.string());
     } else if (opts.dry_run) {
-        dds_log(info,
+        bpt_log(info,
                 "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
                 profile_file.string());
     } else {
         // Let's add it
         profile_content
-            += ("\n# This entry was added by 'dds install-yourself' for the user-local "
+            += ("\n# This entry was added by 'bpt install-yourself' for the user-local "
                 "binaries path\nPATH=$HOME/bin:$HOME/.local/bin:$PATH\n");
-        dds_log(info,
+        bpt_log(info,
                 "Updating [.br.cyan[{}]] with a user-local binaries PATH entry"_styled,
                 profile_file.string());
         auto tmp_file = profile_file;
@@ -220,40 +220,40 @@ void fixup_user_path(const options& opts) {
             }
         };
         // Write the temporary version
-        dds::write_file(tmp_file, profile_content);
+        bpt::write_file(tmp_file, profile_content);
         // Make a backup
         move_file(profile_file, bak_file).value();
         // Move the tmp over the final location
         move_file(tmp_file, profile_file).value();
         // Okay!
-        dds_log(info,
+        bpt_log(info,
                 "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
                 profile_file.string(),
                 bak_file.string());
-        dds_log(
+        bpt_log(
             info,
             ".bold.cyan[NOTE:] Running applications may need to be restarted to see this change"_styled);
     }
 
-    auto fish_config = dds::user_config_dir() / "fish/config.fish";
+    auto fish_config = bpt::user_config_dir() / "fish/config.fish";
     if (fs::exists(fish_config)) {
-        auto fish_config_content = dds::read_file(fish_config);
-        if (dds::contains(fish_config_content, "$HOME/.local/bin")) {
+        auto fish_config_content = bpt::read_file(fish_config);
+        if (bpt::contains(fish_config_content, "$HOME/.local/bin")) {
             // Assume that this is up-to-date
-            dds_log(info,
+            bpt_log(info,
                     "Fish configuration in [.br.cyan[{}]] is okay"_styled,
                     fish_config.string());
         } else if (opts.dry_run) {
-            dds_log(info,
+            bpt_log(info,
                     "Would update [.br.cyan[{}]] to have ~/.local/bin on $PATH"_styled,
                     fish_config.string());
         } else {
-            dds_log(
+            bpt_log(
                 info,
                 "Updating Fish shell configuration [.br.cyan[{}]] with user-local binaries PATH entry"_styled,
                 fish_config.string());
             fish_config_content
-                += ("\n# This line was added by 'dds install-yourself' to add the user-local "
+                += ("\n# This line was added by 'bpt install-yourself' to add the user-local "
                     "binaries directory to $PATH\nset -x PATH $PATH \"$HOME/.local/bin\"\n");
             auto tmp_file = fish_config;
             auto bak_file = fish_config;
@@ -265,17 +265,17 @@ void fixup_user_path(const options& opts) {
                 }
             };
             // Write the temporary version
-            dds::write_file(tmp_file, fish_config_content);
+            bpt::write_file(tmp_file, fish_config_content);
             // Make a backup
             move_file(fish_config, bak_file).value();
             // Move the temp over the destination
             move_file(tmp_file, fish_config).value();
             // Okay!
-            dds_log(info,
+            bpt_log(info,
                     "[.br.green[{}]] was updated. Prior contents are safe in [.br.cyan[{}]]"_styled,
                     fish_config.string(),
                     bak_file.string());
-            dds_log(
+            bpt_log(
                 info,
                 ".bold.cyan[NOTE:] Running Fish shells will need to be restartred to see this change"_styled);
         }
@@ -308,13 +308,13 @@ int _install_yourself(const options& opts) {
         ? user_binaries_dir()
         : system_binaries_dir();
 
-    auto dest_path = dest_dir / "dds";
+    auto dest_path = dest_dir / "bpt";
     if constexpr (neo::os_is_windows) {
         dest_path += ".exe";
     }
 
     if (fs::absolute(dest_path).lexically_normal() == fs::canonical(self_exe)) {
-        dds_log(error,
+        bpt_log(error,
                 "We cannot install over our own executable (.br.red[{}])"_styled,
                 self_exe.string());
         return 1;
@@ -322,38 +322,38 @@ int _install_yourself(const options& opts) {
 
     if (!fs::is_directory(dest_dir)) {
         if (opts.dry_run) {
-            dds_log(info, "Would create directory [.br.cyan[{}]]"_styled, dest_dir.string());
+            bpt_log(info, "Would create directory [.br.cyan[{}]]"_styled, dest_dir.string());
         } else {
-            dds_log(info, "Creating directory [.br.cyan[{}]]"_styled, dest_dir.string());
+            bpt_log(info, "Creating directory [.br.cyan[{}]]"_styled, dest_dir.string());
             fs::create_directories(dest_dir);
         }
     }
 
     if (opts.dry_run) {
         if (fs::is_symlink(dest_path)) {
-            dds_log(info, "Would remove symlink [.br.cyan[{}]]"_styled, dest_path.string());
+            bpt_log(info, "Would remove symlink [.br.cyan[{}]]"_styled, dest_path.string());
         }
         if (fs::exists(dest_path) && !fs::is_symlink(dest_path)) {
             if (opts.install_yourself.symlink) {
-                dds_log(
+                bpt_log(
                     info,
                     "Would overwrite .br.yellow[{0}] with a symlink .br.green[{0}] -> .br.cyan[{1}]"_styled,
                     dest_path.string(),
                     self_exe.string());
             } else {
-                dds_log(info,
+                bpt_log(info,
                         "Would overwrite .br.yellow[{}] with [.br.cyan[{}]]"_styled,
                         dest_path.string(),
                         self_exe.string());
             }
         } else {
             if (opts.install_yourself.symlink) {
-                dds_log(info,
+                bpt_log(info,
                         "Would create a symlink [.br.green[{}]] -> [.br.cyan[{}]]"_styled,
                         dest_path.string(),
                         self_exe.string());
             } else {
-                dds_log(info,
+                bpt_log(info,
                         "Would install [.br.cyan[{}]] to .br.yellow[{}]"_styled,
                         self_exe.string(),
                         dest_path.string());
@@ -361,25 +361,25 @@ int _install_yourself(const options& opts) {
         }
     } else {
         if (fs::is_symlink(dest_path)) {
-            dds_log(info, "Removing old symlink file [.br.cyan[{}]]"_styled, dest_path.string());
-            dds::remove_file(dest_path).value();
+            bpt_log(info, "Removing old symlink file [.br.cyan[{}]]"_styled, dest_path.string());
+            bpt::remove_file(dest_path).value();
         }
         if (opts.install_yourself.symlink) {
             if (fs::exists(dest_path)) {
-                dds_log(info, "Removing previous file [.br.cyan[{}]]"_styled, dest_path.string());
-                dds::remove_file(dest_path).value();
+                bpt_log(info, "Removing previous file [.br.cyan[{}]]"_styled, dest_path.string());
+                bpt::remove_file(dest_path).value();
             }
-            dds_log(info,
+            bpt_log(info,
                     "Creating symbolic link [.br.green[{}]] -> [.br.cyan[{}]]"_styled,
                     dest_path.string(),
                     self_exe.string());
-            dds::create_symlink(self_exe, dest_path).value();
+            bpt::create_symlink(self_exe, dest_path).value();
         } else {
-            dds_log(info,
+            bpt_log(info,
                     "Installing [.br.cyan[{}]] to [.br.green[{}]]"_styled,
                     self_exe.string(),
                     dest_path.string());
-            dds::copy_file(self_exe, dest_path, fs::copy_options::overwrite_existing).value();
+            bpt::copy_file(self_exe, dest_path, fs::copy_options::overwrite_existing).value();
         }
     }
 
@@ -388,7 +388,7 @@ int _install_yourself(const options& opts) {
     }
 
     if (!opts.dry_run) {
-        dds_log(info, "Success!");
+        bpt_log(info, "Success!");
     }
     return 0;
 }
@@ -399,7 +399,7 @@ int install_yourself(const options& opts) {
     return boost::leaf::try_catch(
         [&] { return _install_yourself(opts); },
         [](std::error_code ec, e_copy_file copy) {
-            dds_log(error,
+            bpt_log(error,
                     "Failed to copy file [.br.cyan[{}]] to .br.yellow[{}]: .bold.red[{}]"_styled,
                     copy.source.string(),
                     copy.dest.string(),
@@ -407,14 +407,14 @@ int install_yourself(const options& opts) {
             return 1;
         },
         [](std::error_code ec, e_remove_file file) {
-            dds_log(error,
+            bpt_log(error,
                     "Failed to delete file .br.yellow[{}]: .bold.red[{}]"_styled,
                     file.value.string(),
                     ec.message());
             return 1;
         },
         [](std::error_code ec, e_symlink oper) {
-            dds_log(
+            bpt_log(
                 error,
                 "Failed to create symlink from .br.yellow[{}] to [.br.cyan[{}]]: .bold.red[{}]"_styled,
                 oper.symlink.string(),
@@ -423,10 +423,10 @@ int install_yourself(const options& opts) {
             return 1;
         },
         [](const std::system_error& e) {
-            dds_log(error, "Failure while installing: {}", e.code().message());
+            bpt_log(error, "Failure while installing: {}", e.code().message());
             return 1;
         });
     return 0;
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a new feature or capability for `dds`
+about: Suggest a new feature or capability for `bpt`
 title: "[FEATURE]"
 labels: enhancement
 assignees: ''
@@ -11,7 +11,7 @@ assignees: ''
 
 Please provide as much information as possible to help us address your concern. When completed, please remove an empty sections.
 
-Before submitting, please consider whether the requested behavior is contrary to the stated goals and non-goals of `dds` itself. If you are unsure whether your request would go against the project's goals, feel free to submit it and we'll discuss it!
+Before submitting, please consider whether the requested behavior is contrary to the stated goals and non-goals of `bpt` itself. If you are unsure whether your request would go against the project's goals, feel free to submit it and we'll discuss it!
 
 Thank you!
 

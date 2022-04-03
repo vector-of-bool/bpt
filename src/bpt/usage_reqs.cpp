@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <string_view>
 
-using namespace dds;
+using namespace bpt;
 
 const lm::library* usage_requirement_map::get(const lm::usage& key) const noexcept {
     auto found = _reqs.find(key);
@@ -170,11 +170,11 @@ std::optional<std::vector<lm::usage>> usage_requirement_map::find_usage_cycle() 
 
 void usage_requirements::verify_acyclic() const {
     // Log information on the graph to make it easier to debug issues with the DFS
-    dds_log(debug, "Searching for `use` cycles.");
+    bpt_log(debug, "Searching for `use` cycles.");
     if (log::level_enabled(log::level::debug)) {
         for (auto const& [lib, deps] : get_usage_map()) {
             const auto uses_str = fmt::format("{}", fmt::join(deps.uses, ", "));
-            dds_log(debug, " lib {} uses {}", lib, uses_str);
+            bpt_log(debug, " lib {} uses {}", lib, uses_str);
         }
     }
 

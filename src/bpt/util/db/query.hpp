@@ -8,7 +8,7 @@
 
 #include "./db.hpp"
 
-namespace dds {
+namespace bpt {
 
 template <typename... Args>
 [[nodiscard]] result<void> db_bind(neo::sqlite3::statement& st, const Args&... args) noexcept {
@@ -75,4 +75,4 @@ template <typename... Args>
     return {};
 }
 
-}  // namespace dds
+}  // namespace bpt

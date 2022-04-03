@@ -1,6 +1,6 @@
 #include "./argument_parser.hpp"
 
-/// XXX: Refactor this after pulling debate:: out of dds
+/// XXX: Refactor this after pulling debate:: out of bpt
 #include <bpt/dym.hpp>
 
 #include <boost/leaf/error.hpp>
@@ -70,7 +70,7 @@ struct parse_engine {
                 candidates.push_back(p.name);
             }
         }
-        return dds::did_you_mean(given, candidates);
+        return bpt::did_you_mean(given, candidates);
     }
 
     void parse_another() {

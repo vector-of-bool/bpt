@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=res/pkg-yaml-schema.json
-name: dds
+name: bpt
 version: 0.1.0-alpha.6
 dependencies:
   - spdlog@1.7.0
@@ -26,4 +26,4 @@ dependencies:
 test-dependencies:
   - catch2@2.13.5 using main
 lib:
-  name: dds
+  name: bpt

@@ -7,11 +7,11 @@
 using namespace neo::sqlite3::literals;
 
 struct empty_database {
-    dds::unique_database db = std::move(dds::unique_database::open(":memory:").value());
+    bpt::unique_database db = std::move(bpt::unique_database::open(":memory:").value());
 };
 
 TEST_CASE_METHOD(empty_database, "Run some simple migrations") {
-    dds::apply_db_migrations(  //
+    bpt::apply_db_migrations(  //
         db,
         "test_meta",
         [](auto& db) {
@@ -21,7 +21,7 @@ TEST_CASE_METHOD(empty_database, "Run some simple migrations") {
             )"_sql);
         })
         .value();
-    auto version = dds::get_migration_version(db, "test_meta");
+    auto version = bpt::get_migration_version(db, "test_meta");
     REQUIRE(version);
     CHECK(*version == 1);
     db.exec_script(R"(

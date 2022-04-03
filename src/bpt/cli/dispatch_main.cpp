@@ -6,9 +6,9 @@
 #include <bpt/util/paths.hpp>
 #include <bpt/util/result.hpp>
 
-using namespace dds;
+using namespace bpt;
 
-namespace dds::cli {
+namespace bpt::cli {
 
 namespace cmd {
 using command = int(const options&);
@@ -26,13 +26,13 @@ command repo_cmd;
 }  // namespace cmd
 
 int dispatch_main(const options& opts) noexcept {
-    return dds::handle_cli_errors([&] {
-        DDS_E_SCOPE(opts.subcommand);
+    return bpt::handle_cli_errors([&] {
+        BPT_E_SCOPE(opts.subcommand);
         switch (opts.subcommand) {
         case subcommand::build:
             return cmd::build(opts);
         case subcommand::pkg: {
-            DDS_E_SCOPE(opts.pkg.subcommand);
+            BPT_E_SCOPE(opts.pkg.subcommand);
             switch (opts.pkg.subcommand) {
             case pkg_subcommand::create:
                 return cmd::pkg_create(opts);
@@ -47,7 +47,7 @@ int dispatch_main(const options& opts) noexcept {
             neo::unreachable();
         }
         case subcommand::repo: {
-            DDS_E_SCOPE(opts.repo.subcommand);
+            BPT_E_SCOPE(opts.repo.subcommand);
             return cmd::repo_cmd(opts);
         }
         case subcommand::compile_file:
@@ -63,4 +63,4 @@ int dispatch_main(const options& opts) noexcept {
     });
 }
 
-}  // namespace dds::cli
+}  // namespace bpt::cli

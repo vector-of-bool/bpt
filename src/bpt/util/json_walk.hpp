@@ -18,11 +18,11 @@ namespace semver {
 struct version;
 }
 
-namespace dds {
+namespace bpt {
 struct name;
 }
 
-namespace dds::walk_utils {
+namespace bpt::walk_utils {
 
 using namespace semester::walk_ops;
 using semester::walk_error;
@@ -34,7 +34,7 @@ using require_array   = semester::require_type<json5_array>;
 using require_str     = semester::require_type<std::string>;
 
 struct name_from_string {
-    dds::name operator()(std::string s);
+    bpt::name operator()(std::string s);
 };
 
 struct version_from_string {
@@ -65,4 +65,4 @@ struct key_dym_tracker {
 
 struct reject_with_known {};
 
-}  // namespace dds::walk_utils
+}  // namespace bpt::walk_utils

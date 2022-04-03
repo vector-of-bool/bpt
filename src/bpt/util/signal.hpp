@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace dds {
+namespace bpt {
 
 class user_cancelled : public std::exception {};
 
@@ -13,4 +13,4 @@ void reset_cancelled() noexcept;
 bool is_cancelled() noexcept;
 void cancellation_point();
 
-}  // namespace dds
+}  // namespace bpt

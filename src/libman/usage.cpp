@@ -8,7 +8,7 @@
 
 using namespace lm;
 
-dds::result<usage> lm::split_usage_string(std::string_view str) {
+bpt::result<usage> lm::split_usage_string(std::string_view str) {
     auto sl_pos = str.find('/');
     if (sl_pos == str.npos) {
         return boost::leaf::new_error(e_invalid_usage_string{std::string(str)});

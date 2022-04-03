@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace dds {
+namespace bpt {
 
 class shared_file_mutex {
     std::filesystem::path _path;
@@ -25,4 +25,4 @@ public:
     void unlock_shared();
 };
 
-}  // namespace dds
+}  // namespace bpt

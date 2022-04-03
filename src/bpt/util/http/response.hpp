@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 struct http_response_info {
     int                status;
@@ -30,4 +30,4 @@ struct http_response_info {
     auto last_modified() const noexcept { return header_value("Last-Modified"); }
 };
 
-}  // namespace dds
+}  // namespace bpt

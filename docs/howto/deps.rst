@@ -2,23 +2,23 @@ How Do I Use Other Libraries as Dependencies?
 #############################################
 
 Of course, fundamental to any build system is the question of consuming
-dependencies. ``dds`` takes an approach that is both familiar and novel.
+dependencies. ``bpt`` takes an approach that is both familiar and novel.
 
 The *Familiar*:
   Dependencies are listed in a project's package manifest file
-  (``package.json5``, for ``dds``).
+  (``package.json5``, for ``bpt``).
 
   A range of acceptable versions is provided in the package manifest, which
-  tells ``dds`` and your consumers what versions of a particular dependency are
+  tells ``bpt`` and your consumers what versions of a particular dependency are
   allowed to be used with your package.
 
   Transitive dependencies are resolved and pulled the same as if they were
   listed in the manifest as well.
 
 The *Novel*:
-  ``dds`` does not have a separate "install" step. Instead, whenever a ``dds
+  ``bpt`` does not have a separate "install" step. Instead, whenever a ``bpt
   build`` is executed, the dependencies are resolved, downloaded, extracted,
-  and compiled. Of course, ``dds`` caches every step of this process, so you'll
+  and compiled. Of course, ``bpt`` caches every step of this process, so you'll
   only see the download, extract, and compilation when you add a new dependency,
 
   Additionally, changes in the toolchain will necessitate that all the
@@ -35,9 +35,9 @@ Listing Package Dependencies
 
 Suppose you have a project and you wish to use
 `spdlog <https://github.com/gabime/spdlog>`_ for your logging. To begin, we need
-to find a ``spdlog`` package. We can search via ``dds pkg search``::
+to find a ``spdlog`` package. We can search via ``bpt pkg search``::
 
-  $ dds pkg search spdlog
+  $ bpt pkg search spdlog
       Name: spdlog
   Versions: 1.4.0, 1.4.1, 1.4.2, 1.5.0, 1.6.0, 1.6.1, 1.7.0
       From: repo-1.dds.pizza
@@ -71,14 +71,14 @@ The string ``"spdlog^1.7.0"`` is a *dependency statement*, and says that we want
 ``spdlog``, with minimum version ``1.7.0``, but less than version ``2.0.0``.
 Refer to :ref:`deps.ranges` for information on the version range syntax.
 
-This is enough that ``dds`` knows about our dependency, but there is another
+This is enough that ``bpt`` knows about our dependency, but there is another
 step that we need to take:
 
 
 Listing Usage Requirements
 **************************
 
-The ``depends`` is a package-level dependency, but we need to tell ``dds`` that
+The ``depends`` is a package-level dependency, but we need to tell ``bpt`` that
 we want to *use* a library from that package. For this, we need to provide a
 ``library.json5`` file alongside the ``package.json5`` file.
 
@@ -118,7 +118,7 @@ as normal:
     spdlog::info("Hello, dependency!");
   }
 
-Now, when you run ``dds build``, you'll see ``dds`` automatically download
+Now, when you run ``bpt build``, you'll see ``bpt`` automatically download
 ``spdlog`` *as well as* ``fmt`` (a dependency of ``spdlog``), and then build all
 three components *simultaneously*. The result will be an ``app`` executable that
 uses ``spdlog``.

@@ -19,14 +19,14 @@ static void set_utf8_output() {
 }
 #endif
 
-void dds::log::init_logger() noexcept {
+void bpt::log::init_logger() noexcept {
     // spdlog::set_pattern("[%H:%M:%S] [%^%-5l%$] %v");
     spdlog::set_pattern("[%^%-5l%$] %v");
 }
 
-void dds::log::ev_log::print() const noexcept { log_print(level, message); }
+void bpt::log::ev_log::print() const noexcept { log_print(level, message); }
 
-void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
+void bpt::log::log_print(bpt::log::level l, std::string_view msg) noexcept {
     static auto logger_inst = [] {
         auto logger = spdlog::default_logger_raw();
         logger->set_level(spdlog::level::trace);
@@ -57,7 +57,7 @@ void dds::log::log_print(dds::log::level l, std::string_view msg) noexcept {
     logger_inst->log(lvl, msg);
 }
 
-void dds::log::log_emit(dds::log::ev_log ev) noexcept {
+void bpt::log::log_emit(bpt::log::ev_log ev) noexcept {
     if (!neo::get_event_subscriber<ev_log>()) {
         thread_local bool did_warn = false;
         if (!did_warn) {

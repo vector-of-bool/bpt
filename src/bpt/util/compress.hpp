@@ -3,7 +3,7 @@
 #include "./fs/path.hpp"
 #include <bpt/error/result_fwd.hpp>
 
-namespace dds {
+namespace bpt {
 
 struct e_compress_error {
     std::string value;
@@ -15,4 +15,4 @@ struct e_decompress_error {
 };
 [[nodiscard]] result<void> decompress_file_gz(fs::path in_file, fs::path out_file) noexcept;
 
-}  // namespace dds
+}  // namespace bpt

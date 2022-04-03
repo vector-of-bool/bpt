@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace dds {
+namespace bpt {
 
 struct e_sdist_from_directory {
     std::filesystem::path value;
@@ -16,4 +16,4 @@ struct e_missing_project_yaml {
     std::filesystem::path value;
 };
 
-}  // namespace dds
+}  // namespace bpt

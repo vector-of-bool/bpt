@@ -11,7 +11,7 @@
 
 using namespace fansi::literals;
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 int _compile_file(const options& opts) {
     return boost::leaf::try_catch(
@@ -29,25 +29,25 @@ int _compile_file(const options& opts) {
                                   });
             return 0;
         },
-        [&](boost::leaf::catch_<dds::user_error<dds::errc::compile_failure>>,
+        [&](boost::leaf::catch_<bpt::user_error<bpt::errc::compile_failure>>,
             std::vector<e_nonesuch> missing) {
             if (missing.size() == 1) {
-                dds_log(
+                bpt_log(
                     error,
                     "Requested source file [.bold.red[{}]] is not a file compiled for this project"_styled,
                     missing.front().given);
             } else {
-                dds_log(error, "The following files are not compiled as part of this project:");
+                bpt_log(error, "The following files are not compiled as part of this project:");
                 for (auto&& f : missing) {
-                    dds_log(error, "  - .bold.red[{}]"_styled, f.given);
+                    bpt_log(error, "  - .bold.red[{}]"_styled, f.given);
                 }
             }
             write_error_marker("nonesuch-compile-file");
             return 2;
         },
-        [&](boost::leaf::catch_<dds::user_error<dds::errc::compile_failure>> e) {
-            dds_log(error, e.matched.what());
-            dds_log(error, "  (Refer to compiler output for more information)");
+        [&](boost::leaf::catch_<bpt::user_error<bpt::errc::compile_failure>> e) {
+            bpt_log(error, e.matched.what());
+            bpt_log(error, "  (Refer to compiler output for more information)");
             write_error_marker("compile-file-failed");
             return 2;
         });
@@ -57,4 +57,4 @@ int compile_file(const options& opts) {
     return handle_build_error([&] { return _compile_file(opts); });
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

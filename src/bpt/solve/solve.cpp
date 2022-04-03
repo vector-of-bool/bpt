@@ -25,8 +25,8 @@
 #include <string>
 #include <tuple>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 
 namespace sr   = std::ranges;
 namespace stdv = std::views;
@@ -46,12 +46,12 @@ semver::version sole_version(const crs::version_range_set& versions) {
 }
 
 struct requirement {
-    dds::name              name;
+    bpt::name              name;
     crs::version_range_set versions;
     dependency_uses        uses;
     std::optional<int>     pkg_version;
 
-    explicit requirement(dds::name              name,
+    explicit requirement(bpt::name              name,
                          crs::version_range_set vrs,
                          dependency_uses        u,
                          std::optional<int>     pver)
@@ -167,7 +167,7 @@ struct requirement {
     }
 
     friend void do_repr(auto out, const requirement* self) noexcept {
-        out.type("dds-requirement");
+        out.type("bpt-requirement");
         if (self) {
             out.value(self->decl_to_string());
         }
@@ -187,7 +187,7 @@ struct metadata_provider {
             found
                 = pkgs_by_name
                       .emplace(std::string(name),
-                               cache_db.for_package(dds::name{std::string(name)}) | neo::to_vector)
+                               cache_db.for_package(bpt::name{std::string(name)}) | neo::to_vector)
                       .first;
             sr::sort(found->second,
                      std::less<>{},
@@ -197,9 +197,9 @@ struct metadata_provider {
     }
 
     std::optional<requirement> best_candidate(const requirement& req) const {
-        dds::cancellation_point();
+        bpt::cancellation_point();
         auto& pkgs = packages_for_name(req.name.str);
-        dds_log(debug, "Find best candidate of {}", req.decl_to_string());
+        bpt_log(debug, "Find best candidate of {}", req.decl_to_string());
         auto cand = sr::find_if(pkgs, [&](auto&& entry) {
             if (!req.versions.contains(entry.pkg.id.version)) {
                 return false;
@@ -211,7 +211,7 @@ struct metadata_provider {
                         return sr::any_of(entry.pkg.libraries, NEO_TL(uses_name == _1.name));
                     });
                     if (!has_all_libraries) {
-                        dds_log(debug,
+                        bpt_log(debug,
                                 "  Near match: {} (missing one or more required libraries)",
                                 entry.pkg.id.to_string());
                     }
@@ -221,11 +221,11 @@ struct metadata_provider {
         });
 
         if (cand == pkgs.cend()) {
-            dds_log(debug, "  (No candidate)");
+            bpt_log(debug, "  (No candidate)");
             return std::nullopt;
         }
 
-        dds_log(debug, "  Best candidate: {}", cand->pkg.id.to_string());
+        bpt_log(debug, "  Best candidate: {}", cand->pkg.id.to_string());
 
         return requirement{cand->pkg.id.name,
                            {cand->pkg.id.version, cand->pkg.id.version.next_after()},
@@ -241,8 +241,8 @@ struct metadata_provider {
      * @return std::vector<requirement> The packages that are required
      */
     std::vector<requirement> requirements_of(const requirement& req) const {
-        dds::cancellation_point();
-        dds_log(trace, "Lookup dependencies of {}", req.decl_to_string());
+        bpt::cancellation_point();
+        bpt_log(trace, "Lookup dependencies of {}", req.decl_to_string());
         const auto& version = sole_version(req.versions);
         auto        metas   = cache_db.for_package(req.name, version);
         auto        it      = sr::begin(metas);
@@ -253,7 +253,7 @@ struct metadata_provider {
                    version.to_string());
         auto pkg = it->pkg;
 
-        std::set<dds::name> uses;
+        std::set<bpt::name> uses;
         req.uses.visit(
             neo::overload{[&](crs::explicit_uses_list const& u) { extend(uses, u.uses); },
                           [&](crs::implicit_uses_all) {
@@ -261,7 +261,7 @@ struct metadata_provider {
                                      pkg.libraries | stdv::transform(&crs::library_info::name));
                           }});
 
-        std::set<dds::name> more_uses;
+        std::set<bpt::name> more_uses;
         while (1) {
             more_uses = uses;
             for (auto& used : uses) {
@@ -286,15 +286,15 @@ struct metadata_provider {
             | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))             //
             | neo::to_vector;
         for (auto&& r : reqs) {
-            dds_log(trace, "  Requires: {}", r.decl_to_string());
+            bpt_log(trace, "  Requires: {}", r.decl_to_string());
         }
         if (reqs.empty()) {
-            dds_log(trace, "  (No dependencies)");
+            bpt_log(trace, "  (No dependencies)");
         }
         return reqs;
     }
 
-    void debug(std::string_view sv) const noexcept { dds_log(trace, "pubgrub: {}", sv); }
+    void debug(std::string_view sv) const noexcept { bpt_log(trace, "pubgrub: {}", sv); }
 };
 
 using solve_failure_exception = pubgrub::solve_failure_type_t<requirement>;
@@ -349,7 +349,7 @@ struct fail_explainer {
     void operator()(pubgrub::explain::separator) { strm << "\n"; }
 };
 
-dds::e_dependency_solve_failure_explanation
+bpt::e_dependency_solve_failure_explanation
 generate_failure_explanation(const solve_failure_exception& exc) {
     fail_explainer explain;
     pubgrub::generate_explaination(exc, explain);
@@ -376,17 +376,17 @@ void try_load_nonesuch_packages(boost::leaf::error_id           error,
 
 }  // namespace
 
-std::vector<crs::pkg_id> dds::solve(crs::cache_db const&                  cache,
+std::vector<crs::pkg_id> bpt::solve(crs::cache_db const&                  cache,
                                     neo::any_input_range<crs::dependency> deps_) {
     metadata_provider provider{cache};
     auto deps = deps_ | stdv::transform(NEO_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
-    auto sln  = dds_leaf_try { return pubgrub::solve(deps, provider); }
-    dds_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
+    auto sln  = bpt_leaf_try { return pubgrub::solve(deps, provider); }
+    bpt_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
         auto error = boost::leaf::new_error();
         try_load_nonesuch_packages(error, cache, deps);
         BOOST_LEAF_THROW_EXCEPTION(error,
-                                   dds::e_dependency_solve_failure{},
-                                   DDS_E_ARG(generate_failure_explanation(exc.matched)),
+                                   bpt::e_dependency_solve_failure{},
+                                   BPT_E_ARG(generate_failure_explanation(exc.matched)),
                                    BPT_ERR_REF("dep-res-failure"));
     };
     return sln

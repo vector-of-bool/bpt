@@ -55,7 +55,7 @@ def get_default_audit_toolchain() -> Path:
 def get_default_test_toolchain() -> Path:
     """
     Get the default toolchain that should be used by tests that need a toolchain
-    to use for executing dds.
+    to use for executing bpt.
     """
     if sys.platform == 'win32':
         return paths.TESTS_DIR / 'msvc.tc.jsonc'

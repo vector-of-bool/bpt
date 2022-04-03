@@ -3,7 +3,7 @@
 #include <bpt/util/name.hpp>
 #include <semver/version.hpp>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 struct e_invalid_pkg_id_str {
     std::string value;
@@ -11,7 +11,7 @@ struct e_invalid_pkg_id_str {
 
 struct pkg_id {
     /// The name of the package
-    dds::name name;
+    bpt::name name;
     /// The version of the code in the package package
     semver::version version;
     /// The revision of the package itself
@@ -31,4 +31,4 @@ struct e_no_such_pkg {
     pkg_id value;
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

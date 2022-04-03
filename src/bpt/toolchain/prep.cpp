@@ -11,7 +11,7 @@
 
 #include <ranges>
 
-using namespace dds;
+using namespace bpt;
 using json = nlohmann::json;
 
 toolchain toolchain_prep::realize() const { return toolchain::realize(*this); }
@@ -40,7 +40,7 @@ std::uint64_t toolchain_prep::compute_hash() const noexcept {
     });
     auto env  = json::object();
     for (auto& varname : consider_envs) {
-        auto val = dds::getenv(varname);
+        auto val = bpt::getenv(varname);
         if (val) {
             env[varname] = *val;
         }
@@ -48,5 +48,5 @@ std::uint64_t toolchain_prep::compute_hash() const noexcept {
     root["env"] = env;
     // Make a very normalized document
     std::string s = root.dump();
-    return dds::siphash64(42, 1729, neo::const_buffer(s)).digest();
+    return bpt::siphash64(42, 1729, neo::const_buffer(s)).digest();
 }

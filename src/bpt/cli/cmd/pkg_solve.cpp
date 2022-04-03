@@ -19,7 +19,7 @@
 
 using namespace fansi::literals;
 
-namespace dds::cli::cmd {
+namespace bpt::cli::cmd {
 
 static int _pkg_solve(const options& opts) {
     auto cache = open_ready_cache(opts);
@@ -30,19 +30,19 @@ static int _pkg_solve(const options& opts) {
               return project_dependency::from_shorthand_string(s).as_crs_dependency();
           });
 
-    auto sln = dds::solve(cache.db(), deps);
+    auto sln = bpt::solve(cache.db(), deps);
     for (auto&& pkg : sln) {
-        dds_log(info, "Require: {}", pkg.to_string());
+        bpt_log(info, "Require: {}", pkg.to_string());
     }
     return 0;
 }
 
 int pkg_solve(const options& opts) {
-    return dds_leaf_try { return _pkg_solve(opts); }
-    dds_leaf_catch(e_dependency_solve_failure,
+    return bpt_leaf_try { return _pkg_solve(opts); }
+    bpt_leaf_catch(e_dependency_solve_failure,
                    e_dependency_solve_failure_explanation explain,
                    const std::vector<e_nonesuch_package>& missing_pkgs) {
-        dds_log(error,
+        bpt_log(error,
                 "No solution is possible with the known package information: \n{}"_styled,
                 explain.value);
         for (auto& missing : missing_pkgs) {
@@ -54,4 +54,4 @@ int pkg_solve(const options& opts) {
     };
 }
 
-}  // namespace dds::cli::cmd
+}  // namespace bpt::cli::cmd

@@ -8,24 +8,24 @@
 #include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/transaction.hpp>
 
-using namespace dds;
+using namespace bpt;
 using namespace neo::sqlite3::literals;
 
 file_collector file_collector::create(unique_database& db) {
     apply_db_migrations(  //
         db,
-        "dds_source_collector_meta",
+        "bpt_source_collector_meta",
         [](unique_database& db) {  //
             db.exec_script(R"(
-                CREATE TABLE dds_scanned_dirs (
+                CREATE TABLE bpt_scanned_dirs (
                     dir_id INTEGER PRIMARY KEY,
                     dirpath TEXT NOT NULL UNIQUE
                 );
-                CREATE TABLE dds_found_files (
+                CREATE TABLE bpt_found_files (
                     file_id INTEGER PRIMARY KEY,
                     dir_id INTEGER
                         NOT NULL
-                        REFERENCES dds_scanned_dirs
+                        REFERENCES bpt_scanned_dirs
                             ON DELETE CASCADE,
                     relpath TEXT NOT NULL,
                     UNIQUE (dir_id, relpath)
@@ -43,7 +43,7 @@ neo::any_input_range<fs::path> file_collector::collect(path_ref dirpath) {
     // Try and select the row corresponding to this directory
     std::int64_t dir_id  = -1;
     auto         dir_id_ = neo::sqlite3::one_row<std::int64_t>(  //
-        _db.get().prepare("SELECT dir_id FROM dds_scanned_dirs WHERE dirpath = ?"_sql),
+        _db.get().prepare("SELECT dir_id FROM bpt_scanned_dirs WHERE dirpath = ?"_sql),
         normpath.string());
 
     if (dir_id_.has_value()) {
@@ -54,7 +54,7 @@ neo::any_input_range<fs::path> file_collector::collect(path_ref dirpath) {
 
         auto new_dir_id = *neo::sqlite3::one_row<std::int64_t>(  //
             _db.get().prepare(R"(
-                INSERT INTO dds_scanned_dirs (dirpath)
+                INSERT INTO bpt_scanned_dirs (dirpath)
                      VALUES (?)
                   RETURNING dir_id
             )"_sql),
@@ -66,7 +66,7 @@ neo::any_input_range<fs::path> file_collector::collect(path_ref dirpath) {
                         });
         neo::sqlite3::exec_each(  //
             _db.get().prepare(R"(
-                INSERT INTO dds_found_files (dir_id, relpath)
+                INSERT INTO bpt_found_files (dir_id, relpath)
                 VALUES (?, ?)
             )"_sql),
             children)
@@ -75,7 +75,7 @@ neo::any_input_range<fs::path> file_collector::collect(path_ref dirpath) {
     }
 
     auto st = neo::copy_shared(
-        *_db.get().sqlite3_db().prepare("SELECT relpath FROM dds_found_files WHERE dir_id = ?"));
+        *_db.get().sqlite3_db().prepare("SELECT relpath FROM bpt_found_files WHERE dir_id = ?"));
 
     return *neo::sqlite3::exec_tuples<std::string>(*st, dir_id)
         | std::views::transform([pin = st](auto tup) { return fs::path(tup.template get<0>()); });
@@ -85,14 +85,14 @@ bool file_collector::has_cached(path_ref dirpath) noexcept {
     auto normpath = fs::weakly_canonical(dirpath);
     auto has_dir  =  //
         db_cell<bool>(_db.get().prepare(
-                          "VALUES (EXISTS (SELECT * FROM dds_scanned_dirs WHERE dirpath = ?))"_sql),
+                          "VALUES (EXISTS (SELECT * FROM bpt_scanned_dirs WHERE dirpath = ?))"_sql),
                       std::string_view(normpath.string()));
     return has_dir && *has_dir;
 }
 
 void file_collector::forget(path_ref dirpath) noexcept {
     auto normpath = fs::weakly_canonical(dirpath);
-    auto res      = db_exec(_db.get().prepare("DELETE FROM dds_scanned_dirs WHERE dirpath = ?"_sql),
+    auto res      = db_exec(_db.get().prepare("DELETE FROM bpt_scanned_dirs WHERE dirpath = ?"_sql),
                        std::string_view(normpath.string()));
     assert(res);
 }

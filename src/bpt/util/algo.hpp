@@ -5,7 +5,7 @@
 #include <initializer_list>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 template <typename Container, typename Predicate>
 void erase_if(Container& c, Predicate&& p) {
@@ -56,4 +56,4 @@ void sort_unique_erase(Container& c) noexcept {
 template <typename T>
 using ref_vector = std::vector<std::reference_wrapper<T>>;
 
-}  // namespace dds
+}  // namespace bpt

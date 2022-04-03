@@ -12,7 +12,7 @@ class verbose_diagnostic_info;
 
 }  // namespace boost::leaf
 
-namespace dds {
+namespace bpt {
 
 void leaf_handle_unknown_void(std::string_view message,
                               const boost::leaf::verbose_diagnostic_info&);
@@ -28,4 +28,4 @@ auto leaf_handle_unknown(std::string_view message, T&& val) {
 template <auto Val>
 using matchv = boost::leaf::match<decltype(Val), Val>;
 
-}  // namespace dds
+}  // namespace bpt

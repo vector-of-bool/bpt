@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <memory>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 class cache_db;
 struct pkg_id;
@@ -56,4 +56,4 @@ public:
     std::filesystem::path prefetch(const pkg_id&);
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

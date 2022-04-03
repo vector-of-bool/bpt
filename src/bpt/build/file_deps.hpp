@@ -36,7 +36,7 @@
 #include <string_view>
 #include <vector>
 
-namespace dds {
+namespace bpt {
 
 /**
  * The mode in which we can scan for compilation dependencies.
@@ -141,4 +141,4 @@ struct prior_compilation {
  */
 std::optional<prior_compilation> get_prior_compilation(const database& db, path_ref output_path);
 
-}  // namespace dds
+}  // namespace bpt

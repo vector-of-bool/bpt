@@ -11,11 +11,11 @@
 #include <charconv>
 #include <tuple>
 
-using namespace dds;
-using namespace dds::crs;
+using namespace bpt;
+using namespace bpt::crs;
 
 crs::pkg_id crs::pkg_id::parse(const std::string_view sv) {
-    DDS_E_SCOPE(e_invalid_pkg_id_str{std::string(sv)});
+    BPT_E_SCOPE(e_invalid_pkg_id_str{std::string(sv)});
     auto at_pos = sv.find("@");
     if (at_pos == sv.npos) {
         BOOST_LEAF_THROW_EXCEPTION(e_human_message{
@@ -23,7 +23,7 @@ crs::pkg_id crs::pkg_id::parse(const std::string_view sv) {
     }
 
     auto name_sv = sv.substr(0, at_pos);
-    auto name    = *dds::name::from_string(name_sv);
+    auto name    = *bpt::name::from_string(name_sv);
 
     auto ver_str = sv.substr(at_pos + 1);
 

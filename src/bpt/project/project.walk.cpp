@@ -21,8 +21,8 @@
 #include <set>
 #include <string>
 
-using namespace dds;
-using namespace dds::walk_utils;
+using namespace bpt;
+using namespace bpt::walk_utils;
 using namespace fansi::literals;
 
 namespace {
@@ -45,9 +45,9 @@ auto path_key(std::string_view                      key,
                       key)},
         [key, &into, proj_dir](std::string const& s) {
             if (proj_dir) {
-                std::filesystem::path abs = dds::resolve_path_weak(*proj_dir / s);
-                if (!dds::file_exists(abs)) {
-                    dds_log(
+                std::filesystem::path abs = bpt::resolve_path_weak(*proj_dir / s);
+                if (!bpt::file_exists(abs)) {
+                    bpt_log(
                         warn,
                         "Property '.blue[{}]' refers to non-existent path [.bold.yellow[{}]]"_styled,
                         key,
@@ -66,7 +66,7 @@ auto url_key(std::string_view key, std::optional<neo::url>& into) {
         require_str{
             neo::ufmt("Project's '.bold.yellow[{}]' property must be a URL string"_styled, key)},
         [key, &into](std::string const& s) {
-            into = dds::parse_url(s);
+            into = bpt::parse_url(s);
             return walk.accept;
         },
     };
@@ -77,7 +77,7 @@ auto url_key(std::string_view key, std::optional<neo::url>& into) {
 project_manifest
 project_manifest::from_json_data(const json5::data&                          data,
                                  const std::optional<std::filesystem::path>& proj_dir) {
-    DDS_E_SCOPE(e_parse_project_manifest_data{data});
+    BPT_E_SCOPE(e_parse_project_manifest_data{data});
     project_manifest ret;
 
     key_dym_tracker dym{

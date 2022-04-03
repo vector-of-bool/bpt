@@ -6,7 +6,7 @@
 #include <cassert>
 #include <map>
 
-namespace dds {
+namespace bpt {
 
 /**
  * Parameters for building an individual source distribution as part of a larger build plan.
@@ -60,4 +60,4 @@ public:
     void compile_files(const std::vector<fs::path>& files, const build_params& params) const;
 };
 
-}  // namespace dds
+}  // namespace bpt

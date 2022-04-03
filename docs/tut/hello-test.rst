@@ -4,7 +4,7 @@ A *Hello, World* Test
 So far, we have a simple library with a single function: ``get_greeting()`` and
 an application that makes use of it. How can we test it?
 
-With ``dds``, similar to generating applications, creating a test requires
+With ``bpt``, similar to generating applications, creating a test requires
 adding a suffix to a source filename stem. Instead of ``.main``, simply add
 ``.test`` before the file extension.
 
@@ -28,18 +28,18 @@ function:
       }
     }
 
-If you run ``dds build`` once again, ``dds`` will generate a test executable and
+If you run ``bpt build`` once again, ``bpt`` will generate a test executable and
 run it immediately. If the test executable exits with a non-zero exit code, then
-it will consider the test to have failed, and ``dds`` itself will exit with a
+it will consider the test to have failed, and ``bpt`` itself will exit with a
 non-zero exit code.
 
 .. important::
-    ``dds`` executes tests *in parallel* by default! If the tests need access
+    ``bpt`` executes tests *in parallel* by default! If the tests need access
     to a shared resource, locking must be implemented manually, or the shared
     resource should be split.
 
 .. note::
-    ``dds`` builds and executes tests for *every build* **by default**. The
+    ``bpt`` builds and executes tests for *every build* **by default**. The
     ``*.test.cpp`` tests are meant to be very fast *unit* tests, so consider
     their execution time carefully.
 
@@ -51,7 +51,7 @@ diagnostics?
 Using a Library for Testing
 ***************************
 
-A library in ``dds`` can declare dependencies on other libraries, possibly in
+A library in ``bpt`` can declare dependencies on other libraries, possibly in
 other packages. One can also declare that a dependency is "for testing" rather
 than being a strong dependency of the library itself. A "for test" library
 dependency will only be available within the ``.test.*`` source files, and
@@ -64,7 +64,7 @@ dependency on the `Catch2`_ C and C++ unit testing framework:
   :caption: ``<root>/pkg.yaml``
   :emphasize-lines: 3,4
 
-  name: hello-dds
+  name: hello-bpt
   version: 0.1.0
   dependencies:
     - catch2@2.13.7 using main for test
@@ -74,7 +74,7 @@ how we wish to consume the dependency. The shorthand string here says that we
 depend on "``catch2``" version ``2.13.7`` (or any compatible version), and we
 are "using" a library from the package called "``main``" for "``test``" only.
 
-If you now run ``dds build``, we will likely get a linker error for a
+If you now run ``bpt build``, we will likely get a linker error for a
 multiply-defined ``main`` function. The ``catch2::main`` library contains its
 own definition of the ``main()`` function. This means we cannot provide our own
 ``main`` function, and should instead use Catch's ``TEST_CASE`` macro to declare
@@ -98,7 +98,7 @@ same, though:
       CHECK(hello::get_greeting() == "Hello world!");
     }
 
-Now running ``dds build`` will print more output that Catch has generated as
+Now running ``bpt build`` will print more output that Catch has generated as
 part of test execution, and we can see the reason for the failing test::
 
     [error] Test <root>/_build/test/hello/strings failed! Output:
@@ -122,10 +122,10 @@ part of test execution, and we can see the reason for the failing test::
     test cases: 1 | 1 failed
     assertions: 1 | 1 failed
 
-    [dds - test output end]
+    [bpt - test output end]
 
 Now that we have the direct results of the offending expression, we can much
 more easily diagnose the nature of the test failure. In this case, the function
 returns a string containing a comma ``,`` while our expectation lacks one. If we
 fix either the ``get_greeting`` or the expected string, we will then see our
-tests pass successfully and ``dds`` will exit cleanly.
+tests pass successfully and ``bpt`` will exit cleanly.

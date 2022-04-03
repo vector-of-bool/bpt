@@ -3,7 +3,7 @@
 #include <bpt/crs/info/package.hpp>
 #include <bpt/util/fs/path.hpp>
 
-namespace dds {
+namespace bpt {
 
 struct sdist_params {
     fs::path project_dir;
@@ -26,4 +26,4 @@ sdist create_sdist(const sdist_params&);
 sdist create_sdist_in_dir(path_ref, const sdist_params&);
 void  create_sdist_targz(path_ref, const sdist_params&);
 
-}  // namespace dds
+}  // namespace bpt

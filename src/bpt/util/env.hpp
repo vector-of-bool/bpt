@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 std::optional<std::string> getenv(const std::string& env) noexcept;
 
@@ -20,4 +20,4 @@ std::string getenv(const std::string& name, Func&& fn) noexcept(noexcept(fn())) 
     return *val;
 }
 
-}  // namespace dds
+}  // namespace bpt

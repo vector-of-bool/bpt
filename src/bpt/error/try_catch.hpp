@@ -6,7 +6,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace dds {
+namespace bpt {
 
 template <typename Try, typename... Handlers>
 struct leaf_handler_seq {
@@ -23,7 +23,7 @@ struct leaf_handler_seq {
 
     constexpr decltype(auto) invoke(auto handle_all) const {
         constexpr auto has_handlers = sizeof...(Handlers) != 0;
-        static_assert(has_handlers, "dds_leaf_try requires one or more dds_leaf_catch blocks");
+        static_assert(has_handlers, "bpt_leaf_try requires one or more bpt_leaf_catch blocks");
         return std::apply(
             [&](auto&... hs) {
                 if constexpr (handle_all.value) {
@@ -87,26 +87,26 @@ struct noreturn_t {
     }
 };
 
-}  // namespace dds
+}  // namespace bpt
 
 /**
  * @brief Create a try {} block that handles all errors using Boost.LEAF
  */
-#define dds_leaf_try                                                                               \
-    ::dds::leaf_exec_try_catch_sequence<true>{} + ::dds::leaf_make_try_block{}->*[&]()
+#define bpt_leaf_try                                                                               \
+    ::bpt::leaf_exec_try_catch_sequence<true>{} + ::bpt::leaf_make_try_block{}->*[&]()
 
 /**
  * @brief Create a try {} block that handles errors using Boost.LEAF
  *
  * The result is always a result type.
  */
-#define dds_leaf_try_some                                                                          \
-    ::dds::leaf_exec_try_catch_sequence<false>{} + ::dds::leaf_make_try_block{}->*[&]()
+#define bpt_leaf_try_some                                                                          \
+    ::bpt::leaf_exec_try_catch_sequence<false>{} + ::bpt::leaf_make_try_block{}->*[&]()
 
 /**
  * @brief Create an error handling block for Boost.LEAF
  */
-#define dds_leaf_catch *::dds::leaf_make_catch_block{}->*[&]
+#define bpt_leaf_catch *::bpt::leaf_make_catch_block{}->*[&]
 
-#define dds_leaf_catch_all                                                                         \
-    dds_leaf_catch(::boost::leaf::verbose_diagnostic_info const& diagnostic_info [[maybe_unused]])
+#define bpt_leaf_catch_all                                                                         \
+    bpt_leaf_catch(::boost::leaf::verbose_diagnostic_info const& diagnostic_info [[maybe_unused]])

@@ -1,10 +1,10 @@
 #pragma once
 
-namespace dds {
+namespace bpt {
 
 struct project;
 struct project_manifest;
 struct project_library;
 struct project_dependency;
 
-}  // namespace dds
+}  // namespace bpt

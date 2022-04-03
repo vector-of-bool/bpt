@@ -6,7 +6,7 @@
 
 #include <filesystem>
 
-namespace dds::crs {
+namespace bpt::crs {
 
 struct e_repo_open_path {
     std::filesystem::path value;
@@ -32,4 +32,4 @@ struct e_sync_remote {
     neo::url value;
 };
 
-}  // namespace dds::crs
+}  // namespace bpt::crs

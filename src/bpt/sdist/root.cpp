@@ -7,7 +7,7 @@
 #include <neo/ranges.hpp>
 #include <neo/tl.hpp>
 
-using namespace dds;
+using namespace bpt;
 
 namespace {
 
@@ -18,7 +18,7 @@ struct collector_state {
 
 }  // namespace
 
-dds::collected_sources dds::collect_sources(path_ref dirpath) {
+bpt::collected_sources bpt::collect_sources(path_ref dirpath) {
     using namespace ranges::views;
     auto state
         = neo::copy_shared(collector_state{dirpath, fs::recursive_directory_iterator{dirpath}});
@@ -33,5 +33,5 @@ dds::collected_sources dds::collect_sources(path_ref dirpath) {
 std::vector<source_file> source_root::collect_sources() const {
     using namespace ranges::views;
     // Collect all source files from the directory
-    return dds::collect_sources(path) | neo::to_vector;
+    return bpt::collect_sources(path) | neo::to_vector;
 }

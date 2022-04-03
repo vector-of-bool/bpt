@@ -2,10 +2,10 @@
 
 #include <string>
 
-namespace dds {
+namespace bpt {
 
 struct e_human_message {
     std::string value;
 };
 
-}  // namespace dds
+}  // namespace bpt

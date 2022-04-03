@@ -4,8 +4,8 @@
 
 #include <bpt/util/json_walk.hpp>
 
-using namespace dds;
-using namespace dds::walk_utils;
+using namespace bpt;
+using namespace bpt::walk_utils;
 
 project_library project_library::from_json_data(const json5::data& data) {
     project_library ret;
