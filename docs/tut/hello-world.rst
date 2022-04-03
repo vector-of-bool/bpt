@@ -25,7 +25,7 @@ Creating the First *Source Root*
 ********************************
 
 Within the package root, we create our first *source root*. Since we are
-intending to compile files, we need to use the name that ``bpt`` has designated
+intending to compile files, we need to use the name that |bpt| has designated
 to be the source root that may contain compilable source files: ``src/``:
 
 .. code-block:: bash
@@ -33,7 +33,7 @@ to be the source root that may contain compilable source files: ``src/``:
    mkdir src
 
 You should now have a single item in the package root, at ``<root>/src/``. This
-is the directory from which ``bpt`` will search for source files.
+is the directory from which |bpt| will search for source files.
 
 
 Creating an Application Entrypoint
@@ -74,10 +74,10 @@ Now comes the fun part. It is time to actually compile the application!
     program shortcuts should be made available with any standard installation of
     the Visual C++ toolchain.
 
-    ``bpt`` **will not** automatically load the Visual C++ environment.
+    |bpt| **will not** automatically load the Visual C++ environment.
 
-To build the program, we must provide ``bpt`` with information about our program
-toolchain. ``bpt`` comes with a few "built in" toolchain options that can be
+To build the program, we must provide |bpt| with information about our program
+toolchain. |bpt| comes with a few "built in" toolchain options that can be
 used out-of-the-box, and they'll be suitable for our purposes.
 
 - If you are compiling with GCC, the toolchain name is ``:gcc``.
@@ -86,7 +86,7 @@ used out-of-the-box, and they'll be suitable for our purposes.
   ``:msvc``.
 
 .. note::
-    The leading colon ``:`` is important: This tells ``bpt`` to use its
+    The leading colon ``:`` is important: This tells |bpt| to use its
     built-in toolchain information rather than looking for a toolchain file of
     that name.
 
@@ -99,7 +99,7 @@ For example, if you are using ``gcc``, you would run the command as::
 
 > bpt build -t :gcc
 
-If all is successful, ``bpt`` will emit information about the compile and link
+If all is successful, |bpt| will emit information about the compile and link
 process, and then exit without error.
 
 By default, build results will be placed in a subdirectory of the package root
@@ -206,11 +206,11 @@ Run the ``bpt build`` command again, and you'll find that the application
 successfully compiles and links!
 
 If you've used other build systems, you may have noticed a missing step: We
-never told ``bpt`` about our new source file. Actually, we never told ``bpt``
+never told |bpt| about our new source file. Actually, we never told |bpt|
 about *any* of our source files. We never even told it the name of the
 executable to generate. What gives?
 
-It turns out, we *did* tell ``bpt`` all of this information by simply placing
+It turns out, we *did* tell |bpt| all of this information by simply placing
 the files on the filesystem with the appropriate file paths. The name of the
 executable, ``hello-world``, was inferred by stripping the trailing ``.main``
 from the stem of the filename which defined the entry point.
@@ -222,7 +222,7 @@ Cleaning Up
 There's one final formality that should be taken care of before proceeding:
 Creating a package manifest file.
 
-``bpt`` will work happily with packages that do not declare themselves, as long
+|bpt| will work happily with packages that do not declare themselves, as long
 as the filesystem structure is sufficient. However: To use features covered in
 later tutorials, we'll need a simple ``pkg.yaml`` file to declare information
 about are package. This file should be placed directly in the package root:

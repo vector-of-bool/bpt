@@ -1,7 +1,7 @@
 Error: Duplicate Library Identifier
 ###################################
 
-Libraries in ``bpt`` are represented by a *namespace* and a *name*, joined
+Libraries in |bpt| are represented by a *namespace* and a *name*, joined
 together with a forward-slash "``/``". Suppose that we have a library named
 ``Gadgets`` that lives in the ``ACME`` library-namespace. The combined library
 identifier would be ``ACME/Gadgets``.
@@ -11,7 +11,7 @@ identifier would be ``ACME/Gadgets``.
     associated with any C++ ``namespace``.
 
 If more than one library declares itself to have the same ``name`` and lives in
-the same ``namespace``, ``bpt`` will issue an error.
+the same ``namespace``, |bpt| will issue an error.
 
 To avoid this error in your own project and to avoid causing this error in your
 downstream consumers, the ``namespace`` of your package should be considered

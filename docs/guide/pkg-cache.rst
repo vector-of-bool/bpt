@@ -1,23 +1,23 @@
 The Local Package Cache
 #######################
 
-``bpt`` maintains a local cache of packages that it has obtained at the request
+|bpt| maintains a local cache of packages that it has obtained at the request
 of a user. The packages themselves are stored as
-:doc:`source distributions <source-dists>` (``bpt`` does not store the binaries
+:doc:`source distributions <source-dists>` (|bpt| does not store the binaries
 that it builds within this package cache).
 
 
 Reading Repository Contents
 ***************************
 
-Most times, ``bpt`` will manage the cache content silently, but it may be useful
-to see what ``bpt`` is currently storing away.
+Most times, |bpt| will manage the cache content silently, but it may be useful
+to see what |bpt| is currently storing away.
 
 The content of the cache can be seen with the ``pkg ls`` subcommand::
 
 > bpt pkg ls
 
-This will print the names of packages that ``bpt`` has downloaded, as well as
+This will print the names of packages that |bpt| has downloaded, as well as
 the versions of each.
 
 
@@ -26,11 +26,11 @@ Obtaining Packages
 
 .. seealso:: See also: :doc:`remote-pkgs`
 
-When ``bpt`` builds a package, it will also build the dependency libraries of
+When |bpt| builds a package, it will also build the dependency libraries of
 that package. In order for the dependency build to succeed, it must have a
 local copy of the source distribution of that dependency.
 
-When ``bpt`` performs dependency resolution, it will consider both locally
+When |bpt| performs dependency resolution, it will consider both locally
 cached packages, as well as packages that are available from any
 :doc:`remote packages <remote-pkgs>`. If the dependency solution requires any
 packages that are not in the local cache, it will use the information in its
@@ -74,7 +74,7 @@ package ID as the name of the source distribution directory::
 Exporting a Project into the Repository
 ***************************************
 
-``bpt`` can only use packages that are available in the local cache. For
+|bpt| can only use packages that are available in the local cache. For
 packages that have a listing in the catalog, this is not a problem. But if one
 is developing a local package and wants to allow it to be used in another local
 package, that can be done by importing that project into the package cache as a

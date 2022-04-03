@@ -1,5 +1,5 @@
-BPT CI Scripts Python API
-#########################
+|bpt| CI Scripts Python API
+###########################
 
 Test Fixtures
 *************
@@ -7,10 +7,10 @@ Test Fixtures
 The following test fixtures are defined:
 
 - :func:`~bpt_ci.testing.fixtures.bpt` - :class:`bpt_ci.bpt.BPTWrapper` - A
-  wrapper around the ``bpt`` executable under test.
+  wrapper around the |bpt| executable under test.
 - :func:`~bpt_ci.testing.fixtures.tmp_project` -
   :class:`bpt_ci.testing.fixtures.Project` - Create a new empty directory to be
-  used as a test project for ``bpt`` to execute.
+  used as a test project for |bpt| to execute.
 - :func:`~bpt_ci.testing.repo.http_crs_repo` -
   :class:`bpt_ci.testing.repo.CRSRepoServer` - Create a new bpt repository and
   spawn an HTTP server to serve it.

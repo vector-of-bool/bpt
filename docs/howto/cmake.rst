@@ -1,9 +1,9 @@
-How Do I Use ``bpt`` in a CMake Project?
+How Do I Use |bpt| in a CMake Project?
 ########################################
 
 .. highlight:: cmake
 
-If you have a CMake project and you wish to pull your dependencies via ``bpt``,
+If you have a CMake project and you wish to pull your dependencies via |bpt|,
 you're in luck: Such a process is explicitly supported. Here's the recommended
 approach:
 
@@ -16,8 +16,8 @@ Below, we'll walk through this in more detail.
 
 .. note::
 
-  You don't even have to have ``bpt`` downloaded and present on your system to
-  use ``bpt`` in PMM! Read on...
+  You don't even have to have |bpt| downloaded and present on your system to
+  use |bpt| in PMM! Read on...
 
 
 Using PMM
@@ -25,7 +25,7 @@ Using PMM
 
 `PMM`_ is the *Package Manager Manager* for CMake, and is designed to offer
 greater integration between a CMake build and an external package management
-tool. `PMM`_ supports Conan, vcpkg, and, of course, ``bpt``.
+tool. `PMM`_ supports Conan, vcpkg, and, of course, |bpt|.
 
 .. seealso::
 
@@ -73,7 +73,7 @@ Simply ``include()``-ing PMM won't do much, because we need to actually *invoke
 it*.
 
 PMM's main CMake command is ``pmm()``. It takes a variety of options and
-arguments for the package managers it supports, but we'll only focus on ``bpt``
+arguments for the package managers it supports, but we'll only focus on |bpt|
 for now.
 
 The basic signature of the ``pmm(BPT)`` command looks like this::
@@ -88,7 +88,7 @@ example, if we want to import `{fmt} <https://fmt.dev>`_::
   pmm(BPT DEPENDS "fmt^7.0.3")
 
 When CMake executes the ``pmm(BPT ...)`` line above, PMM will download the
-appropriate ``bpt`` executable for your platform, generate
+appropriate |bpt| executable for your platform, generate
 :doc:`a bpt toolchain </guide/toolchains>` based on the CMake environment, and
 then invoke ``bpt build-deps`` to build the dependencies that were listed in the
 ``pmm()`` invocation. The results from ``build-deps`` are then imported into
@@ -104,18 +104,18 @@ CMake as ``IMPORTED`` targets that can be used by the containing CMake project.
   the CMake build directory, out of the way of the rest of the project.
 
 .. note::
-  The version of ``bpt`` that PMM downloads depends on the version of PMM
+  The version of |bpt| that PMM downloads depends on the version of PMM
   that is in use.
 
 
 Using the ``IMPORTED`` Targets
 ==============================
 
-Like with ``bpt``, CMake wants us to explicitly declare how our build targets
+Like with |bpt|, CMake wants us to explicitly declare how our build targets
 *use* other libraries. After ``pmm(BPT)`` executes, there will be ``IMPORTED``
 targets that can be linked against.
 
-In ``bpt`` (and in libman), a library is identified by a combination of
+In |bpt| (and in libman), a library is identified by a combination of
 *namespace* and *name*, joined together with a slash ``/`` character. This
 *qualified name* of a library is decided by the original package author or
 maintainer, and should be documented. In the case of ``fmt``, the only library
@@ -150,7 +150,7 @@ In all, this is our final ``CMakeLists.txt``:
 Changing Compile Options
 ************************
 
-``bpt`` supports setting compilation options using
+|bpt| supports setting compilation options using
 :doc:`toolchains </guide/toolchains>`. PMM supports specifying a toolchain using
 the ``TOOLCHAIN`` argument::
 
@@ -158,7 +158,7 @@ the ``TOOLCHAIN`` argument::
 
 Of course, writing a separate toolchain file just for your dependencies can be
 tedious. For this reason, PMM will write a toolchain file on-the-fly when it
-executes ``bpt``. The generated toolchain is created based on the current CMake
+executes |bpt|. The generated toolchain is created based on the current CMake
 settings when ``pmm()`` was executed.
 
 To add compile options, simply ``add_compile_options``::
@@ -166,11 +166,11 @@ To add compile options, simply ``add_compile_options``::
   add_compile_options(-fsanitize=address)
   pmm(BPT ...)
 
-The above will cause all ``bpt``-built dependencies to compile with
+The above will cause all |bpt|-built dependencies to compile with
 ``-fsanitize=address`` as a command-line option.
 
 The following CMake variables and directory properties are used to generate the
-``bpt`` toolchain:
+|bpt| toolchain:
 
 ``COMPILE_OPTIONS``
   Adds additional compiler options. Should be provided by
@@ -199,7 +199,7 @@ The following CMake variables and directory properties are used to generate the
   settings should appear *before* calling ``pmm(BPT)``, since the toolchain file
   is generated and dependencies are built at that point.
 
-  ``add_link_options`` has no effect on the ``bpt`` toolchain, as ``bpt`` does
+  ``add_link_options`` has no effect on the |bpt| toolchain, as |bpt| does
   not generate any runtime binaries.
 
 .. rubric:: Footnotes

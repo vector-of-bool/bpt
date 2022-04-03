@@ -1,7 +1,7 @@
 Error: Invalid built-in toolchain
 #################################
 
-``bpt`` requires a toolchain in order to build any packages or projects. It
+|bpt| requires a toolchain in order to build any packages or projects. It
 ships with several built-in toolchains that do not require the user to write
 any configuration files.
 

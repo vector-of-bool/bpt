@@ -1,17 +1,16 @@
 Setting Up a Build/Development Environment
 ##########################################
 
-While ``bpt`` is able to build itself, several aspects of build infrastructure
-are controlled via Python scripts. You will need Python 3.7 or later available
-on your system to get started.
-
+While |bpt| is able to build itself, several aspects of build infrastructure are
+controlled via Python scripts. You will need Python 3.7 or later available on
+your system to get started.
 
 .. _Poetry: https://python-poetry.org
 
 Getting Started with *Poetry*
 *****************************
 
-``bpt`` CI runs atop `Poetry`_, a Python project management tool. While designed
+|bpt| CI runs atop `Poetry`_, a Python project management tool. While designed
 for Python projects, it serves our purposes well.
 
 
@@ -36,7 +35,7 @@ project::
   $ poetry install
 
 Poetry will then create a Python virtual environment that contains the Python
-scripts and tools required for building and developing ``bpt``.
+scripts and tools required for building and developing |bpt|.
 
 The Python virtual environment that Poetry created can be inspected using
 ``poetry env info``, and can be deleted from the system using
@@ -49,7 +48,7 @@ Using the Poetry Environment
 ****************************
 
 Once the ``poetry install`` command has been executed, you will now be ready to
-run the ``bpt`` CI scripts and tools.
+run the |bpt| CI scripts and tools.
 
 The scripts are installed into the virtual environment, and should not be
 globally installed anywhere else on the system. You can only access these
@@ -72,7 +71,7 @@ loaded, and you can now run any CI or development script without needing to
 prefix them with ``poetry run``.
 
 Going forward, the documentation will assume you have the environment loaded
-as-if by ``poetry shell``, but any ``bpt``-CI-specific command can also be
+as-if by ``poetry shell``, but any |bpt|-CI-specific command can also be
 executed by prefixing the command with ``poetry run``.
 
 
@@ -80,11 +79,11 @@ Working With an MSVC Environment in VSCode
 ==========================================
 
 If you use Visual Studio Code as your editor and MSVC as your C++ toolchain,
-you'll need to load the MSVC environment as part of your build task. ``bpt`` CI
+you'll need to load the MSVC environment as part of your build task. |bpt| CI
 has a script designed for this purpose. To use it, first load up a shell within
 the Visual C++ environment, then, from within the previously create Poetry
 environment, run ``gen-msvs-vsc-task``. This program will emit a Visual Studio
-Code JSON build task that builds ``bpt`` and also contains the environment
+Code JSON build task that builds |bpt| and also contains the environment
 variables required for the MSVC toolchain to compile and link programs. You can
 save this JSON task into ``.vscode/tasks.json`` to use as your primary build
-task while hacking on ``bpt``.
+task while hacking on |bpt|.

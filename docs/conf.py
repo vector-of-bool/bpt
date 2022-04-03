@@ -71,6 +71,10 @@ def intercept_copy_asset(path: str, dest: str, context: Any) -> None:
 
 hoverxref.extension.copy_asset = intercept_copy_asset
 
+rst_prolog = r'''
+.. |bpt| replace:: :literal:`bpt`
+'''
+
 if os.environ.get('GEN_FOR_HUGO'):
     templates_path.append('.')
     html_theme = 'basic'

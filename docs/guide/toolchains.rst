@@ -3,7 +3,7 @@
 Toolchains
 ##########
 
-One of the core components of ``bpt`` is that of the *toolchain*. A toolchain
+One of the core components of |bpt| is that of the *toolchain*. A toolchain
 encompasses the environment used to build and link source code, including, but
 not limited to:
 
@@ -21,8 +21,8 @@ This page provides an introduction on how one can make use of toolchains most
 effectively in your project.
 
 .. note::
-    **IMPORTANT**: ``bpt`` will *not* automatically load the Visual C++
-    environment. To use Visual C++, ``bpt`` must be executed from the
+    **IMPORTANT**: |bpt| will *not* automatically load the Visual C++
+    environment. To use Visual C++, |bpt| must be executed from the
     appropriate environment in order for the Visual C++ toolchain executables
     and files to be available.
 
@@ -30,9 +30,9 @@ effectively in your project.
 Passing a Toolchain
 *******************
 
-In ``bpt``, the default format of a toolchain is that of a single JSON5 file
+In |bpt|, the default format of a toolchain is that of a single JSON5 file
 that describes the entire toolchain. When running a build for a project, the
-``bpt`` executable will look in a few locations for a default toolchain, and
+|bpt| executable will look in a few locations for a default toolchain, and
 generate an error if no default toolchain file is found (Refer to
 :ref:`toolchains.default`). A different toolchain can be provided by passing
 the toolchain file for the ``--toolchain`` (or ``-t``) option on the command
@@ -48,13 +48,13 @@ Alternatively, you can pass the name of a built-in toolchain. See below.
 Built-in Toolchains
 *******************
 
-For convenience, ``bpt`` includes several built-in toolchains that can be
+For convenience, |bpt| includes several built-in toolchains that can be
 accessed in the ``--toolchain`` command-line option using a colon ``:``
 prefix::
 
     $ bpt build -t :gcc
 
-``bpt`` will treat the leading colon (``:``) as a name for a built-in
+|bpt| will treat the leading colon (``:``) as a name for a built-in
 toolchain (this means that a toolchain's filepath may not begin with a colon).
 
 There are several built-in toolchains that may be specified:
@@ -96,12 +96,12 @@ Providing a Default Toolchain File
 
 If you do not wish to provide a new toolchain for every individual project,
 and the built-in toolchains do not suit your needs, you can write a toolchain
-file to one of a few predefined paths, and ``bpt`` will find and use it for the
+file to one of a few predefined paths, and |bpt| will find and use it for the
 build. The following directories are searched, in order:
 
 #. ``$pwd/`` - If the working directory contains a toolchain file, it will be
    used as the default.
-#. ``$bpt_config_dir/`` - Searches for a toolchain file in ``bpt``'s user-local
+#. ``$bpt_config_dir/`` - Searches for a toolchain file in |bpt|'s user-local
    configuration directory (see below).
 #. ``$user_home/`` - Searches for a toolchain file at the root of the current
    user's home directory. (``$HOME`` on Unix-like systems, and ``$PROFILE`` on
@@ -110,7 +110,7 @@ build. The following directories are searched, in order:
 In each directory, it will search for ``toolchain.json5``, ``toolchain.jsonc``,
 or ``toolchain.json``.
 
-The ``$bpt_config_dir`` directory is the ``bpt`` subdirectory of the
+The ``$bpt_config_dir`` directory is the |bpt| subdirectory of the
 user-local configuration directory.
 
 The user-local config directory is ``$XDG_CONFIG_DIR`` or ``~/.config`` on
@@ -133,10 +133,10 @@ simply one line:
     }
 
 where ``<compiler-id>`` is one of the known ``compiler_id`` options (See the
-toolchain option reference). ``bpt`` will infer common suitable defaults for
+toolchain option reference). |bpt| will infer common suitable defaults for
 the remaining options based on the value of ``compiler_id``.
 
-For example, if you specify ``gnu``, then ``bpt`` will assume ``gcc`` to be the
+For example, if you specify ``gnu``, then |bpt| will assume ``gcc`` to be the
 C compiler, ``g++`` to be the C++ compiler, and ``ar`` to be the library
 archiving tool.
 
@@ -151,7 +151,7 @@ specify them with additional options:
         cxx_compiler: 'g++-9',
     }
 
-``bpt`` will continue to infer other options based on the ``compiler_id``, but
+|bpt| will continue to infer other options based on the ``compiler_id``, but
 will use the provided executable names when compiling files for the respective
 languages.
 
@@ -186,7 +186,7 @@ Toolchain Option Reference
 Understanding Flags and Shell Parsing
 -------------------------------------
 
-Many of the ``bpt`` toolchain parameters accept argument lists or shell-string
+Many of the |bpt| toolchain parameters accept argument lists or shell-string
 lists. If such an option is given a single string, then that string is split
 using the syntax of a POSIX shell command parser. It accepts both single ``'``
 and double ``"`` quote characters as argument delimiters.
@@ -206,7 +206,7 @@ is equivalent to this one::
         flags: ["-fsanitize=address", "-fPIC"]
     }
 
-Despite splitting strings as-if they were shell commands, ``bpt`` does nothing
+Despite splitting strings as-if they were shell commands, |bpt| does nothing
 else shell-like. It does not expand environment variables, nor does it expand
 globs and wildcards.
 
@@ -240,7 +240,7 @@ from ``compiler_id``.
 ``c_version`` and ``cxx_version``
 ---------------------------------
 
-Specify the language versions for C and C++, respectively. By default, ``bpt``
+Specify the language versions for C and C++, respectively. By default, |bpt|
 will not set any language version. Using this option requires that the
 ``compiler_id`` be specified (Or the ``lang_version_flag_template`` advanced
 setting).
@@ -277,7 +277,7 @@ change the major language version in a future MSVC update.
 
 Provide *additional* compiler flags that should be used to enable warnings. This
 option is stored separately from ``flags``, as these options may be
-enabled/disabled separately depending on how ``bpt`` is invoked.
+enabled/disabled separately depending on how |bpt| is invoked.
 
 .. note::
 
@@ -305,7 +305,7 @@ Specify *additional* link options to use when linking executables.
 
 .. note::
 
-    ``bpt`` does not invoke the linker directly, but instead invokes the
+    |bpt| does not invoke the linker directly, but instead invokes the
     compiler with the appropriate flags to perform linking. If you need to pass
     flags directly to the linker, you will need to use the compiler's options to
     direct flags through to the linker. On GNU-style, this is
@@ -397,7 +397,7 @@ Command Templates
 -----------------
 
 Many of the below options take the form of command-line templates. These are
-templates from which ``bpt`` will create a command-line for a subprocess,
+templates from which |bpt| will create a command-line for a subprocess,
 possibly by combining them together.
 
 Each command template allows some set of placeholders. Each instance of the
@@ -408,12 +408,12 @@ respective option for more information.
 ``deps_mode``
 -------------
 
-Specify the way in which ``bpt`` should track compilation dependencies. One
+Specify the way in which |bpt| should track compilation dependencies. One
 of ``gnu``, ``msvc``, or ``none``.
 
 .. note::
     If ``none``, then dependency tracking will be disabled entirely. This will
-    prevent ``bpt`` from tracking interdependencies of source files, and
+    prevent |bpt| from tracking interdependencies of source files, and
     inhibits incremental compilation.
 
 
@@ -550,7 +550,7 @@ and executable files, respectively.
 ``base_warning_flags``
 ----------------------
 
-When you compile your project and request warning flags, ``bpt`` will
+When you compile your project and request warning flags, |bpt| will
 concatenate the warning flags from this option with the flags provided by
 ``warning_flags``. This option is "advanced," because it provides a set of
 defaults based on the ``compiler_id``.
@@ -568,7 +568,7 @@ compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
 ``base_flags``, ``base_c_flags``, and ``base_cxx_flags``
 --------------------------------------------------------
 
-When you compile your project, ``bpt`` uses a set of default flags appropriate
+When you compile your project, |bpt| uses a set of default flags appropriate
 to the target language and compiler. These flags are always included in the
 compile command and are inserted in addition to those flags provided by
 ``flags``, ``c_flags``, and ``cxx_flags``.

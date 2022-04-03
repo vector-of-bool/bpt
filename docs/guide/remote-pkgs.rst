@@ -3,14 +3,14 @@ Remote Packages and Repositories
 
 .. highlight:: bash
 
-``bpt`` stores a local database of available packages, along with their
+|bpt| stores a local database of available packages, along with their
 dependency statements and information about how a source distribution thereof
 may be obtained.
 
 Inside the database are *package repositories*, which are remote servers that
 contain their own database of packages, and may also contain the packages
 themselves. An arbitrary number of package repositories may be added to the
-local database. When ``bpt`` updates its package information, it will download
+local database. When |bpt| updates its package information, it will download
 the package database from each registered remote and import the listings into
 its own local database, making them available for download.
 
@@ -67,10 +67,10 @@ A remote package repository consists of an HTTP(S) server serving the following:
 The exact details of the directory layout and database are not covered here, and
 are not necessary to make use of a repository.
 
-When ``bpt`` uses a repository, it pulls down the database file and imports its
+When |bpt| uses a repository, it pulls down the database file and imports its
 contents into its own local database, associating the imported package listings
 with the remote repository which provides them. Pulling the entire database at
-once allows ``bpt`` to perform much faster dependency resolution and reduces
+once allows |bpt| to perform much faster dependency resolution and reduces
 the round-trips associated with using a dynamic package repository.
 
 
@@ -82,7 +82,7 @@ Adding a remote repository to the local database is a simple single command::
   $ bpt pkg repo add "https://repo-1.dds.pizza"
   [info ] Pulling repository contents for repo-1.dds.pizza [https://repo-1.dds.pizza/]
 
-This will tell ``bpt`` to add ``https://repo-1.dds.pizza`` as a remote
+This will tell |bpt| to add ``https://repo-1.dds.pizza`` as a remote
 repository and immediately pull its package listings for later lookup. This
 initial update can be suppressed with the ``--no-update`` flag.
 
@@ -124,29 +124,29 @@ subcommand::
   $ bpt pkg repo update
 
 This will pull down the databases of all registered remote repositories. If
-``bpt`` can detect that a repository's database is unchanged since a prior
+|bpt| can detect that a repository's database is unchanged since a prior
 update, that update will be skipped.
 
 
 The Default Repository
 **********************
 
-When ``bpt`` first initializes its local package database, it will add a single
+When |bpt| first initializes its local package database, it will add a single
 remote repository: ``https://repo-1.dds.pizza/``, which has the name
-``repo-1.dds.pizza``. At the time of writing, this is the only official ``bpt``
+``repo-1.dds.pizza``. At the time of writing, this is the only official |bpt|
 repository, and is populated sparsely with hand-curated and prepared packages.
 In the future, the catalog of packages will grow and be partially automated.
 
 There is nothing intrinsically special about this repository other than it being
-the default when ``bpt`` first creates its package database. It can be removed
+the default when |bpt| first creates its package database. It can be removed
 as any other, should one want tighter control over package availability.
 
 
 Managing a Repository
 *********************
 
-A ``bpt`` repository is simply a directory of static files, so any HTTP server
-that can serve from a filesystem can be used as a repository. ``bpt`` also
+A |bpt| repository is simply a directory of static files, so any HTTP server
+that can serve from a filesystem can be used as a repository. |bpt| also
 ships with a subcommand, ``repo``, that can be used to manage a repository
 directory.
 
@@ -159,11 +159,11 @@ using ``repo init``::
 
   $ bpt repo init ./my-repo-dir --name=my-experimental-repo
 
-This will add the basic metadata into ``./my-repo-dir`` such that ``bpt`` will
+This will add the basic metadata into ``./my-repo-dir`` such that |bpt| will
 be able to pull package data from it.
 
 The ``--name`` argument should be used to give the repository a unique name. The
-name should be globally unique to avoid collisions: When ``bpt`` pulls a
+name should be globally unique to avoid collisions: When |bpt| pulls a
 repository that declares a given name, it will *replace* the package listings
 associated with any repository of that name. As such, generic names like
 ``main`` or ``packages`` shouldn't be used in production.

@@ -1,7 +1,7 @@
 Error: Invalid package filesystem
 #################################
 
-``bpt`` prescribes a filesystem structure that must be followed for it to
+|bpt| prescribes a filesystem structure that must be followed for it to
 build and process packages and libraries. This structure isn't overly strict,
 and is thoroughly explained on the :doc:`/guide/packages` page.
 

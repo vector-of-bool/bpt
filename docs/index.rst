@@ -1,11 +1,11 @@
-BPT
-######
+|bpt|
+#####
 
 **bpt** is the Drop-Dead-Simple build and library management tool.
 
 bpt is a hybrid build system and package manager with a few distinguishing
 design decisions that set it apart from current offerings. There's a lot to
-learn, but I'm glad you're here! I hope you find ``bpt`` useful to you and your
+learn, but I'm glad you're here! I hope you find |bpt| useful to you and your
 projects.
 
 If you're completely new and have no idea what the project is about, check out

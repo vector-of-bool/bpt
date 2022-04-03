@@ -7,14 +7,14 @@ distribution.
 
 **If exporting to a repository**, this means that a source distribution with
 the same name and version is already present in the repository. The
-``--replace`` option can be used to make ``bpt`` forcibly overwrite the source
+``--replace`` option can be used to make |bpt| forcibly overwrite the source
 distribution in the repository. This will be a common workflow when developing
 a package and one desires to see those changes reflected in another project
 that is try to use it.
 
 **If creating a source distribution manually**, this means that the destination
 path of the source distribution directory is already an existing directory
-(which may not be a source distribution itself). If ``bpt`` were to try and
+(which may not be a source distribution itself). If |bpt| were to try and
 write a source distribution to the named path, it would be required to delete
 whatever exists there before creating the source distribution.
 
@@ -29,7 +29,7 @@ whatever exists there before creating the source distribution.
         # Do not do this:
         bpt pkg create --out foo/
 
-    If you pass ``--replace`` to the above command, ``bpt`` will **destroy the
+    If you pass ``--replace`` to the above command, |bpt| will **destroy the
     existing directory** and replace it with the source distribution!
 
     You **must** provide the full path to the source distribution::

@@ -4,7 +4,7 @@ A *Hello, World* Test
 So far, we have a simple library with a single function: ``get_greeting()`` and
 an application that makes use of it. How can we test it?
 
-With ``bpt``, similar to generating applications, creating a test requires
+With |bpt|, similar to generating applications, creating a test requires
 adding a suffix to a source filename stem. Instead of ``.main``, simply add
 ``.test`` before the file extension.
 
@@ -28,18 +28,18 @@ function:
       }
     }
 
-If you run ``bpt build`` once again, ``bpt`` will generate a test executable and
+If you run ``bpt build`` once again, |bpt| will generate a test executable and
 run it immediately. If the test executable exits with a non-zero exit code, then
-it will consider the test to have failed, and ``bpt`` itself will exit with a
+it will consider the test to have failed, and |bpt| itself will exit with a
 non-zero exit code.
 
 .. important::
-    ``bpt`` executes tests *in parallel* by default! If the tests need access
+    |bpt| executes tests *in parallel* by default! If the tests need access
     to a shared resource, locking must be implemented manually, or the shared
     resource should be split.
 
 .. note::
-    ``bpt`` builds and executes tests for *every build* **by default**. The
+    |bpt| builds and executes tests for *every build* **by default**. The
     ``*.test.cpp`` tests are meant to be very fast *unit* tests, so consider
     their execution time carefully.
 
@@ -51,7 +51,7 @@ diagnostics?
 Using a Library for Testing
 ***************************
 
-A library in ``bpt`` can declare dependencies on other libraries, possibly in
+A library in |bpt| can declare dependencies on other libraries, possibly in
 other packages. One can also declare that a dependency is "for testing" rather
 than being a strong dependency of the library itself. A "for test" library
 dependency will only be available within the ``.test.*`` source files, and
@@ -130,4 +130,4 @@ Now that we have the direct results of the offending expression, we can much
 more easily diagnose the nature of the test failure. In this case, the function
 returns a string containing a comma ``,`` while our expectation lacks one. If we
 fix either the ``get_greeting`` or the expected string, we will then see our
-tests pass successfully and ``bpt`` will exit cleanly.
+tests pass successfully and |bpt| will exit cleanly.

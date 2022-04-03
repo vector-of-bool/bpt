@@ -2,12 +2,12 @@ Error: Dependency Resolution Failure
 ####################################
 
 .. note::
-    ``bpt`` implements the `Pubgrub`_ dependency resolution algorithm.
+    |bpt| implements the `Pubgrub`_ dependency resolution algorithm.
 
 .. _Pubgrub: https://github.com/dart-lang/pub/blob/master/doc/solver.md
 
 If you receive this error, it indicates that the requested dependencies create
-one or more conflicts. ``bpt`` will do its best to emit a useful explanation of
+one or more conflicts. |bpt| will do its best to emit a useful explanation of
 how this conflict was formed that can hopefully be used to find the original
 basis for the conflict.
 
@@ -72,7 +72,7 @@ have inspected all dependencies and have resolutions for every named package:
 Thus, we have a valid solution of ``Widgets@4.2.8``, ``Gadgets@2.5.0``, and
 ``Gizmos@2.6.0``! We didn't even need to inspect ``Gadgets@2.6.0``.
 
-In this case, ``bpt`` will not produce an error, and the given package solution
+In this case, |bpt| will not produce an error, and the given package solution
 will be used.
 
 
@@ -97,7 +97,7 @@ We've reached a problem, though: ``Widgets@4.2.8`` is our original requirement!
 There is nothing left to invalidate in our partial solution, so we rule that
 our original requirements are *unsatisfiable*.
 
-At this point, ``bpt`` will raise the error that *dependency resolution has
+At this point, |bpt| will raise the error that *dependency resolution has
 failed*. It will attempt its best to reconstruct the logic that we have used
 above in order to explain what has gone wrong.
 

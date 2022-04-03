@@ -1,7 +1,7 @@
-Getting/Installing ``bpt``
+Getting/Installing |bpt|
 ##########################
 
-``bpt`` ships as a single statically linked executable. It does not have any
+|bpt| ships as a single statically linked executable. It does not have any
 installer or distribution package.
 
 
@@ -43,21 +43,21 @@ downloaded file as executable:
 Installing
 **********
 
-Note that it is not necessary to "install" ``bpt`` before it can be used.
-``bpt`` is a single standalone executable that can be executed in whatever
-directory it is placed. If you are running a CI process and need ``bpt``, it is
+Note that it is not necessary to "install" |bpt| before it can be used.
+|bpt| is a single standalone executable that can be executed in whatever
+directory it is placed. If you are running a CI process and need |bpt|, it is
 viable to simply download the executable and place it in your source tree and
 execute it from that directory.
 
-**However:** If you want to be able to execute ``bpt`` with an unqualified
-command name from any shell interpreter, you will need to place ``bpt`` on a
+**However:** If you want to be able to execute |bpt| with an unqualified
+command name from any shell interpreter, you will need to place |bpt| on a
 directory on your shell's ``PATH`` environment variable.
 
 
 Easy Mode: ``install-yourself``
 ===============================
 
-``bpt`` includes a subcommand "``install-yourself``" that will move its own
+|bpt| includes a subcommand "``install-yourself``" that will move its own
 executable to a predetermined directory and ensure that it exists on your
 ``PATH`` environment variable. It is simple enough to run the command::
 
@@ -65,14 +65,14 @@ executable to a predetermined directory and ensure that it exists on your
 
 This will copy the executable ``./bpt`` into a user-local directory designated
 for containing user-local executable binaries. On Unix-like systems, this is
-``~/.local/bin``, and on Windows this is ``%LocalAppData%/bin``. ``bpt`` will
+``~/.local/bin``, and on Windows this is ``%LocalAppData%/bin``. |bpt| will
 also ensure that the destination directory is available on the ``PATH``
 environment variable for your user profile.
 
 .. note::
 
-  If ``bpt`` reports that is has modified your PATH, you will need to restart
-  your command line and any other applications that wish to see ``bpt`` on your
+  If |bpt| reports that is has modified your PATH, you will need to restart
+  your command line and any other applications that wish to see |bpt| on your
   ``PATH``.
 
 .. note::
@@ -85,12 +85,12 @@ Manually: On Unix-like Systems
 ==============================
 
 For an **unprivileged, user-specific installation (preferred)**, we recommend
-placing ``bpt`` in ``~/.local/bin`` (Where ``~`` represents the ``$HOME``
+placing |bpt| in ``~/.local/bin`` (Where ``~`` represents the ``$HOME``
 directory of the current user).
 
 Although not officially standardized,
 `the XDG Base Directory specification <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_
-recommends several related directories to live within ``~/.local`` (and ``bpt``
+recommends several related directories to live within ``~/.local`` (and |bpt|
 itself follows those recommendations for the most part).
 `The systemd file heirarchy <https://www.freedesktop.org/software/systemd/man/file-hierarchy.html>`_
 also recommends placing user-local binaries in ``~/.local/bin``, and several
@@ -109,13 +109,13 @@ installation of user-local scripts and commands.
   ``.local/bin``. If it does not, refer to your shell's documentation on how to
   add this directory to the startup ``$PATH``.
 
-For a **system-wide installation**, place the downloaded ``bpt`` executable
+For a **system-wide installation**, place the downloaded |bpt| executable
 within the ``/usr/local/bin/`` directory. This will be a directory on the
 ``PATH`` for any Unix-like system.
 
 .. warning::
 
-  **DO NOT** place ``bpt`` in ``/usr/bin`` or ``/bin``: These are reserved for
+  **DO NOT** place |bpt| in ``/usr/bin`` or ``/bin``: These are reserved for
   your system's package management utilities.
 
 
@@ -129,7 +129,7 @@ you use for custom binaries, simply place ``bpt.exe`` in that directory.
 If you are unfamiliar with placing binaries and modifying your ``PATH``, read
 on:
 
-For an **unprivileged, user-specific installation**, ``bpt`` should be placed in
+For an **unprivileged, user-specific installation**, |bpt| should be placed in
 a user-local directory, and that directory should be added to the user ``PATH``.
 
 To emulate what ``bpt install-yourself`` does, follow the following steps:
