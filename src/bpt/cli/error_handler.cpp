@@ -2,6 +2,7 @@
 #include "./options.hpp"
 
 #include <bpt/crs/error.hpp>
+#include <bpt/crs/info/package.hpp>
 #include <bpt/deps.hpp>
 #include <bpt/error/doc_ref.hpp>
 #include <bpt/error/errors.hpp>
@@ -83,13 +84,28 @@ auto handlers = std::tuple(  //
         }
         return 1;
     },
-    [](const semester::walk_error& exc,
-       e_sdist_from_directory,
-       e_parse_project_manifest_path pkg_yaml) {
-        bpt_log(error,
-                "Error loading project info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
-                pkg_yaml.value.string(),
-                exc.what());
+    [](const semester::walk_error&    exc,
+       e_sdist_from_directory         dir,
+       e_parse_project_manifest_path* pkg_yaml,
+       crs::e_pkg_json_path*          pkg_json) {
+        if (pkg_json) {
+            bpt_log(error,
+                    "Error loading package info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                    pkg_json->value.string(),
+                    exc.what());
+            write_error_marker("invalid-pkg-json");
+        } else if (pkg_yaml) {
+            bpt_log(error,
+                    "Error loading project info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                    pkg_yaml->value.string(),
+                    exc.what());
+            write_error_marker("invalid-pkg-yaml");
+        } else {
+            bpt_log(error,
+                    "Error parsing data in directory [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                    dir.value.string(),
+                    exc.what());
+        }
         return 1;
     },
     [](const neo::url_validation_error& exc,

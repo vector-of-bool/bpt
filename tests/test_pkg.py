@@ -98,3 +98,39 @@ def test_pkg_spdx(tmp_project: Project) -> None:
     assert 'meta' in pkg_json
     assert 'license' in pkg_json['meta']
     assert pkg_json['meta']['license'] == 'MIT'
+
+
+def test_pkg_create_almost_valid(tmp_project: Project) -> None:
+    tmp_project.write(
+        'pkg.json',
+        json.dumps({
+            "name":
+            "catch2",
+            "version":
+            "2.13.6",
+            "pkg-version":
+            1,
+            "libraries": [{
+                "name": "catch2",
+                "path": ".",
+                "using": [],
+                "test-using": [],
+                "dependencies": [],
+                "test-dependencies": []
+            }, {
+                "name": "main",
+                "path": "libs/main",
+                "test-dependencies": [],
+                "dependencies": [],
+                "test-using": [],
+                "using": [{
+                    "lib": "catch2"
+                }]
+            }],
+            "schema-version":
+            1
+        }))
+    with error.expect_error_marker('invalid-pkg-json'):
+        tmp_project.build()
+    with error.expect_error_marker('invalid-pkg-json'):
+        tmp_project.pkg_create()

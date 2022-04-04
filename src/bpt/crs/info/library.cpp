@@ -41,13 +41,15 @@ library_info library_info::from_data(const json5::data& data) {
              required_key{"using",
                           "A 'using' array is required",
                           require_array{"A library's 'using' must be an array of usage objects"},
-                          for_each{
-                              put_into{std::back_inserter(ret.intra_using), name_from_string{}}}},
+                          for_each{require_str{"Each 'using' element must be a string"},
+                                   put_into{std::back_inserter(ret.intra_using),
+                                            name_from_string{}}}},
              required_key{"test-using",
                           "A 'test-using' array is required",
                           require_array{
                               "A library's 'test-using' must be an array of usage objects"},
-                          for_each{put_into{std::back_inserter(ret.intra_test_using),
+                          for_each{require_str{"Each 'using' element must be a string"},
+                                   put_into{std::back_inserter(ret.intra_test_using),
                                             name_from_string{}}}},
              required_key{"dependencies",
                           "A 'dependencies' array is required",
