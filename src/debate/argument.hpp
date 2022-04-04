@@ -4,6 +4,10 @@
 
 #include <boost/leaf/exception.hpp>
 
+#if __has_include(<magic_enum.hpp>)
+#include "./enum.hpp"
+#endif
+
 #include <charconv>
 #include <functional>
 #include <string>
@@ -48,7 +52,7 @@ public:
 template <typename T>
 constexpr auto make_argument_putter(T& dest) {
     if constexpr (std::is_enum_v<T>) {
-        return make_enum_putter(dest);  /// !! README: Include <debate/enum.hpp> to use enums here
+        return make_enum_putter(dest);
     } else if constexpr (std::is_integral_v<T>) {
         return integer_putter(dest);
     } else {

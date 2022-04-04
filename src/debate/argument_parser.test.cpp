@@ -6,7 +6,7 @@
 
 TEST_CASE("Create an argument parser") {
     enum log_level {
-        _invalid,
+        invalid_,
         info,
         warning,
         error,
