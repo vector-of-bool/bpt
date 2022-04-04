@@ -381,6 +381,10 @@ neo::co_resource<remote_repo_db_info> get_remote_db(bpt::unique_database& db, ne
             }
         };
 
+        if (auto message = rinfo.resp.header_value("x-bpt-user-message")) {
+            bpt_log(info, "Message from repository [{}]: {}", url_str, *message);
+        }
+
         // Compute the create-time of the source. By default, just the request time.
         auto resource_time = steady_clock::now();
         if (auto age_str = rinfo.resp.header_value("Age")) {
