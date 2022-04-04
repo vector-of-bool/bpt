@@ -1,9 +1,10 @@
 |bpt|
 #####
 
-**bpt** is the Drop-Dead-Simple build and library management tool.
+**bpt** is the build and packaging tool design for simplicity, speed, and
+embeddability.
 
-bpt is a hybrid build system and package manager with a few distinguishing
+|bpt| is a hybrid build system and package manager with a few distinguishing
 design decisions that set it apart from current offerings. There's a lot to
 learn, but I'm glad you're here! I hope you find |bpt| useful to you and your
 projects.
