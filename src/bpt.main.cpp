@@ -39,7 +39,6 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
     load_locale();
     std::setlocale(LC_CTYPE, ".utf8");
 
-    bpt::install_signal_handlers();
     bpt::enable_ansi_console();
 
     bpt::cli::options       opts;
@@ -135,6 +134,10 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
     if (result) {
         // Non-null result from argument parsing, return that value immediately.
         return *result;
+    }
+    if (opts.subcommand != bpt::cli::subcommand::new_) {
+        // We want ^C to behave as-normal for 'new'
+        bpt::install_signal_handlers();
     }
     bpt::log::current_log_level = opts.log_level;
     return bpt::cli::dispatch_main(opts);

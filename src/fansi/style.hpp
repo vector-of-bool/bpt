@@ -11,7 +11,7 @@ enum class std_color {
     green       = 2,
     yellow      = 3,
     blue        = 4,
-    magent      = 5,
+    magenta     = 5,
     cyan        = 6,
     white       = 7,
     normal      = 9,

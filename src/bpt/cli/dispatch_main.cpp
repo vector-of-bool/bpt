@@ -22,6 +22,7 @@ command pkg_search;
 command pkg_prefetch;
 command pkg_solve;
 command repo_cmd;
+command new_cmd;
 
 }  // namespace cmd
 
@@ -29,6 +30,8 @@ int dispatch_main(const options& opts) noexcept {
     return bpt::handle_cli_errors([&] {
         BPT_E_SCOPE(opts.subcommand);
         switch (opts.subcommand) {
+        case subcommand::new_:
+            return cmd::new_cmd(opts);
         case subcommand::build:
             return cmd::build(opts);
         case subcommand::pkg: {

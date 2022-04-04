@@ -183,6 +183,10 @@ struct setup {
             .name = "install-yourself",
             .help = "Have this bpt executable install itself onto your PATH",
         }));
+        setup_new_cmd(group.add_parser({
+            .name = "new",
+            .help = "Generate a new bpt project",
+        }));
     }
 
     void add_repo_args(argument_parser& cmd) {
@@ -429,6 +433,24 @@ struct setup {
                     "instead of copying the executable file",
             .nargs  = 0,
             .action = store_true(opts.install_yourself.symlink),
+        });
+    }
+
+    void setup_new_cmd(argument_parser& parser) {
+        parser.add_argument({
+            .help    = "Name for the new project",
+            .valname = "<project-name>",
+            .action  = put_into(opts.new_.name),
+        });
+        // parser.add_argument({
+        //     .long_spellings = {"name"},
+        //     .action         = store_value(opts.new_.name),
+        // });
+        parser.add_argument({
+            .long_spellings = {"dir"},
+            .help           = "Directory in which the project will be generated",
+            .valname        = "<project-directory>",
+            .action         = put_into(opts.new_.directory),
         });
     }
 };

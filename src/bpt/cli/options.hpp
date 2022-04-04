@@ -26,6 +26,7 @@ enum class subcommand {
     pkg,
     repo,
     install_yourself,
+    new_,
 };
 
 /**
@@ -235,6 +236,13 @@ struct options {
         bool fixup_path_env = true;
         bool symlink        = false;
     } install_yourself;
+
+    struct {
+        /// The directory in which to create the new project
+        opt_string directory;
+        /// The name of the new project
+        opt_string name;
+    } new_;
 
     /**
      * @brief Attach arguments and subcommands to the given argument parser, binding those arguments
