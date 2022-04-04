@@ -52,27 +52,25 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             return std::nullopt;
         },
         [&](debate::help_request, debate::e_argument_parser p) {
-            std::cout << p.parser.help_string(program_name);
+            std::cout << p.value.help_string(program_name);
             return 0;
         },
         [&](debate::unrecognized_argument,
             debate::e_argument_parser p,
             debate::e_arg_spelling    arg,
             debate::e_did_you_mean*   dym) {
-            std::cerr << p.parser.usage_string(program_name) << '\n';
-            if (p.parser.subparsers()) {
+            std::cerr << p.value.usage_string(program_name) << '\n';
+            if (p.value.subparsers()) {
                 fmt::print(std::cerr,
                            "Unrecognized argument/subcommand: \".bold.red[{}]\"\n"_styled,
-                           arg.spelling);
+                           arg.value);
             } else {
                 fmt::print(std::cerr,
                            "Unrecognized argument: \".bold.red[{}]\"\n"_styled,
-                           arg.spelling);
+                           arg.value);
             }
             if (dym) {
-                fmt::print(std::cerr,
-                           "  (Did you mean '.br.yellow[{}]'?)\n"_styled,
-                           dym->candidate);
+                fmt::print(std::cerr, "  (Did you mean '.br.yellow[{}]'?)\n"_styled, dym->value);
             }
             return 2;
         },
@@ -81,12 +79,12 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             debate::e_argument_parser   p,
             debate::e_arg_spelling      spell,
             debate::e_invalid_arg_value val) {
-            std::cerr << p.parser.usage_string(program_name) << '\n';
+            std::cerr << p.value.usage_string(program_name) << '\n';
             fmt::print(std::cerr,
                        "Invalid {} value '{}' given for '{}'\n",
-                       arg.argument.valname,
-                       val.given,
-                       spell.spelling);
+                       arg.value.valname,
+                       val.value,
+                       spell.value);
             return 2;
         },
         [&](debate::invalid_arguments,
@@ -94,43 +92,43 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             debate::e_arg_spelling    spell,
             debate::e_argument        arg,
             debate::e_wrong_val_num   given) {
-            std::cerr << p.parser.usage_string(program_name) << '\n';
-            if (arg.argument.nargs == 0) {
+            std::cerr << p.value.usage_string(program_name) << '\n';
+            if (arg.value.nargs == 0) {
                 fmt::print(std::cerr,
                            "Argument '{}' does not expect any values, but was given one\n",
-                           spell.spelling);
-            } else if (arg.argument.nargs == 1 && given.n_given == 0) {
+                           spell.value);
+            } else if (arg.value.nargs == 1 && given.value == 0) {
                 fmt::print(std::cerr,
                            "Argument '{}' expected to be given a value, but received none\n",
-                           spell.spelling);
+                           spell.value);
             } else {
                 fmt::print(
                     std::cerr,
                     "Wrong number of arguments provided for '{}': Expected {}, but only got {}\n",
-                    spell.spelling,
-                    arg.argument.nargs,
-                    given.n_given);
+                    spell.value,
+                    arg.value.nargs,
+                    given.value);
             }
             return 2;
         },
         [&](debate::missing_required, debate::e_argument_parser p, debate::e_argument arg) {
             fmt::print(std::cerr,
                        "{}\nMissing required argument '{}'\n",
-                       p.parser.usage_string(program_name),
-                       arg.argument.preferred_spelling());
+                       p.value.usage_string(program_name),
+                       arg.value.preferred_spelling());
             return 2;
         },
         [&](debate::invalid_repetition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
             fmt::print(std::cerr,
                        "{}\nArgument '{}' cannot be provided more than once\n",
-                       p.parser.usage_string(program_name),
-                       sp.spelling);
+                       p.value.usage_string(program_name),
+                       sp.value);
             return 2;
         },
         [&](debate::invalid_arguments const& err, debate::e_argument_parser p) {
             fmt::print(std::cerr,
                        "{}\nError: {}\n",
-                       p.parser.usage_string(program_name),
+                       p.value.usage_string(program_name),
                        err.what());
             return 2;
         });
