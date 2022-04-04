@@ -18,7 +18,7 @@ namespace bpt::cli::cmd {
 
 int pkg_create(const options& opts) {
     bpt::sdist_params params{
-        .project_dir = opts.project_dir,
+        .project_dir = opts.absolute_project_dir_path(),
         .dest_path   = {},
         .force       = opts.if_exists == if_exists::replace,
     };

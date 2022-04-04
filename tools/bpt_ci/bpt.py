@@ -89,7 +89,8 @@ class BPTWrapper:
               with_tests: bool = True,
               repos: Iterable[Pathish] = (),
               more_args: proc.CommandLine | None = None,
-              timeout: float | None = None) -> None:
+              timeout: float | None = None,
+              cwd: Pathish | None = None) -> None:
         """
         Run 'bpt build' with the given arguments.
 
@@ -102,6 +103,7 @@ class BPTWrapper:
         :param repos: Repositories to use during the build.
         :param more_args: Additional command-line arguments.
         :param timeout: Timeout for the build subprocess.
+        :param cwd: Working directory for the bpt subprocess
         """
         toolchain = toolchain or tc_mod.get_default_audit_toolchain()
         jobs = jobs or multiprocessing.cpu_count() + 2
@@ -119,6 +121,7 @@ class BPTWrapper:
                 more_args or (),
             ],
             timeout=timeout,
+            cwd=cwd,
         )
 
     def compile_file(self,

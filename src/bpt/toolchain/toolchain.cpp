@@ -132,10 +132,11 @@ compile_command_info toolchain::create_compile_command(const compile_file_spec& 
         bpt_log(trace, "Syntax check file: {}", in_file);
 
         fs::create_directories(in_file.parent_path());
-        bpt::write_file(in_file, fmt::format("#include \"{}\"", spec.source_path.string()));
+        auto abs_path = bpt::resolve_path_weak(spec.source_path);
+        bpt::write_file(in_file, fmt::format("#include \"{}\"", abs_path.string()));
     }
 
-    bpt_log(trace, "#include-search dirs:");
+    bpt_log(trace, "#include search-dirs:");
     for (auto&& inc_dir : spec.include_dirs) {
         bpt_log(trace, "  - search: {}", inc_dir.string());
         auto shortest = shortest_path_from(inc_dir, cwd);

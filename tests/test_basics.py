@@ -1,11 +1,14 @@
+from pathlib import Path
 import time
 from subprocess import CalledProcessError
 
 import pytest
 from bpt_ci import paths
+from bpt_ci.bpt import BPTWrapper
 from bpt_ci.testing import Project, PkgYAML
 from bpt_ci.testing.error import expect_error_marker
 from bpt_ci.testing.fixtures import ProjectOpener
+from bpt_ci.testing.fs import render_into
 
 
 def test_build_empty(tmp_project: Project) -> None:
@@ -173,3 +176,33 @@ def test_link_interdep(project_opener: ProjectOpener) -> None:
     print(proj.pkg_yaml)
     # Build is okay now
     proj.build()
+
+
+def test_build_other_dir(project_opener: ProjectOpener, tmp_path: Path, bpt: BPTWrapper):
+    render_into(
+        tmp_path, {
+            'build-other-dir': {
+                'src': {
+                    'foo/': {
+                        'foo.hpp':
+                        r'''
+                        extern int get_value();
+                        ''',
+                        'foo.cpp':
+                        r'''
+                        #include <foo/foo.hpp>
+                        int get_value() { return 42; }
+                        ''',
+                        'foo.test.cpp':
+                        r'''
+                        #include <foo/foo.hpp>
+                        int main() {
+                            return get_value() != 42;
+                        }
+                        '''
+                    }
+                }
+            }
+        })
+    proj = Project(Path('./build-other-dir/'), bpt)
+    proj.build(cwd=tmp_path)

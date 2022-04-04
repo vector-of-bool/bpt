@@ -266,7 +266,8 @@ class Project:
               tweaks_dir: Optional[Path] = None,
               with_tests: bool = True,
               repos: Sequence[Pathish] = (),
-              log_level: Literal['info', 'debug', 'trace'] = 'trace') -> None:
+              log_level: Literal['info', 'debug', 'trace'] = 'trace',
+              cwd: Pathish | None = None) -> None:
         """
         Execute 'bpt build' on the project
         """
@@ -282,7 +283,8 @@ class Project:
                            tweaks_dir=tweaks_dir,
                            with_tests=with_tests,
                            repos=repos,
-                           more_args=[f'--log-level={log_level}'])
+                           more_args=[f'--log-level={log_level}'],
+                           cwd=cwd)
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:

@@ -50,7 +50,7 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
     auto  cache   = open_ready_cache(opts);
     auto& meta_db = cache.db();
 
-    sdist proj_sd = bpt_leaf_try { return sdist::from_directory(opts.project_dir); }
+    sdist proj_sd = bpt_leaf_try { return sdist::from_directory(opts.absolute_project_dir_path()); }
     bpt_leaf_catch(bpt::e_missing_pkg_json, bpt::e_missing_project_yaml) {
         crs::package_info default_meta;
         default_meta.id.name.str = "anon";
@@ -58,7 +58,7 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
         crs::library_info default_library;
         default_library.name.str = "anon";
         default_meta.libraries.push_back(default_library);
-        return sdist{std::move(default_meta), opts.project_dir};
+        return sdist{std::move(default_meta), opts.absolute_project_dir_path()};
     };
 
     builder builder;

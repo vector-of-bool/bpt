@@ -112,6 +112,9 @@ struct options {
     // Many subcommands use a '--project' argument, stored here, using the CWD as the default
     path project_dir = fs::current_path();
 
+    // Obtain the absolute path specified by 'project_dir' (resolve using the CWD)
+    path absolute_project_dir_path() const noexcept;
+
     // Compile and build commands with `--no-warnings`/`--no-warn`
     bool disable_warnings = false;
     // Compile and build commands' `--jobs` parameter

@@ -454,3 +454,7 @@ toolchain bpt::cli::options::load_toolchain() const {
         return parse_toolchain_json5(bpt::read_file(tc_str));
     }
 }
+
+fs::path bpt::cli::options::absolute_project_dir_path() const noexcept {
+    return bpt::resolve_path_weak(project_dir);
+}
