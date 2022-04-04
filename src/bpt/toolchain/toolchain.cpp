@@ -4,6 +4,7 @@
 
 #include <bpt/error/doc_ref.hpp>
 #include <bpt/error/human.hpp>
+#include <bpt/error/marker.hpp>
 #include <bpt/error/on_error.hpp>
 #include <bpt/toolchain/from_json.hpp>
 #include <bpt/toolchain/prep.hpp>
@@ -352,5 +353,6 @@ bpt::toolchain bpt::toolchain::get_default() {
         }
     }
     BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("No default toolchain")},
-                               BPT_ERR_REF("no-default-toolchain"));
+                               BPT_ERR_REF("no-default-toolchain"),
+                               e_error_marker{"no-default-toolchain"});
 }

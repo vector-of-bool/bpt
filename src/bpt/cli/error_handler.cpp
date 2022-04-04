@@ -3,6 +3,7 @@
 
 #include <bpt/crs/error.hpp>
 #include <bpt/deps.hpp>
+#include <bpt/error/doc_ref.hpp>
 #include <bpt/error/errors.hpp>
 #include <bpt/error/exit.hpp>
 #include <bpt/error/toolchain.hpp>
@@ -233,6 +234,18 @@ auto handlers = std::tuple(  //
     [](bpt::e_exit ex, boost::leaf::verbose_diagnostic_info const& info) {
         bpt_log(trace, "Additional error information: {}", info);
         return ex.value;
+    },
+    [](bpt::e_human_message                        message,
+       bpt::e_doc_ref                              docref,
+       boost::leaf::verbose_diagnostic_info const& diag,
+       bpt::e_error_marker const*                  marker) {
+        bpt_log(error, "Error: .bold.red[{}]"_styled, message.value);
+        bpt_log(error, "Refer: .bold.yellow[https://dds`.pizza/docs/{}]"_styled, docref.value);
+        bpt_log(debug, "Additional diagnostic objects:\n.blue[{}]"_styled, diag);
+        if (marker) {
+            bpt::write_error_marker(marker->value);
+        }
+        return 1;
     },
     [](catch_<neo::sqlite3::error> exc, boost::leaf::verbose_diagnostic_info const& diag) {
         bpt_log(critical,
