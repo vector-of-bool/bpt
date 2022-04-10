@@ -93,8 +93,10 @@ struct options {
     using string     = std::string;
     using opt_string = std::optional<std::string>;
 
+    options() noexcept;
+
     // The `--crs-cache-dir` argument
-    opt_path crs_cache_dir;
+    path crs_cache_dir;
     // The `--log-level` argument
     log::level log_level = log::level::info;
     // Any `--dry-run` argument
@@ -105,7 +107,7 @@ struct options {
     // All `--use-repo` arguments
     std::vector<std::string> use_repos;
     // Toggle on/off the default repository
-    bool use_default_repo = true;
+    bool use_default_repo = !default_from_env("BPT_NO_DEFAULT_REPO", false);
 
     // The top-most selected subcommand
     enum subcommand subcommand;
@@ -119,7 +121,7 @@ struct options {
     // Compile and build commands with `--no-warnings`/`--no-warn`
     bool disable_warnings = false;
     // Compile and build commands' `--jobs` parameter
-    int jobs = 0;
+    int jobs = default_from_env("BPT_JOBS", 0);
     // Compile and build commands' `--toolchain` option:
     opt_string toolchain;
     opt_path   out_path;
@@ -249,6 +251,10 @@ struct options {
      * to the values in this object.
      */
     void setup_parser(debate::argument_parser& parser) noexcept;
+
+    static bool   default_from_env(string env_var, bool default_value) noexcept;
+    static string default_from_env(string env_var, string default_value) noexcept;
+    static int    default_from_env(string env_var, int default_value) noexcept;
 };
 
 }  // namespace cli

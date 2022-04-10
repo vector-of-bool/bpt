@@ -1,11 +1,13 @@
 #include "./options.hpp"
 
+#include <bpt/crs/cache.hpp>
 #include <bpt/error/errors.hpp>
 #include <bpt/error/on_error.hpp>
 #include <bpt/error/toolchain.hpp>
 #include <bpt/toolchain/errors.hpp>
 #include <bpt/toolchain/from_json.hpp>
 #include <bpt/toolchain/toolchain.hpp>
+#include <bpt/util/env.hpp>
 #include <bpt/util/fs/io.hpp>
 
 #include <debate/enum.hpp>
@@ -479,4 +481,49 @@ toolchain bpt::cli::options::load_toolchain() const {
 
 fs::path bpt::cli::options::absolute_project_dir_path() const noexcept {
     return bpt::resolve_path_weak(project_dir);
+}
+
+bool cli::options::default_from_env(std::string key, bool def) noexcept {
+    auto env = bpt::getenv(key);
+    if (env.has_value()) {
+        return is_truthy_string(*env);
+    }
+    return def;
+}
+
+std::string cli::options::default_from_env(std::string key, std::string def) noexcept {
+    return bpt::getenv(key).value_or(def);
+}
+
+int cli::options::default_from_env(std::string key, int def) noexcept {
+    auto env = bpt::getenv(key);
+    if (!env.has_value()) {
+        return def;
+    }
+    int        r       = 0;
+    const auto dat     = env->data();
+    const auto dat_end = dat + env->size();
+    auto       res     = std::from_chars(dat, dat_end, r);
+    if (res.ptr != dat_end) {
+        return def;
+    }
+    return r;
+}
+
+cli::options::options() noexcept {
+    crs_cache_dir = bpt::getenv("BPT_CRS_CACHE_DIR", [] { return crs::cache::default_path(); });
+
+    auto ll = getenv("BPT_LOG_LEVEL");
+    if (ll.has_value()) {
+        auto llo = magic_enum::enum_cast<log::level>(*ll);
+        if (llo.has_value()) {
+            log_level = *llo;
+        }
+    }
+
+    toolchain = getenv("BPT_TOOLCHAIN");
+    auto out  = getenv("BPT_OUTPUT_PATH");
+    if (out.has_value()) {
+        out_path = *out;
+    }
 }

@@ -22,6 +22,9 @@ using namespace fansi::literals;
 
 static void
 use_repo(bpt::crs::cache_db& meta_db, const cli::options& opts, std::string_view url_or_path) {
+    if (url_or_path == ":default") {
+        url_or_path = "https://repo-3.bpt.pizza/";
+    }
     // Convert what may be just a domain name or partial URL into a proper URL:
     auto url = bpt::guess_url_from_string(url_or_path);
     // Called by error handler to decide whether to rethrow:
@@ -138,8 +141,7 @@ use_repo(bpt::crs::cache_db& meta_db, const cli::options& opts, std::string_view
 }
 
 crs::cache cli::open_ready_cache(const cli::options& opts) {
-    auto cache
-        = bpt::crs::cache::open(opts.crs_cache_dir.value_or(bpt::crs::cache::default_path()));
+    auto  cache   = bpt::crs::cache::open(opts.crs_cache_dir);
     auto& meta_db = cache.db();
     for (auto& r : opts.use_repos) {
         use_repo(meta_db, opts, r);
