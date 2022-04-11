@@ -57,13 +57,13 @@ than being a strong dependency of the library itself. A "for test" library
 dependency will only be available within the ``.test.*`` source files, and
 downstream library consumers will not see the dependency.
 
-To declare dependencies, we return to the ``pkg.yaml`` file. We'll declare a
+To declare dependencies, we return to the ``bpy.yaml`` file. We'll declare a
 dependency on the `Catch2`_ C and C++ unit testing framework:
 
 .. _Catch2: https://github.com/catchorg/Catch2
 
 .. code-block:: yaml
-  :caption: ``<root>/pkg.yaml``
+  :caption: ``<root>/bpy.yaml``
   :emphasize-lines: 3,4
 
   name: hello-bpt

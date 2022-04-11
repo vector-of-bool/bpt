@@ -74,10 +74,10 @@ auto handlers = std::tuple(  //
         write_error_marker("package-yaml-parse-error");
         return 1;
     },
-    [](e_sdist_from_directory, e_parse_project_manifest_path pkg_yaml, e_bad_pkg_yaml_key badkey) {
+    [](e_sdist_from_directory, e_parse_project_manifest_path bpt_yaml, e_bad_bpt_yaml_key badkey) {
         bpt_log(error,
                 "Error loading project info from [.bold.yellow[{}]]"_styled,
-                pkg_yaml.value.string());
+                bpt_yaml.value.string());
         bpt_log(error, "Unknown project property '.bold.red[{}]'"_styled, badkey.given);
         if (badkey.nearest.has_value()) {
             bpt_log(error, "  (Did you mean '.bold.green[{}]'?)"_styled, *badkey.nearest);
@@ -86,7 +86,7 @@ auto handlers = std::tuple(  //
     },
     [](const semester::walk_error&    exc,
        e_sdist_from_directory         dir,
-       e_parse_project_manifest_path* pkg_yaml,
+       e_parse_project_manifest_path* bpt_yaml,
        crs::e_pkg_json_path*          pkg_json) {
         if (pkg_json) {
             bpt_log(error,
@@ -94,10 +94,10 @@ auto handlers = std::tuple(  //
                     pkg_json->value.string(),
                     exc.what());
             write_error_marker("invalid-pkg-json");
-        } else if (pkg_yaml) {
+        } else if (bpt_yaml) {
             bpt_log(error,
                     "Error loading project info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
-                    pkg_yaml->value.string(),
+                    bpt_yaml->value.string(),
                     exc.what());
             write_error_marker("invalid-pkg-yaml");
         } else {
@@ -110,27 +110,27 @@ auto handlers = std::tuple(  //
     },
     [](const neo::url_validation_error& exc,
        e_sdist_from_directory,
-       e_parse_project_manifest_path pkg_yaml,
+       e_parse_project_manifest_path bpt_yaml,
        e_url_string                  str) {
         bpt_log(
             error,
             "Error while parsing URL string '.bold.yellow[{}]' in [.bold.yellow[{}]]: .bold.red[{}]"_styled,
             str.value,
-            pkg_yaml.value.string(),
+            bpt_yaml.value.string(),
             exc.what());
         return 1;
     },
     [](bpt::e_bad_spdx_expression err,
        bpt::e_spdx_license_str    spdx_str,
        e_sdist_from_directory,
-       e_parse_project_manifest_path pkg_yaml) {
+       e_parse_project_manifest_path bpt_yaml) {
         bpt_log(error,
                 "Invalid SPDX license expression '.bold.yellow[{}]': .bold.red[{}]"_styled,
                 spdx_str.value,
                 err.value);
         bpt_log(error,
                 "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
-                pkg_yaml.value.string());
+                bpt_yaml.value.string());
         write_error_marker("invalid-spdx");
         return 1;
     },

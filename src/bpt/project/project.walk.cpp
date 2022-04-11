@@ -146,7 +146,7 @@ project_manifest::from_json_data(const json5::data&                          dat
                     require_array{"Project 'authors' must be an array of strings"},
                     for_each{require_str{"Each element of project 'authors' must be a string"},
                              put_into(std::back_inserter(authors))}},
-             dym.rejecter<e_bad_pkg_yaml_key>(),
+             dym.rejecter<e_bad_bpt_yaml_key>(),
          });
 
     if (dym.seen_keys.contains("authors")) {

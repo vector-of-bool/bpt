@@ -57,7 +57,7 @@ def _render_pkg_version(name: str, version: str, item: _RepoPackageItem) -> Tree
         ]
     }
     return {
-        'pkg.yaml': json.dumps(proj),
+        'bpt.yaml': json.dumps(proj),
         'libs': {
             lib_name: lib.get('content', {})
             for lib_name, lib in item['libs'].items()  #
@@ -209,7 +209,7 @@ def test_solve_upgrade_pkg_version(make_quick_repo: QuickRepoFactory, tmp_projec
         }
     )
     # yapf: enable
-    tmp_project.pkg_yaml = {'name': 'test-proj', 'version': '1.2.3', 'dependencies': ['foo@1.2.3 using main']}
+    tmp_project.bpt_yaml = {'name': 'test-proj', 'version': '1.2.3', 'dependencies': ['foo@1.2.3 using main']}
     tmp_project.write('src/file.cpp', '#include <foo.hpp>\n')
     with error.expect_error_marker('compile-failed'):
         tmp_project.build(repos=[repo.path])

@@ -264,7 +264,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
 
 
 def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'libs': [{
@@ -306,7 +306,7 @@ def test_repo_no_use_invalid_pkg_version(tmp_crs_repo: CRSRepo, tmp_project: Pro
         db.execute(r'INSERT INTO crs_repo_packages(meta_json) VALUES(?)',
                    [json.dumps(make_simple_crs('bar', '1.2.3', pkg_version=1))])
 
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'lib': {

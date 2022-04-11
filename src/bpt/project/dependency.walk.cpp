@@ -29,7 +29,7 @@ static auto parse_version_range = [](const json5::data& range) {
                           require_str{"'high' version must be a string"},
                           put_into{high, version_from_string{}}},
              if_key{"_comment", just_accept},
-             dym.rejecter<e_bad_pkg_yaml_key>(),
+             dym.rejecter<e_bad_bpt_yaml_key>(),
          });
     if (high <= low) {
         throw(semester::walk_error{"'high' version must be strictly greater than 'low' version"});
@@ -80,7 +80,7 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
                                 return walk.pass;
                             },
                             put_into(std::back_inserter(explicit_uses), name_from_string{})}},
-            dym.rejecter<e_bad_pkg_yaml_key>(),
+            dym.rejecter<e_bad_bpt_yaml_key>(),
         });
 
     for (auto& ver : ver_ranges) {

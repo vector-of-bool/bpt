@@ -115,17 +115,17 @@ sdist sdist::from_directory(path_ref where) {
     crs::package_info meta;
 
     auto       pkg_json      = where / "pkg.json";
-    auto       pkg_yaml      = where / "pkg.yaml";
+    auto       bpt_yaml      = where / "bpt.yaml";
     const bool have_pkg_json = bpt::file_exists(pkg_json);
-    const bool have_pkg_yaml = bpt::file_exists(pkg_yaml);
+    const bool have_bpt_yaml = bpt::file_exists(bpt_yaml);
 
     if (have_pkg_json) {
-        if (have_pkg_yaml) {
+        if (have_bpt_yaml) {
             bpt_log(
                 warn,
                 "Directory has both [.cyan[{}]] and [.cyan[{}]] (The .bold.cyan[pkg`.json] file will be preferred)"_styled,
                 pkg_json.string(),
-                pkg_yaml.string());
+                bpt_yaml.string());
         }
         BPT_E_SCOPE(crs::e_pkg_json_path{pkg_json});
         auto data = bpt::parse_json5_file(pkg_json);
@@ -137,7 +137,7 @@ sdist sdist::from_directory(path_ref where) {
                 make_user_error<errc::invalid_pkg_filesystem>(
                     "No pkg.json nor project manifest in the project directory"),
                 e_missing_pkg_json{pkg_json},
-                e_missing_project_yaml{where / "pkg.yaml"},
+                e_missing_project_yaml{where / "bpt.yaml"},
                 BPT_ERR_REF("invalid-pkg-filesystem"));
         }
         meta = proj.manifest->as_crs_package_meta();

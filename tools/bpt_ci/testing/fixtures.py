@@ -231,16 +231,16 @@ class Project:
         self.build_root = dirpath / '_build'
 
     @property
-    def pkg_yaml(self) -> PkgYAML:
+    def bpt_yaml(self) -> PkgYAML:
         """
-        Get/set the content of the ``pkg.yaml`` file for the project.
+        Get/set the content of the ``bpt.yaml`` file for the project.
         """
-        dat = json.loads(self.root.joinpath('pkg.yaml').read_text())
-        return cast(PkgYAML, _WritebackData(self.root.joinpath('pkg.yaml'), dat, dat))
+        dat = json.loads(self.root.joinpath('bpt.yaml').read_text())
+        return cast(PkgYAML, _WritebackData(self.root.joinpath('bpt.yaml'), dat, dat))
 
-    @pkg_yaml.setter
-    def pkg_yaml(self, data: PkgYAML) -> None:
-        self.root.joinpath('pkg.yaml').write_text(json.dumps(data, indent=2))
+    @bpt_yaml.setter
+    def bpt_yaml(self, data: PkgYAML) -> None:
+        self.root.joinpath('bpt.yaml').write_text(json.dumps(data, indent=2))
 
     def lib(self, name: str) -> Library:
         return Library(name, self.root / f'libs/{name}')

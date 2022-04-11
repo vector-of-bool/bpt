@@ -47,7 +47,7 @@ def test_simple_lib(tmp_project: Project) -> None:
     the manifest files will affect the output name.
     """
     tmp_project.write('src/foo.cpp', 'int the_answer() { return 42; }')
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'test-project',
         'version': '0.0.0',
         'lib': {
@@ -77,7 +77,7 @@ def test_error_enoent_toolchain(tmp_project: Project) -> None:
 
 
 def test_invalid_names(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {'name': 'test', 'version': '1.2.3', 'dependencies': [{'dep': 'invalid name@1.2.3'}]}
+    tmp_project.bpt_yaml = {'name': 'test', 'version': '1.2.3', 'dependencies': [{'dep': 'invalid name@1.2.3'}]}
     with expect_error_marker('invalid-pkg-dep-name'):
         tmp_project.build()
     with expect_error_marker('invalid-pkg-dep-name'):
@@ -85,8 +85,8 @@ def test_invalid_names(tmp_project: Project) -> None:
     with expect_error_marker('invalid-dep-shorthand'):
         tmp_project.bpt.build_deps(['invalid name@1.2.3'])
 
-    tmp_project.pkg_yaml['name'] = 'invalid name'
-    tmp_project.pkg_yaml['dependencies'] = []
+    tmp_project.bpt_yaml['name'] = 'invalid name'
+    tmp_project.bpt_yaml['dependencies'] = []
     with expect_error_marker('invalid-name'):
         tmp_project.build()
     with expect_error_marker('invalid-name'):
@@ -100,26 +100,26 @@ TEST_PACKAGE: PkgYAML = {
 
 
 def test_empty_with_pkg_json(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = TEST_PACKAGE
+    tmp_project.bpt_yaml = TEST_PACKAGE
     tmp_project.build()
 
 
 def test_empty_sdist_create(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = TEST_PACKAGE
+    tmp_project.bpt_yaml = TEST_PACKAGE
     tmp_project.pkg_create()
     assert tmp_project.build_root.joinpath('test-pkg@0.2.2~1.tar.gz').is_file(), \
         'The expected sdist tarball was not generated'
 
 
 def test_project_with_meta(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'license': 'MIT-1.2.3',
     }
     with expect_error_marker('invalid-spdx'):
         tmp_project.build()
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'license': 'MIT',  # A valid license string
@@ -157,7 +157,7 @@ def test_link_interdep(project_opener: ProjectOpener) -> None:
                 },
             },
         })
-    proj.pkg_yaml = {
+    proj.bpt_yaml = {
         'name': 'test',
         'version': '1.2.3',
         'libs': [{
@@ -172,8 +172,8 @@ def test_link_interdep(project_opener: ProjectOpener) -> None:
         proj.build()
 
     # Update with a 'using' of the library that was required:
-    proj.pkg_yaml['libs'][0]['using'] = ['bar']
-    print(proj.pkg_yaml)
+    proj.bpt_yaml['libs'][0]['using'] = ['bar']
+    print(proj.bpt_yaml)
     # Build is okay now
     proj.build()
 

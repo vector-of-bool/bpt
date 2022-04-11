@@ -67,7 +67,7 @@ To write a test that checks for a given error-handling path, use the
 
   def test_sdist_invalid_project(tmp_project: Project) -> None:
     # Trying to create a package archive from a project without a
-    # pkg.yaml is invalid. Check that it creates the correct
+    # bpt.yaml is invalid. Check that it creates the correct
     # error-message string
     with error.expect_error_marker('no-package-yaml'):
       tmp_project.pkg_create()

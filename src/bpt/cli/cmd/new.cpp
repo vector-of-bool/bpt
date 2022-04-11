@@ -115,7 +115,7 @@ int new_cmd(const options& opts) {
 
     fs::path project_dir = dest;
     fs::create_directories(project_dir);
-    bpt::write_file(project_dir / "pkg.yaml",
+    bpt::write_file(project_dir / "bpt.yaml",
                     fmt::format("# Project '{0}' created by 'bpt new'\n"
                                 "name: {0}\n"
                                 "version: 0.1.0\n"

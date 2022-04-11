@@ -224,11 +224,11 @@ Creating a package manifest file.
 
 |bpt| will work happily with packages that do not declare themselves, as long
 as the filesystem structure is sufficient. However: To use features covered in
-later tutorials, we'll need a simple ``pkg.yaml`` file to declare information
+later tutorials, we'll need a simple ``bpt.yaml`` file to declare information
 about are package. This file should be placed directly in the package root:
 
 .. code-block:: yaml
-    :caption: ``<root>/pkg.yaml``
+    :caption: ``<root>/bpt.yaml``
 
     name: hello-bpt
     version: 0.1.0
@@ -236,7 +236,7 @@ about are package. This file should be placed directly in the package root:
 Rebuilding the project will show no difference at the moment.
 
 .. note::
-    You must use the ``.yaml`` extension for this file. A ``pkg.yml`` will be
+    You must use the ``.yaml`` extension for this file. A ``bpt.yml`` will be
     ignored.
 
 .. seealso::

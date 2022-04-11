@@ -91,7 +91,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         })
 
     # Missing the 'using'
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'testing',
         'version': '1.2.3',
         'libs': [{
@@ -106,7 +106,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         tmp_project.build()
 
     # Now add the missing 'using'
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'testing',
         'version': '1.2.3',
         'libs': [{

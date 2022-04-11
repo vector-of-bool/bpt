@@ -3,7 +3,7 @@ from bpt_ci.testing import Project, error
 
 def test_self_referential_uses_fails(tmp_project: Project) -> None:
     tmp_project.write('src/a.cpp', 'int answer() { return 42; }')
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'mylib',
         'version': '0.1.0',
         'lib': {
@@ -17,7 +17,7 @@ def test_self_referential_uses_fails(tmp_project: Project) -> None:
 
 
 def test_self_referential_uses_cycle_fails(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name':
         'mylib',
         'version':
@@ -43,7 +43,7 @@ def test_self_referential_uses_cycle_fails(tmp_project: Project) -> None:
 
 
 def test_self_referential_uses_for_libs_fails(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'mylib',
         'version': '0.1.0',
         'libs': [{

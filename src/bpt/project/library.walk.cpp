@@ -49,7 +49,7 @@ project_library project_library::from_json_data(const json5::data& data) {
                     require_array{"Library 'test-dependencies' must be an array of dependencies"},
                     for_each{put_into(std::back_inserter(ret.test_dependencies),
                                       project_dependency::from_json_data)}},
-             dym.rejecter<e_bad_pkg_yaml_key>(),
+             dym.rejecter<e_bad_bpt_yaml_key>(),
          });
 
     return ret;
