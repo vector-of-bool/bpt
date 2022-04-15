@@ -55,7 +55,11 @@ static int _build_deps(const options& opts) {
 
     auto sln = bpt::solve(cache.db(), all_deps);
     for (auto&& pkg : sln) {
-        fetch_cache_load_dependency(cache, pkg, builder, ".");
+        fetch_cache_load_dependency(cache,
+                                    pkg,
+                                    true /* Build all libraries in the dependency */,
+                                    builder,
+                                    ".");
     }
 
     builder.build(params);

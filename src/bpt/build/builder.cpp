@@ -15,6 +15,8 @@
 #include <boost/leaf/exception.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
+#include <neo/ranges.hpp>
+#include <range/v3/algorithm/contains.hpp>
 
 #include <array>
 #include <fstream>
@@ -41,6 +43,15 @@ void log_failure(const test_failure& fail) {
     }
 }
 
+///? XXX: This library activating method is a poor hack to ensure only libraries that are used by
+///? the main libraries are actually built.
+/// TODO: Make this less ugly.
+struct lib_prep_info {
+    const sdist_target&      sdt;
+    const crs::library_info& lib;
+    const crs::package_info& pkg;
+};
+
 library_plan prepare_library(const sdist_target&      sdt,
                              const crs::library_info& lib,
                              const crs::package_info& pkg_man) {
@@ -52,19 +63,84 @@ library_plan prepare_library(const sdist_target&      sdt,
     return library_plan::create(sdt.sd.path, pkg_man, lib, std::move(lp));
 }
 
-package_plan prepare_one(const sdist_target& sd) {
-    auto&        man = sd.sd.pkg;
-    package_plan pkg{man.id.name.str};
-    for (auto& lib : man.libraries) {
-        pkg.add_library(prepare_library(sd, lib, man));
-    }
-    return pkg;
-}
-
-build_plan prepare_build_plan(const std::vector<sdist_target>& sdists) {
+build_plan prepare_build_plan(neo::ranges::range_of<sdist_target> auto&& sdists) {
     build_plan plan;
-    for (const auto& sd_target : sdists) {
-        plan.add_package(prepare_one(sd_target));
+    // First generate a mapping of all libraries
+    std::map<lm::usage, lib_prep_info> all_libs;
+    // Keep track of which libraries we want to build:
+    std::set<const lib_prep_info*> libs_to_build;
+    // Iterate all loaded sdists:
+    for (const sdist_target& sdt : sdists) {
+        for (const auto& lib : sdt.sd.pkg.libraries) {
+            const lib_prep_info& lpi =  //
+                all_libs
+                    .emplace(lm::usage(sdt.sd.pkg.id.name.str, lib.name.str),
+                             lib_prep_info{
+                                 .sdt = sdt,
+                                 .lib = lib,
+                                 .pkg = sdt.sd.pkg,
+                             })
+                    .first->second;
+            // If the sdist_build_params wants libraries, activate them now:
+            if (ranges::contains(sdt.params.build_libraries, lib.name)) {
+                libs_to_build.emplace(&lpi);
+            }
+        }
+    }
+    // Recursive library activator:
+    std::function<void(const lib_prep_info&)> activate_more = [&](const lib_prep_info& inf) {
+        auto add_deps = [&](auto&& deps) {
+            for (const auto& dep : deps) {
+                // We should never reach this point with implicit usages
+                neo_assert(invariant,
+                           dep.uses.template is<crs::explicit_uses_list>(),
+                           "An implicit-using slipped through to the builder",
+                           inf.lib.name,
+                           dep.name);
+                for (const auto& use : dep.uses.template as<crs::explicit_uses_list>().uses) {
+                    // All libraries that we are using must have been loaded into the builder
+                    // (i.e. by the package dependency solver)
+                    auto found = all_libs.find(lm::usage{dep.name.str, use.str});
+                    neo_assert(invariant,
+                               found != all_libs.end(),
+                               "Failed to find a dependency library for build activation",
+                               inf.lib.name,
+                               dep.name,
+                               use);
+                    bool did_add = libs_to_build.emplace(&found->second).second;
+                    if (did_add) {
+                        // Recursively activate more libraries used by this library.
+                        activate_more(found->second);
+                    }
+                }
+            }
+        };
+        add_deps(inf.lib.dependencies);
+        if (!inf.sdt.params.build_tests) {
+            return;
+        }
+        // We also need to build test dependencies
+        add_deps(inf.lib.test_dependencies);
+    };
+    // Now actually begin activation:
+    for (auto info : libs_to_build) {
+        activate_more(*info);
+    }
+    // Create package plans for each library and the package it owns:
+    std::map<bpt::name, package_plan> pkg_plans;
+    for (auto lp : libs_to_build) {
+        package_plan pkg{lp->sdt.sd.pkg.id.name.str};
+        auto         cur = pkg_plans.find(lp->sdt.sd.pkg.id.name);
+        if (cur == pkg_plans.end()) {
+            cur = pkg_plans
+                      .emplace(lp->sdt.sd.pkg.id.name, package_plan{lp->sdt.sd.pkg.id.name.str})
+                      .first;
+        }
+        cur->second.add_library(prepare_library(lp->sdt, lp->lib, lp->pkg));
+    }
+    // Add all the packages to the plan:
+    for (const auto& pair : pkg_plans) {
+        plan.add_package(std::move(pair.second));
     }
     return plan;
 }

@@ -45,6 +45,7 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
         .run_tests       = opts.build.want_tests,
         .build_apps      = opts.build.want_apps,
         .enable_warnings = !opts.disable_warnings,
+        .build_libraries = {},
     };
 
     auto  cache   = open_ready_cache(opts);
@@ -74,16 +75,25 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
 
         auto sln = bpt::solve(meta_db, crs_deps);
         for (auto&& pkg : sln) {
-            auto dep_meta = fetch_cache_load_dependency(cache, pkg, builder, "_deps");
+            auto dep_meta
+                = fetch_cache_load_dependency(cache,
+                                              pkg,
+                                              false /* Do not mark libraries to be built */,
+                                              builder,
+                                              "_deps");
             resolve_implicit_usages(proj_sd.pkg, dep_meta);
         }
     }
+
+    extend(main_params.build_libraries,
+           proj_sd.pkg.libraries | std::views::transform(&crs::library_info::name));
     builder.add(proj_sd, main_params);
     return builder;
 }
 
 crs::package_info bpt::cli::fetch_cache_load_dependency(crs::cache&        cache,
                                                         crs::pkg_id const& pkg,
+                                                        bool               build_all_libs,
                                                         bpt::builder&      builder,
                                                         path_ref           subdir_base) {
     bpt_log(debug, "Loading package '{}' for build", pkg.to_string());
@@ -95,6 +105,10 @@ crs::package_info bpt::cli::fetch_cache_load_dependency(crs::cache&        cache
 
     bpt::sdist         sd{crs_meta, local_dir};
     sdist_build_params params;
+    if (build_all_libs) {
+        extend(params.build_libraries,
+               crs_meta.libraries | std::views::transform(&crs::library_info::name));
+    }
     params.subdir = subdir_base / sd.pkg.id.to_string();
     builder.add(sd, params);
     return crs_meta;

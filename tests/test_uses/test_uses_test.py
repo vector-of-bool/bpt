@@ -9,7 +9,7 @@ from bpt_ci.testing.fixtures import Project
 @pytest.fixture(scope='module')
 def ut_repo(crs_repo_factory: CRSRepoFactory, test_parent_dir: Path) -> CRSRepo:
     repo = crs_repo_factory('uses-test')
-    names = ('the_test_dependency', 'the_test_lib', 'unbuildable', 'with_bad_test_dep')
+    names = ('the_test_dependency', 'the_test_lib', 'unbuildable', 'with_bad_test_dep', 'partially_buildable')
     repo.import_((test_parent_dir / name for name in names))
     return repo
 
@@ -119,3 +119,30 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         }]
     }
     tmp_project.build()
+
+
+def test_build_partial_dep(tmp_project: Project, ut_repo: CRSRepo) -> None:
+    fs.render_into(
+        tmp_project.root, {
+            'src': {
+                'use-lib.cpp':
+                r'''
+                #include <can_build/header.hpp>
+
+                int main() {
+                    return CAN_BUILD_ZERO;
+                }
+                ''',
+            },
+        })
+
+    tmp_project.bpt_yaml = {
+        'name': 'test-user',
+        'version': '1.2.3',
+        'dependencies': ['partially_buildable@0.1.0 using can_build'],
+    }
+    tmp_project.build(repos=[ut_repo.path])
+
+    tmp_project.bpt_yaml['dependencies'] = ['partially_buildable@0.1.0 using can_build, cannot_build']
+    with error.expect_error_marker('compile-failed'):
+        tmp_project.build(repos=[ut_repo.path])

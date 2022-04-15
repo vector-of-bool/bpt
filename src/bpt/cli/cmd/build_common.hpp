@@ -32,11 +32,13 @@ int handle_build_error(std::function<int()>);
  *
  * @param cache
  * @param pkg
+ * @param build_all_libs If `true`, all libraries will be marked for building, otherwise none
  * @param b
  * @return crs::package_info
  */
 crs::package_info fetch_cache_load_dependency(crs::cache&                  cache,
                                               const crs::pkg_id&           pkg,
+                                              bool                         build_all_libs,
                                               builder&                     b,
                                               const std::filesystem::path& subdir_base);
 

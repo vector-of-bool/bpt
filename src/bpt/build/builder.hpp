@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <map>
+#include <vector>
 
 namespace bpt {
 
@@ -22,6 +23,8 @@ struct sdist_build_params {
     bool build_apps = false;
     /// Whether to enable build warnings
     bool enable_warnings = false;
+    /// The libraries in this source distribution that we must build
+    std::vector<bpt::name> build_libraries;
 };
 
 /**
