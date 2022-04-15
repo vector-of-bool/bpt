@@ -14,17 +14,17 @@ def ut_repo(crs_repo_factory: CRSRepoFactory, test_parent_dir: Path) -> CRSRepo:
     return repo
 
 
-## TODO: Do not build test libs if we are not building tests
-# def test_build_lib_with_failing_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
-#     proj = project_opener.open('with_bad_test_dep')
-#     # If we disable tests, then we won't try to build the test libraries, and
-#     # therefore won't hit the compilation error
-#     proj.build(with_tests=False, repos=[ut_repo.path])
-#     # Compiling with tests enabled produces an error
-#     with error.expect_error_marker('compile-failed'):
-#         proj.build(with_tests=True)
-#     # Check that nothing changed spuriously
-#     proj.build(with_tests=False)
+# TODO: Do not build test libs if we are not building tests
+def test_build_lib_with_failing_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
+    proj = project_opener.open('with_bad_test_dep')
+    # If we disable tests, then we won't try to build the test libraries, and
+    # therefore won't hit the compilation error
+    proj.build(with_tests=False, repos=[ut_repo.path])
+    # Compiling with tests enabled produces an error
+    with error.expect_error_marker('compile-failed'):
+        proj.build(with_tests=True, repos=[ut_repo.path])
+    # Check that nothing changed spuriously
+    proj.build(with_tests=False, repos=[ut_repo.path])
 
 
 def test_build_lib_with_failing_transitive_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
