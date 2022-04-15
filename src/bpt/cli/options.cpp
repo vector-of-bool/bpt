@@ -276,10 +276,6 @@ struct setup {
             .valname = "<pkg-subcommand>",
             .action  = put_into(opts.pkg.subcommand),
         });
-        pkg_group.add_parser({
-            .name = "ls",
-            .help = "List locally available packages",
-        });
         setup_pkg_create_cmd(pkg_group.add_parser({
             .name = "create",
             .help = "Create a source distribution archive of a project",
