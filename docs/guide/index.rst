@@ -1,11 +1,10 @@
-.. _guide:
-
 User Guide
 ##########
 
 .. toctree::
     :maxdepth: 2
 
+    cli/index
     packages
     toolchains
     source-dists
@@ -14,3 +13,13 @@ User Guide
     interdeps
     build-deps
     cmake
+
+
+Terminology Guides
+******************
+
+.. toctree::
+    :maxdepth: 2
+
+    filesystem
+    terms

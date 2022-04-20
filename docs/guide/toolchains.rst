@@ -26,6 +26,7 @@ effectively in your project.
     appropriate environment in order for the Visual C++ toolchain executables
     and files to be available.
 
+.. _toolchains.file:
 
 Passing a Toolchain
 *******************

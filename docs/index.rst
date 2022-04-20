@@ -1,3 +1,4 @@
+#####
 |bpt|
 #####
 
@@ -12,6 +13,10 @@ projects.
 If you're completely new and have no idea what the project is about, check out
 the :doc:`tut/index` page.
 
+
+Table of Contents
+#################
+
 .. toctree::
     :maxdepth: 2
 
@@ -21,3 +26,7 @@ the :doc:`tut/index` page.
     design
     dev/index
     err/index
+    crs/index
+
+- :ref:`Index of Terms <genindex>`
+- :ref:`Search <search>`

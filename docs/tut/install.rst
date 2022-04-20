@@ -1,16 +1,17 @@
 Getting/Installing |bpt|
-##########################
+########################
 
 |bpt| ships as a single statically linked executable. It does not have any
-installer or distribution package.
+installer or distribution package. It has no prerequesites or dependencies that
+need to be installed
 
 
 Downloading
 ***********
 
-Downloads are available on `the main bpt website <https://dds.pizza/downloads>`_
+Downloads are available on `the main bpt website <https://bpt.pizza/downloads>`_
 as well as
-`the GitHub Releases page <https://github.com/vector-of-bool/bpt/releases>`_.
+`the GitHub Releases page <https://github.com/vector-of-bool/dds/releases>`_.
 Select the executable appropriate for your platform.
 
 Alternatively, the appropriate executable can be downloaded directly from the
@@ -31,13 +32,15 @@ Or using PowerShell:
   # Writes a file in the working directory called "bpt.exe"
   Invoke-WebRequest dds.pizza/get/windows -OutFile bpt.exe
 
-**On Linux, macOS, or other Unix-like systems**, you may need to mark the
-downloaded file as executable:
+.. note::
 
-.. code-block:: bash
+  **On Linux, macOS, or other Unix-like systems**, you may need to mark the
+  downloaded file as executable:
 
-  # Add the executable bit to the file mode for the file named "bpt"
-  chmod +x bpt
+  .. code-block:: bash
+
+    # Add the executable bit to the file mode for the file named "bpt"
+    chmod a+x bpt
 
 
 Installing
@@ -54,12 +57,15 @@ command name from any shell interpreter, you will need to place |bpt| on a
 directory on your shell's ``PATH`` environment variable.
 
 
+.. _tut.install.install-yourself:
+
 Easy Mode: ``install-yourself``
 ===============================
 
-|bpt| includes a subcommand "``install-yourself``" that will move its own
-executable to a predetermined directory and ensure that it exists on your
-``PATH`` environment variable. It is simple enough to run the command::
+|bpt| includes a subcommand "``install-yourself``" (See:
+:doc:`/guide/cli/install-yourself`) that will move its own executable to a
+predetermined directory and ensure that it exists on your ``PATH`` environment
+variable. It is simple enough to run the command::
 
   $ ./bpt install-yourself
 
@@ -78,15 +84,15 @@ environment variable for your user profile.
 .. note::
 
   The ``install-yourself`` command accepts some other options. Pass ``--help``
-  for more information.
+  for more information, or see here: :doc:`/guide/cli/install-yourself`
 
 
 Manually: On Unix-like Systems
 ==============================
 
-For an **unprivileged, user-specific installation (preferred)**, we recommend
-placing |bpt| in ``~/.local/bin`` (Where ``~`` represents the ``$HOME``
-directory of the current user).
+For an **unprivileged, user-specific installation (preferred)**, it is
+recommended to place |bpt| in ``~/.local/bin`` (Where ``~`` represents the
+``$HOME`` directory of the current user).
 
 Although not officially standardized,
 `the XDG Base Directory specification <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_

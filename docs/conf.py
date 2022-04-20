@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Refer: http://www.sphinx-doc.org/en/master/config
 
-import os
+from sphinx.application import Sphinx
 from pathlib import Path
 from typing import Any
 import sys
@@ -11,7 +11,7 @@ from sphinx.util.fileutil import copy_asset
 
 # -- Project information -----------------------------------------------------
 project = 'bpt'
-copyright = '2020, vector-of-bool'
+copyright = '2022'
 author = 'vector-of-bool'
 
 # The short X.Y version
@@ -43,19 +43,19 @@ if sys.version_info < (3, 10):
     autodoc_typehints = 'none'
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'nature'
+html_theme = 'pyramid'
 html_theme_options = {}
-html_static_path = []
+html_static_path = ['static']
 html_sidebars = {}
 
-hoverxref_roles = [
-    'term',
-    'ref',
-]
 hoverxref_role_types = {
     'term': 'tooltip',
     'ref': 'tooltip',
+    'envvar': 'tooltip',
+    'option': 'tooltip',
 }
+
+hoverxref_roles = list(hoverxref_role_types.keys())
 hoverxref_auto_ref = True
 hoverxref_mathjax = True
 
@@ -72,9 +72,12 @@ def intercept_copy_asset(path: str, dest: str, context: Any) -> None:
 hoverxref.extension.copy_asset = intercept_copy_asset
 
 rst_prolog = r'''
-.. |bpt| replace:: :literal:`bpt`
+.. role:: bpt-name(literal)
+    :class: bpt-name
+
+.. |bpt| replace:: :bpt-name:`bpt`
 '''
 
-if os.environ.get('GEN_FOR_HUGO'):
-    templates_path.append('.')
-    html_theme = 'basic'
+
+def setup(app: Sphinx):
+    app.add_css_file('styles.css')

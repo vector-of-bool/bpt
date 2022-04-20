@@ -1,0 +1,24 @@
+code.bpt-name.literal > span.pre {
+    font-weight: bold;
+}
+
+p > code.bpt-name.literal > span.pre {
+    font-size: 14pt;
+}
+
+code.literal:not(.bpt-name)  {
+    border: 1px solid #0004;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background-color: #0001;
+    white-space: nowrap;
+}
+
+pre span.linenos {
+    border-right: 2px solid green;
+    margin-right: 8px;
+}
+
+a.hoverxref.tooltip {
+    white-space: nowrap;
+}
