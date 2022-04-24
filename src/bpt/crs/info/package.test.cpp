@@ -677,7 +677,7 @@ TEST_CASE("Check parse results") {
                      .acceptable_versions
                      = bpt::crs::version_range_set{semver::version::parse("1.0.0"),
                                                    semver::version::parse("1.5.1")},
-                     .uses = bpt::crs::explicit_uses_list{{bpt::name{"baz"}}},
+                     .uses = {bpt::name{"baz"}},
                  }},
                  .test_dependencies ={},
              }},

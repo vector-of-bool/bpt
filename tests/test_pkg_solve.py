@@ -247,18 +247,15 @@ def test_solve_transitive_req_requires_lib_conflict(solve_repo_1: QuickRepo) -> 
 
 def test_solve_unsolvable_version_diamond(solve_repo_1: QuickRepo):
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-unsolvable-version-diamond@1.2.3')
+        solve_repo_1.pkg_solve('pkg-unsolvable-version-diamond@1.2.3 using main')
 
 
 def test_solve_unsolvable_lib_diamond(solve_repo_1: QuickRepo):
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-unsolvable-lib-diamond@1.2.3')
+        solve_repo_1.pkg_solve('pkg-unsolvable-lib-diamond@1.2.3 using main')
 
 
 def test_solve_ignore_unsolvable_libs(solve_repo_1: QuickRepo) -> None:
-    # No error: We aren't depending on the 'nonesuch' library
-    with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3')
     solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3 using goodlib')
     with expect_solve_fail():
         solve_repo_1.pkg_solve('pkg-with-unsolvable-library@1.2.3 using badlib')
@@ -266,15 +263,15 @@ def test_solve_ignore_unsolvable_libs(solve_repo_1: QuickRepo) -> None:
 
 def test_solve_skip_unsolvable_version(solve_repo_1: QuickRepo) -> None:
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-with-unsolvable-version=1.2.3')
+        solve_repo_1.pkg_solve('pkg-with-unsolvable-version=1.2.3 using main')
     # Okay: Just pull bar@1.2.4
-    solve_repo_1.pkg_solve('pkg-with-unsolvable-version@1.2.3')
+    solve_repo_1.pkg_solve('pkg-with-unsolvable-version@1.2.3 using main')
 
 
 def test_solve_fail_with_transitive_no_such_lib(solve_repo_1: QuickRepo) -> None:
     # Error: No 'bar' has 'no-such-lib'
     with expect_solve_fail():
-        solve_repo_1.pkg_solve('pkg-transitive-no-such-lib@1.2.3')
+        solve_repo_1.pkg_solve('pkg-transitive-no-such-lib@1.2.3 using main')
 
 
 def test_solve_conflicting_libset_2(solve_repo_1: QuickRepo) -> None:

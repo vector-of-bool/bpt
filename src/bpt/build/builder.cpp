@@ -91,13 +91,7 @@ build_plan prepare_build_plan(neo::ranges::range_of<sdist_target> auto&& sdists)
     std::function<void(const lib_prep_info&)> activate_more = [&](const lib_prep_info& inf) {
         auto add_deps = [&](auto&& deps) {
             for (const auto& dep : deps) {
-                // We should never reach this point with implicit usages
-                neo_assert(invariant,
-                           dep.uses.template is<crs::explicit_uses_list>(),
-                           "An implicit-using slipped through to the builder",
-                           inf.lib.name,
-                           dep.name);
-                for (const auto& use : dep.uses.template as<crs::explicit_uses_list>().uses) {
+                for (const auto& use : dep.uses) {
                     // All libraries that we are using must have been loaded into the builder
                     // (i.e. by the package dependency solver)
                     auto found = all_libs.find(lm::usage{dep.name.str, use.str});

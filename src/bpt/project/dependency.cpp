@@ -18,8 +18,7 @@ crs::dependency project_dependency::as_crs_dependency() const noexcept {
     return crs::dependency{
         .name                = dep_name,
         .acceptable_versions = acceptable_versions,
-        .uses = explicit_uses ? crs::dependency_uses{crs::explicit_uses_list{*explicit_uses}}
-                              : crs::dependency_uses{crs::implicit_uses_all{}},
+        .uses                = using_,
     };
 }
 
@@ -81,6 +80,7 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
 
     adv_token();
     if (tok.empty()) {
+        ret.using_.push_back(ret.dep_name);
         return ret;
     }
 
@@ -90,14 +90,13 @@ project_dependency project_dependency::from_shorthand_string(const std::string_v
     }
 
     if (tok == "using") {
-        ret.explicit_uses.emplace();
         while (1) {
             adv_token();
             if (tok == ",") {
                 BOOST_LEAF_THROW_EXCEPTION(
                     e_human_message{"Unexpected extra comma in dependency specifier"});
             }
-            ret.explicit_uses->emplace_back(*bpt::name::from_string(tok));
+            ret.using_.emplace_back(*bpt::name::from_string(tok));
             if (adv_token() != ",") {
                 break;
             }

@@ -84,19 +84,7 @@ std::string package_info::to_json(int indent) const noexcept {
                 }));
             }
             json uses = json::array();
-            dep.uses.visit(neo::overload{
-                [&](explicit_uses_list const& l) {
-                    extend(uses, l.uses | std::views::transform(&bpt::name::str));
-                },
-                [&](implicit_uses_all) {
-                    neo_assert(invariant,
-                               false,
-                               "We attempted to serialize (to_json) a CRS metadata object that "
-                               "contains an implicit dependency library uses list. This should "
-                               "never occur.",
-                               *this);
-                },
-            });
+            extend(uses, dep.uses | std::views::transform(&bpt::name::str));
             ret.push_back(json::object({
                 {"name", dep.name.str},
                 {"versions", versions},

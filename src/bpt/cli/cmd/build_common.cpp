@@ -24,20 +24,6 @@
 using namespace bpt;
 using namespace fansi::literals;
 
-static void resolve_implicit_usages(crs::package_info& proj_meta, crs::package_info& dep_meta) {
-    proj_meta.libraries                                                         //
-        | std::views::transform(NEO_TL(_1.dependencies))                        //
-        | std::views::join                                                      //
-        | std::views::filter(NEO_TL(_1.name == dep_meta.id.name))               //
-        | std::views::transform(NEO_TL(_1.uses))                                //
-        | std::views::filter(NEO_TL(_1.template is<crs::implicit_uses_all>()))  //
-        | neo::ranges::each([&](crs::dependency_uses& item) {
-              item = crs::explicit_uses_list{dep_meta.libraries
-                                             | std::views::transform(&bpt::crs::library_info::name)
-                                             | neo::to_vector};
-          });
-}
-
 builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
     sdist_build_params main_params = {
         .subdir          = "",
@@ -75,13 +61,11 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
 
         auto sln = bpt::solve(meta_db, crs_deps);
         for (auto&& pkg : sln) {
-            auto dep_meta
-                = fetch_cache_load_dependency(cache,
-                                              pkg,
-                                              false /* Do not mark libraries to be built */,
-                                              builder,
-                                              "_deps");
-            resolve_implicit_usages(proj_sd.pkg, dep_meta);
+            fetch_cache_load_dependency(cache,
+                                        pkg,
+                                        false /* Do not mark libraries to be built */,
+                                        builder,
+                                        "_deps");
         }
     }
 
