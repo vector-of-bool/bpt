@@ -5,7 +5,7 @@ from subprocess import CalledProcessError
 import pytest
 from bpt_ci import paths
 from bpt_ci.bpt import BPTWrapper
-from bpt_ci.testing import Project, PkgYAML
+from bpt_ci.testing import Project, ProjectYAML
 from bpt_ci.testing.error import expect_error_marker
 from bpt_ci.testing.fixtures import ProjectOpener
 from bpt_ci.testing.fs import render_into
@@ -50,13 +50,10 @@ def test_simple_lib(tmp_project: Project) -> None:
     tmp_project.bpt_yaml = {
         'name': 'test-project',
         'version': '0.0.0',
-        'lib': {
-            'name': 'test-library',
-        }
     }
     tmp_project.build()
     assert (tmp_project.build_root / 'compile_commands.json').is_file(), 'compdb was not created'
-    assert list(tmp_project.build_root.glob('libtest-library.*')) != [], 'No archive was created'
+    assert list(tmp_project.build_root.glob('libtest-project.*')) != [], 'No archive was created'
 
 
 def test_lib_with_just_test(tmp_project: Project) -> None:
@@ -93,7 +90,7 @@ def test_invalid_names(tmp_project: Project) -> None:
         tmp_project.pkg_create()
 
 
-TEST_PACKAGE: PkgYAML = {
+TEST_PACKAGE: ProjectYAML = {
     'name': 'test-pkg',
     'version': '0.2.2',
 }
@@ -160,7 +157,7 @@ def test_link_interdep(project_opener: ProjectOpener) -> None:
     proj.bpt_yaml = {
         'name': 'test',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'path': 'foo',
             'name': 'foo',
         }, {
@@ -172,7 +169,7 @@ def test_link_interdep(project_opener: ProjectOpener) -> None:
         proj.build()
 
     # Update with a 'using' of the library that was required:
-    proj.bpt_yaml['libs'][0]['using'] = ['bar']
+    proj.bpt_yaml['libraries'][0]['using'] = ['bar']
     print(proj.bpt_yaml)
     # Build is okay now
     proj.build()
@@ -206,3 +203,38 @@ def test_build_other_dir(project_opener: ProjectOpener, tmp_path: Path, bpt: BPT
         })
     proj = Project(Path('./build-other-dir/'), bpt)
     proj.build(cwd=tmp_path)
+
+
+def test_build_with_explicit_libs_ignores_default_lib(project_opener: ProjectOpener, tmp_path: Path, bpt: BPTWrapper):
+    render_into(
+        tmp_path, {
+            'src': {
+                'bad.cpp': r'''
+                #error This file is invalid
+                '''
+            },
+            'okay-lib': {
+                'src': {
+                    'okay.cpp': r'''
+                    // This file is okay
+                    '''
+                }
+            }
+        })
+    proj = Project(tmp_path, bpt)
+    with expect_error_marker('compile-failed'):
+        proj.build()
+
+    proj.bpt_yaml = {
+        'name': 'mine',
+        'version': '1.2.3',
+    }
+    with expect_error_marker('compile-failed'):
+        proj.build()
+
+    # Setting an explicit library list does not generate the default library
+    proj.bpt_yaml['libraries'] = [{
+        'name': 'something',
+        'path': 'okay-lib',
+    }]
+    proj.build()

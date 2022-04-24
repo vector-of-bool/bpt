@@ -1,6 +1,6 @@
 name: partially_buildable
 version: 0.1.0
-libs:
+libraries:
   - path: can_build
     name: can_build
   - path: cannot_build

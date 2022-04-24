@@ -267,7 +267,7 @@ def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Pr
     tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'path': '.',
             'name': 'foo',
             'using': ['bar'],
@@ -309,10 +309,7 @@ def test_repo_no_use_invalid_pkg_version(tmp_crs_repo: CRSRepo, tmp_project: Pro
     tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
-        'lib': {
-            'name': 'main',
-            'dependencies': ['bar@1.2.3']
-        },
+        'dependencies': ['bar@1.2.3'],
     }
     tmp_project.bpt.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])
     # Replace with a bad pkg_version:

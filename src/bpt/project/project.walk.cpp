@@ -27,14 +27,6 @@ using namespace fansi::literals;
 
 namespace {
 
-auto parse_root_lib = [](json5::data::mapping_type data) {
-    if (data.find("path") != data.end()) {
-        throw walk_error{"Project's main 'lib' cannot have a 'path' property"};
-    }
-    data.emplace("path", ".");
-    return project_library::from_json_data(std::move(data));
-};
-
 auto path_key(std::string_view                      key,
               std::optional<std::filesystem::path>& into,
               const std::optional<fs::path>&        proj_dir) {
@@ -86,8 +78,7 @@ project_manifest::from_json_data(const json5::data&                          dat
             "version",
             "dependencies",
             "test-dependencies",
-            "lib",
-            "libs",
+            "libraries",
             "readme",
             "license-file",
             "homepage",
@@ -100,6 +91,8 @@ project_manifest::from_json_data(const json5::data&                          dat
     };
 
     std::vector<std::string> authors;
+    bool                     explicit_libraries = false;
+    bool                     has_authors        = false;
 
     walk(data,
          require_mapping{"Project manifest root must be a mapping (JSON object)"},
@@ -121,10 +114,9 @@ project_manifest::from_json_data(const json5::data&                          dat
                     require_array{"Project 'test-dependencies' should be an array"},
                     for_each{put_into{std::back_inserter(ret.root_test_dependencies),
                                       project_dependency::from_json_data}}},
-             if_key{"lib",
-                    require_mapping{"Project 'lib' must be a mapping (JSON object)"},
-                    put_into(std::back_inserter(ret.libraries), parse_root_lib)},
-             if_key{"libs",
+             if_key{"libraries",
+                    set_true{explicit_libraries},
+                    require_array{"Project 'libraries' should be an array"},
                     for_each{put_into(std::back_inserter(ret.libraries),
                                       project_library::from_json_data)}},
              if_key{"$schema", just_accept},
@@ -143,14 +135,28 @@ project_manifest::from_json_data(const json5::data&                          dat
                     put_into(ret.license,
                              [](std::string s) { return bpt::spdx_license_expression::parse(s); })},
              if_key{"authors",
+                    set_true{has_authors},
                     require_array{"Project 'authors' must be an array of strings"},
                     for_each{require_str{"Each element of project 'authors' must be a string"},
                              put_into(std::back_inserter(authors))}},
              dym.rejecter<e_bad_bpt_yaml_key>(),
          });
 
-    if (dym.seen_keys.contains("authors")) {
+    if (has_authors) {
         ret.authors = std::move(authors);
+    }
+
+    if (explicit_libraries) {
+        if (ret.libraries.empty()) {
+            throw walk_error{"Project's 'libraries' array may not be empty"};
+        }
+    } else {
+        // No explicit 'libraries' key: Generate the default library for the
+        // project:
+        project_library def;
+        def.name    = ret.name;
+        def.relpath = ".";
+        ret.libraries.push_back(std::move(def));
     }
 
     ret.as_crs_package_meta().throw_if_invalid();

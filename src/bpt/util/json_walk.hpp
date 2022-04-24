@@ -54,7 +54,7 @@ struct key_dym_tracker {
 
     template <typename E>
     auto rejecter() {
-        return [this](auto&& key, auto &&) -> semester::walk_result {
+        return [this](auto&& key, auto&&) -> semester::walk_result {
             auto unseen
                 = known_keys | std::views::filter([&](auto k) { return !seen_keys.contains(k); });
             BOOST_LEAF_THROW_EXCEPTION(E{std::string(key), did_you_mean(key, unseen)});
@@ -63,6 +63,13 @@ struct key_dym_tracker {
     }
 };
 
-struct reject_with_known {};
+struct set_true {
+    bool& b;
+
+    auto operator()(auto&&) const {
+        b = true;
+        return walk.pass;
+    }
+};
 
 }  // namespace bpt::walk_utils

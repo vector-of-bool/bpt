@@ -14,7 +14,6 @@ def ut_repo(crs_repo_factory: CRSRepoFactory, test_parent_dir: Path) -> CRSRepo:
     return repo
 
 
-# TODO: Do not build test libs if we are not building tests
 def test_build_lib_with_failing_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
     proj = project_opener.open('with_bad_test_dep')
     # If we disable tests, then we won't try to build the test libraries, and
@@ -94,7 +93,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
     tmp_project.bpt_yaml = {
         'name': 'testing',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'name': 'main',
             'path': 'main',
         }, {
@@ -109,7 +108,7 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
     tmp_project.bpt_yaml = {
         'name': 'testing',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'name': 'main',
             'path': 'main',
         }, {

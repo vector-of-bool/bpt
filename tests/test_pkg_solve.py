@@ -47,7 +47,7 @@ def _render_pkg_version(name: str, version: str, item: _RepoPackageItem) -> Tree
         name,
         'version':
         version,
-        'libs': [
+        'libraries': [
             {
                 'name': lib_name,
                 'path': f'libs/{lib_name}',

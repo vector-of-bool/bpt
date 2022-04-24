@@ -1,6 +1,6 @@
 name: "test"
 version: "0.0.0"
-libs:
+libraries:
   - path: "libs/uses"
     name: "uses"
     dependencies: ["the_test_lib@0.0.0"]
