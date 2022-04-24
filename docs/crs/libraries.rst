@@ -31,7 +31,7 @@ Terms
   library path
 
     The "path" of a library is a POSIX-style `relative filepath` (relative to
-    the root of the containing package). The path must name a `library root`
+    the root of the containing package). The path must name a `CRS library root`
     within the package.
 
   library internal usages
@@ -88,16 +88,17 @@ Terms
 
     |def-library-usage|
 
-  library root
+  CRS library root
 
     The `directory` in which the source files of a single |library| reside.
-    Contains the ``src/`` and ``include/`` `directories <directory>` for a |library|.
+    Contains the ``src/`` and ``include/`` `directories <directory>` for a
+    |library|.
 
     .. seealso:: :ref:`The documentation on library roots <crs.library.root>`
 
-  source root
+  CRS source root
 
-    A subdirectories of the `library root` that contain the source files for a
+    A subdirectories of the `CRS library root` that contain the source files for a
     the library (including headers).
 
     .. seealso:: `Source Roots`_
@@ -111,11 +112,12 @@ Terms
     Source files are regular (non-`directory`) files that contain code of some
     programming language.
 
+  header
   header file
 
     A header file (or just "*header*") is kind of `source file` that contains
     `source code` that is not directly fed to a compiler. It is intended to be
-    used within other source files via the ``#include`` preprocessor directive.
+    used within other source files via the |#include| preprocessor directive.
 
     Header files usually use a special `file extension` that indicates their
     being header files. Examples of header file extensions include ``.h`` and
@@ -123,16 +125,16 @@ Terms
 
   public header root
 
-    The subdirectory of the `library root` that contains the header files that
-    should be exposed to `library users <library usage>`.
+    The subdirectory of the `CRS library root` that contains the header files
+    that should be exposed to `library users <library usage>`.
 
     .. seealso:: `Source Roots`_
 
   private header root
 
-    The subdirectory of the `library root` that contains the header files that
-    are required to compile the respective library, but *should not* be exposed
-    to the `library users <library usage>`.
+    The subdirectory of the `CRS library root` that contains the header files
+    that are required to compile the respective library, but *should not* be
+    exposed to the `library users <library usage>`.
 
     It is possible that library does not have a private header root.
 
@@ -140,7 +142,7 @@ Terms
 
   compiled source root
 
-    The subdirectory of the `library root` that contains the
+    The subdirectory of the `CRS library root` that contains the
     `source files <source file>` of the library that must be given to the
     compiler to generate the library's translation units.
 
@@ -183,16 +185,17 @@ Terms
 
   header search path
 
-    A filepath from which a compiler will resolve references to header files.
+    A :term:`filepath` from which a :term:`compiler` will resolve references to
+    :term:`header files <header file>`.
 
-    While the behavior of the ``#include`` directive is implementation-defined,
+    While the behavior of the |#include| directive is implementation-defined,
     CRS (and |bpt|) assumes the following behavior:
 
     1. When compiling a source file, the compiler has a list of
-       :term:`header search path`\ s `L` that it will use to resolve
-       ``#include`` directives.
-    2. An ``#include`` or ``__has_include`` directive specifies a filepath `H`
-       of the form ``<``\ `H`\ ``>``
+       :term:`header search path`\ s `L` that it will use to resolve |#include|
+       directives.
+    2. An |#include| or ``__has_include`` directive specifies a filepath `H` of
+       the form ``<``\ `H`\ ``>``
     3. For each directory `L_s` in `L`:
 
        1. Create a filepath `H_s` by joining `L_s` and `H` with a directory
@@ -221,10 +224,10 @@ The following are the salient attributes of a library within a package:
 Roots
 #####
 
-The `library root` is the directory in which the source files of a single
+The `CRS library root` is the directory in which the source files of a single
 library reside. CRS recognizes two top-level subdirectories within a library
 root: ``src/`` and ``include/``. A library root must contain one or both of
-these directories. Each directory is a `source root`. CRS does not impose any
+these directories. Each directory is a `CRS source root`. CRS does not impose any
 semantics on any other files in the library root.
 
 The following semantics apply, based on the presence of ``src/`` and/or
@@ -273,7 +276,7 @@ Being *relocatable* in this context means that the location of the directory on
 the filesystem is irrelevant to the code contained within. As long as the files
 within a source root are compiled with their `used-libraries <library usage>`
 available, moving or renaming the source root directory should never result in
-any ``#include`` directives failing to resolve.
+any |#include| directives failing to resolve.
 
 Code that explicitly assumes the location of its own source root, including in
 relation to other source roots, is expressly unsupported by CRS.
@@ -318,7 +321,7 @@ Suppose we have a library with the following source files (note the file paths):
   #include <bar.hpp>
 
 
-This library has two `source root` directories: ``include/`` and ``src/``.
+This library has two `CRS source root` directories: ``include/`` and ``src/``.
 ``src/`` is the `private header root` and `compiled source root`, while
 ``include/`` is the `public header root`. The following applies to each example:
 
@@ -337,7 +340,7 @@ This library has two `source root` directories: ``include/`` and ``src/``.
    the `private header root` directory, which will be added as a
    `header search path` while compiling the file.
 
-5. **Okay**: Relative ``#include`` directives that specify a leading ``.`` or
+5. **Okay**: Relative |#include| directives that specify a leading ``.`` or
    ``..`` are unambiguous to the reader, although it is possible that they will
    still resolve within a different `header search path` than the containing
    file's own directory.
@@ -351,10 +354,10 @@ This library has two `source root` directories: ``include/`` and ``src/``.
 Public Header Root
 ******************
 
-The `public header root` is the `source root` directory that contains headers
-that will be visible to the `library's users <library user>`. When compiling
-the containing library and all of its users, the `public header root` of the
-library should be added as a `header search path`.
+The `public header root` is the `CRS source root` directory that contains
+headers that will be visible to the `library's users <library user>`. When
+compiling the containing library and all of its users, the `public header root`
+of the library should be added as a `header search path`.
 
 Transitive usage also applies: If library :math:`A` uses library :math:`B`, and
 library :math:`B` uses library :math:`C`, the `public header root` of :math:`C`
@@ -365,9 +368,9 @@ should be included as a `header search path` while compiling :math:`A`, even if
 Private Header Root
 *******************
 
-The `private header root` is the `source root` directory that contains headers
-that should not be visible to the `library's users <library user>`, but *will*
-be visible while compiling the library's `public translation units`.
+The `private header root` is the `CRS source root` directory that contains
+headers that should not be visible to the `library's users <library user>`, but
+*will* be visible while compiling the library's `public translation units`.
 
 When compiling the `public translation units`, the `private header root` will be
 added as a `header search path`.

@@ -6,9 +6,10 @@ User Guide
 
     cli/index
     packages
+    libraries
+    apps
+    tests
     toolchains
-    source-dists
-    pkg-cache
     remote-pkgs
     interdeps
     build-deps

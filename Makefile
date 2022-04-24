@@ -5,27 +5,15 @@
 	vagrant-freebsd-ci site alpine-static-ci _alpine-static-ci poetry-setup \
 	full-ci dev-build release-build
 
-docs:
-	poetry run dagon docs
-	echo "Docs generated to _build/docs"
-
-hugo-docs:
-	env GEN_FOR_HUGO=1 $(MAKE) docs
-
-docs-server: docs
-	echo "Docs are visible on http://localhost:9794/"
-	cd _build/docs && \
-		python -m http.server 9794
-
-docs-watch: docs
-	+poetry run sh tools/docs-watch.sh
-
-docs-sync-server:
-	mkdir -p _build/docs
-	cd _build/docs && \
-	browser-sync start --server \
-		--reload-delay 300 \
-		--watch **/*.html
+docs-server:
+	poetry run sphinx-autobuild \
+		-b html \
+		-j 8 \
+		-Wna \
+		--re-ignore "docs/_build" \
+		--re-ignore "_build" \
+		docs/ \
+		_build/docs
 
 .poetry.stamp: poetry.lock
 	poetry install --no-dev

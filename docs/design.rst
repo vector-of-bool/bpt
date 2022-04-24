@@ -179,12 +179,13 @@ every ``src/`` directory must correspond to *exactly* one library.
 
 .. _design.rules.include:
 
-No Arbitrary ``#include`` Directories
-=====================================
+No Arbitrary |#include| Directories
+===================================
 
-Only ``src/`` and ``include/`` will ever be used as the basis for header
-resolution while building a project, so all ``#include`` directives should be
-relative to those directories. Refer to :ref:`pkg.source-root`.
+Only ``src/`` and ``include/`` will ever be used as the basis for
+`header resolution <header search path>` while building a project, so all
+|#include| directives should be relative to those directories. Refer to
+:ref:`libs.source-kinds`.
 
 
 .. _design.rules.uniform-compile:

@@ -38,21 +38,18 @@ Declaring Dependencies
 ``bpt build-deps`` accepts a list of dependency statements as command line
 arguments, but it may be useful to specify those requirements in a file.
 
-``bpt build-deps`` accepts a JSON5 file describing the dependencies of a
-project as well. This file is similar to a very stripped-down version of a
-|bpt| :ref:`package manifest <pkgs.pkgs>`, and only includes the ``depends``
-key. (The presence of any other key is an error.)
+``bpt build-deps`` accepts a JSON5 file describing the dependencies of a project
+as well. This file is similar to a very stripped-down version of a |bpt.yaml|,
+and only includes the ``dependencies`` key. (The presence of any other key is an
+error.)
 
 Here is a simple dependencies file that declares a single requirement:
 
 .. code-block:: js
-  :caption: ``dependencies.json5``
+  :caption: ``dependencies.yaml``
 
-  {
-    depends: [
-      'neo-sqlite3^0.2.0',
-    ]
-  }
+  depends:
+    - neo-sqlite3^0.2.0
 
 
 Building Dependencies and the Index

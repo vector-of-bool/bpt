@@ -23,6 +23,7 @@ repositories.
 
 .. include:: ./repo-common-args.rst
 
+.. _cli.pkg-create:
 
 ``bpt pkg create``
 ******************

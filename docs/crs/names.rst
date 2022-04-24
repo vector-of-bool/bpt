@@ -2,6 +2,24 @@
 Names
 #####
 
+.. default-role:: term
+
+.. glossary::
+
+   name
+
+      In `CRS` and |bpt| a *name* refers to a textual identifier matching a
+      specific form.
+
+      A valid *name* must match the following requirements:
+
+      1. Must begin with a lowercase ASCII alphabetic character
+      2. Must not contain any capital letter characters.
+      3. May only contain ASCII alphanumeric characters and the ASCII dot
+         "``.``", underscore ":literal:`_`", and hyphen "``-``".
+      4. Must not contain any adjacent punctuation characters.
+      5. Must end with a letter or digit.
+
 A CRS name can be validated by testing against the following regular
 expression
 

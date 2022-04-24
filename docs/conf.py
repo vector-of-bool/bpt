@@ -76,6 +76,29 @@ rst_prolog = r'''
     :class: bpt-name
 
 .. |bpt| replace:: :bpt-name:`bpt`
+
+.. |code-open| raw:: html
+
+        <code class="literal"><span>
+
+.. |code-close| raw:: html
+
+        <span/></code>
+
+.. |bpt.yaml| replace:: |code-open|\ :term:`bpt.yaml`\ |code-close|
+
+.. |crs.json| replace:: |code-open|\ :ref:`crs.json`\ |code-close|
+
+.. role:: yaml(code)
+    :language: yaml
+    :class: highlight
+
+.. role:: cpp(code)
+    :language: cpp
+    :class: highlight
+
+.. |#include| replace:: :cpp:`#include`
+
 '''
 
 
