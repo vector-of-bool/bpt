@@ -312,17 +312,43 @@ generate_failure_explanation(const solve_failure_exception& exc) {
 void try_load_nonesuch_packages(boost::leaf::error_id           error,
                                 crs::cache_db const&            cache,
                                 const std::vector<requirement>& reqs) {
+    // Find packages and libraries that aren't at all available
     error.load([&](std::vector<e_nonesuch_package>& missing) {
         for (auto& req : reqs) {
             auto cands = cache.for_package(req.name);
-            if (cands.begin() != cands.end()) {
-                // This requirement has candidates
+            auto it    = cands.begin();
+            if (it == cands.end()) {
+                // This requirement has no candidates
+                auto all       = cache.all_enabled();
+                auto all_names = all
+                    | stdv::transform([](auto entry) { return entry.pkg.id.name.str; })
+                    | neo::to_vector;
+                missing.emplace_back(req.name.str, did_you_mean(req.name.str, all_names));
                 continue;
             }
-            auto all       = cache.all_enabled();
-            auto all_names = all | stdv::transform([](auto entry) { return entry.pkg.id.name.str; })
-                | neo::to_vector;
-            missing.emplace_back(req.name.str, did_you_mean(req.name.str, all_names));
+            error.load([&](std::vector<e_nonesuch_using_library>& missing_libs) {
+                auto want_libs = req.uses;
+                sr::sort(want_libs);
+                std::set<std::string> all_lib_names;
+                for (; it != cands.end() and not want_libs.empty(); ++it) {
+                    auto cand_has_libs = it->pkg.libraries
+                        | stdv::transform(&crs::library_info::name) | neo::to_vector;
+                    sr::sort(cand_has_libs);
+                    std::vector<bpt::name> missing_libs;
+                    sr::set_difference(want_libs, cand_has_libs, std::back_inserter(missing_libs));
+                    want_libs = std::move(missing_libs);
+                    extend(all_lib_names, cand_has_libs | stdv::transform(&bpt::name::str));
+                }
+                if (not want_libs.empty()) {
+                    extend(missing_libs,
+                           want_libs | stdv::transform([&](auto&& libname) {
+                               return e_nonesuch_using_library{
+                                   req.name,
+                                   e_nonesuch{libname.str,
+                                              did_you_mean(libname.str, all_lib_names)}};
+                           }));
+                }
+            });
         }
     });
 }
