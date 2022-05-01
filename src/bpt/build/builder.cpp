@@ -92,20 +92,38 @@ build_plan prepare_build_plan(neo::ranges::range_of<sdist_target> auto&& sdists)
         auto add_deps = [&](auto&& deps) {
             for (const auto& dep : deps) {
                 for (const auto& use : dep.uses) {
-                    // All libraries that we are using must have been loaded into the builder
-                    // (i.e. by the package dependency solver)
-                    auto found = all_libs.find(lm::usage{dep.name.str, use.str});
-                    neo_assert(invariant,
-                               found != all_libs.end(),
-                               "Failed to find a dependency library for build activation",
-                               inf.lib.name,
-                               dep.name,
-                               use);
-                    bool did_add = libs_to_build.emplace(&found->second).second;
-                    if (did_add) {
-                        // Recursively activate more libraries used by this library.
-                        activate_more(found->second);
-                    }
+                    std::function<void(const bpt::name&)> add_named
+                        = [&](bpt::name const& libname) {
+                              // All libraries that we are using must have been loaded into the
+                              // builder (i.e. by the package dependency solver)
+                              auto found = all_libs.find(lm::usage{dep.name.str, libname.str});
+                              neo_assert(invariant,
+                                         found != all_libs.end(),
+                                         "Failed to find a dependency library for build activation",
+                                         inf.lib.name,
+                                         dep.name,
+                                         libname);
+                              bool did_add = libs_to_build.emplace(&found->second).second;
+                              if (did_add) {
+                                  bpt_log(trace,
+                                          "Activate library [{}/{}] (Required by {}/{})",
+                                          dep.name,
+                                          libname,
+                                          inf.pkg.id.name,
+                                          inf.lib.name);
+                                  // Recursively activate more libraries used by this library.
+                                  activate_more(found->second);
+                              }
+                              for (const auto& sibling : found->second.lib.intra_using) {
+                                  add_named(sibling);
+                              }
+                              if (inf.sdt.params.build_tests) {
+                                  for (const auto& sibling : found->second.lib.intra_test_using) {
+                                      add_named(sibling);
+                                  }
+                              }
+                          };
+                    add_named(use);
                 }
             }
         };
