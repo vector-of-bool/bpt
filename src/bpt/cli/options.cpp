@@ -440,15 +440,17 @@ struct setup {
             .valname = "<project-name>",
             .action  = put_into(opts.new_.name),
         });
-        // parser.add_argument({
-        //     .long_spellings = {"name"},
-        //     .action         = store_value(opts.new_.name),
-        // });
         parser.add_argument({
             .long_spellings = {"dir"},
             .help           = "Directory in which the project will be generated",
             .valname        = "<project-directory>",
             .action         = put_into(opts.new_.directory),
+        });
+        parser.add_argument({
+            .long_spellings = {"split-src-include"},
+            .help           = "Whether to split the [src/] and [include/] directories",
+            .valname        = "{true,false}",
+            .action         = parse_bool_into(opts.new_.split_src_include),
         });
     }
 };

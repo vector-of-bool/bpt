@@ -3,6 +3,7 @@
 #include "./error.hpp"
 
 #include <boost/leaf/exception.hpp>
+#include <boost/leaf/on_error.hpp>
 
 #if __has_include(<magic_enum.hpp>)
 #include "./enum.hpp"
@@ -19,6 +20,8 @@ namespace debate {
 template <typename E>
 constexpr auto make_enum_putter(E& dest) noexcept;
 
+bool parse_bool_string(std::string_view sv);
+
 template <typename T>
 class argument_value_putter {
     T& _dest;
@@ -28,6 +31,17 @@ public:
         : _dest(dest) {}
 
     void operator()(std::string_view value, std::string_view) { _dest = T(value); }
+};
+
+template <typename Val>
+class argument_value_putter<std::optional<Val>> {
+    std::optional<Val>& _dest;
+
+public:
+    explicit argument_value_putter(std::optional<Val>& opt)
+        : _dest(opt) {}
+
+    void operator()(std::string_view value, std::string_view) { _dest = static_cast<Val>(value); }
 };
 
 template <typename Int>
@@ -67,7 +81,15 @@ constexpr inline auto store_value = [](auto& dest, auto val) {
 constexpr inline auto store_true  = [](auto& dest) { return store_value(dest, true); };
 constexpr inline auto store_false = [](auto& dest) { return store_value(dest, false); };
 
-constexpr inline auto put_into = [](auto& dest) { return make_argument_putter(dest); };
+constexpr inline auto parse_bool_into = [](auto& dest) {
+    return [&dest](std::string_view given, std::string_view spell) -> void {
+        auto _ = boost::leaf::on_error(e_arg_spelling{std::string(spell)});
+        dest   = parse_bool_string(given);
+    };
+};
+
+constexpr inline auto put_into
+    = [](auto& dest) { return make_argument_putter(dest); };
 
 constexpr inline auto push_back_onto = [](auto& dest) {
     return [&dest](std::string_view value, std::string_view = {}) { dest.emplace_back(value); };

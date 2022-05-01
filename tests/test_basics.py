@@ -238,3 +238,9 @@ def test_build_with_explicit_libs_ignores_default_lib(project_opener: ProjectOpe
         'path': 'okay-lib',
     }]
     proj.build()
+
+
+def test_new_then_build(bpt: BPTWrapper, tmp_path: Path) -> None:
+    bpt.run(['new', 'test-project', '--dir', tmp_path, '--split-src-include=no'])
+    proj = Project(tmp_path, bpt)
+    proj.build()

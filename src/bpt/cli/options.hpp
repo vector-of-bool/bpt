@@ -244,6 +244,8 @@ struct options {
         opt_string directory;
         /// The name of the new project
         opt_string name;
+        /// Whether to split sources/headers
+        std::optional<bool> split_src_include;
     } new_;
 
     /**

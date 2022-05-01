@@ -52,6 +52,51 @@ std::string to_ident(std::string_view given) {
     return ret;
 }
 
+const std::string_view BPT_YAML_TEMPLATE = R"(# Project '{0}' created by 'bpt new'
+name: {0}
+version: 0.1.0
+
+## Use 'dependencies' to declare dependencies on external libraries
+# dependencies:
+#   - fmt@8.1.1
+
+## Use 'test-dependencies' to declare dependencies on external libraries to be
+## used by this project's tests
+# test-dependencies:
+#   - catch2@2.13.9 using main
+
+## The relative filepath to the project's README file
+readme: README.md
+
+## Provide a very brief description of the project
+description: |
+  The is the {0} project. Hello!
+
+## Point to the project's homepage on the web
+# homepage: example.com
+
+## The source-control repository of the project
+# repository: example.com/{0}/source
+
+## A URL to the documentation for the project
+# documentation: example.com/{0}/docs
+
+## Specify an SPX License ID for the project
+# license:
+
+## List the authors of the project
+# authors:
+#   - My Name <my.email@example.org>
+#   - Other Name <other.email@example.org>
+)";
+
+const std::string_view README_MD_TEMPLATE = R"(<!-- README.md created by 'bpt new' -->
+# `{0}` - A Great New Project
+
+Add introductory information about your project to this file, which will likely
+be the first thing that potential new users will see.
+)";
+
 }  // namespace
 
 int new_cmd(const options& opts) {
@@ -97,31 +142,29 @@ int new_cmd(const options& opts) {
     }
 
     bool split_dir = false;
-    while (true) {
-        auto got = get_argument(
-            "Split headers and sources into [include/] and [src/] directories? [y/N]",
-            std::nullopt,
-            "");
-        if (got == neo::oper::any_of("n", "N", "no", "")) {
-            split_dir = false;
-            break;
-        } else if (got == neo::oper::any_of("y", "Y", "yes")) {
-            split_dir = true;
-            break;
-        } else {
-            fmt::print(std::cerr, "Enter one of '.bold.cyan[y]' or '.bold.cyan[n]'"_styled);
+    if (opts.new_.split_src_include.has_value()) {
+        split_dir = *opts.new_.split_src_include;
+    } else {
+        while (true) {
+            auto got = get_argument(
+                "Split headers and sources into [include/] and [src/] directories? [y/N]",
+                std::nullopt,
+                "");
+            if (got == neo::oper::any_of("n", "N", "no", "")) {
+                split_dir = false;
+                break;
+            } else if (got == neo::oper::any_of("y", "Y", "yes")) {
+                split_dir = true;
+                break;
+            } else {
+                fmt::print(std::cerr, "Enter one of '.bold.cyan[y]' or '.bold.cyan[n]'"_styled);
+            }
         }
     }
 
     fs::path project_dir = dest;
     fs::create_directories(project_dir);
-    bpt::write_file(project_dir / "bpt.yaml",
-                    fmt::format("# Project '{0}' created by 'bpt new'\n"
-                                "name: {0}\n"
-                                "version: 0.1.0\n"
-                                "lib:\n"
-                                "  name: {0}\n",
-                                name));
+    bpt::write_file(project_dir / "bpt.yaml", fmt::format(BPT_YAML_TEMPLATE, name));
 
     fs::path header_dir = split_dir ? (project_dir / "include") : (project_dir / "src");
     fs::path src_dir    = project_dir / "src";
@@ -143,6 +186,7 @@ int new_cmd(const options& opts) {
                                 "}}\n",
                                 to_ident(name)));
 
+    bpt::write_file(project_dir / "README.md", fmt::format(README_MD_TEMPLATE, name));
     fmt::print("New project files written to [.bold.cyan[{}]]\n"_styled, dest);
     return 0;
 }

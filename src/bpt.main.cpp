@@ -80,7 +80,7 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             debate::e_invalid_arg_value val) {
             std::cerr << p.value.usage_string(program_name) << '\n';
             fmt::print(std::cerr,
-                       "Invalid {} value '{}' given for '{}'\n",
+                       "Invalid .cyan[{}] value \".bold.red[{}]\" given for '.yellow[{}]'\n"_styled,
                        arg.value.valname,
                        val.value,
                        spell.value);
@@ -93,17 +93,19 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             debate::e_wrong_val_num   given) {
             std::cerr << p.value.usage_string(program_name) << '\n';
             if (arg.value.nargs == 0) {
-                fmt::print(std::cerr,
-                           "Argument '{}' does not expect any values, but was given one\n",
-                           spell.value);
+                fmt::print(
+                    std::cerr,
+                    "Argument .yellow[{}] does not expect any values, but was given one\n"_styled,
+                    spell.value);
             } else if (arg.value.nargs == 1 && given.value == 0) {
-                fmt::print(std::cerr,
-                           "Argument '{}' expected to be given a value, but received none\n",
-                           spell.value);
+                fmt::print(
+                    std::cerr,
+                    "Argument .yellow[{}] expected to be given a value, but received none\n"_styled,
+                    spell.value);
             } else {
                 fmt::print(
                     std::cerr,
-                    "Wrong number of arguments provided for '{}': Expected {}, but only got {}\n",
+                    "Wrong number of arguments provided for .yellow[{}]: Expected {}, but only got {}\n"_styled,
                     spell.value,
                     arg.value.nargs,
                     given.value);
@@ -112,14 +114,14 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         },
         [&](debate::missing_required, debate::e_argument_parser p, debate::e_argument arg) {
             fmt::print(std::cerr,
-                       "{}\nMissing required argument '{}'\n",
+                       "{}\nMissing required argument '.yellow[{}]'\n"_styled,
                        p.value.usage_string(program_name),
                        arg.value.preferred_spelling());
             return 2;
         },
         [&](debate::invalid_repetition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
             fmt::print(std::cerr,
-                       "{}\nArgument '{}' cannot be provided more than once\n",
+                       "{}\nArgument '.yellow[{}]' cannot be provided more than once\n"_styled,
                        p.value.usage_string(program_name),
                        sp.value);
             return 2;
