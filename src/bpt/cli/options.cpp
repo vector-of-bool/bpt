@@ -141,11 +141,10 @@ struct setup {
         parser.add_argument({
             .long_spellings  = {"log-level"},
             .short_spellings = {"l"},
-            .help            = ""
-                    "Set the bpt logging level. One of 'trace', 'debug', 'info', \n"
-                    "'warn', 'error', 'critical', or 'silent'",
-            .valname = "<level>",
-            .action  = put_into(opts.log_level),
+            .help            = "Set the bpt logging level. One of 'trace', 'debug', 'info', \n"
+                               "'warn', 'error', 'critical', or 'silent'",
+            .valname         = "<level>",
+            .action          = put_into(opts.log_level),
         });
         parser.add_argument({
             .long_spellings = {"crs-cache-dir"},
@@ -406,9 +405,9 @@ struct setup {
     void setup_install_yourself_cmd(argument_parser& install_yourself_cmd) {
         install_yourself_cmd.add_argument({
             .long_spellings = {"where"},
-            .help = "The scope of the installation. For .bold[system], installs in a global \n"
-                    "directory for all users of the system. For .bold[user], installs in a \n"
-                    "user-specific directory for executable binaries."_styled,
+            .help    = "The scope of the installation. For .bold[system], installs in a global \n"
+                       "directory for all users of the system. For .bold[user], installs in a \n"
+                       "user-specific directory for executable binaries."_styled,
             .valname = "{user,system}",
             .action  = put_into(opts.install_yourself.where),
         });
@@ -427,9 +426,9 @@ struct setup {
         });
         install_yourself_cmd.add_argument({
             .long_spellings = {"symlink"},
-            .help = "Create a symlink at the installed location to the existing 'bpt' executable\n"
-                    "instead of copying the executable file",
-            .nargs  = 0,
+            .help  = "Create a symlink at the installed location to the existing 'bpt' executable\n"
+                     "instead of copying the executable file",
+            .nargs = 0,
             .action = store_true(opts.install_yourself.symlink),
         });
     }

@@ -88,8 +88,7 @@ constexpr inline auto parse_bool_into = [](auto& dest) {
     };
 };
 
-constexpr inline auto put_into
-    = [](auto& dest) { return make_argument_putter(dest); };
+constexpr inline auto put_into = [](auto& dest) { return make_argument_putter(dest); };
 
 constexpr inline auto push_back_onto = [](auto& dest) {
     return [&dest](std::string_view value, std::string_view = {}) { dest.emplace_back(value); };
