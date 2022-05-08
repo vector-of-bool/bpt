@@ -147,7 +147,7 @@ crs::cache cli::open_ready_cache(const cli::options& opts) {
         use_repo(meta_db, opts, r);
     }
     if (opts.use_default_repo) {
-        use_repo(meta_db, opts, "repo-2.dds.pizza");
+        use_repo(meta_db, opts, "repo-3.bpt.pizza");
     }
     return cache;
 }
