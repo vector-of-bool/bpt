@@ -192,12 +192,12 @@ void repository::remove_pkg(const package_info& meta) {
                 DELETE FROM crs_repo_packages
                  WHERE name = ?1
                        AND version = ?2
-                       AND (pkg_version = ?3
-                            OR ?3 = 0)
+                       AND (pkg_version = ?3)
             )"_sql),
             meta.id.name.str,
             meta.id.version.to_string(),
             meta.id.revision)
         .value();
+    bpt_log(debug, "Deleting subdirectory [{}]", to_delete.string());
     ensure_absent(to_delete).value();
 }
