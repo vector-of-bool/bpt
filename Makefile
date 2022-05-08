@@ -46,7 +46,7 @@ _alpine-static-ci:
 		-o test-toolchain=tools/gcc-10-static-rel.jsonc \
 		--interface simple \
 		--fail-cancels \
-		test format.check
+		test
 	poetry run dagon \
 		-o main-toolchain=tools/gcc-10-static-rel.jsonc \
 		--interface simple \
