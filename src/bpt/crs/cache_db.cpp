@@ -87,48 +87,6 @@ cache_db cache_db::open(unique_database& db) {
                     STORED,
                 UNIQUE (name, version, pkg_version, remote_id)
             );
-
-            CREATE TABLE bpt_crs_libraries (
-                lib_id INTEGER PRIMARY KEY,
-                pkg_id INTEGER NOT NULL
-                    REFERENCES bpt_crs_packages
-                    ON DELETE CASCADE,
-                name TEXT NOT NULL,
-                path TEXT NOT NULL,
-                UNIQUE (pkg_id, name)
-            );
-
-            CREATE TRIGGER bpt_crs_libraries_auto_insert
-                AFTER INSERT ON bpt_crs_packages
-                FOR EACH ROW
-                BEGIN
-                    INSERT INTO bpt_crs_libraries (pkg_id, name, path)
-                        WITH libraries AS (
-                            SELECT value FROM json_each(new.json, '$.libraries')
-                        )
-                        SELECT
-                            new.pkg_id,
-                            json_extract(lib.value, '$.name'),
-                            json_extract(lib.value, '$.path')
-                        FROM libraries AS lib;
-                END;
-
-            CREATE TRIGGER bpt_crs_libraries_auto_update
-                AFTER UPDATE ON bpt_crs_packages
-                FOR EACH ROW WHEN new.json != old.json
-                BEGIN
-                    DELETE FROM bpt_crs_libraries
-                        WHERE pkg_id = new.pkg_id;
-                    INSERT INTO bpt_crs_libraries (pkg_id, name, path)
-                        WITH libraries AS (
-                            SELECT value FROM json_each(new.json, '$.libraries')
-                        )
-                        SELECT
-                            new.pkg_id,
-                            json_extract(lib.value, '$.name'),
-                            json_extract(lib.value, '$.path')
-                        FROM libraries AS lib;
-                END;
         )"_sql);
     }).value();
     db.exec_script(R"(
@@ -327,11 +285,12 @@ neo::co_resource<remote_repo_db_info> get_remote_db(bpt::unique_database& db, ne
         co_yield info;
     } else {
         bpt::http_request_params params;
-        auto&                    prio_info_st = db.prepare(
-            "SELECT etag, last_modified, resource_time, cache_control "
-            "FROM bpt_crs_remotes "
-            "WHERE url=?"_sql);
-        auto url_str = url.to_string();
+        // Open the prior download info from the cachedb
+        auto& prio_info_st = db.prepare(R"(
+               SELECT etag, last_modified, resource_time, cache_control
+                 FROM bpt_crs_remotes
+                WHERE url=?)"_sql);
+        auto  url_str      = url.to_string();
         neo_assertion_breadcrumbs("Pulling remote repository metadata", url_str);
         bpt_log(debug, "Syncing repository [{}] via HTTP", url_str);
         neo::sqlite3::reset_and_bind(prio_info_st, std::string_view(url_str)).throw_if_error();
