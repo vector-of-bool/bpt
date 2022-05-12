@@ -16,7 +16,7 @@ Generating a Source Distribution
 ********************************
 
 Generating a source distribution from a project directory is done with the
-``sdist`` subcommand::
+``pkg`` subcommand::
 
 > bpt pkg create
 
