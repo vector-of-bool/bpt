@@ -104,6 +104,7 @@ sdist bpt::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     for (const crs::library_info& lib : in_sd.pkg.libraries) {
         sdist_copy_library(out, in_sd, lib, params);
     }
+    in_sd.pkg.id.revision = params.revision;
 
     fs::create_directories(out);
     bpt::write_file(out / "pkg.json", in_sd.pkg.to_json(2));

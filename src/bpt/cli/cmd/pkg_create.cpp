@@ -21,9 +21,18 @@ int pkg_create(const options& opts) {
         .project_dir = opts.absolute_project_dir_path(),
         .dest_path   = {},
         .force       = opts.if_exists == if_exists::replace,
+        .revision    = opts.pkg.create.revision,
     };
+    if (params.revision < 1) {
+        bpt_log(
+            error,
+            ".bold.cyan[--revision] must be greater than or equal to one '1' (Got .bold.red[{}])"_styled,
+            params.revision);
+        return 1;
+    }
     return bpt_leaf_try {
         auto sd               = sdist::from_directory(params.project_dir);
+        sd.pkg.id.revision    = params.revision;
         auto default_filename = fmt::format("{}.tar.gz", sd.pkg.id.to_string());
         auto filepath         = opts.out_path.value_or(fs::current_path() / default_filename);
         create_sdist_targz(filepath, params);

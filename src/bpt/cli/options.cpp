@@ -301,6 +301,11 @@ struct setup {
             = "Destination path for the source distribution archive";
         pkg_create_cmd.add_argument(if_exists_arg.dup()).help
             = "What to do if the destination names an existing file";
+        pkg_create_cmd.add_argument({
+            .long_spellings = {"revision"},
+            .help   = "The revision number of the generated package (The CRS \"pkg-version\")",
+            .action = put_into(opts.pkg.create.revision),
+        });
     }
 
     void setup_pkg_search_cmd(argument_parser& pkg_search_cmd) noexcept {

@@ -175,6 +175,10 @@ struct options {
         /// The 'bpt pkg' subcommand
         pkg_subcommand subcommand;
 
+        struct {
+            int revision = 1;
+        } create;
+
         /**
          * @brief Paramters for 'bpt pkg prefetch'
          */
