@@ -116,7 +116,7 @@ struct setup {
     argument no_default_repo_arg{
         .long_spellings  = {"no-default-repo"},
         .short_spellings = {"NDR"},
-        .help            = "Do not consult the default package repository [repo-2.dds.pizza]",
+        .help            = "Do not consult the default package repository [repo-3.bpt.pizza]",
         .nargs           = 0,
         .action          = store_false(opts.use_default_repo),
     };
