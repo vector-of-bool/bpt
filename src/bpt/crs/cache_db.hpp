@@ -85,6 +85,8 @@ public:
      *
      * @param name The name of a package
      * @param version The version of the package
+     *
+     * @note The package range returned is ordered in descending order by the pkg-version
      */
     [[nodiscard]] neo::any_input_range<package_entry>
     for_package(bpt::name const& name, semver::version const& version) const;

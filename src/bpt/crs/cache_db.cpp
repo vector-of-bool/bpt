@@ -145,6 +145,7 @@ cache_db::for_package(bpt::name const& name, semver::version const& version) con
         SELECT pkg_id, remote_id, json
         FROM enabled_packages
         WHERE name = ? AND version = ?
+        ORDER BY pkg_version DESC
     )");
     st.bindings() = std::forward_as_tuple(name.str, version.to_string());
     return cache_entries_for_query(std::move(st));
