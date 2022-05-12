@@ -1,17 +1,20 @@
 .. highlight:: js
+.. default-role:: tc-option
+
+.. |--toolchain| replace:: :option:`--toolchain <bpt build --toolchain>`
 
 Toolchains
 ##########
 
 One of the core components of |bpt| is that of the *toolchain*. A toolchain
-encompasses the environment used to build and link source code, including, but
-not limited to:
+encompasses the environment used to :term:`compile` and :term:`link <linking>`
+source code, including, but not limited to:
 
-#. The executable binaries that constitute the language implementation:
-   Compilers, linkers, and archive managers.
-#. The configuration of those tools, including most options given to those
-   tools when they are invoked.
-#. The set of preprocessor macros and language features that are active during
+1. The executable binaries that constitute the language implementation:
+   :term:`Compilers <compiler>`, :term:`linkers <linker>`, and archive managers.
+2. The configuration of those tools, including most
+   :term:`command-line arguments` given to those tools when they are invoked.
+3. The set of preprocessor macros and language features that are active during
    compilation.
 
 When a build is run, every file in the entire tree (including dependencies)
@@ -21,10 +24,12 @@ This page provides an introduction on how one can make use of toolchains most
 effectively in your project.
 
 .. note::
+
     **IMPORTANT**: |bpt| will *not* automatically load the Visual C++
-    environment. To use Visual C++, |bpt| must be executed from the
-    appropriate environment in order for the Visual C++ toolchain executables
-    and files to be available.
+    environment. To use Visual C++, |bpt| must be executed from the appropriate
+    environment in order for the Visual C++ toolchain executables and files to
+    be available.
+
 
 .. _toolchains.file:
 
@@ -36,7 +41,7 @@ that describes the entire toolchain. When running a build for a project, the
 |bpt| executable will look in a few locations for a default toolchain, and
 generate an error if no default toolchain file is found (Refer to
 :ref:`toolchains.default`). A different toolchain can be provided by passing
-the toolchain file for the ``--toolchain`` (or ``-t``) option on the command
+the toolchain file for the |--toolchain| (or ``-t``) option on the command
 line::
 
     $ bpt build -t my-toolchain.json5
@@ -50,14 +55,12 @@ Built-in Toolchains
 *******************
 
 For convenience, |bpt| includes several built-in toolchains that can be
-accessed in the ``--toolchain`` command-line option using a colon ``:``
+accessed in the |--toolchain| command-line option using a colon ``:``
 prefix::
 
     $ bpt build -t :gcc
 
-|bpt| will treat the leading colon (``:``) as a name for a built-in
-toolchain (this means that a toolchain's filepath may not begin with a colon).
-
+|bpt| will treat the leading colon (``:``) as a name for a built-in toolchain.
 There are several built-in toolchains that may be specified:
 
 ``:gcc``
@@ -95,10 +98,10 @@ The following pseudo-toolchains are also available:
 Providing a Default Toolchain File
 **********************************
 
-If you do not wish to provide a new toolchain for every individual project,
-and the built-in toolchains do not suit your needs, you can write a toolchain
-file to one of a few predefined paths, and |bpt| will find and use it for the
-build. The following directories are searched, in order:
+If you do not wish to provide a new toolchain for every individual project, and
+the built-in toolchains do not suit your needs, you can write a toolchain file
+to one of a few predefined paths, and |bpt| will find and use it for the build.
+The following directories are searched, in order:
 
 #. ``$pwd/`` - If the working directory contains a toolchain file, it will be
    used as the default.
@@ -111,12 +114,11 @@ build. The following directories are searched, in order:
 In each directory, it will search for ``toolchain.json5``, ``toolchain.jsonc``,
 or ``toolchain.json``.
 
-The ``$bpt_config_dir`` directory is the |bpt| subdirectory of the
-user-local configuration directory.
+The ``$bpt_config_dir`` directory is the |bpt| subdirectory of the user-local
+configuration directory.
 
 The user-local config directory is ``$XDG_CONFIG_DIR`` or ``~/.config`` on
-Linux, ``~/Library/Preferences`` on macOS, and ``~/AppData/Roaming`` on
-Windows.
+Linux, ``~/Library/Preferences`` on macOS, and ``~/AppData/Roaming`` on Windows.
 
 
 Toolchain Definitions
@@ -133,16 +135,16 @@ simply one line:
         compiler_id: "<compiler-id>"
     }
 
-where ``<compiler-id>`` is one of the known ``compiler_id`` options (See the
-toolchain option reference). |bpt| will infer common suitable defaults for
-the remaining options based on the value of ``compiler_id``.
+where ``<compiler-id>`` is one of the known `compiler_id` options. |bpt| will
+infer common suitable defaults for the remaining options based on the value of
+`compiler_id`.
 
-For example, if you specify ``gnu``, then |bpt| will assume ``gcc`` to be the
-C compiler, ``g++`` to be the C++ compiler, and ``ar`` to be the library
-archiving tool.
+For example, if you specify ``gnu``, then |bpt| will assume ``gcc`` to be the C
+compiler, ``g++`` to be the C++ compiler, and ``ar`` to be the library archiving
+tool.
 
-If you know that your compiler executable has a different name, you can
-specify them with additional options:
+If you know that your compiler executable has a different name, you can specify
+them with additional options:
 
 .. code-block::
 
@@ -152,11 +154,11 @@ specify them with additional options:
         cxx_compiler: 'g++-9',
     }
 
-|bpt| will continue to infer other options based on the ``compiler_id``, but
-will use the provided executable names when compiling files for the respective
+|bpt| will continue to infer other options based on the `compiler_id`, but will
+use the provided executable names when compiling files for the respective
 languages.
 
-To specify compilation flags, the ``flags`` option can be used:
+To specify compilation flags, the `flags <flags>` option can be used:
 
 .. code-block::
 
@@ -166,9 +168,10 @@ To specify compilation flags, the ``flags`` option can be used:
     }
 
 .. note::
-    Use ``warning_flags`` to specify options regarding compiler warnings.
 
-Flags for linking executables can be specified with ``link_flags``:
+    Use `warning_flags` to specify options regarding compiler warnings.
+
+Flags for linking executables can be specified with `link_flags`:
 
 .. code-block::
 
@@ -195,7 +198,7 @@ and double ``"`` quote characters as argument delimiters.
 If an option is given a list of strings instead, then each string in that
 array is treated as a full command line argument and is passed as such.
 
-For example, this sample with ``flags``::
+For example, this sample with `flags <flags>`::
 
     {
         flags: "-fsanitize=address -fPIC"
@@ -211,6 +214,8 @@ Despite splitting strings as-if they were shell commands, |bpt| does nothing
 else shell-like. It does not expand environment variables, nor does it expand
 globs and wildcards.
 
+
+.. _compiler_id:
 
 ``compiler_id``
 ---------------
@@ -235,25 +240,28 @@ Valid values are:
 -----------------------------------
 
 Names/paths of the C and C++ compilers, respectively. Defaults will be inferred
-from ``compiler_id``.
+from `compiler_id`.
 
+
+.. _c_version:
+.. _cxx_version:
 
 ``c_version`` and ``cxx_version``
 ---------------------------------
 
 Specify the language versions for C and C++, respectively. By default, |bpt|
 will not set any language version. Using this option requires that the
-``compiler_id`` be specified (Or the ``lang_version_flag_template`` advanced
+`compiler_id` be specified (Or the `lang_version_flag_template` advanced
 setting).
 
-Examples of ``c_version`` values are:
+Examples of `c_version <c_version>` values are:
 
 - ``c89``
 - ``c99``
 - ``c11``
 - ``c18``
 
-Examples of ``cxx_version`` values are:
+Examples of `cxx_version <cxx_version>` values are:
 
 - ``c++14``
 - ``c++17``
@@ -265,24 +273,26 @@ the language version being passed.
 To enable GNU language extensions on GNU compilers, one can values like
 ``gnu++20``, which will result in ``-std=gnu++20`` being passed. Likewise, if
 the language version is "experimental" in your GCC release, you may set
-``cxx_version`` to the appropriate experimental version name, e.g. ``"c++2a"``
-for ``-std=c++2a``.
+`cxx_version <cxx_version>` to the appropriate experimental version name, e.g.
+``"c++2a"`` for ``-std=c++2a``.
 
-For MSVC, setting ``cxx_version`` to ``c++latest`` will result in
+For MSVC, setting `cxx_version <cxx_version>` to ``c++latest`` will result in
 ``/std:c++latest``. **Beware** that this is an unstable setting value that could
 change the major language version in a future MSVC update.
 
+
+.. _warning_flags:
 
 ``warning_flags``
 -----------------
 
 Provide *additional* compiler flags that should be used to enable warnings. This
-option is stored separately from ``flags``, as these options may be
+option is stored separately from `flags <flags>`, as these options may be
 enabled/disabled separately depending on how |bpt| is invoked.
 
 .. note::
 
-    If ``compiler_id`` is provided, a default set of warning flags will be
+    If `compiler_id` is provided, a default set of warning flags will be
     provided when warnings are enabled.
 
     Adding flags to this toolchain option will *append* flags to the basis
@@ -293,11 +303,15 @@ enabled/disabled separately depending on how |bpt| is invoked.
     Refer to :ref:`toolchains.opts.base_warning_flags` for more information.
 
 
+.. _flags:
+
 ``flags``, ``c_flags``, and ``cxx_flags``
 -----------------------------------------
 
 Specify *additional* compiler options, possibly per-language.
 
+
+.. _link_flags:
 
 ``link_flags``
 --------------
@@ -318,14 +332,14 @@ Specify *additional* link options to use when linking executables.
 ``optimize``
 ------------
 
-Boolean option (``true`` or ``false``) to enable/disable optimizations. Default
-is ``false``.
+Boolean option (|true| or |false|) to enable/disable optimizations. Default
+is |false|.
 
 
 ``debug``
 ---------
 
-Bool or string. Default is ``false``. If ``true`` or ``"embedded"``, generates
+Bool or string. Default is |false|. If |true| or ``"embedded"``, generates
 debug information embedded in the compiled binaries. If ``"split"``, generates
 debug information in a separate file from the binaries.
 
@@ -340,20 +354,20 @@ debug information in a separate file from the binaries.
 Select the language runtime/standard library options. Must be an object, and supports two keys:
 
 ``static``
-    A boolean. If ``true``, the runtime and standard libraries will be
-    static-linked into the generated binaries. If ``false``, they will be
-    dynamically linked. Default is ``true`` with MSVC, and ``false`` with GCC
+    A boolean. If |true|, the runtime and standard libraries will be
+    static-linked into the generated binaries. If |false|, they will be
+    dynamically linked. Default is |true| with MSVC, and |false| with GCC
     and Clang.
 
 ``debug``
-    A boolean. If ``true``, the debug versions of the runtime and standard
+    A boolean. If |true|, the debug versions of the runtime and standard
     library will be compiled and linked into the generated binaries. If
-    ``false``, the default libraries will be used.
+    |false|, the default libraries will be used.
 
     **On MSVC** the default value depends on the top-level ``/debug`` option: If
-    ``/debug`` is not ``false``, then ``/runtime/debug`` defaults to ``true``.
+    ``/debug`` is not |false|, then ``/runtime/debug`` defaults to |true|.
 
-    **On GCC and Clang** the default value is ``false``.
+    **On GCC and Clang** the default value is |false|.
 
 .. note::
 
@@ -363,7 +377,7 @@ Select the language runtime/standard library options. Must be an object, and sup
 
 .. note::
 
-    On GNU and Clang, setting ``/runtime/debug`` to ``true`` will compile all
+    On GNU and Clang, setting ``/runtime/debug`` to |true| will compile all
     files with the ``_GLIBCXX_DEBUG`` and ``_LIBCPP_DEBUG=1`` preprocessor
     definitions set. **Translation units compiled with these macros are
     definitively ABI-incompatible with TUs that have been compiled without these
@@ -391,7 +405,7 @@ Advanced Options Reference
 **************************
 
 The options below are probably not good to tweak unless you *really* know what
-you are doing. Their values will be inferred from ``compiler_id``.
+you are doing. Their values will be inferred from `compiler_id`.
 
 
 Command Templates
@@ -517,6 +531,8 @@ On MSVC, this defaults to ``/D [def]``. On GNU-like compilers, this is
 ``-D [def]``.
 
 
+.. _lang_version_flag_template:
+
 ``lang_version_flag_template``
 ------------------------------
 
@@ -524,7 +540,7 @@ Set the flag template string for the language-version specifier for the
 compiler command line.
 
 This template expects a single placeholder: ``[version]``, which is the version
-string passed for ``c_version`` or ``cxx_version``.
+string passed for `c_version` or `cxx_version`.
 
 On MSVC, this defaults to ``/std:[version]``. On GNU-like compilers, it
 defaults to ``-std=[version]``.
@@ -553,13 +569,13 @@ and executable files, respectively.
 
 When you compile your project and request warning flags, |bpt| will
 concatenate the warning flags from this option with the flags provided by
-``warning_flags``. This option is "advanced," because it provides a set of
-defaults based on the ``compiler_id``.
+`warning_flags`. This option is "advanced," because it provides a set of
+defaults based on the `compiler_id`.
 
 On GNU-like compilers, the base warning flags are ``-Wall -Wextra -Wpedantic
 -Wconversion``. On MSVC the default flag is ``/W4``.
 
-For example, if you set ``warning_flags`` to ``"-Werror"`` on a GNU-like
+For example, if you set `warning_flags` to ``"-Werror"`` on a GNU-like
 compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
 -Wconversion -Werror``.
 
@@ -569,10 +585,9 @@ compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
 ``base_flags``, ``base_c_flags``, and ``base_cxx_flags``
 --------------------------------------------------------
 
-When you compile your project, |bpt| uses a set of default flags appropriate
-to the target language and compiler. These flags are always included in the
-compile command and are inserted in addition to those flags provided by
-``flags``, ``c_flags``, and ``cxx_flags``.
+When you compile your project, |bpt| uses a set of default flags appropriate to
+the target language and compiler. These flags are always included in the compile
+command and are inserted in addition to those flags provided by `flags`.
 
 On GNU-like compilers, the base flags are ``-fPIC -pthread``. On
 MSVC the default flags are ``/EHsc /nologo /permissive-`` for C++ and ``/nologo
@@ -587,8 +602,8 @@ independent from ``base_flags``; that is, providing ``base_c_flags`` or
 ``base_flags`` value, and vice-versa. Empty values are acceptable, should you
 need to simply prohibit one or more of the defaults from being used.
 
-For example, if you set ``flags`` to ``-ansi`` on a GNU-like compiler, the
+For example, if you set `flags <flags>` to ``-ansi`` on a GNU-like compiler, the
 resulting command line will contain ``-fPIC -pthread -ansi``. If, additionally,
 you set ``base_flags`` to ``-fno-builtin`` and ``base_cxx_flags`` to
-``-fno-exceptions``, the generated command will include ``-fno-builtin
--fno-exceptions -ansi`` for C++ and ``-fno-builtin -ansi`` for C.
+``-fno-exceptions``, the generated command will include
+``-fno-builtin -fno-exceptions -ansi`` for C++ and ``-fno-builtin -ansi`` for C.

@@ -30,7 +30,7 @@ The *Novel*:
   compilation to your own project will be used to perform incremental
   compilation of your dependencies as well.
 
-.. seealso:: :doc:`/guide/interdeps`
+.. seealso:: :doc:`/guide/deps`
 
 
 Listing Package Dependencies
@@ -44,7 +44,7 @@ to find a ``spdlog`` package. We can search via :ref:`cli.pkg-search`::
       Name: spdlog
   Versions: 1.4.0, 1.4.1, 1.4.2, 1.5.0, 1.6.0, 1.6.1, 1.7.0, 1.8.0, 1.8.1,
             1.8.2, 1.8.3, 1.8.4, 1.8.5, 1.9.0, 1.9.1, 1.9.2
-      From: https://repo-2.dds.pizza/
+      From: https://repo-3.bpt.pizza/
 
 In the output above, we can see one ``spdlog`` group with several available
 versions. Let's pick the newest available, ``1.9.2``.

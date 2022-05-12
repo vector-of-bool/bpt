@@ -7,5 +7,5 @@ Package identifiers in |bpt| must follow a well-defined pattern of
 
 .. seealso::
 
-  - :doc:`/guide/packages`
-  -  :doc:`/crs/names`.
+  - :doc:`/guide/projects`
+  - :doc:`/crs/names`.

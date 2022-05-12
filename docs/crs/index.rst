@@ -85,23 +85,23 @@ disk, a Zip archive, a Tar archive, a database table, or even something as
 simple as a single large `JSON` document.
 
 
-.. _crs.json:
+.. _pkg.json:
 
-``crs.json``
+``pkg.json``
 ************
 
-At the root of the package must be a valid `JSON` document named ``crs.json``.
+At the root of the package must be a valid `JSON` document named ``pkg.json``.
 This file encodes all of the metadata in the package.
 
 At any point in the `JSON` object, if any `JSON` object key string begins with
 the substring "``_comment``", then content of that object entry is to be ignored
 for validating the `JSON` data.
 
-The basic interface of ``crs.json`` looks as below:
+The basic interface of ``pkg.json`` looks as below:
 
 .. code-block:: javascript
 
-    interface CRSJSON {
+    interface PKGJSON {
         "schema-version": 1,
         name: NameString,
         version: VersionString,
@@ -193,8 +193,8 @@ attributes for the package.
 Libraries
 *********
 
-In :ref:`crs.json`, the ``libraries`` property must be an array of CRS library
-JSON objects.
+In |pkg.json|, the ``libraries`` property must be an array of CRS library JSON
+objects.
 
 Each object in that array defines a library for the package. Each object must
 contain the following properties:

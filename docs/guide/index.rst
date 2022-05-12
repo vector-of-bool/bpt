@@ -4,14 +4,14 @@ User Guide
 .. toctree::
     :maxdepth: 2
 
-    cli/index
-    packages
+    projects
     libraries
     apps
     tests
+    deps
+    cli/index
     toolchains
     remote-pkgs
-    interdeps
     build-deps
     cmake
 

@@ -4,11 +4,11 @@ Libraries in |bpt|
 .. default-role:: term
 
 In |bpt|, all code belongs to a `library`, and every library belongs by either a
-|bpt| `project` or a `package`. A library can `depend on <dependency>` other
-libraries within the same project/package and on libraries in external packages.
+|bpt| `project` or a `package`.
 
-Every library in |bpt| has a `name`, and that name must be unique within the
-`package` that owns it.
+By default, a |bpt| project only has a single `default library`. A project can
+be subdivided into more libraries by using the :yaml:`libraries` property. A
+library can `depend on <dependency>` other libraries in external packages.
 
 |bpt| uses the filesystem layout of the library to derive information about it.
 Every library has a `library root` directory. A library root contains either
@@ -23,10 +23,12 @@ The project's |bpt.yaml| defines the `library roots <library root>` of every
 library in the project:
 
 - If relying on the `default library`, the `library root` is the same as the
-  `project root` of the project that contains it.
+  `project root` of the project that contains it. This is the recommended usage
+  mode for most projects.
 - If using :ref:`explicitly declared libraries <guide.multiple-libs>`, the
   `library root` is defined by a relative path specified using the :yaml:`path`
-  property of the library declaration in |bpt.yaml|.
+  property of the library declaration in |bpt.yaml| (Refer:
+  :ref:`proj.lib-properties`).
 
 Every library root must contain a ``src/`` directory, *or* an ``include/``
 directory, *or both*. |bpt| will treat both directories as
@@ -38,6 +40,76 @@ generate a static library file that is linked into runtime binaries. If a
 library contains only headers (a `header-only library`) then |bpt| will not
 generate an archive to be included in downstream binaries, but it will still
 generate link rules for the dependencies of a header-only library.
+
+
+.. _guide.default-library:
+
+The Default Library
+*******************
+
+In |bpt|, all code belongs to a `library`. If a |bpt.yaml| file omits the
+:yaml:`libraries` property, |bpt| will assume that the `project`'s
+`default library` lives in the same directory as |bpt.yaml| and has a library
+:yaml:`name` equivalent to the project :yaml:`name`:
+
+.. code-block:: yaml
+  :caption: |bpt.yaml|
+
+  name: acme.widgets
+  version: 1.2.3
+
+  # ┌ Implied: ──────────────┐
+    │ libraries:             │
+    │   - name: acme.widgets │
+    │     path: .            │
+  # └────────────────────────┘
+
+The above project definition implies a single default library with the same name
+as the project itself: "``acme.widgets``". The `library root` of the default
+library is always the same as the `project root`, and cannot be changed.
+
+.. seealso::
+
+  The :yaml:`libraries` property allows one to specify any number of libraries
+  within the project. The :yaml:`libraries` property is discussed below:
+  :ref:`guide.multiple-libs`
+
+.. note::
+
+  If your project only defines a single library, you are likely to not need to
+  use :yaml:`libraries` and can just rely on the implicit default library.
+
+.. note::
+
+  If the :yaml:`libraries` property is specified then |bpt| will not generate a
+  default library.
+
+
+.. _guide.multiple-libs:
+
+Multiple Libraries in a Project
+*******************************
+
+Multiple libraries can be specified for a single `project` by using the
+top-level :yaml:`libraries` property in |bpt.yaml|. :yaml:`libraries` must be an
+array, and each element must be a map, and each map element must have both a
+:yaml:`name` and a :yaml:`path` property:
+
+.. code-block::
+  :caption: |bpt.yaml|
+  :emphasize-lines: 4-6
+
+  name: acme.widgets
+  version: 1.2.3
+
+  libraries:
+    - name: gadgets       # Required
+      path: libs/gadgets  # Required
+
+.. seealso::
+
+  For more information on using the :yaml:`libraries` array, refer to:
+  :ref:`proj.lib-properties`.
 
 
 .. _libs.library-layout:
@@ -250,3 +322,115 @@ such files are found.
   Some source files will be treated differently based on there name. Refer:
 
   - :doc:`apps`
+
+
+.. _proj.lib-properties:
+
+Library Properties in |bpt.yaml|
+********************************
+
+A |bpt| `project` can declare one or more `libraries <library>` using the
+top-level :ref:`proj.libraries` property in |bpt.yaml|. If the :yaml:`libraries`
+property is omitted, |bpt| will instead generate a `default library` for the
+project. Most projects will not need to declare explicit :yaml:`libraries` and
+can rely on the default library.
+
+The project's :yaml:`libraries` must be an array, and each element must be a
+map, and each map element must at least have both a :yaml:`name` and a
+:yaml:`path` property:
+
+.. code-block:: yaml
+  :caption: |bpt.yaml|
+
+  name: my-project
+  version: 1.2.3
+
+  libraries:
+    # Declare one library "my-library"
+    - name: my-library
+      path: libs/mylib
+    # Declare a second library
+    - name: widgets
+      path: libs/widgets
+
+Refer to [`YAML`] for a quick-start on the YAML syntax. If nothing else, you can
+use YAML's flow-syntax as an "enhanced `JSON`" that supports :yaml:`# comments`
+and unquoted identifier keys::
+
+  {
+    name: "my-project",
+    version: "1.2.3",
+    libraries: [
+      {name: "my-library", path: "libs/mylib"},
+      {name: "widgets", path: "libs/widgets"},
+    ]
+  }
+
+The :yaml:`name` property must specify a valid `name` for the library, which
+must be unique within the project.
+
+The :yaml:`path` property specifies the `relative filepath` pointing to the
+`library root` for the library. This path must be relative to the `project root`
+and may only use forward-slash "``/``" as a `directory
+separator`. The :yaml:`path` must not "reach outside" of the project root
+directory. A path of a single ASCII dot "``.``" refers to the project root
+itself.
+
+.. note::
+
+  For the `default library` (if :yaml:`libraries` is omitted), the :yaml:`name`
+  is the same as the project's name, and the :yaml:`path` is "``.``" (equivalent
+  to the `project root`).
+
+.. _lib.properties-dl:
+
+.. rubric:: Properties
+
+.. index:: pair: name; library property
+.. _lib.name:
+
+:yaml:`name` :  ``string``
+  **Required:** The name of the library. Must follow the valid `name`
+  conventions. This name must be unique within the `project`.
+
+  .. index:: pair: path; library property
+  .. _lib.path:
+
+:yaml:`path` : ``string``
+  **Required:** The `relative filepath` to the `library root`.
+
+  .. index:: pair: using; library property
+  .. _lib.using:
+
+:yaml:`using` : ``string[]``
+  *Optional:* The internal `dependencies <dependency>` of the library. Must be
+  the names of other libraries within the same `project`.
+
+  .. index:: pair: test-using; library property
+  .. _lib.test-using:
+
+:yaml:`test-using` : ``string[]``
+  *Optional:* The internal `test dependencies <test dependency>` of the
+  library. Must be the names of other libraries within the same `project`.
+
+  .. index:: pair: dependencies; library property
+  .. _lib.dependencies:
+
+:yaml:`dependencies` : (See: :doc:`deps`)
+  *Optional:* The external `dependencies <dependency>` of the library.
+
+  The dependencies here will be merged with the `common dependencies` of the
+  `project`.
+
+  .. seealso:: :doc:`deps`
+
+  .. index:: pair: test-dependencies; library property
+  .. _lib.test-dependencies:
+
+:yaml:`test-dependencies` : (See: :doc:`deps`)
+  *Optional:* The external `test dependencies <test dependency>` of the library.
+
+  The dependencies here will be merged with the
+  `common test-dependencies <common dependencies>` of the `project`.
+
+  .. seealso:: :doc:`deps`

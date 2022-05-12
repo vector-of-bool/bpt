@@ -74,6 +74,13 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
         another: {nested-object: []},  # Trailing commas are allowed!
       }
 
+    .. note:: Any `JSON` document is also a valid equivalent YAML document.
+
+    .. note::
+
+      |bpt| parses according to YAML 1.2, so alternate boolean plain scalars
+      (e.g. "``no``" and "``yes``") and sexagesimal datetimes are not supported.
+
   tweak-headers
 
     Special `header files <header file>` that are used to inject configuration
@@ -127,21 +134,35 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
     .. seealso:: :doc:`tests`
 
   compiler
+  compile
 
-    A computer program that accepts human-readable `source code` and emits a
-    lower-level code intended to be executed by a machine.
+    *Compiling* is the process of transforming human-readable `source code` and
+    emits a lower-level code intended to be executed. The *compiler* is a
+    program that performs the compilation. GCC, Visual C++, and Clang are
+    examples of *compilers*.
+
+  linker
+  linking
+
+    *Linking* is the process of combining separate translation units (i.e.
+    compiled source files code) into a program. A *linker* is a program that
+    performs linking.
+
+    During linking, references to names across translation units are resolved.
+    If a name is referenced but its definition is not found, the linker will
+    most often fail to perform the linking.
 
   default library
 
     The *default library* of a `project` is the `library` that |bpt| generates
-    if the :yaml:`libs` project property is omitted in |bpt.yaml|. It will have
-    the same :yaml:`name` as the project, and its `library root` will be the
-    same as the `project root`.
+    if the :yaml:`libraries` project property is omitted in |bpt.yaml|. It will
+    have the same :yaml:`name` as the project, and its `library root` will be
+    the same as the `project root`.
 
     .. note::
 
-      If the :yaml:`libs` property is specified then |bpt| will not generate a
-      default library.
+      If the :yaml:`libraries` property is specified then |bpt| will not
+      generate a default library.
 
     .. seealso::
 
@@ -225,6 +246,20 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
     Test dependencies are declared using the :yaml:`test-dependencies` property
     in |bpt.yaml|.
 
+  common dependencies
+
+    The *common dependencies* of a `project` are the `dependencies <dependency>`
+    that appear at the top-level of the project's |bpt.yaml| file. (Refer:
+    :ref:`proj.dependencies`)
+
+    These dependencies are added as direct dependencies of every `library` in
+    the project, whether that is the `default library` or each library in the
+    :ref:`proj.libraries` array.
+
+    The *common test-dependencies* are the similar but apply only to the
+    libraries' `test dependencies <test dependency>`. (Refer:
+    :ref:`proj.test-dependencies`)
+
   package ID
 
     A *package ID* is a string that identifies a package. It is composed of the
@@ -243,3 +278,11 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
 
     The package revision number is visible on the `package ID` as the number
     following the tilde ``~`` suffix.
+
+  dependency specifier
+
+    |bpt| allows a few syntaxes to specify a `dependency`. A specifier provides
+    a `name`, a :ref:`version range <semver>`, and some set of `library` names
+    to use from the external `package`.
+
+    .. seealso:: :ref:`dep-spec`

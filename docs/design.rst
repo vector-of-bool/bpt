@@ -142,7 +142,7 @@ structure layout with minimal differing options. |bpt| prescribes the
 .. note::
 
     These prescriptions are not as draconian as they may sound upon first
-    reading. Refer to the :doc:`guide/packages` page for more information.
+    reading. Refer to the :doc:`guide/projects` page for more information.
 
 .. _Pitchfork: https://api.csswg.org/bikeshed/?force=1&url=https://raw.githubusercontent.com/vector-of-bool/pitchfork/develop/data/spec.bs
 

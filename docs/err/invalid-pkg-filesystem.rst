@@ -3,7 +3,7 @@ Error: Invalid package filesystem
 
 |bpt| prescribes a filesystem structure that must be followed for it to
 build and process packages and libraries. This structure isn't overly strict,
-and is thoroughly explained on the :doc:`/guide/packages` page.
+and is thoroughly explained on the :doc:`/guide/projects` page.
 
 For exporting/generating a source distribution from a package, the *package
 root* requires a ``package.json5`` file and each *library root* requires a

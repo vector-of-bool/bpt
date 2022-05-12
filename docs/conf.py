@@ -2,6 +2,7 @@
 # Refer: http://www.sphinx-doc.org/en/master/config
 
 from sphinx.application import Sphinx
+
 from pathlib import Path
 from typing import Any
 import sys
@@ -29,7 +30,7 @@ templates_path = []
 source_suffix = '.rst'
 master_doc = 'index'
 language = None
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'prolog.rst']
 pygments_style = None
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
@@ -72,33 +73,7 @@ def intercept_copy_asset(path: str, dest: str, context: Any) -> None:
 hoverxref.extension.copy_asset = intercept_copy_asset
 
 rst_prolog = r'''
-.. role:: bpt-name(literal)
-    :class: bpt-name
-
-.. |bpt| replace:: :bpt-name:`bpt`
-
-.. |code-open| raw:: html
-
-        <code class="literal"><span>
-
-.. |code-close| raw:: html
-
-        <span/></code>
-
-.. |bpt.yaml| replace:: |code-open|\ :term:`bpt.yaml`\ |code-close|
-
-.. |crs.json| replace:: |code-open|\ :ref:`crs.json`\ |code-close|
-
-.. role:: yaml(code)
-    :language: yaml
-    :class: highlight
-
-.. role:: cpp(code)
-    :language: cpp
-    :class: highlight
-
-.. |#include| replace:: :cpp:`#include`
-
+.. include:: /prolog.rst
 '''
 
 
