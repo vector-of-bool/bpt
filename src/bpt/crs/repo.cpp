@@ -147,6 +147,7 @@ void repository::import_dir(path_ref dirpath) {
 
     auto tmp_tgz = pkg_dir() / (prep_dir.path().filename().string() + ".tgz");
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
+    neo_defer { std::ignore = ensure_absent(tmp_tgz); };
 
     if (pkg.id.revision < 1) {
         BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_pkg_version{
