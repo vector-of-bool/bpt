@@ -86,29 +86,12 @@ int repo_validate(const options& opts) {
         cache.enable_remote(url);
     }
 
-    neo::sqlite3::transaction_guard tr{db.sqlite3_db()};
-    neo_defer { tr.rollback(); };
+    auto fs_url = neo::url::for_file_path(repo.root());
+    cache.sync_remote(fs_url);
+    cache.enable_remote(fs_url);
 
-    auto tmp_remote_id = *neo::sqlite3::one_cell<std::int64_t>(db.prepare(R"(
-        INSERT INTO bpt_crs_remotes (url, unique_name, revno)
-        VALUES ('tmp-validate', '--- tmp-validation-repo ---', 1)
-        RETURNING remote_id
-    )"_sql));
-    neo::sqlite3::exec(db.prepare("INSERT INTO bpt_crs_enabled_remotes (remote_id) VALUES(?)"_sql),
-                       tmp_remote_id)
-        .throw_if_error();
-
-    neo::sqlite3::exec_each(  //
-        db.prepare(R"(
-            INSERT INTO bpt_crs_packages(json, remote_id, remote_revno)
-            VALUES (?, ?, 1)
-        )"_sql),
-        repo.all_packages() | neo::lref | std::views::transform([&](const auto& pkg) {
-            return std::make_tuple(pkg.to_json(), tmp_remote_id);
-        }))
-        .throw_if_error();
-
-    for (auto&& pkg : repo.all_packages()) {
+    // We only want to validate packages that are the max revision:
+    for (auto&& pkg : repo.all_latest_rev_packages()) {
         bpt::cancellation_point();
         const bool okay = try_it(pkg, cache);
         if (!okay) {

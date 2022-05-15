@@ -1,5 +1,6 @@
 #include <bpt/cli/dispatch_main.hpp>
 #include <bpt/cli/options.hpp>
+#include <bpt/config.hpp>
 #include <bpt/util/env.hpp>
 #include <bpt/util/log.hpp>
 #include <bpt/util/output.hpp>
@@ -12,6 +13,9 @@
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
+#include <neo/sqlite3/database.hpp>
+#include <neo/sqlite3/error.hpp>
+#include <neo/sqlite3/statement.hpp>
 
 #include <clocale>
 #include <filesystem>
@@ -141,7 +145,23 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         // We want ^C to behave as-normal for 'new'
         bpt::install_signal_handlers();
     }
-    bpt::log::current_log_level = opts.log_level;
+    bpt::log::current_log_level   = opts.log_level;
+    neo::opt_listener log_sqlite3 = [&](neo::sqlite3::event::step ev) {
+        auto msg = neo::sqlite3::error_category().message(static_cast<int>(ev.ec));
+        bpt_log(trace, "SQLite step: .bold.white[{}]"_styled, ev.st.expanded_sql_string());
+        if (neo::sqlite3::is_error_rc(ev.ec)) {
+            bpt_log(trace,
+                    "   Error: .bold.red[{}]: .bold.yellow[{}]"_styled,
+                    msg,
+                    ev.st.connection().error_message());
+        } else {
+            bpt_log(trace, "   Okay: .bold.green[{}]"_styled, msg);
+        }
+    };
+
+    if (opts.log_level >= bpt::log::level::trace and bpt::config::enable_sqlite3_trace()) {
+        log_sqlite3.start_listening();
+    }
     return bpt::cli::dispatch_main(opts);
 }
 
