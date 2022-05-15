@@ -85,7 +85,7 @@ cache_db cache_db::open(unique_database& db) {
                     GENERATED ALWAYS
                     AS (json_extract(json, '$.pkg-version'))
                     STORED,
-                UNIQUE (name, version, pkg_version, remote_id)
+                UNIQUE (name, version, remote_id)
             );
         )"_sql);
     }).value();
@@ -486,9 +486,9 @@ void cache_db::sync_remote(const neo::url_view& url_) const {
     auto& update_pkg_st = db.prepare(R"(
         INSERT INTO bpt_crs_packages (json, remote_id, remote_revno)
             VALUES (?1, ?2, ?3)
-        ON CONFLICT(name, version, pkg_version, remote_id) DO UPDATE
-            SET json=excluded.json,
-                remote_revno=?3
+        ON CONFLICT(name, version, remote_id) DO UPDATE
+            SET json=excluded.json, remote_revno=?3
+          WHERE json_extract(excluded.json, '$.pkg-version') >= pkg_version
     )"_sql);
     for (auto meta : remote_packages) {
         if (!meta.has_value()) {

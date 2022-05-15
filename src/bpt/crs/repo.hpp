@@ -40,6 +40,7 @@ public:
     void remove_pkg(const package_info&);
 
     neo::any_input_range<package_info> all_packages() const;
+    neo::any_input_range<package_info> all_latest_rev_packages() const;
 };
 
 struct ev_repo_imported_package {

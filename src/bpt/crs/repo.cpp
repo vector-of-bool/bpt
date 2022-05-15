@@ -178,7 +178,31 @@ void repository::import_dir(path_ref dirpath) {
 }
 
 neo::any_input_range<package_info> repository::all_packages() const {
-    auto& q   = _prepare("SELECT meta_json FROM crs_repo_packages ORDER BY package_id"_sql);
+    auto& q   = _prepare(R"(
+        SELECT meta_json
+        FROM crs_repo_packages AS this
+        ORDER BY package_id
+    )"_sql);
+    auto  rst = neo::copy_shared(q.auto_reset());
+    return db_query<std::string_view>(q)
+        | std::views::transform([pin = rst](auto tup) -> package_info {
+               auto [json_str] = tup;
+               return package_info::from_json_str(json_str);
+           });
+}
+
+neo::any_input_range<package_info> repository::all_latest_rev_packages() const {
+    auto& q   = _prepare(R"(
+        SELECT meta_json
+        FROM crs_repo_packages AS this
+        WHERE NOT EXISTS(
+            SELECT 1 FROM crs_repo_packages AS other
+            WHERE other.pkg_version > this.pkg_version
+                AND other.version = this.version
+                AND other.name = this.name
+        )
+        ORDER BY package_id
+    )"_sql);
     auto  rst = neo::copy_shared(q.auto_reset());
     return db_query<std::string_view>(q)
         | std::views::transform([pin = rst](auto tup) -> package_info {
