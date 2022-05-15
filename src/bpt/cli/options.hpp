@@ -143,7 +143,7 @@ struct options {
     struct {
         bool     want_tests = true;
         bool     want_apps  = true;
-        opt_path lm_index;
+        opt_path built_json;
         opt_path tweaks_dir;
     } build;
 

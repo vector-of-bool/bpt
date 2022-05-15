@@ -78,10 +78,14 @@ auto handlers = std::tuple(  //
         bpt_log(error,
                 "Error loading project info from [.bold.yellow[{}]]"_styled,
                 bpt_yaml.value.string());
-        bpt_log(error, "Unknown project property '.bold.red[{}]'"_styled, badkey.given);
-        if (badkey.nearest.has_value()) {
-            bpt_log(error, "  (Did you mean '.bold.green[{}]'?)"_styled, *badkey.nearest);
-        }
+        badkey.log_error("Unknown project property '.bold.red[{}]'"_styled);
+        return 1;
+    },
+    [](e_parse_dependency_manifest_path deps_json, e_bad_deps_json_key badkey) {
+        bpt_log(error,
+                "Error loading dependency info from [.bold.yellow[{}]]"_styled,
+                deps_json.value.string());
+        badkey.log_error("Unknown property '.bold.red[{}]'"_styled);
         return 1;
     },
     [](const semester::walk_error&    exc,

@@ -16,6 +16,7 @@
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/ranges.hpp>
+#include <nlohmann/json.hpp>
 #include <range/v3/algorithm/contains.hpp>
 
 #include <array>
@@ -24,6 +25,8 @@
 
 using namespace bpt;
 using namespace fansi::literals;
+
+using json = nlohmann::ordered_json;
 
 namespace {
 
@@ -174,47 +177,49 @@ prepare_ureqs(const build_plan& plan, const toolchain& toolchain, path_ref out_r
     return usage_requirements(std::move(ureqs));
 }
 
-void write_lml(build_env_ref env, const library_plan& lib, path_ref lml_path) {
-    fs::create_directories(lml_path.parent_path());
-    auto out = bpt::open_file(lml_path, std::ios::binary | std::ios::out);
-    //! out << "Type: Library\n"
-    //!     << "Name: " << lib.name().str << '\n'
-    //!     << "Include-Path: " << lib.library_().public_include_dir().generic_string() << '\n';
+json get_built_lib(build_env_ref env, const library_plan& lib) {
+    auto ret = json::object();
+    ret.emplace("name", std::string(lib.name()));
+    if (auto const& ar = lib.archive_plan(); ar.has_value()) {
+        ret.emplace("path",
+                    normalize_path(env.output_root / ar->calc_archive_file_path(env.toolchain))
+                        .generic_string());
+    }
+    ret.emplace("include-path", normalize_path(lib.public_include_dir()).generic_string());
+    auto uses = json::array();
     for (auto&& use : lib.lib_uses()) {
-        out << "Uses: " << use.namespace_ << "/" << use.name << '\n';
+        uses.push_back(json::object({
+            {"package", use.namespace_},
+            {"library", use.name},
+        }));
     }
-    //! for (auto&& link : lib.links()) {
-    //!     out << "Links: " << link.namespace_ << "/" << link.name << '\n';
-    //! }
-    if (auto&& arc = lib.archive_plan()) {
-        out << "Path: "
-            << (env.output_root / arc->calc_archive_file_path(env.toolchain)).generic_string()
-            << '\n';
-    }
+    ret.emplace("uses", std::move(uses));
+    return ret;
 }
 
-void write_lmp(build_env_ref env, const package_plan& pkg, path_ref lmp_path) {
-    fs::create_directories(lmp_path.parent_path());
-    auto out = bpt::open_file(lmp_path, std::ios::binary | std::ios::out);
-    out << "Type: Package\n"
-        << "Name: " << pkg.name() << '\n'
-        << "Namespace: " << pkg.name() << '\n';
+json get_built_pkg(build_env_ref env, const package_plan& pkg) {
+    auto ret  = json::object();
+    auto libs = json::array();
+
     for (const auto& lib : pkg.libraries()) {
-        auto lml_path = lmp_path.parent_path() / (lib.qualified_name() + ".lml");
-        write_lml(env, lib, lml_path);
-        out << "Library: " << lml_path.generic_string() << '\n';
+        auto l = get_built_lib(env, lib);
+        libs.push_back(std::move(l));
     }
+
+    ret.emplace("libraries", std::move(libs));
+    return ret;
 }
 
-void write_lmi(build_env_ref env, const build_plan& plan, path_ref base_dir, path_ref lmi_path) {
-    fs::create_directories(fs::absolute(lmi_path).parent_path());
-    auto out = bpt::open_file(lmi_path, std::ios::binary | std::ios::out);
-    out << "Type: Index\n";
+void write_built_json(build_env_ref env, const build_plan& plan, path_ref json_path) {
+    auto root = json::object({{"version", 1}});
+    auto pkgs = json::object();
+    fs::create_directories(fs::absolute(json_path).parent_path());
     for (const auto& pkg : plan.packages()) {
-        auto lmp_path = base_dir / "_libman" / (pkg.name() + ".lmp");
-        write_lmp(env, pkg, lmp_path);
-        out << "Package: " << pkg.name() << "; " << lmp_path.generic_string() << '\n';
+        auto p = get_built_pkg(env, pkg);
+        pkgs.emplace(pkg.name(), std::move(p));
     }
+    root.emplace("packages", std::move(pkgs));
+    bpt::write_file(json_path, root.dump(2));
 }
 
 void write_lib_cmake(build_env_ref env,
@@ -376,8 +381,8 @@ void builder::build(const build_params& params) const {
                                        BPT_ERR_REF("test-failure"));
         }
 
-        if (params.emit_lmi) {
-            write_lmi(env, plan, params.out_root, *params.emit_lmi);
+        if (params.emit_built_json) {
+            write_built_json(env, plan, *params.emit_built_json);
         }
 
         if (params.emit_cmake) {

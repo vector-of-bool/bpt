@@ -71,13 +71,6 @@ struct setup {
         .action          = put_into(opts.out_path),
     };
 
-    argument lm_index_arg{
-        .long_spellings = {"libman-index"},
-        .help           = "Path to a libman index to use",
-        .valname        = "<lmi-path>",
-        .action         = put_into(opts.build.lm_index),
-    };
-
     argument jobs_arg{
         .long_spellings  = {"jobs"},
         .short_spellings = {"j"},
@@ -215,8 +208,6 @@ struct setup {
         build_cmd.add_argument(no_warn_arg.dup());
         build_cmd.add_argument(out_arg.dup()).help = "Directory where bpt will write build results";
 
-        build_cmd.add_argument(lm_index_arg.dup()).help
-            = "Path to a libman index file to use for loading project dependencies";
         build_cmd.add_argument(jobs_arg.dup());
         build_cmd.add_argument(tweaks_dir_arg.dup());
     }
@@ -227,7 +218,6 @@ struct setup {
         compile_file_cmd.add_argument(no_warn_arg.dup()).help = "Disable compiler warnings";
         compile_file_cmd.add_argument(jobs_arg.dup()).help
             = "Set the maximum number of files to compile in parallel";
-        compile_file_cmd.add_argument(lm_index_arg.dup());
         compile_file_cmd.add_argument(out_arg.dup());
         compile_file_cmd.add_argument(tweaks_dir_arg.dup());
         add_repo_args(compile_file_cmd);
@@ -243,8 +233,12 @@ struct setup {
         build_deps_cmd.add_argument(toolchain_arg.dup()).required;
         build_deps_cmd.add_argument(jobs_arg.dup());
         build_deps_cmd.add_argument(out_arg.dup());
-        build_deps_cmd.add_argument(lm_index_arg.dup()).help
-            = "Destination path for the generated libman index file";
+        build_deps_cmd.add_argument({
+            .long_spellings = {"built-json"},
+            .help           = "Destination of the generated '_built.json' file.",
+            .valname        = "<lmi-path>",
+            .action         = put_into(opts.build.built_json),
+        });
         add_repo_args(build_deps_cmd);
         build_deps_cmd.add_argument({
             .long_spellings  = {"deps-file"},

@@ -13,12 +13,11 @@ namespace bpt::cli::cmd {
 static int _build(const options& opts) {
     auto builder = create_project_builder(opts);
     builder.build({
-        .out_root          = opts.out_path.value_or(fs::current_path() / "_build"),
-        .existing_lm_index = opts.build.lm_index,
-        .emit_lmi          = {},
-        .tweaks_dir        = opts.build.tweaks_dir,
-        .toolchain         = opts.load_toolchain(),
-        .parallel_jobs     = opts.jobs,
+        .out_root        = opts.out_path.value_or(fs::current_path() / "_build"),
+        .emit_built_json = std::nullopt,
+        .tweaks_dir      = opts.build.tweaks_dir,
+        .toolchain       = opts.load_toolchain(),
+        .parallel_jobs   = opts.jobs,
     });
 
     return 0;

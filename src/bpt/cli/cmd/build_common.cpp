@@ -49,7 +49,7 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
     };
 
     builder builder;
-    if (!opts.build.lm_index.has_value()) {
+    if (!opts.build.built_json.has_value()) {
         auto crs_deps = proj_sd.pkg.libraries | std::views::transform(NEO_TL(_1.dependencies))
             | std::views::join | neo::to_vector;
 
