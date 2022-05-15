@@ -54,7 +54,7 @@ result<void> bpt::move_file(path_ref source, path_ref dest) {
     }
 
     if (ec != std::errc::cross_device_link && ec != std::errc::permission_denied) {
-        BOOST_LEAF_NEW_ERROR();
+        return BOOST_LEAF_NEW_ERROR();
     }
 
     auto tmp = bpt_leaf_try_some { return bpt::temporary_dir::create_in(dest.parent_path()); }
