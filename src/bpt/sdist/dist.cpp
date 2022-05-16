@@ -90,6 +90,10 @@ void bpt::create_sdist_targz(path_ref filepath, const sdist_params& params) {
             throw_user_error<errc::sdist_exists>("Destination path '{}' already exists",
                                                  filepath.string());
         }
+        if (fs::is_directory(filepath)) {
+            throw_user_error<errc::sdist_exists>("Destination path '{}' is a directory",
+                                                 filepath.string());
+        }
     }
 
     auto tempdir = temporary_dir::create();
