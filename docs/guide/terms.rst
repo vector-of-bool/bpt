@@ -286,3 +286,17 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
     to use from the external `package`.
 
     .. seealso:: :ref:`dep-spec`
+
+  CMake
+
+    **CMake** is a popular cross-platform build system and project configuration
+    tool for C and C++ projects.
+
+    .. seealso::
+
+      - |bpt| has support for integrating with CMake
+
+        -  :doc:`/guide/cmake`
+        -  :doc:`/howto/cmake`
+
+      - `The CMake homepage <https://cmake.org/>`_

@@ -15,6 +15,11 @@ in another project.
 .. include:: ./opt-tweaks-dir.rst
 .. include:: ./opt-out.rst
 
+.. option:: --built-json <json-path>
+
+    Specify the destination :term:`filepath` of the generated ``_built.json``
+    file (Refer: :doc:`/guide/build-deps`)
+
 .. option:: --cmake <file-path>
 
     Generate a CMake script that will create imported targets for the

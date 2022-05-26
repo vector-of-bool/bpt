@@ -102,7 +102,7 @@ The basic interface of ``pkg.json`` looks as below:
 .. code-block:: javascript
 
     interface PKGJSON {
-        "schema-version": 1,
+        "schema-version": 0,
         name: NameString,
         version: VersionString,
         "pkg-version": integer,
