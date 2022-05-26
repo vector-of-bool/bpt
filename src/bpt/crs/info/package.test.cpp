@@ -16,37 +16,37 @@ TEST_CASE("Reject bad meta informations") {
         {"f",
          "[json.exception.parse_error.101] parse error at line 1, column 2: syntax error while "
          "parsing value - invalid literal; last read: 'f'"},
-        {"{\"schema-version\": 1}", "A string 'name' is required"},
-        {R"({"schema-version": 1, "name": "foo"})", "A 'version' string is required"},
-        {R"({"schema-version": 1, "name": "foo."})",
+        {"{\"schema-version\": 0}", "A string 'name' is required"},
+        {R"({"schema-version": 0, "name": "foo"})", "A 'version' string is required"},
+        {R"({"schema-version": 0, "name": "foo."})",
          "Invalid name string 'foo.': Names must not end with a punctuation character"},
-        {R"({"schema-version": 1, "name": "foo", "version": "bleh"})",
+        {R"({"schema-version": 0, "name": "foo", "version": "bleh"})",
          "Invalid semantic version string 'bleh'"},
         {R"({
             "name": "foo",
             "version": "1.2.3",
-            "schema-version": 1
+            "schema-version": 0
         })",
          "A 'pkg-version' integer is required"},
         {R"({
             "name": "foo",
             "version": "1.2.3",
             "pkg-version": true,
-            "schema-version": 1
+            "schema-version": 0
         })",
          "'pkg-version' must be an integer"},
         {R"({
             "name": "foo",
             "version": "1.2.3",
             "pkg-version": 3.14,
-            "schema-version": 1
+            "schema-version": 0
         })",
          "'pkg-version' must be an integer"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
              "pkg-version": 1,
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A 'libraries' array is required"},
         {R"({
@@ -54,7 +54,7 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "pkg-version": 1,
              "libraries": {},
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'libraries' must be an array of library objects"},
         {R"({
@@ -62,7 +62,7 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "pkg-version": 1,
              "libraries": [],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'libraries' array must be non-empty"},
         {R"({
@@ -70,7 +70,7 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "pkg-version": 1,
              "libraries": [12],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Each library must be a JSON object"},
         {R"({
@@ -78,7 +78,7 @@ TEST_CASE("Reject bad meta informations") {
              "version": "1.2.3",
              "pkg-version": 1,
              "libraries": [{}],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A library 'name' string is required"},
         {R"({
@@ -88,7 +88,7 @@ TEST_CASE("Reject bad meta informations") {
              "libraries": [{
                  "name": "foo"
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A library 'path' string is required"},
         {R"({
@@ -99,7 +99,7 @@ TEST_CASE("Reject bad meta informations") {
                  "name": "foo",
                  "path": 12
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Library 'path' must be a string"},
         {R"({
@@ -110,7 +110,7 @@ TEST_CASE("Reject bad meta informations") {
                  "name": "foo",
                  "path": "/foo/bar"
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Library path [/foo/bar] must be a relative path"},
         {R"({
@@ -121,7 +121,7 @@ TEST_CASE("Reject bad meta informations") {
                  "name": "foo",
                  "path": "../bar"
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Library path [../bar] must not reach outside of the distribution directory."},
         {R"({
@@ -133,7 +133,7 @@ TEST_CASE("Reject bad meta informations") {
                  "path": ".",
                  "test-using": []
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A 'using' array is required"},
         {R"({
@@ -145,7 +145,7 @@ TEST_CASE("Reject bad meta informations") {
                  "path": ".",
                  "using": []
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A 'test-using' array is required"},
         {R"({
@@ -158,7 +158,7 @@ TEST_CASE("Reject bad meta informations") {
                  "test-using": [],
                  "using": []
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A 'dependencies' array is required"},
         {R"({
@@ -171,7 +171,7 @@ TEST_CASE("Reject bad meta informations") {
                  "using": [],
                  "dependencies": {}
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'dependencies' must be an array of dependency objects"},
         {R"({
@@ -184,7 +184,7 @@ TEST_CASE("Reject bad meta informations") {
                  "using": [],
                  "dependencies": [12]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Each dependency should be a JSON object"},
         {R"({
@@ -199,7 +199,7 @@ TEST_CASE("Reject bad meta informations") {
                  "test-dependencies": [],
                  "dependencies": [{}]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A string 'name' is required for each dependency"},
         {R"({
@@ -216,7 +216,7 @@ TEST_CASE("Reject bad meta informations") {
                      "name": "bad-name."
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Invalid name string 'bad-name.': Names must not end with a punctuation character"},
         {R"({
@@ -237,7 +237,7 @@ TEST_CASE("Reject bad meta informations") {
                      "using": ["foo"]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A 'test-dependencies' array is required"},
         {R"({
@@ -254,7 +254,7 @@ TEST_CASE("Reject bad meta informations") {
                      "name": "bar"
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A 'versions' array is required for each dependency"},
         {R"({
@@ -272,7 +272,7 @@ TEST_CASE("Reject bad meta informations") {
                      "versions": 12
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Dependency 'versions' must be an array"},
         {R"({
@@ -290,7 +290,7 @@ TEST_CASE("Reject bad meta informations") {
                      "versions": [12]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'versions' elements must be objects"},
         {R"({
@@ -309,7 +309,7 @@ TEST_CASE("Reject bad meta informations") {
                      "using": []
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A dependency's 'versions' array may not be empty"},
         {R"({
@@ -327,7 +327,7 @@ TEST_CASE("Reject bad meta informations") {
                      "versions": [{}]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'low' version is required"},
         {R"({
@@ -347,7 +347,7 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'low' version must be a string"},
         {R"({
@@ -367,7 +367,7 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Invalid semantic version string '1.2.'"},
         {R"({
@@ -387,7 +387,7 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'high' version is required"},
         {R"({
@@ -408,7 +408,7 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'high' version must be a string"},
         {R"({
@@ -429,7 +429,7 @@ TEST_CASE("Reject bad meta informations") {
                      }]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "A dependency 'using' key is required"},
         {R"({
@@ -451,7 +451,7 @@ TEST_CASE("Reject bad meta informations") {
                      "using": []
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "'high' version must be strictly greater than 'low' version"},
         {R"({
@@ -473,7 +473,7 @@ TEST_CASE("Reject bad meta informations") {
                      "using": [12]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Each 'using' item must be a usage string"},
         {R"({
@@ -495,7 +495,7 @@ TEST_CASE("Reject bad meta informations") {
                      "using": ["baz/quux"]
                  }]
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          "Invalid name string 'baz/quux'"},
         {R"({
@@ -540,7 +540,7 @@ TEST_CASE("Reject bad meta informations") {
              }],
              "schema-version": true
          })",
-         "Only 'schema-version' == 1 is supported"},
+         "Only 'schema-version' == 0 is supported"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -560,9 +560,9 @@ TEST_CASE("Reject bad meta informations") {
                      "using": []
                  }]
              }],
-             "schema-version": 1.4
+             "schema-version": 0.4
          })",
-         "Only 'schema-version' == 1 is supported"},
+         "Only 'schema-version' == 0 is supported"},
         {R"({
              "name": "foo",
              "version": "1.2.3",
@@ -584,7 +584,7 @@ TEST_CASE("Reject bad meta informations") {
              }],
              "schema-version": 3
          })",
-         "Only 'schema-version' == 1 is supported"},
+         "Only 'schema-version' == 0 is supported"},
     }));
     INFO("Parsing data: " << given);
     CAPTURE(expect_error);
@@ -626,7 +626,7 @@ TEST_CASE("Check some valid meta JSON") {
                  "test-dependencies": [],
                  "dependencies": []
              }],
-             "schema-version": 1
+             "schema-version": 0
          })");
     REQUIRE_NOTHROW(bpt::crs::package_info::from_json_str(given));
 }
@@ -659,7 +659,7 @@ TEST_CASE("Check parse results") {
                  }],
                  "test-dependencies": []
              }],
-             "schema-version": 1
+             "schema-version": 0
          })",
          pkg_meta{
              .id=bpt::crs::pkg_id{

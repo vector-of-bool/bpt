@@ -127,7 +127,7 @@ def test_pkg_create_almost_valid(tmp_project: Project) -> None:
             }]
         }],
         "schema-version":
-        1
+        0
     }
     tmp_project.write('pkg.json', json.dumps(pkg_data))
     with error.expect_error_marker('invalid-pkg-json'):

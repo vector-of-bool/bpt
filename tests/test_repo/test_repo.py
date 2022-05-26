@@ -42,7 +42,7 @@ def test_repo_import(bpt: BPTWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
         'pkg.json',
         json.dumps({
             'schema-version':
-            1,
+            0,
             'name':
             'meow',
             'version':
@@ -220,7 +220,7 @@ def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'pkg-version':
             1,
             'schema-version':
-            1,
+            0,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
@@ -241,7 +241,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'name': 'foo',
             'version': '1.2.3',
             'pkg-version': 1,
-            'schema-version': 1,
+            'schema-version': 0,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',

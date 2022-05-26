@@ -151,7 +151,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
         {
             'foo': {
                 'pkg.json': json.dumps({
-                    'schema-version': 1,
+                    'schema-version': 0,
                     'name': 'foo',
                     'version': '1.2.3',
                     'pkg-version': 1,
@@ -177,7 +177,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
             },
             'bar': {
                 'pkg.json': json.dumps({
-                    'schema-version': 1,
+                    'schema-version': 0,
                     'name': 'bar',
                     'version': '1.2.3',
                     'pkg-version': 1,
