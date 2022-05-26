@@ -4,12 +4,14 @@
 #include <bpt/error/on_error.hpp>
 #include <bpt/util/json5/parse.hpp>
 #include <bpt/util/json_walk.hpp>
+#include <bpt/util/yaml/convert.hpp>
+#include <bpt/util/yaml/parse.hpp>
 
 using namespace bpt;
 
 dependency_manifest dependency_manifest::from_file(path_ref fpath) {
     BPT_E_SCOPE(e_parse_dependency_manifest_path{fpath});
-    auto data = bpt::parse_json5_file(fpath);
+    auto data = bpt::yaml_as_json5_data(bpt::parse_yaml_file(fpath));
 
     dependency_manifest ret;
     using namespace bpt::walk_utils;

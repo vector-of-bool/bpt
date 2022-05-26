@@ -243,7 +243,7 @@ struct setup {
         build_deps_cmd.add_argument({
             .long_spellings  = {"deps-file"},
             .short_spellings = {"d"},
-            .help            = "Path to a JSON5 file listing dependencies",
+            .help            = "Path to a YAML file listing dependencies",
             .valname         = "<deps-file>",
             .can_repeat      = true,
             .action          = debate::push_back_onto(opts.build_deps.deps_files),
