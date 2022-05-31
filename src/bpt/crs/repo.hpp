@@ -23,6 +23,7 @@ class repository {
         , _dirpath(dirpath) {}
 
     void _vacuum_and_compress() const;
+    package_info _import_dir(const std::filesystem::path& dirpath);
 
 public:
     static repository create(const std::filesystem::path& directory, std::string_view name);
@@ -31,6 +32,7 @@ public:
     std::filesystem::path subdir_of(const package_info&) const noexcept;
 
     auto        pkg_dir() const noexcept { return _dirpath / "pkg"; }
+    auto        tmp_dir() const noexcept { return _dirpath / "tmp"; }
     auto&       root() const noexcept { return _dirpath; }
     std::string name() const;
 
