@@ -1,5 +1,6 @@
 .. highlight:: js
-.. default-role:: tc-option
+.. default-domain:: schematic
+.. default-role:: schematic:prop
 
 .. |--toolchain| replace:: :option:`--toolchain <bpt build --toolchain>`
 
@@ -135,9 +136,9 @@ simply one line:
         compiler_id: "<compiler-id>"
     }
 
-where ``<compiler-id>`` is one of the known `compiler_id` options. |bpt| will
+where ``<compiler-id>`` is one of the known |compiler_id| options. |bpt| will
 infer common suitable defaults for the remaining options based on the value of
-`compiler_id`.
+|compiler_id|.
 
 For example, if you specify ``gnu``, then |bpt| will assume ``gcc`` to be the C
 compiler, ``g++`` to be the C++ compiler, and ``ar`` to be the library archiving
@@ -154,11 +155,11 @@ them with additional options:
         cxx_compiler: 'g++-9',
     }
 
-|bpt| will continue to infer other options based on the `compiler_id`, but will
-use the provided executable names when compiling files for the respective
-languages.
+|bpt| will continue to infer other options based on the
+:prop:`~ToolchainOptions.compiler_id`, but will use the provided executable
+names when compiling files for the respective languages.
 
-To specify compilation flags, the `flags <flags>` option can be used:
+To specify compilation flags, the `~ToolchainOptions.flags` option can be used:
 
 .. code-block::
 
@@ -169,9 +170,11 @@ To specify compilation flags, the `flags <flags>` option can be used:
 
 .. note::
 
-    Use `warning_flags` to specify options regarding compiler warnings.
+    Use `~ToolchainOptions.warning_flags` to specify options regarding compiler
+    warnings.
 
-Flags for linking executables can be specified with `link_flags`:
+Flags for linking executables can be specified with
+`~ToolchainOptions.link_flags`:
 
 .. code-block::
 
@@ -198,7 +201,7 @@ and double ``"`` quote characters as argument delimiters.
 If an option is given a list of strings instead, then each string in that
 array is treated as a full command line argument and is passed as such.
 
-For example, this sample with `flags <flags>`::
+For example, this sample with `~ToolchainOptions.flags`::
 
     {
         flags: "-fsanitize=address -fPIC"
@@ -214,396 +217,519 @@ Despite splitting strings as-if they were shell commands, |bpt| does nothing
 else shell-like. It does not expand environment variables, nor does it expand
 globs and wildcards.
 
+.. mapping:: ToolchainOptions
 
-.. _compiler_id:
+  .. property:: compiler_id
+    :optional:
 
-``compiler_id``
----------------
+    :type: :ts:`"gnu" | "clang" | "msvc"`
 
-Specify the identity of the compiler. This option is used to infer many other
-facts about the toolchain. If specifying the full toolchain with the command
-templates, this option is not required.
+    Specify the identity of the compiler. This option is used to infer many
+    other facts about the toolchain. If specifying the full toolchain with the
+    command templates, this option is not required.
 
-Valid values are:
+    :option "gnu": For GCC
+    :option "clang": For LLVM/Clang
+    :option "msvc": For Microsoft Visual C++
 
-``gnu``
-    For GCC
+    .. |compiler_id| replace:: :schematic:prop:`~ToolchainOptions.compiler_id`
 
-``clang``
-    For LLVM/Clang
+    .. |gnu| replace:: :ts:`"gnu"`
+    .. |clang| replace:: :ts:`"clang"`
+    .. |msvc| replace:: :ts:`"msvc"`
 
-``msvc``
-    For Microsoft Visual C++
+    .. |default-inferred-from-compiler_id| replace::
 
+        Inferred from the value of |compiler_id|
 
-``c_compiler`` and ``cxx_compiler``
------------------------------------
 
-Names/paths of the C and C++ compilers, respectively. Defaults will be inferred
-from `compiler_id`.
+  .. property:: c_compiler
+    :optional:
+  .. property:: cxx_compiler
+    :optional:
 
+    :type: string
 
-.. _c_version:
-.. _cxx_version:
+    Names/paths of the C and C++ compilers, respectively.
 
-``c_version`` and ``cxx_version``
----------------------------------
+    :default: |default-inferred-from-compiler_id|:
 
-Specify the language versions for C and C++, respectively. By default, |bpt|
-will not set any language version. Using this option requires that the
-`compiler_id` be specified (Or the `lang_version_flag_template` advanced
-setting).
+      - When |compiler_id| is |gnu|:
 
-Examples of `c_version <c_version>` values are:
+        - :prop:`c_compiler`: ``gcc``
+        - :prop:`cxx_compiler`: ``g++``
 
-- ``c89``
-- ``c99``
-- ``c11``
-- ``c18``
+      - When |compiler_id| is |clang|:
 
-Examples of `cxx_version <cxx_version>` values are:
+        - :prop:`c_compiler`: ``clang``
+        - :prop:`cxx_compiler`: ``clang++``
 
-- ``c++14``
-- ``c++17``
-- ``c++20``
+      - When |compiler_id| is |msvc|: ``cl.exe`` (for both C and C++)
 
-The given string will be substituted in the appropriate compile flag to specify
-the language version being passed.
+  .. property:: c_version
+    :optional:
+  .. property:: cxx_version
+    :optional:
 
-To enable GNU language extensions on GNU compilers, one can values like
-``gnu++20``, which will result in ``-std=gnu++20`` being passed. Likewise, if
-the language version is "experimental" in your GCC release, you may set
-`cxx_version <cxx_version>` to the appropriate experimental version name, e.g.
-``"c++2a"`` for ``-std=c++2a``.
+    Specify the language versions for C and C++, respectively. By default, |bpt|
+    will not set any language version. Using this option requires that the
+    :prop:`~ToolchainOptions.compiler_id` be specified (Or the
+    :prop:`~AdvancedToolchainOptions.lang_version_flag_template` advanced
+    setting).
 
-For MSVC, setting `cxx_version <cxx_version>` to ``c++latest`` will result in
-``/std:c++latest``. **Beware** that this is an unstable setting value that could
-change the major language version in a future MSVC update.
+    Examples of :yaml:`c_version` values are:
 
+    - ``c89``
+    - ``c99``
+    - ``c11``
+    - ``c18``
 
-.. _warning_flags:
+    Examples of :yaml:`cxx_version` values are:
 
-``warning_flags``
------------------
+    - ``c++14``
+    - ``c++17``
+    - ``c++20``
 
-Provide *additional* compiler flags that should be used to enable warnings. This
-option is stored separately from `flags <flags>`, as these options may be
-enabled/disabled separately depending on how |bpt| is invoked.
+    The given string will be substituted in the appropriate compile flag to
+    specify the language version being passed.
 
-.. note::
+    To enable GNU language extensions on GNU compilers, one can values like
+    ``gnu++20``, which will result in ``-std=gnu++20`` being passed. Likewise,
+    if the language version is "experimental" in your GCC release, you may set
+    :yaml:`cxx_version` to the appropriate experimental version name, e.g.
+    ``"c++2a"`` for ``-std=c++2a``.
 
-    If `compiler_id` is provided, a default set of warning flags will be
-    provided when warnings are enabled.
+    For MSVC, setting :yaml:`cxx_version` to ``c++latest`` will result in
+    ``/std:c++latest``. **Beware** that this is an unstable setting value that
+    could change the major language version in a future MSVC update.
 
-    Adding flags to this toolchain option will *append* flags to the basis
-    warning flag list rather than overwrite them.
+  .. property:: warning_flags
+    :optional:
 
-.. seealso::
+    :type: :ts:`string | string[]`
+    :default: :ts:`[]`
 
-    Refer to :ref:`toolchains.opts.base_warning_flags` for more information.
+    Provide *additional* compiler flags that should be used to enable warnings.
+    This option is stored separately from :prop:`flags`, as these options may be
+    enabled/disabled separately depending on how |bpt| is invoked.
 
+    .. note::
 
-.. _flags:
+      If :prop:`~ToolchainOptions.compiler_id` is provided, a default set of
+      warning flags will be provided when warnings are enabled.
 
-``flags``, ``c_flags``, and ``cxx_flags``
------------------------------------------
+      Adding flags to this toolchain option will *append* flags to the basis
+      warning flag list rather than overwrite them.
 
-Specify *additional* compiler options, possibly per-language.
+    .. seealso::
 
+      Refer to :prop:`AdvancedToolchainOptions.base_warning_flags` for more
+      information.
 
-.. _link_flags:
 
-``link_flags``
---------------
+  .. property:: flags
+    :optional:
+  .. property:: c_flags
+    :optional:
+  .. property:: cxx_flags
+    :optional:
 
-Specify *additional* link options to use when linking executables.
+    :type: :ts:`string | string[]`
+    :default: :ts:`[]`
 
-.. note::
+    Specify *additional* compiler options, possibly per-language. :yaml:`flags`
+    will apply to all languages.
 
-    |bpt| does not invoke the linker directly, but instead invokes the
-    compiler with the appropriate flags to perform linking. If you need to pass
-    flags directly to the linker, you will need to use the compiler's options to
-    direct flags through to the linker. On GNU-style, this is
-    ``-Wl,<linker-option>``. With MSVC, a separate flag ``/LINK`` must be
-    specified, and all following options are passed to the underlying
-    ``link.exe``.
+  .. property:: link_flags
+    :optional:
 
+    :type: :ts:`string | string[]`
+    :default: :ts:`[]`
 
-``optimize``
-------------
+    Specify *additional* link options to use when linking executables.
 
-Boolean option (|true| or |false|) to enable/disable optimizations. Default
-is |false|.
+    .. note::
 
+      |bpt| does not invoke the linker directly, but instead invokes the
+      compiler with the appropriate flags to perform linking. If you need to
+      pass flags directly to the linker, you will need to use the compiler's
+      options to direct flags through to the linker. On GNU-style, this is
+      ``-Wl,<linker-option>``. With MSVC, a separate flag ``/LINK`` must be
+      specified, and all following options are passed to the underlying
+      ``link.exe``.
 
-``debug``
----------
 
-Bool or string. Default is |false|. If |true| or ``"embedded"``, generates
-debug information embedded in the compiled binaries. If ``"split"``, generates
-debug information in a separate file from the binaries.
+  .. property:: optimize
+    :optional:
 
-.. note::
-    ``"split"`` with GCC requires that the compiler support the
-    ``-gsplit-dwarf`` option.
+    :type: :ts:`boolean`
+    :default: |false|
 
+    Enable/disable compiler optimizations.
 
-``runtime``
------------
 
-Select the language runtime/standard library options. Must be an object, and supports two keys:
+  .. property:: debug
+    :optional:
 
-``static``
-    A boolean. If |true|, the runtime and standard libraries will be
-    static-linked into the generated binaries. If |false|, they will be
-    dynamically linked. Default is |true| with MSVC, and |false| with GCC
-    and Clang.
+    :type: :ts:`boolean | "embedded" | "split"`
+    :default: |false|
 
-``debug``
-    A boolean. If |true|, the debug versions of the runtime and standard
-    library will be compiled and linked into the generated binaries. If
-    |false|, the default libraries will be used.
+    :option "embedded":
 
-    **On MSVC** the default value depends on the top-level ``/debug`` option: If
-    ``/debug`` is not |false|, then ``/runtime/debug`` defaults to |true|.
+      Generates debug information embedded in the compiled binaries.
 
-    **On GCC and Clang** the default value is |false|.
+    :option split:
 
-.. note::
+      Generates debug information in a separate file from the compiled binaries.
 
-    On GNU-like compilers, ``static`` does not generate a static executable, it
-    only statically links the runtime and standard library. To generate a static
-    executable, the ``-static`` option should be added to ``link_flags``.
+      .. note::
 
-.. note::
+        ``"split"`` with GCC requires that the compiler support the
+        ``-gsplit-dwarf`` option.
 
-    On GNU and Clang, setting ``/runtime/debug`` to |true| will compile all
-    files with the ``_GLIBCXX_DEBUG`` and ``_LIBCPP_DEBUG=1`` preprocessor
-    definitions set. **Translation units compiled with these macros are
-    definitively ABI-incompatible with TUs that have been compiled without these
-    options!!**
+    :option true: Same as :ts:`"embedded"`
 
-    If you link to a static or dynamic library that has not been compiled with
-    the same runtime settings, generated programs will likely crash.
+    :option false: Do not generate any debug information.
 
 
-``compiler_launcher``
----------------------
+  .. property:: runtime
+    :optional:
 
-Provide a command prefix that should be used on all compiler executions.
-e.g. ``ccache``.
+    :type: :ts:`{static?: boolean, debug?: boolean}`
 
+    Select the language runtime/standard library options. Must be an object, and
+    supports two sub-properties:
 
-``advanced``
-------------
+    .. property:: static
+      :optional:
 
-A nested object that contains advanced toolchain options. Refer to section on
-advanced toolchain options.
+      :type: boolean
+
+      A boolean. If |true|, the runtime and standard libraries will be
+      static-linked into the generated binaries. If |false|, they will be
+      dynamically linked. Default is |true| with MSVC, and |false| with GCC and
+      Clang.
+
+    .. property:: debug
+      :optional:
+
+      :type: boolean
+      :default:
+
+        - If |compiler_id| is |msvc|, the default value depends on the top-level
+          :prop:`ToolchainOptions.debug` option: If :yaml:`debug` is not
+          |false|, then :yaml:`runtime.debug` defaults to |true|.
+        - Otherwise, the default value is |false|.
+
+      A boolean. If |true|, the debug versions of the runtime and standard
+      library will be compiled and linked into the generated binaries. If
+      |false|, the default libraries will be used.
+
+    .. note::
+
+      On GNU-like compilers, setting :prop:`ToolchainOptions.runtime.static` to
+      |true| does not generate a static executable: it only statically links the
+      runtime and standard library. To generate a static executable, the
+      ``-static`` option should be added to ``link_flags``.
+
+    .. note::
+
+      On GNU and Clang, setting :yaml:`runtime.debug` to |true| will compile all
+      files with the ``_GLIBCXX_DEBUG`` and ``_LIBCPP_DEBUG=1`` preprocessor
+      definitions set. **Translation units compiled with these macros are
+      definitively ABI-incompatible with TUs that have been compiled without
+      these options!!**
+
+      If you link to a static or dynamic library that has not been compiled with
+      the same runtime settings, generated programs will likely crash.
+
+
+  .. property:: compiler_launcher
+    :optional:
+
+    :type: :ts:`string | string[]`
+
+    Provide a command prefix that should be used on all compiler executions.
+    e.g. ``ccache``.
+
+  .. property:: advanced
+    :optional:
+
+    :type: AdvancedToolchainOptions
+
+    A nested object that contains advanced toolchain options. These settings
+    should be handled with care.
 
 
 Advanced Options Reference
 **************************
 
-The options below are probably not good to tweak unless you *really* know what
-you are doing. Their values will be inferred from `compiler_id`.
+.. mapping:: AdvancedToolchainOptions
 
+  The options below are probably not good to tweak unless you *really* know what
+  you are doing. Their values will be inferred from
+  :prop:`~ToolchainOptions.compiler_id`.
 
-Command Templates
------------------
+  .. _command template:
 
-Many of the below options take the form of command-line templates. These are
-templates from which |bpt| will create a command-line for a subprocess,
-possibly by combining them together.
+  .. rubric:: Command Templates
 
-Each command template allows some set of placeholders. Each instance of the
-placeholder string will be replaced in the final command line. Refer to each
-respective option for more information.
+  Many of the below options take the form of command-line templates. These are
+  templates from which |bpt| will create a command-line for a subprocess,
+  possibly by combining them together.
 
+  Each command template allows some set of placeholders. Each instance of the
+  placeholder string will be replaced in the final command line. Refer to each
+  respective option for more information.
 
-``deps_mode``
--------------
+  .. property:: deps_mode
+    :optional:
 
-Specify the way in which |bpt| should track compilation dependencies. One
-of ``gnu``, ``msvc``, or ``none``.
+    :type: :ts:`"gnu" | "msvc" | "none"`
 
-.. note::
-    If ``none``, then dependency tracking will be disabled entirely. This will
-    prevent |bpt| from tracking interdependencies of source files, and
-    inhibits incremental compilation.
+    Specify the way in which |bpt| should track compilation dependencies. One of
+    ``gnu``, ``msvc``, or ``none``.
 
+    :default: |default-inferred-from-compiler_id|.
 
-``c_compile_file`` and ``cxx_compile_file``
--------------------------------------------
+    .. note::
 
-Override the *command template* that is used to compile source files.
+      If ``none``, then dependency tracking will be disabled entirely. This will
+      prevent |bpt| from tracking interdependencies of source files, and
+      inhibits incremental compilation.
 
-This template expects three placeholders:
+  .. property:: c_compile_file
+    :optional:
+  .. property:: cxx_compile_file
+    :optional:
 
-- ``[in]`` is the path to the file that will be compiled.
-- ``[out]`` is the path to the object file that will be generated.
-- ``[flags]`` is the placeholder of the compilation flags. This placeholder
-  must not be attached to any other arguments. The compilation flag argument
-  list will be inserted in place of ``[flags]``.
+    :type: :ts:`string | string[]`
 
-Defaults::
+    Override the `command template`_ that is used to compile source files.
 
-    {
-        // On GNU-like compilers (GCC, Clang):
-        c_compile_file:   "<compiler> <base_flags> [flags] -c [in] -o[out]",
-        cxx_compile_file: "<compiler> <base_flags> [flags] -c [in] -o[out]",
+    :placeholder [in]: The path to the source file that will be compiled.
+    :placeholder [out]: The path to the object file that will be generated.
 
-        // On MSVC:
-        c_compile_file:   "cl.exe <base_flags> [flags] /c [in] /Fo[out]",
-        cxx_compile_file: "cl.exe <base_flags> [flags] /c [in] /Fo[out]",
-    }
+    :placeholder [flags]:
 
+      The placeholder of the compilation flags. This placeholder must not be
+      attached to any other arguments. The compilation flag argument list will
+      be inserted in place of ``[flags]``.
 
-``create_archive``
-------------------
+    :default: |default-inferred-from-compiler_id|:
 
-Override the *command template* that is used to generate static library archive
-files.
+      - If |compiler_id| is |msvc|, then:
 
-This template expects two placeholders:
+        - :prop:`c_compile_file` is :ts:`<c_compiler> <base_flags> [flags] /c [in] /Fo[out]`
+        - :prop:`cxx_compile_file` is :ts:`<cxx_compiler> <base_flags> [flags] /c [in] /Fo[out]`
 
-- ``[in]`` is the a placeholder for the list of inputs. It must not be attached
-  to any other arguments. The list of input paths will be inserted in place of
-  ``[in]``.
-- ``[out]`` is the placeholder for the output path for the static library
-  archive.
+      - If |compiler_id| is |gnu| or |clang|, then:
 
-Defaults::
+        - :prop:`c_compile_file` is :ts:`<c_compiler> <base_flags> [flags] -c [in] -o[out]`
+        - :prop:`cxx_compile_file` is :ts:`<cxx_compiler> <base_flags> [flags] -c [in] -o[out]`
 
-    {
-        // On GNU-like:
-        create_archive: "ar rcs [out] [in]",
-        // On MSVC:
-        create_archive: "lib /nologo /OUT:[out] [in]",
-    }
+      - If |compiler_id| is unset, then this property must be specified.
 
 
-``link_executable``
--------------------
+  .. property:: create_archive
+    :optional:
 
-Override the *command template* that is used to link executables.
+    :type: :ts:`string | string[]`
 
-This template expects the same placeholders as ``create_archive``, but
-``[out]`` is a placeholder for the executable file rather than a static
-library.
+    Override the `command template`_ that is used to generate static library
+    archive files.
 
-Defaults::
+    :placeholder [in]:
 
-    {
-        // For GNU-like:
-        link_executable: "<compiler> -fPIC [in] -pthread -o[out] [flags]",
-        // For MSVC:
-        link_executable: "cl.exe /nologo /EHsc [in] /Fe[out]",
-    }
+      The list of inputs. It must not be attached to any other arguments. The
+      list of input paths will be inserted in place of ``[in]``.
 
+    :placeholder [out]:
 
-``include_template`` and ``external_include_template``
-------------------------------------------------------
+      The placeholder for the output path for the static library archive.
 
-Override the *command template* for the flags to specify a header search path.
-``external_include_template`` will be used to specify the include search path
-for a directory that is "external" (i.e. does not live within the main project).
+    :default: |default-inferred-from-compiler_id|:
 
-For each directory added to the ``#include`` search path, this argument
-template is instantiated in the ``[flags]`` for the compilation.
+      - If |compiler_id| is |msvc|, then ``lib /nologo /OUT:[out] [in]``
+      - If |compiler_id| is |gnu| or |clang|, then ``ar rcs [out] [in]``
+      - If |compiler_id| is unset, then this property must be specified.
 
-This template expects only a single placeholder: ``[path]``, which will be
-replaced with the path to the directory to be added to the search path.
 
-On MSVC, this defaults to ``/I [path]``. On GNU-like, ``-isystem [path]`` is
-used for ``external_include_template`` and ``-I [path]`` for
-``include_template``.
+  .. property:: link_executable
+    :optional:
 
+    :type: :ts:`string | string[]`
 
-``define_template``
--------------------
+    Override the `command template`_ that is used to link executables.
 
-Override the *command template* for the flags to set a preprocessor definition.
+    :placeholder [in]:
 
-This template expects only a single placeholder: ``[def]``, which is the
-preprocessor macro definition argument.
+      The list of input filepaths. It must not be attached to any other
+      arguments. The list of input paths will be inserted in place of ``[in]``.
 
-On MSVC, this defaults to ``/D [def]``. On GNU-like compilers, this is
-``-D [def]``.
+    :placeholder [out]:
 
+      The placeholder for the output path for the executable file.
 
-.. _lang_version_flag_template:
+    :default: |default-inferred-from-compiler_id|:
 
-``lang_version_flag_template``
-------------------------------
+      - If |compiler_id| is |msvc|, then
+        ``<cxx_compiler> /nologo /EHsc [in] /Fe[out]``
+      - If |compiler_id| is |gnu| or |clang|, then
+        ``<cxx_compiler> -fPIC [in] -pthread -o[out] [flags]``
+      - If |compiler_id| is unset, then this property must be specified.
 
-Set the flag template string for the language-version specifier for the
-compiler command line.
 
-This template expects a single placeholder: ``[version]``, which is the version
-string passed for `c_version` or `cxx_version`.
+  .. property:: include_template
+    :optional:
+  .. property:: external_include_template
+    :optional:
 
-On MSVC, this defaults to ``/std:[version]``. On GNU-like compilers, it
-defaults to ``-std=[version]``.
+    :type: :ts:`string | string[]`
 
+    Override the `command template`_ for the flags to specify a header search
+    path. ``external_include_template`` will be used to specify the include
+    search path for a directory that is "external" (i.e. does not live within
+    the main project).
 
-``tty_flags``
--------------
+    For each directory added to the ``#include`` search path, this argument
+    template is instantiated in the ``[flags]`` for the compilation.
 
-Supply additional flags when compiling/linking that will only be applied if
-standard output is an ANSI-capable terminal.
+    :placeholder [path]:
 
-On GNU and Clang this will be ``-fdiagnostics-color`` by default.
+      The path to the directory to be added to the search path.
 
+    :default: |default-inferred-from-compiler_id|:
 
-``obj_prefix``, ``obj_suffix``, ``archive_prefix``, ``archive_suffix``, ``exe_prefix``, and ``exe_suffix``
-----------------------------------------------------------------------------------------------------------
+      - If |compiler_id| is |msvc|, then ``/I [path]``.
+      - If |compiler_id| is |gnu| or |clang|:
+        - :prop:`include_template` is ``-I [path]``.
+        - :prop:`extern_include_template` is ``-isystem [path]``.
+      - If |compiler_id| is unset, then this property must be specified.
 
-Set the filename prefixes and suffixes for object files, library archive files,
-and executable files, respectively.
 
+  .. property:: define_template
+    :optional:
 
-.. _toolchains.opts.base_warning_flags:
+    :type: :ts:`string | string[]`
 
-``base_warning_flags``
-----------------------
+    Override the `command template`_ for the flags to set a preprocessor
+    definition.
 
-When you compile your project and request warning flags, |bpt| will
-concatenate the warning flags from this option with the flags provided by
-`warning_flags`. This option is "advanced," because it provides a set of
-defaults based on the `compiler_id`.
+    :placeholder [def]:
 
-On GNU-like compilers, the base warning flags are ``-Wall -Wextra -Wpedantic
--Wconversion``. On MSVC the default flag is ``/W4``.
+      The preprocessor macro definition to define.
 
-For example, if you set `warning_flags` to ``"-Werror"`` on a GNU-like
-compiler, the resulting command line will contain ``-Wall -Wextra -Wpedantic
--Wconversion -Werror``.
+    :default: |default-inferred-from-compiler_id|:
 
+      - If |compiler_id| is |msvc|, then ``/D [path]``.
+      - If |compiler_id| is |gnu| or |clang|, then ``-D [path]``.
+      - If |compiler_id| is unset, then this property must be specified.
 
-.. _toolchains.opts.base_flags:
 
-``base_flags``, ``base_c_flags``, and ``base_cxx_flags``
---------------------------------------------------------
+  .. property:: lang_version_flag_template
+    :optional:
 
-When you compile your project, |bpt| uses a set of default flags appropriate to
-the target language and compiler. These flags are always included in the compile
-command and are inserted in addition to those flags provided by `flags`.
+    :type: :ts:`string|string[]`
 
-On GNU-like compilers, the base flags are ``-fPIC -pthread``. On
-MSVC the default flags are ``/EHsc /nologo /permissive-`` for C++ and ``/nologo
-/permissive-`` for C.
+    Set the flag template string for the language-version specifier for the
+    compiler command line.
 
-These defaults may be changed by providing values for three different options.
-The ``base_flags`` value is always output, regardless of language. Flags
-exclusive to C are specified in ``base_c_flags``, and those exclusively for
-C++ should be in ``base_cxx_flags``. Note that the language-specific values are
-independent from ``base_flags``; that is, providing ``base_c_flags`` or
-``base_cxx_flags`` does not override or prevent the inclusion of the
-``base_flags`` value, and vice-versa. Empty values are acceptable, should you
-need to simply prohibit one or more of the defaults from being used.
+    :placeholder [version]:
 
-For example, if you set `flags <flags>` to ``-ansi`` on a GNU-like compiler, the
-resulting command line will contain ``-fPIC -pthread -ansi``. If, additionally,
-you set ``base_flags`` to ``-fno-builtin`` and ``base_cxx_flags`` to
-``-fno-exceptions``, the generated command will include
-``-fno-builtin -fno-exceptions -ansi`` for C++ and ``-fno-builtin -ansi`` for C.
+      The version string passed for :prop:`c_version` or :prop:`cxx_version`.
+
+    This template expects a single placeholder: ``[version]``, which is
+
+    On MSVC, this defaults to ``/std:[version]``. On GNU-like compilers, it
+    defaults to ``-std=[version]``.
+
+
+  .. property:: tty_flags
+    :optional:
+
+    :type: :ts:`string|string[]`
+
+    Supply additional flags when compiling/linking that will only be applied if
+    standard output is an ANSI-capable terminal.
+
+    On GNU and Clang this will be ``-fdiagnostics-color`` by default.
+
+
+  .. property:: obj_prefix
+    :optional:
+  .. property:: obj_suffix
+    :optional:
+  .. property:: archive_prefix
+    :optional:
+  .. property:: archive_suffix
+    :optional:
+  .. property:: exe_prefix
+    :optional:
+  .. property:: exe_suffix
+    :optional:
+
+    :type: :ts:`string`
+
+    Set the filename prefixes and suffixes for object files, library archive
+    files, and executable files, respectively.
+
+    :default:
+
+      |default-inferred-from-compiler_id| and the host system on which |bpt| is
+      executing.
+
+
+  .. property:: base_warning_flags
+    :optional:
+
+    :type: :ts:`string | string[]`
+
+    When you compile your project and request warning flags, |bpt| will
+    concatenate the warning flags from this option with the flags provided by
+    `warning_flags`. This option is "advanced," because it provides a set of
+    defaults based on the :prop:`~ToolchainOptions.compiler_id`.
+
+    On GNU-like compilers, the base warning flags are
+    ``-Wall -Wextra -Wpedantic -Wconversion``. On MSVC the default flag is
+    ``/W4``.
+
+    For example, if you set `warning_flags` to ``"-Werror"`` on a GNU-like
+    compiler, the resulting command line will contain
+    ``-Wall -Wextra -Wpedantic -Wconversion -Werror``.
+
+
+  .. property:: base_flags
+    :optional:
+  .. property:: base_c_flags
+    :optional:
+  .. property:: base_cxx_flags
+    :optional:
+
+    :type: :ts:`string | string[]`
+
+    When you compile your project, |bpt| uses a set of default flags appropriate
+    to the target language and compiler. These flags are always included in the
+    compile command and are inserted in addition to those flags provided by
+    `flags`.
+
+    On GNU-like compilers, the base flags are ``-fPIC -pthread``. On MSVC the
+    default flags are ``/EHsc /nologo /permissive-`` for C++ and
+    ``/nologo /permissive-`` for C.
+
+    These defaults may be changed by providing values for three different
+    options. The ``base_flags`` value is always output, regardless of language.
+    Flags exclusive to C are specified in ``base_c_flags``, and those
+    exclusively for C++ should be in ``base_cxx_flags``. Note that the
+    language-specific values are independent from ``base_flags``; that is,
+    providing ``base_c_flags`` or ``base_cxx_flags`` does not override or
+    prevent the inclusion of the ``base_flags`` value, and vice-versa. Empty
+    values are acceptable, should you need to simply prohibit one or more of the
+    defaults from being used.
+
+    For example, if you set `ToolchainOptions.flags` to ``-ansi`` on a GNU-like
+    compiler, the resulting command line will contain ``-fPIC -pthread -ansi``.
+    If, additionally, you set ``base_flags`` to ``-fno-builtin`` and
+    ``base_cxx_flags`` to ``-fno-exceptions``, the generated command will
+    include ``-fno-builtin -fno-exceptions -ansi`` for C++ and
+    ``-fno-builtin -ansi`` for C.

@@ -24,10 +24,15 @@
     :language: cpp
     :class: highlight
 
+.. role:: ts(code)
+    :language: typescript
+    :class: highlight
+
 .. |#include| replace:: :cpp:`#include`
 
 
 .. |true| replace:: :cpp:`true`
 .. |false| replace:: :cpp:`false`
 
-.. role:: tc-option(ref)
+.. |prop:bpt.yaml:proj.libraries| replace:: :schematic:prop:`Project.libraries`
+.. |prop:bpt.yaml:libraries| replace:: :schematic:prop:`libraries <Project.libraries>`

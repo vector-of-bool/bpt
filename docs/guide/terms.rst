@@ -155,9 +155,9 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
   default library
 
     The *default library* of a `project` is the `library` that |bpt| generates
-    if the :yaml:`libraries` project property is omitted in |bpt.yaml|. It will
-    have the same :yaml:`name` as the project, and its `library root` will be
-    the same as the `project root`.
+    if the :yaml:`libraries` (:schematic:prop:`Project.libraries`) property is
+    omitted in |bpt.yaml|. It will have the same :yaml:`name` as the project,
+    and its `library root` will be the same as the `project root`.
 
     .. note::
 
@@ -250,15 +250,15 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
 
     The *common dependencies* of a `project` are the `dependencies <dependency>`
     that appear at the top-level of the project's |bpt.yaml| file. (Refer:
-    :ref:`proj.dependencies`)
+    :schematic:prop:`Project.dependencies`)
 
     These dependencies are added as direct dependencies of every `library` in
     the project, whether that is the `default library` or each library in the
-    :ref:`proj.libraries` array.
+    :schematic:prop:`Project.libraries` array.
 
     The *common test-dependencies* are the similar but apply only to the
     libraries' `test dependencies <test dependency>`. (Refer:
-    :ref:`proj.test-dependencies`)
+    :schematic:prop:`Project.test-dependencies`)
 
   package ID
 

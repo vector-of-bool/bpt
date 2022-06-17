@@ -7,8 +7,9 @@ In |bpt|, all code belongs to a `library`, and every library belongs by either a
 |bpt| `project` or a `package`.
 
 By default, a |bpt| project only has a single `default library`. A project can
-be subdivided into more libraries by using the :yaml:`libraries` property. A
-library can `depend on <dependency>` other libraries in external packages.
+be subdivided into more libraries by using the |prop:bpt.yaml:libraries|
+property. A library can `depend on <dependency>` other libraries in external
+packages.
 
 |bpt| uses the filesystem layout of the library to derive information about it.
 Every library has a `library root` directory. A library root contains either
@@ -48,7 +49,7 @@ The Default Library
 *******************
 
 In |bpt|, all code belongs to a `library`. If a |bpt.yaml| file omits the
-:yaml:`libraries` property, |bpt| will assume that the `project`'s
+|prop:bpt.yaml:libraries| property, |bpt| will assume that the `project`'s
 `default library` lives in the same directory as |bpt.yaml| and has a library
 :yaml:`name` equivalent to the project :yaml:`name`:
 
@@ -70,19 +71,20 @@ library is always the same as the `project root`, and cannot be changed.
 
 .. seealso::
 
-  The :yaml:`libraries` property allows one to specify any number of libraries
-  within the project. The :yaml:`libraries` property is discussed below:
-  :ref:`guide.multiple-libs`
+  The |prop:bpt.yaml:proj.libraries| property allows one to specify any number
+  of libraries within the project. The :yaml:`libraries` property is discussed
+  below: :ref:`guide.multiple-libs`
 
 .. note::
 
   If your project only defines a single library, you are likely to not need to
-  use :yaml:`libraries` and can just rely on the implicit default library.
+  use |prop:bpt.yaml:proj.libraries| and can just rely on the implicit default
+  library.
 
 .. note::
 
-  If the :yaml:`libraries` property is specified then |bpt| will not generate a
-  default library.
+  If the |prop:bpt.yaml:proj.libraries| property is specified then |bpt| will
+  not generate a default library.
 
 
 .. _guide.multiple-libs:
@@ -91,8 +93,8 @@ Multiple Libraries in a Project
 *******************************
 
 Multiple libraries can be specified for a single `project` by using the
-top-level :yaml:`libraries` property in |bpt.yaml|. :yaml:`libraries` must be an
-array, and each element must be a map, and each map element must have both a
+|prop:bpt.yaml:proj.libraries| property in |bpt.yaml|. :yaml:`libraries` must be
+an array, and each element must be a map, and each map element must have both a
 :yaml:`name` and a :yaml:`path` property:
 
 .. code-block::
@@ -330,14 +332,14 @@ Library Properties in |bpt.yaml|
 ********************************
 
 A |bpt| `project` can declare one or more `libraries <library>` using the
-top-level :ref:`proj.libraries` property in |bpt.yaml|. If the :yaml:`libraries`
-property is omitted, |bpt| will instead generate a `default library` for the
-project. Most projects will not need to declare explicit :yaml:`libraries` and
-can rely on the default library.
+top-level |prop:bpt.yaml:proj.libraries| property in |bpt.yaml|. If the
+:yaml:`libraries` property is omitted, |bpt| will instead generate a
+`default library` for the project. Most projects will not need to declare
+explicit :yaml:`libraries` and can rely on the default library.
 
 The project's :yaml:`libraries` must be an array, and each element must be a
-map, and each map element must at least have both a :yaml:`name` and a
-:yaml:`path` property:
+:schematic:mapping:`ProjectLibrary` map. The only required properties are
+:yaml:`name` and :yaml:`path`:
 
 .. code-block:: yaml
   :caption: |bpt.yaml|
@@ -366,71 +368,124 @@ and unquoted identifier keys::
     ]
   }
 
-The :yaml:`name` property must specify a valid `name` for the library, which
-must be unique within the project.
-
-The :yaml:`path` property specifies the `relative filepath` pointing to the
-`library root` for the library. This path must be relative to the `project root`
-and may only use forward-slash "``/``" as a `directory
-separator`. The :yaml:`path` must not "reach outside" of the project root
-directory. A path of a single ASCII dot "``.``" refers to the project root
-itself.
 
 .. note::
 
-  For the `default library` (if :yaml:`libraries` is omitted), the :yaml:`name`
-  is the same as the project's name, and the :yaml:`path` is "``.``" (equivalent
-  to the `project root`).
+  For the `default library` (if |prop:bpt.yaml:proj.libraries| is omitted), the
+  :yaml:`name` is the same as the project's name, and the :yaml:`path` is
+  "``.``" (equivalent to the `project root`).
 
-.. _lib.properties-dl:
 
-.. rubric:: Properties
+.. default-domain:: schematic
 
-.. index:: pair: name; library property
-.. _lib.name:
+.. rubric:: Schema
 
-:yaml:`name` :  ``string``
-  **Required:** The name of the library. Must follow the valid `name`
-  conventions. This name must be unique within the `project`.
+.. mapping:: ProjectLibrary
 
-  .. index:: pair: path; library property
-  .. _lib.path:
+  A mapping in |bpt.yaml| that defines a `library` for the `project`. These
+  mapping objects appear as elements of the :prop:`~Project.libraries` array for
+  the project.
 
-:yaml:`path` : ``string``
-  **Required:** The `relative filepath` to the `library root`.
+  .. code-block:: yaml
+    :caption: |bpt.yaml|
+    :emphasize-lines: 9-11, 13-15
 
-  .. index:: pair: using; library property
-  .. _lib.using:
+    name: acme-components
+    version: 4.1.2
 
-:yaml:`using` : ``string[]``
-  *Optional:* The internal `dependencies <dependency>` of the library. Must be
-  the names of other libraries within the same `project`.
+    # Every library will share the common test-dependencies:
+    test-dependencies: [catch2@3.0.1]
 
-  .. index:: pair: test-using; library property
-  .. _lib.test-using:
+    # This project defines two libraries listed below:
+    libraries:
+      - name: util
+        path: libs/util
+        depends: [fmt@8.1.3, asio@1.12.0]
 
-:yaml:`test-using` : ``string[]``
-  *Optional:* The internal `test dependencies <test dependency>` of the
-  library. Must be the names of other libraries within the same `project`.
+      - name: gui
+        path: libs/gui
+        using: [util]  # 'gui' uses 'util'
 
-  .. index:: pair: dependencies; library property
-  .. _lib.dependencies:
 
-:yaml:`dependencies` : (See: :doc:`deps`)
-  *Optional:* The external `dependencies <dependency>` of the library.
+  .. property:: name
+    :required:
 
-  The dependencies here will be merged with the `common dependencies` of the
-  `project`.
+    :type: string
 
-  .. seealso:: :doc:`deps`
+    The name of the library. Must follow the valid `name` conventions. This name
+    must be unique within the `project`.
 
-  .. index:: pair: test-dependencies; library property
-  .. _lib.test-dependencies:
 
-:yaml:`test-dependencies` : (See: :doc:`deps`)
-  *Optional:* The external `test dependencies <test dependency>` of the library.
+  .. property:: path
+    :required:
 
-  The dependencies here will be merged with the
-  `common test-dependencies <common dependencies>` of the `project`.
+    :type: string
 
-  .. seealso:: :doc:`deps`
+    The :yaml:`path` property specifies the `relative filepath` pointing to the
+    `library root` for the library. This path must be relative to the
+    `project root` (the directory that contains |bpt.yaml|) and may only use
+    forward-slash "``/``" as a `directory separator`. The :yaml:`path` must not
+    "reach outside" of the project root directory. A path of a single ASCII dot
+    "``.``" refers to the project root itself.
+
+
+  .. property:: using
+    :optional:
+
+    :type: string[]
+
+    The internal `dependencies <dependency>` of the library. Must be
+    the names of other libraries within the same `project`.
+
+    .. code-block:: yaml
+      :emphasize-lines: 10-12
+
+      name: acme-items
+      version: 1.2.3
+
+      libraries:
+        - name: widgets
+          path: libs/widgets
+
+        - name: gadgets
+          path: libs/gadgets
+          using: [widgets]  # All entities from widgets will be
+                            # available to gadgets, as well as to
+                            # any of gadgets' dependents
+
+
+  .. property:: test-using
+    :optional:
+
+    :type: string[]
+
+    The internal `test dependencies <test dependency>` of the library. Must be
+    the names of other libraries within the same `project`. Like :prop:`using`,
+    but these dependencies are only used for building tests.
+
+
+  .. property:: dependencies
+    :optional:
+
+    :type: string[]
+
+    The external `dependencies <dependency>` of the library. If provided, the
+    value must be an array of `dependency specifier`\ s.
+
+    The dependencies here will be merged with the `common dependencies` of the
+    `project` (from :prop:`Project.dependencies`).
+
+
+  .. property:: test-dependencies
+    :optional:
+
+    :type: string[]
+
+    The external `dependencies <dependency>` of the library. If provided, the
+    value must be an array of `dependency specifier`\ s. Like
+    :prop:`dependencies`, but these dependencies are only used for building
+    tests.
+
+    The dependencies here will be merged with the
+    `common test dependencies <common dependencies>` of the `project` (from
+    :prop:`Project.test-dependencies`.

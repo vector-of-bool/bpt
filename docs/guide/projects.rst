@@ -70,7 +70,8 @@ When using |bpt|, one is most often working within the scope of a project. A
     The ``bpt.yaml`` file is placed in the root `directory` of a `project`. It
     defines the `package` attributes of the project, including the `name`,
     :ref:`version <semver>`, `libraries <library>`, and the
-    `dependencies <dependency>` of those libraries.
+    `dependencies <dependency>` of those libraries. The complete file schema can
+    be found here: :schematic:mapping:`Project`.
 
     .. rubric:: Example
 
@@ -143,90 +144,71 @@ about what makes a valid name and a valid version.
 
 All other fields are described below.
 
+.. default-domain:: schematic
+.. rubric:: Schema
+.. schematic:mapping:: Project
 
-.. index::
-  ! pair: name ; project property
+  This object defines the schema of the |bpt.yaml| file used to define a |bpt|
+  `project`.
 
-.. _proj.name:
+  .. property:: name
+    :required:
 
-:yaml:`name`
-************
+    :type: string
 
-**This property is requried**
-
-Specifies the `package name` of the `project`. Must fit the
-:term:`name rules <name>`.
-
-
-.. index:: ! pair: version; project property
-
-.. _proj.version:
-
-:yaml:`version`
-***************
-
-**This property is requried**
-
-Specifies the `package version` of the `project`. Must be a valid
-:ref:`Semantic Version string <semver>`.
+    Specifies the `package name` of the `project`. Must fit the
+    :term:`name rules <name>`.
 
 
-.. index:: ! pair: dependencies; project property
+  .. property:: version
+    :required:
 
-.. _proj.dependencies:
+    :type: string
 
-:yaml:`dependencies`
-********************
-
-|prop-optional|
-
-Specify the `common dependencies` of the `project`. If provided, the value must
-be an array of `dependency specifier`\ s.
-
-.. seealso::
-
-  - :doc:`deps`
-  - :ref:`The library dependencies property <lib.dependencies>`
+    Specifies the `package version` of the `project`. Must be a valid
+    :ref:`Semantic Version string <semver>`.
 
 
-.. index:: ! pair: test-dependencies; project property
+  .. property:: dependencies
+    :optional:
 
-.. _proj.test-dependencies:
+    :type: string[]
 
-:yaml:`test-dependencies`
-*************************
+    Specify the `common dependencies` of the `project`. If provided, the value
+    must be an array of `dependency specifier`\ s.
 
-|prop-optional|
+    .. seealso::
 
-Specify the `common test-dependencies <common dependencies>` of the `project`.
-If provided, the value must be an array of `dependency specifier`\ s.
-
-.. seealso::
-
-  - :doc:`deps`
-  - :ref:`The library test-dependencies property <lib.test-dependencies>`
+      - :doc:`deps`
+      - :prop:`ProjectLibrary.dependencies`
 
 
-.. index:: ! pair: libraries; project property
+  .. property:: test-dependencies
+    :optional:
 
-.. _proj.libraries:
+    :type: string[]
 
-:yaml:`libraries`
-*****************
+    Specify the `common test-dependencies <common dependencies>` of the
+    `project`. If provided, the value must be an array of
+    `dependency specifier`\ s.
 
-.. |prop-optional| replace:: *This property is optional*
+    .. seealso::
 
-|prop-optional|
+      - :doc:`deps`
+      - :prop:`ProjectLibrary.test-dependencies`
 
-Specify the `libraries <library>` of the `project`. If omitted, |bpt| will
-generate a `default library` (recommended for most projects).
 
-.. seealso::
+  .. property:: libraries
+    :optional:
 
-  - :ref:`proj.lib-properties`
-  - :doc:`/guide/libraries`
-  - :ref:`guide.default-library`
-  - :ref:`guide.multiple-libs`
+    :type: ProjectLibrary[]
 
-If provided, this must be a non-empty array of library maps.
+    Specify the `libraries <library>` of the `project`. If omitted, |bpt| will
+    generate a `default library` (recommended for most projects).
 
+    .. seealso::
+
+      - :ref:`proj.lib-properties`
+      - :doc:`/guide/libraries`
+      - :ref:`guide.default-library`
+      - :ref:`guide.multiple-libs`

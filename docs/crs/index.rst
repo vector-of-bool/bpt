@@ -21,6 +21,12 @@ before being given to a compiler.
     The `CRS` format is intended to be portable and not directly tied to |bpt|
     itself.
 
+.. note::
+
+    This documentation, and `CRS` itself, are both still works-in-progress. It
+    may be incomplete and feature errors in speling and grammars.
+
+
 Topics
 ######
 
@@ -31,6 +37,8 @@ Topics
     dependencies
     versions
     names
+    json
+
 
 Base Concepts
 #############
@@ -76,236 +84,11 @@ Briefly, `CRS` concerns itself with the following high-level concepts:
       :doc:`The documentation page about dependencies <dependencies>`
 
 
-Storage Format
-##############
-
-A CRS package can be represented in any system that allows heirarchical data
-storage with named files and directories. This may be a regular directory on
-disk, a Zip archive, a Tar archive, a database table, or even something as
-simple as a single large `JSON` document.
-
-
-.. _pkg.json:
-
-``pkg.json``
-************
-
-At the root of the package must be a valid `JSON` document named ``pkg.json``.
-This file encodes all of the metadata in the package.
-
-At any point in the `JSON` object, if any `JSON` object key string begins with
-the substring "``_comment``", then content of that object entry is to be ignored
-for validating the `JSON` data.
-
-The basic interface of ``pkg.json`` looks as below:
-
-.. code-block:: javascript
-
-    interface PKGJSON {
-        "schema-version": 0,
-        name: NameString,
-        version: VersionString,
-        "pkg-version": integer,
-        libraries: CRSLibrary[],
-        meta?: {
-            [key: string]: unknown
-        },
-        extra?: null | {
-            [key: string]: unknown
-        },
-    }
-
-    interface CRSLibrary {
-        name: NameString,
-        path: string,
-        using: NameString[],
-        dependencies: CRSDependency[],
-        "test-dependencies": CRSDependency[],
-    }
-
-    interface CRSDependency {
-        name: NameString,
-        using: NameString,
-        versions: VersionRange[],
-    }
-
-    interface VersionRange {
-        low: VersionString,
-        high: VersionString,
-    }
-
-Where "``NameString``" is a string that is a valid :doc:`CRS name <names>` and
-"``VersionString``" is a string that is a valid
-:hoverxref:`Semantic Version string <semver>`.
-
-The root of this JSON data must be a JSON object with the following *required*
-keys:
-
-``schema-version``
-==================
-
-An integer encoding the version of the CRS metadata itself. For this
-documentation, this number must be ``1``.
-
-If the ``schema-version`` is greater than the version supported by the system,
-the package must be rejected as invalid.
-
-``name``
-========
-
-A string. Specifies the name of a package. :doc:`Must be a valid name. <names>`
-
-``version``
-===========
-
-A string. Specifies the version of the package. Must be a valid
-:hoverxref:`Semantic Version string <semver>`.
-
-``pkg-version``
-===============
-
-An integer. Specifies the version of the package itself (not related to the
-version of the software that is packaged).
-
-If the ``pkg-version`` is not a positive non-zero whole integer, the package is
-invalid.
-
-``libraries``
-=============
-
-An array of library definitions for the package. Refer to: :ref:`crs.libraries`.
-If any of the libraries in the array are invalid, the entire package is invalid.
-
-``meta``
-========
-
-An optional JSON object containing metadata attributes for the package intended
-for human consumption.
-
-``extra``
-=========
-
-An optional JSON object or ``null`` that encodes additional tool-specific
-attributes for the package.
-
-.. _crs.libraries:
-
-Libraries
-*********
-
-In |pkg.json|, the ``libraries`` property must be an array of CRS library JSON
-objects.
-
-Each object in that array defines a library for the package. Each object must
-contain the following properties:
-
-
-``name``
-========
-
-The name of the library. :doc:`Must be a valid name. <names>`
-
-No two libraries within a single package may share a name.
-
-
-``path``
-========
-
-The path to the library root. This must be a valid UTF-8 POSIX-style relative
-filepath using forward-slash "``/``" (solidus) directory separators. The path
-may not contain any backslash "``\``" characters.
-
-A library path must be normalized and validated according to the following
-rules:
-
-1. If the first character in the path is a forward-slash, the path is invalid
-   (absolute paths are not allowed).
-2. For every sequence of two or more forward-slashes in the path string, replace
-   the sequence with a single forward-slash.
-3. Remove a final forward-slash in the path string, if present.
-4. Split the path string on forward-slashes into a list of *component* strings.
-5. Remove every component from the array that is a single ASCII dot "``.``".
-6. For each *component* in the path string that is a dot-dot "``..``":
-
-   1. If the dot-dot component is the first component in the component list, the
-      path is invalid (The path attempts to reach outside of the CRS package).
-   2. Delete the dot-dot component and the component preceeding it in the array.
-
-7. All remaining path components must also be valid :doc:`CRS names <names>`, except
-   that they may begin with an ASCII digit. Otherwise the path is invalid.
-8. Join the component array with forward-slashes in-between each component. This
-   is the new path.
-9. If the path is an empty string, the path is "``.``".
-
-After normalizing the library's path, no two libraries may have the same path.
-Some platforms may place additional restrictions on library paths.
-
-
-``using``
-=========
-
-A list of :doc:`names` of other libraries within the same package. Each string must
-correspond to the ``name`` property on some other library in the package. A
-library cannot "use" itself. The chain of ``using`` should form a acyclic graph.
-If a ``using`` string names a non-existent library, or if there is a cycle in
-the ``using`` graph, the entire package is invalid.
-
-
-``dependencies``
-================
-
-An array of `CRS dependency` objects.
-
-This array specifies the dependencies of the library within the package.
-
-
-``test-dependencies``
-=====================
-
-An array of `CRS dependency` objects.
-
-This array specifies the test-only dependencies of the library within the
-package.
 
 
 Dependencies
 ************
 
-A CRS dependency identifies a package by name, one or more version ranges, and
-some set of used-libraries. A dependency is associated with a
-`library <CRS library>` within a package, and not with the package as a whole.
-
-A CRS dependency is specified as a JSON object with the following required
-properties:
-
-
-``name``
-========
-
-The name of a package which is being depended-upon.
-:doc:`Must be a valid name. <names>`
-
-
-``using``
-=========
-
-An array of |name| strings identifying libraries within the depended-upon
-package to be used by the library that contains this dependency.
-
-
-``versions``
-============
-
-An array of one or more *version range* objects. Each JSON object must contain
-the following properties:
-
-``low``
-    The minimum version of the range. Must be a valid
-    :hoverxref:`Semantic Version string <semver>`.
-
-``high``
-    The maximum version of the range, exclusive. Must be a valid
-    :hoverxref:`Semantic Version string <semver>`.
 
 
 Range Semantics

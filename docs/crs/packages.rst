@@ -33,25 +33,13 @@ A CRS package encodes the following high-level attributes:
   package meta-version
 
     An integer constant that encodes the revision of the package itself,
-    regardless of the version of the source code inside.
+    regardless of the version of the source code inside. Encoded as the
+    :yaml:`pkg-version` property in |pkg.json|.
 
   package libraries
 
-    A list of libraries contained within the package. A single package may
+    A set of libraries contained within the package. A single package may
     contain any number of libraries. Libraries have further attributes, such as
     :term:`library internal usages` and :term:`library external dependencies`
 
     .. seealso:: :doc:`libraries`.
-
-
-Dependencies
-############
-
-Unlike most packaging formats, dependencies in `CRS` are not associated with
-packages at the top-level. Instead, dependencies are associated with individual
-libraries within a package.
-
-.. seealso::
-
-  - :ref:`Libraries\: External Dependencies <crs.library.dependencies>`
-  - :doc:`The documentation on dependencies and their attributes <dependencies>`
