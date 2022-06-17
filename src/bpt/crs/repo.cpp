@@ -2,11 +2,13 @@
 
 #include "./error.hpp"
 
+#include <bpt/dym.hpp>
 #include <bpt/error/handle.hpp>
 #include <bpt/error/on_error.hpp>
 #include <bpt/error/result.hpp>
 #include <bpt/error/try_catch.hpp>
 #include <bpt/sdist/dist.hpp>
+#include <bpt/solve/solve.hpp>  // for e_nonesuch_package
 #include <bpt/temp.hpp>
 #include <bpt/util/compress.hpp>
 #include <bpt/util/db/migrate.hpp>
@@ -17,8 +19,10 @@
 
 #include <neo/event.hpp>
 #include <neo/memory.hpp>
+#include <neo/ranges.hpp>
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/error.hpp>
+#include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/transaction.hpp>
 #include <neo/tar/util.hpp>
 #include <neo/ufmt.hpp>
@@ -213,16 +217,24 @@ neo::any_input_range<package_info> repository::all_latest_rev_packages() const {
 
 void repository::remove_pkg(const package_info& meta) {
     auto to_delete = subdir_of(meta);
-    db_exec(_prepare(R"(
+    auto rows      = neo::sqlite3::exec_rows(_prepare(R"(
                 DELETE FROM crs_repo_packages
                  WHERE name = ?1
                        AND version = ?2
                        AND (pkg_version = ?3)
+             RETURNING 1
             )"_sql),
-            meta.id.name.str,
-            meta.id.version.to_string(),
-            meta.id.revision)
-        .value();
+                                        meta.id.name.str,
+                                        meta.id.version.to_string(),
+                                        meta.id.revision)
+                    .value();
+    auto n_deleted = std::ranges::distance(rows);
+    if (n_deleted == 0) {
+        auto req_id  = meta.id.to_string();
+        auto all_ids = this->all_packages() | neo::lref
+            | std::views::transform([](auto inf) { return inf.id.to_string(); }) | neo::to_vector;
+        BOOST_LEAF_THROW_EXCEPTION(bpt::e_nonesuch_package{req_id, did_you_mean(req_id, all_ids)});
+    }
     bpt_log(debug, "Deleting subdirectory [{}]", to_delete.string());
     ensure_absent(to_delete).value();
 }

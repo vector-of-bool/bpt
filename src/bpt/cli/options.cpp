@@ -380,7 +380,7 @@ struct setup {
     void setup_repo_init_cmd(argument_parser& repn_init_cmd) {
         repn_init_cmd.add_argument(repo_repo_dir_arg.dup());
         repn_init_cmd.add_argument(if_exists_arg.dup()).help
-            = "What to do if the directory exists and is already repository";
+            = "What to do if the directory exists and is already a repository";
         repn_init_cmd.add_argument({
             .long_spellings  = {"name"},
             .short_spellings = {"n"},
@@ -393,6 +393,8 @@ struct setup {
 
     void setup_repo_remove_cmd(argument_parser& repo_remove_cmd) {
         repo_remove_cmd.add_argument(repo_repo_dir_arg.dup());
+        repo_remove_cmd.add_argument(if_missing_arg.dup()).help
+            = "What to do if the request package does not exist in the repository";
         repo_remove_cmd.add_argument({
             .help       = "One or more identifiers of packages to remove",
             .valname    = "<pkg-id>",

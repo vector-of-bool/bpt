@@ -41,6 +41,16 @@ class CRSRepo:
         if validate:
             self.validate()
 
+    def remove(self, name: str, if_missing: Literal[None, 'ignore', 'fail'] = None) -> None:
+        self.bpt.run([
+            '-ldebug',
+            'repo',
+            'remove',
+            self.path,
+            name,
+            (() if if_missing is None else f'--if-missing={if_missing}'),
+        ])
+
     def validate(self) -> None:
         self.bpt.run(['repo', 'validate', self.path, '-ldebug'])
 

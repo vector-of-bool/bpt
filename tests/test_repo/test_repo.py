@@ -177,6 +177,25 @@ def test_repo_double_import_replace(bpt: BPTWrapper, simple_repo: CRSRepo) -> No
     assert before_time < after_time
 
 
+def test_repo_remove(simple_repo: CRSRepo) -> None:
+    assert simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1').exists()
+    simple_repo.remove('test-pkg@1.2.43~1')
+    assert not simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1').exists()
+
+
+def test_repo_remove_twice(simple_repo: CRSRepo) -> None:
+    simple_repo.remove('test-pkg@1.2.43~1')
+    with expect_error_marker('pkg-remove-nonesuch'):
+        simple_repo.remove('test-pkg@1.2.43~1')
+
+
+def test_repo_remove_ignore_missing(simple_repo: CRSRepo) -> None:
+    simple_repo.remove('test-pkg@1.2.43~1')
+    simple_repo.remove('test-pkg@1.2.43~1', if_missing='ignore')
+    with expect_error_marker('pkg-remove-nonesuch'):
+        simple_repo.remove('test-pkg@1.2.43~1', if_missing='fail')
+
+
 def test_pkg_prefetch_http_url(bpt: BPTWrapper, simple_repo: CRSRepo, http_server_factory: HTTPServerFactory,
                                tmp_path: Path) -> None:
     srv = http_server_factory(simple_repo.path)
