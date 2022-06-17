@@ -10,7 +10,7 @@ from bpt_ci.paths import PROJECT_ROOT
 from bpt_ci.testing.http import HTTPServerFactory
 from bpt_ci.testing import Project
 from bpt_ci.testing.error import expect_error_marker
-from bpt_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
+from bpt_ci.testing.repo import CRSRepo, CRSRepoFactory, RepoCloner, make_simple_crs
 
 
 def test_repo_init(tmp_crs_repo: CRSRepo) -> None:
@@ -150,12 +150,17 @@ def test_repo_import_db_invalid3(bpt: BPTWrapper, tmp_path: Path, tmp_project: P
 
 
 @pytest.fixture(scope='session')
-def simple_repo(crs_repo_factory: CRSRepoFactory) -> CRSRepo:
+def simple_repo_base(crs_repo_factory: CRSRepoFactory) -> CRSRepo:
     repo = crs_repo_factory('simple')
     names = ('simple.crs', 'simple2.crs', 'simple3.crs', 'simple4.crs')
     simples = (PROJECT_ROOT / 'data' / name for name in names)
     repo.import_(simples, validate=False)
     return repo
+
+
+@pytest.fixture()
+def simple_repo(simple_repo_base: CRSRepo, clone_repo: RepoCloner) -> CRSRepo:
+    return clone_repo(simple_repo_base)
 
 
 def test_repo_double_import(bpt: BPTWrapper, simple_repo: CRSRepo) -> None:
