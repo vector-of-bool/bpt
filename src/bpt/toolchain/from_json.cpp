@@ -224,7 +224,7 @@ toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     },
                 },
             },
-            [&](auto key, auto &&) -> walk_result {
+            [&](auto key, auto&&) -> walk_result {
                 // They've given an unknown key. Ouch.
                 auto dym = did_you_mean(key,
                                         {
@@ -262,7 +262,7 @@ toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                   return no_comp_id;
               } else if (compiler_id == "msvc") {
                   return msvc;
-              } else if (compiler_id == "gnu") {
+              } else if (compiler_id == "gnu" or compiler_id == "gcc") {
                   return gnu;
               } else if (compiler_id == "clang") {
                   return clang;
