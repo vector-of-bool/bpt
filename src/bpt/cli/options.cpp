@@ -509,7 +509,8 @@ int cli::options::default_from_env(std::string key, int def) noexcept {
 }
 
 cli::options::options() noexcept {
-    crs_cache_dir = bpt::getenv("BPT_CRS_CACHE_DIR", [] { return crs::cache::default_path(); });
+    crs_cache_dir
+        = bpt::getenv("BPT_CRS_CACHE_DIR", [] { return crs::cache::default_path().string(); });
 
     auto ll = getenv("BPT_LOG_LEVEL");
     if (ll.has_value()) {
