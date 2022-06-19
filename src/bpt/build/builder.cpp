@@ -74,7 +74,7 @@ static void activate_more(neo::output<std::set<const lib_prep_info*>> libs_to_bu
     if (not did_insert) {
         return;
     }
-    for (crs::dependency const& dep : inf.lib.dependencies) {
+    auto add_dep = [&](const crs::dependency& dep) {
         for (bpt::name const& used_name : dep.uses) {
             auto found = all_libs.find(lm::usage{dep.name.str, used_name.str});
             neo_assert(invariant,
@@ -84,6 +84,14 @@ static void activate_more(neo::output<std::set<const lib_prep_info*>> libs_to_bu
                        dep.name,
                        used_name);
             activate_more(libs_to_build, all_libs, found->second);
+        }
+    };
+    for (crs::dependency const& dep : inf.lib.dependencies) {
+        add_dep(dep);
+    }
+    if (inf.sdt.params.build_tests) {
+        for (crs::dependency const& dep : inf.lib.test_dependencies) {
+            add_dep(dep);
         }
     }
 }
