@@ -14,6 +14,7 @@
 #include <bpt/solve/solve.hpp>
 #include <bpt/util/algo.hpp>
 #include <bpt/util/fs/io.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <boost/leaf/pred.hpp>
 #include <fansi/styled.hpp>
@@ -50,12 +51,12 @@ builder bpt::cli::create_project_builder(const bpt::cli::options& opts) {
 
     builder builder;
     if (!opts.build.built_json.has_value()) {
-        auto crs_deps = proj_sd.pkg.libraries | std::views::transform(NEO_TL(_1.dependencies))
+        auto crs_deps = proj_sd.pkg.libraries | std::views::transform(BPT_TL(_1.dependencies))
             | std::views::join | neo::to_vector;
 
         if (opts.build.want_tests) {
             extend(crs_deps,
-                   proj_sd.pkg.libraries | std::views::transform(NEO_TL(_1.test_dependencies))
+                   proj_sd.pkg.libraries | std::views::transform(BPT_TL(_1.test_dependencies))
                        | std::views::join);
         }
 

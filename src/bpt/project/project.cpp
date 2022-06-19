@@ -12,6 +12,7 @@
 #include <bpt/util/json5/convert.hpp>
 #include <bpt/util/json5/parse.hpp>
 #include <bpt/util/log.hpp>
+#include <bpt/util/tl.hpp>
 #include <bpt/util/yaml/convert.hpp>
 #include <bpt/util/yaml/parse.hpp>
 
@@ -74,16 +75,16 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
             .test_dependencies = {},
         });
         extend(ret.libraries.back().dependencies,
-               root_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
+               root_dependencies | std::views::transform(BPT_TL(_1.as_crs_dependency())));
         extend(ret.libraries.back().test_dependencies,
-               root_test_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
+               root_test_dependencies | std::views::transform(BPT_TL(_1.as_crs_dependency())));
     }
 
     auto meta_obj = json5::data::object_type();
     if (authors) {
         meta_obj.emplace("authors",
                          *authors                                              //
-                             | std::views::transform(NEO_TL(json5::data(_1)))  //
+                             | std::views::transform(BPT_TL(json5::data(_1)))  //
                              | neo::to_vector);
     }
     if (description) {

@@ -1,10 +1,11 @@
 #include "./library.hpp"
 
+#include <bpt/util/tl.hpp>
+
 #include <libman/parse.hpp>
 
 #include <bpt/error/result.hpp>
 #include <fmt/core.h>
-#include <neo/tl.hpp>
 
 using namespace lm;
 
@@ -23,8 +24,8 @@ bpt::result<library> library::from_file(path_ref fpath) {
              read_opt("Path", ret.linkable_path),
              read_accumulate("Include-Path", ret.include_paths),
              read_accumulate("Preprocessor-Define", ret.preproc_defs),
-             read_accumulate("Uses", ret.uses, NEO_TL(split_usage_string(_1).value())),
-             read_accumulate("Links", ret.links, NEO_TL(split_usage_string(_1).value())),
+             read_accumulate("Uses", ret.uses, BPT_TL(split_usage_string(_1).value())),
+             read_accumulate("Links", ret.links, BPT_TL(split_usage_string(_1).value())),
              read_accumulate("Special-Uses", ret.special_uses));
     } catch (const boost::leaf::bad_result& err) {
         return err.load();

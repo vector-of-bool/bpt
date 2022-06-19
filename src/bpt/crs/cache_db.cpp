@@ -16,6 +16,7 @@
 #include <bpt/util/log.hpp>
 #include <bpt/util/string.hpp>
 #include <bpt/util/url.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <boost/leaf.hpp>
 #include <fansi/styled.hpp>
@@ -241,7 +242,7 @@ bool should_revalidate(std::string_view cache_control, steady_time_point resourc
         // Always revalidate
         return true;
     }
-    if (auto max_age = std::ranges::find_if(parts, NEO_TL(_1.starts_with("max-age=")));
+    if (auto max_age = std::ranges::find_if(parts, BPT_TL(_1.starts_with("max-age=")));
         max_age != parts.end()) {
         auto age_str     = bpt::trim_view(max_age->substr(std::strlen("max-age=")));
         int  max_age_int = 0;

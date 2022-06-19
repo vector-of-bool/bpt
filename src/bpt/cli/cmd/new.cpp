@@ -5,6 +5,7 @@
 #include <bpt/util/fs/path.hpp>
 #include <bpt/util/name.hpp>
 #include <bpt/util/signal.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <fansi/styled.hpp>
 #include <fmt/format.h>
@@ -45,7 +46,7 @@ std::string get_argument(std::string_view                  prompt,
 
 std::string to_ident(std::string_view given) {
     std::string ret;
-    std::ranges::replace_copy_if(given, std::back_inserter(ret), NEO_TL(!std::isalnum(_1)), '_');
+    std::ranges::replace_copy_if(given, std::back_inserter(ret), BPT_TL(!std::isalnum(_1)), '_');
     if (!ret.empty() && std::isdigit(ret.front())) {
         ret.insert(ret.begin(), '_');
     }

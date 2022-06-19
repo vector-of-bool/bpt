@@ -9,6 +9,7 @@
 #include <bpt/util/algo.hpp>
 #include <bpt/util/log.hpp>
 #include <bpt/util/signal.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <fmt/ostream.h>
@@ -155,7 +156,7 @@ struct metadata_provider {
                       .first;
             sr::sort(found->second,
                      std::less<>{},
-                     NEO_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.revision)));
+                     BPT_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.revision)));
         }
         return found->second;
     }
@@ -169,7 +170,7 @@ struct metadata_provider {
                 return false;
             }
             bool has_all_libraries = sr::all_of(req.uses, [&](auto&& uses_name) {
-                return sr::any_of(entry.pkg.libraries, NEO_TL(uses_name == _1.name));
+                return sr::any_of(entry.pkg.libraries, BPT_TL(uses_name == _1.name));
             });
             if (!has_all_libraries) {
                 bpt_log(debug,
@@ -234,9 +235,9 @@ struct metadata_provider {
 
         auto reqs = pkg.libraries                                                //
             | stdv::filter([&](auto&& lib) { return uses.contains(lib.name); })  //
-            | stdv::transform(NEO_TL(_1.dependencies))                           //
+            | stdv::transform(BPT_TL(_1.dependencies))                           //
             | stdv::join                                                         //
-            | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))             //
+            | stdv::transform(BPT_TL(requirement::from_crs_dep(_1)))             //
             | neo::to_vector;
         for (auto&& r : reqs) {
             bpt_log(trace, "  Requires: {}", r.decl_to_string());
@@ -358,7 +359,7 @@ void try_load_nonesuch_packages(boost::leaf::error_id           error,
 std::vector<crs::pkg_id> bpt::solve(crs::cache_db const&                  cache,
                                     neo::any_input_range<crs::dependency> deps_) {
     metadata_provider provider{cache};
-    auto deps = deps_ | stdv::transform(NEO_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
+    auto deps = deps_ | stdv::transform(BPT_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
     auto sln  = bpt_leaf_try { return pubgrub::solve(deps, provider); }
     bpt_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
         auto error = boost::leaf::new_error();
@@ -369,7 +370,7 @@ std::vector<crs::pkg_id> bpt::solve(crs::cache_db const&                  cache,
                                    BPT_ERR_REF("dep-res-failure"));
     };
     return sln
-        | stdv::transform(NEO_TL(crs::pkg_id{
+        | stdv::transform(BPT_TL(crs::pkg_id{
             .name     = _1.name,
             .version  = sole_version(_1.versions),
             .revision = _1.pkg_version.value(),

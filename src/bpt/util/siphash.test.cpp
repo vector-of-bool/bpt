@@ -2,6 +2,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <array>
+
 const std::uint64_t vectors_sip64[64] = {
     {0x310e0edd47db6f72}, {0xfd67dc93c539f874}, {0x5a4fa9d909806c0d}, {0x2d7efbd796666785},
     {0xb7877127e09427cf}, {0x8da699cd64557618}, {0xcee3fe586e46c9cb}, {0x37d1018bf50002ab},

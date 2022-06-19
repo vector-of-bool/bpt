@@ -9,9 +9,9 @@
 #include <bpt/deps.hpp>
 #include <bpt/project/dependency.hpp>
 #include <bpt/solve/solve.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <neo/ranges.hpp>
-#include <neo/tl.hpp>
 #include <range/v3/action/join.hpp>
 #include <range/v3/action/push_back.hpp>
 #include <range/v3/view/concat.hpp>
@@ -46,7 +46,7 @@ static int _build_deps(const options& opts) {
 
     neo::ranges::range_of<crs::dependency> auto cli_deps
         = std::views::transform(opts.build_deps.deps,
-                                NEO_TL(bpt::project_dependency::from_shorthand_string(_1)
+                                BPT_TL(bpt::project_dependency::from_shorthand_string(_1)
                                            .as_crs_dependency()));
 
     neo::ranges::range_of<crs::dependency> auto all_deps
