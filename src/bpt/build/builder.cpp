@@ -15,6 +15,7 @@
 #include <boost/leaf/exception.hpp>
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
+#include <neo/out.hpp>
 #include <neo/ranges.hpp>
 #include <nlohmann/json.hpp>
 #include <range/v3/algorithm/contains.hpp>
@@ -66,12 +67,34 @@ library_plan prepare_library(const sdist_target&      sdt,
     return library_plan::create(sdt.sd.path, pkg_man, lib, std::move(lp));
 }
 
+static void activate_more(neo::output<std::set<const lib_prep_info*>> libs_to_build,
+                          std::map<lm::usage, lib_prep_info> const&   all_libs,
+                          const lib_prep_info&                        inf) {
+    auto did_insert = libs_to_build.get().emplace(&inf).second;
+    if (not did_insert) {
+        return;
+    }
+    for (crs::dependency const& dep : inf.lib.dependencies) {
+        for (bpt::name const& used_name : dep.uses) {
+            auto found = all_libs.find(lm::usage{dep.name.str, used_name.str});
+            neo_assert(invariant,
+                       found != all_libs.end(),
+                       "Failed to find a dependency library for build activation",
+                       inf.lib.name,
+                       dep.name,
+                       used_name);
+            activate_more(libs_to_build, all_libs, found->second);
+        }
+    }
+}
+
 build_plan prepare_build_plan(neo::ranges::range_of<sdist_target> auto&& sdists) {
     build_plan plan;
     // First generate a mapping of all libraries
     std::map<lm::usage, lib_prep_info> all_libs;
     // Keep track of which libraries we want to build:
     std::set<const lib_prep_info*> libs_to_build;
+    std::set<const lib_prep_info*> leaf_libs_to_build;
     // Iterate all loaded sdists:
     for (const sdist_target& sdt : sdists) {
         for (const auto& lib : sdt.sd.pkg.libraries) {
@@ -86,60 +109,12 @@ build_plan prepare_build_plan(neo::ranges::range_of<sdist_target> auto&& sdists)
                     .first->second;
             // If the sdist_build_params wants libraries, activate them now:
             if (ranges::contains(sdt.params.build_libraries, lib.name)) {
-                libs_to_build.emplace(&lpi);
+                leaf_libs_to_build.emplace(&lpi);
             }
         }
     }
-    // Recursive library activator:
-    std::function<void(const lib_prep_info&)> activate_more = [&](const lib_prep_info& inf) {
-        auto add_deps = [&](auto&& deps) {
-            for (const auto& dep : deps) {
-                for (const auto& use : dep.uses) {
-                    std::function<void(const bpt::name&)> add_named
-                        = [&](bpt::name const& libname) {
-                              // All libraries that we are using must have been loaded into the
-                              // builder (i.e. by the package dependency solver)
-                              auto found = all_libs.find(lm::usage{dep.name.str, libname.str});
-                              neo_assert(invariant,
-                                         found != all_libs.end(),
-                                         "Failed to find a dependency library for build activation",
-                                         inf.lib.name,
-                                         dep.name,
-                                         libname);
-                              bool did_add = libs_to_build.emplace(&found->second).second;
-                              if (did_add) {
-                                  bpt_log(trace,
-                                          "Activate library [{}/{}] (Required by {}/{})",
-                                          dep.name,
-                                          libname,
-                                          inf.pkg.id.name,
-                                          inf.lib.name);
-                                  // Recursively activate more libraries used by this library.
-                                  activate_more(found->second);
-                              }
-                              for (const auto& sibling : found->second.lib.intra_using) {
-                                  add_named(sibling);
-                              }
-                              if (inf.sdt.params.build_tests) {
-                                  for (const auto& sibling : found->second.lib.intra_test_using) {
-                                      add_named(sibling);
-                                  }
-                              }
-                          };
-                    add_named(use);
-                }
-            }
-        };
-        add_deps(inf.lib.dependencies);
-        if (!inf.sdt.params.build_tests) {
-            return;
-        }
-        // We also need to build test dependencies
-        add_deps(inf.lib.test_dependencies);
-    };
-    // Now actually begin activation:
-    for (auto info : libs_to_build) {
-        activate_more(*info);
+    for (auto lib : leaf_libs_to_build) {
+        activate_more(neo::into(libs_to_build), all_libs, *lib);
     }
     // Create package plans for each library and the package it owns:
     std::map<bpt::name, package_plan> pkg_plans;
