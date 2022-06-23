@@ -13,6 +13,7 @@
 #include <bpt/project/spdx.hpp>
 #include <bpt/sdist/error.hpp>
 #include <bpt/toolchain/errors.hpp>
+#include <bpt/toolchain/from_json.hpp>
 #include <bpt/usage_reqs.hpp>
 #include <bpt/util/compress.hpp>
 #include <bpt/util/fs/io.hpp>
@@ -167,6 +168,16 @@ auto handlers = std::tuple(  //
             bpt_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
         }
         write_error_marker("bad-toolchain");
+        return 1;
+    },
+    [](e_bad_toolchain_key nonesuch, e_loading_toolchain, e_toolchain_filepath* tc_file) {
+        nonesuch.log_error("Unknown toolchain option: '.br.red[{}]'"_styled);
+        if (tc_file) {
+            bpt_log(error,
+                    "  (While reading toolchain from file [.bold.yellow[{}]])"_styled,
+                    tc_file->value);
+        }
+        write_error_marker("bad-toolchain-opt");
         return 1;
     },
     [](e_name_str                           badname,

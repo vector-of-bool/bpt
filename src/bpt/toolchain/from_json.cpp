@@ -4,6 +4,7 @@
 #include <bpt/error/errors.hpp>
 #include <bpt/toolchain/prep.hpp>
 #include <bpt/util/algo.hpp>
+#include <bpt/util/json_walk.hpp>
 #include <bpt/util/shlex.hpp>
 #include <bpt/util/string.hpp>
 
@@ -48,6 +49,7 @@ toolchain bpt::parse_toolchain_json5(std::string_view j5_str, std::string_view c
 
 toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_view context) {
     using namespace semester;
+    using namespace bpt::walk_utils;
 
     opt_string     compiler_id;
     opt_string     c_compiler;
@@ -118,20 +120,59 @@ toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_vie
         };
     };
 
-#define KEY_EXTEND_FLAGS(Name)                                                                     \
-    if_key { #Name, extend_flags(#Name, Name) }
+#define KEY_EXTEND_FLAGS(Name) if_key{#Name, extend_flags(#Name, Name)}
 
 #define KEY_STRING(Name)                                                                           \
-    if_key{                                                                                        \
-        #Name,                                                                                     \
-        require_type<string>("`" #Name "` must be a string"),                                      \
-        put_into{Name},                                                                            \
-    }
+    if_key { #Name, require_type < string>("`" #Name "` must be a string"), put_into{Name }, }
+
+    key_dym_tracker base_dym{{
+        "compiler_id",
+        "c_compiler",
+        "cxx_compiler",
+        "c_version",
+        "cxx_version",
+        "c_flags",
+        "cxx_flags",
+        "warning_flags",
+        "link_flags",
+        "flags",
+        "debug",
+        "optimize",
+        "runtime",
+    }};
+
+    key_dym_tracker adv_dym{{
+        "deps_mode",
+        "include_template",
+        "external_include_template",
+        "define_template",
+        "base_warning_flags",
+        "base_flags",
+        "base_c_flags",
+        "base_cxx_flags",
+        "c_compile_file",
+        "cxx_compile_file",
+        "create_archive",
+        "link_executable",
+        "obj_prefix",
+        "obj_suffix",
+        "archive_prefix",
+        "archive_suffix",
+        "exe_prefix",
+        "exe_suffix",
+        "tty_flags",
+        "lang_version_flag_template",
+        "c_source_type_flags",
+        "cxx_source_type_flags",
+        "syntax_only_flags",
+        "consider_env",
+    }};
 
     walk(  //
         dat,
         require_type<json5::data::mapping_type>("Root of toolchain data must be a mapping"),
         mapping{
+            base_dym.tracker(),
             if_key{"$schema", just_accept},
             KEY_STRING(compiler_id),
             KEY_STRING(c_compiler),
@@ -163,6 +204,7 @@ toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                 "advanced",
                 require_type<json5::data::mapping_type>("`advanced` must be a mapping"),
                 mapping{
+                    adv_dym.tracker(),
                     if_key{"deps_mode",
                            require_type<string>("`deps_mode` must be a string"),
                            put_into{deps_mode_str}},
@@ -189,61 +231,10 @@ toolchain bpt::parse_toolchain_json_data(const json5::data& dat, std::string_vie
                     KEY_EXTEND_FLAGS(cxx_source_type_flags),
                     KEY_EXTEND_FLAGS(syntax_only_flags),
                     KEY_EXTEND_FLAGS(consider_env),
-                    [&](auto key, auto) -> walk_result {
-                        auto dym = did_you_mean(key,
-                                                {
-                                                    "deps_mode",
-                                                    "include_template",
-                                                    "external_include_template",
-                                                    "define_template",
-                                                    "base_warning_flags",
-                                                    "base_flags",
-                                                    "base_c_flags",
-                                                    "base_cxx_flags",
-                                                    "c_compile_file",
-                                                    "cxx_compile_file",
-                                                    "create_archive",
-                                                    "link_executable",
-                                                    "obj_prefix",
-                                                    "obj_suffix",
-                                                    "archive_prefix",
-                                                    "archive_suffix",
-                                                    "exe_prefix",
-                                                    "exe_suffix",
-                                                    "tty_flags",
-                                                    "lang_version_flag_template",
-                                                    "c_source_type_flags",
-                                                    "cxx_source_type_flags",
-                                                    "syntax_only_flags",
-                                                    "consider_env",
-                                                });
-                        fail(context,
-                             "Unknown toolchain advanced-config key ‘{}’ (Did you mean ‘{}’?)",
-                             key,
-                             *dym);
-                    },
+                    adv_dym.rejecter<e_bad_toolchain_key>(),
                 },
             },
-            [&](auto key, auto&&) -> walk_result {
-                // They've given an unknown key. Ouch.
-                auto dym = did_you_mean(key,
-                                        {
-                                            "compiler_id",
-                                            "c_compiler",
-                                            "cxx_compiler",
-                                            "c_version",
-                                            "cxx_version",
-                                            "c_flags",
-                                            "cxx_flags",
-                                            "warning_flags",
-                                            "link_flags",
-                                            "flags",
-                                            "debug",
-                                            "optimize",
-                                            "runtime",
-                                        });
-                fail(context, "Unknown toolchain config key ‘{}’ (Did you mean ‘{}’?)", key, *dym);
-            },
+            base_dym.rejecter<e_bad_toolchain_key>(),
         });
 
     if (debug_str.has_value() && debug_str != "embedded" && debug_str != "split"
