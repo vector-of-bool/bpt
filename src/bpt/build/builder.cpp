@@ -86,12 +86,25 @@ static void activate_more(neo::output<std::set<const lib_prep_info*>> libs_to_bu
             activate_more(libs_to_build, all_libs, found->second);
         }
     };
+    auto add_siblings = [&](const name& sibling_name) {
+        auto sibling = all_libs.find(lm::usage{inf.pkg.id.name.str, sibling_name.str});
+        neo_assert(invariant,
+                   sibling != all_libs.end(),
+                   "Failed to find sibling library for 'using'");
+        activate_more(libs_to_build, all_libs, sibling->second);
+    };
     for (crs::dependency const& dep : inf.lib.dependencies) {
         add_dep(dep);
+    }
+    for (name const& use : inf.lib.intra_using) {
+        add_siblings(use);
     }
     if (inf.sdt.params.build_tests) {
         for (crs::dependency const& dep : inf.lib.test_dependencies) {
             add_dep(dep);
+        }
+        for (const name& use : inf.lib.intra_test_using) {
+            add_siblings(use);
         }
     }
 }
