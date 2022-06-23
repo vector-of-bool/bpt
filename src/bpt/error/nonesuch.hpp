@@ -3,6 +3,8 @@
 #include <optional>
 #include <string>
 
+#include <iosfwd>
+
 namespace bpt {
 
 struct e_nonesuch {
@@ -14,6 +16,13 @@ struct e_nonesuch {
         , nearest{nr} {}
 
     void log_error(std::string_view fmt) const noexcept;
+
+    void ostream_into(std::ostream& out) const noexcept;
+
+    friend std::ostream& operator<<(std::ostream& out, const e_nonesuch& self) noexcept {
+        self.ostream_into(out);
+        return out;
+    }
 };
 
 }  // namespace bpt
