@@ -79,10 +79,3 @@ vagrant-freebsd-ci:
 	mkdir -p _build/
 	vagrant scp freebsd11:/vagrant/_build/bpt _build/bpt-freebsd-x64
 	vagrant halt
-
-site: docs
-	rm -r -f -- _site/
-	mkdir -p _site/
-	cp site/index.html _site/
-	cp -r _build/docs _site/
-	echo "Site generated at _site/"
