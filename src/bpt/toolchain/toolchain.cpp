@@ -13,9 +13,12 @@
 #include <bpt/util/log.hpp>
 #include <bpt/util/paths.hpp>
 #include <bpt/util/string.hpp>
+#include <bpt/util/yaml/convert.hpp>
+#include <bpt/util/yaml/parse.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <fmt/ostream.h>
+#include <range/v3/view/cartesian_product.hpp>
 #include <range/v3/view/transform.hpp>
 
 #include <cassert>
@@ -334,6 +337,9 @@ toolchain toolchain::get_builtin(const std::string_view tc_id_) {
 }
 
 bpt::toolchain bpt::toolchain::get_default() {
+    using namespace std::literals;
+    auto dirs       = {fs::current_path(), bpt_config_dir(), user_home_dir()};
+    auto extensions = {".yaml", ".jsonc", ".json5", ".json"};
     auto candidates = {
         fs::current_path() / "toolchain.json5",
         fs::current_path() / "toolchain.jsonc",
@@ -345,14 +351,27 @@ bpt::toolchain bpt::toolchain::get_default() {
         user_home_dir() / "toolchain.jsonc",
         user_home_dir() / "toolchain.json",
     };
-    for (auto&& cand : candidates) {
+    for (auto&& [ext, dir] : ranges::view::cartesian_product(extensions, dirs)) {
+        fs::path cand = dir / ("toolchain"s + ext);
         bpt_log(trace, "Checking for default toolchain at [{}]", cand.string());
-        if (fs::exists(cand)) {
-            bpt_log(debug, "Using default toolchain file: {}", cand.string());
-            return parse_toolchain_json5(bpt::read_file(cand));
+        if (not fs::is_regular_file(cand)) {
+            continue;
         }
+        bpt_log(debug, "Using default toolchain file: {}", cand.string());
+        return toolchain::from_file(cand);
     }
     BOOST_LEAF_THROW_EXCEPTION(e_human_message{neo::ufmt("No default toolchain")},
                                BPT_ERR_REF("no-default-toolchain"),
                                e_error_marker{"no-default-toolchain"});
+}
+
+toolchain toolchain::from_file(path_ref fpath) {
+    if (fpath.extension().string() == ".yaml") {
+        auto node = bpt::parse_yaml_file(fpath);
+        auto data = bpt::yaml_as_json5_data(node);
+        return parse_toolchain_json_data(data,
+                                         neo::ufmt("Loading toolchain from [{}]", fpath.string()));
+    } else {
+        return parse_toolchain_json5(bpt::read_file(fpath));
+    }
 }

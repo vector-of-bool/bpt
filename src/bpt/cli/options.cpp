@@ -473,7 +473,7 @@ toolchain bpt::cli::options::load_toolchain() const {
         return bpt::toolchain::get_builtin(default_tc);
     } else {
         BPT_E_SCOPE(bpt::e_toolchain_filepath{tc_str});
-        return parse_toolchain_json5(bpt::read_file(tc_str));
+        return toolchain::from_file(fs::path(tc_str));
     }
 }
 
