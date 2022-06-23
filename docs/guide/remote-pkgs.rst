@@ -51,19 +51,19 @@ obtained with the :ref:`cli.pkg-search` subcommand::
 
       Name: abseil
   Versions: 2018.6.0, 2019.8.8, 2020.2.25
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
       Name: asio
   Versions: 1.12.0, 1.12.1, 1.12.2, 1.13.0, 1.14.0, 1.14.1, 1.16.0, 1.16.1
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
       Name: boost.leaf
   Versions: 0.1.0, 0.2.0, 0.2.1, 0.2.2, 0.2.3, 0.2.4, 0.2.5, 0.3.0
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
       Name: boost.mp11
   Versions: 1.70.0, 1.71.0, 1.72.0, 1.73.0
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
 Optionally, one can search with a fnmatch-style pattern::
 
@@ -71,15 +71,15 @@ Optionally, one can search with a fnmatch-style pattern::
 
       Name: neo-buffer
   Versions: 0.2.1, 0.3.0, 0.4.0, 0.4.1, 0.4.2
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
       Name: neo-compress
   Versions: 0.1.0, 0.1.1, 0.2.0
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
       Name: neo-concepts
   Versions: 0.2.2, 0.3.0, 0.3.1, 0.3.2, 0.4.0
-      From: repo-1.dds.pizza
+      From: repo-1.bpt.pizza
 
 
 .. note::

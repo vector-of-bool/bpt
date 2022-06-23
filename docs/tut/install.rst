@@ -20,17 +20,17 @@ command-line with an easy-to-remember URL. Using ``curl``:
 .. code-block:: bash
 
   # For Linux, writes a file in the working directory called "bpt"
-  curl dds.pizza/get/linux -Lo bpt
+  curl bpt.pizza/get/linux -Lo bpt
 
   # For macOS, writes a file in the working directory called "bpt"
-  curl dds.pizza/get/macos -Lo bpt
+  curl bpt.pizza/get/macos -Lo bpt
 
 Or using PowerShell:
 
 .. code-block:: powershell
 
   # Writes a file in the working directory called "bpt.exe"
-  Invoke-WebRequest dds.pizza/get/windows -OutFile bpt.exe
+  Invoke-WebRequest bpt.pizza/get/windows -OutFile bpt.exe
 
 .. note::
 
