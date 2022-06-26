@@ -4,5 +4,4 @@
 and C++ projects. It aims to be easy to use for beginners and experts alike,
 and maximally discoverable.
 
-To learn more, refer to [the official
-documentation](https://vector-of-bool.github.io/docs/bpt/index.html).
+To learn more, refer to [the official documentation](https://bpt.pizza/docs).
