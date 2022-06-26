@@ -79,13 +79,13 @@ for now.
 The basic signature of the ``pmm(BPT)`` command looks like this::
 
   pmm(BPT [DEP_FILES [filepaths...]]
-          [DEPENDS [dependencies...]]
+          [DEPENDENCIES [dependencies...]]
           [TOOLCHAIN file-or-id])
 
-The most straightforward usage is to use only the ``DEPENDS`` argument. For
+The most straightforward usage is to use only the ``DEPENDENCIES`` argument. For
 example, if we want to import `{fmt} <https://fmt.dev>`_::
 
-  pmm(BPT DEPENDS "fmt@7.0.3")
+  pmm(BPT DEPENDENCIES "fmt@7.0.3")
 
 When CMake executes the ``pmm(BPT ...)`` line above, PMM will download the
 appropriate |bpt| executable for your platform, generate
@@ -140,7 +140,7 @@ In all, this is our final ``CMakeLists.txt``:
   project(MYApplication VERSION 2.1.3)
 
   include(tools/pmm.cmake)
-  pmm(BPT DEPENDS fmt@7.0.3)
+  pmm(BPT DEPENDENCIES fmt@7.0.3)
 
   add_executable(my-application app.cpp)
   target_link_libraries(my-application PRIVATE fmt::fmt)
@@ -153,7 +153,7 @@ Changing Compile Options
 :doc:`toolchains </guide/toolchains>`. PMM supports specifying a toolchain using
 the ``TOOLCHAIN`` argument::
 
-  pmm(BPT DEPENDS fmt@7.0.3 TOOLCHAIN my-toolchain.json5)
+  pmm(BPT DEPENDENCIES fmt@7.0.3 TOOLCHAIN my-toolchain.json5)
 
 Of course, writing a separate toolchain file just for your dependencies can be
 tedious. For this reason, PMM will write a toolchain file on-the-fly when it

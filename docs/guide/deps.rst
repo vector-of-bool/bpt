@@ -193,6 +193,12 @@ Besides requiring that a candidate for dependency resolution meet the version
 requirements, the candidate must also provide all of the libraries named by the
 :cpp:`using` specifier on the dependency statement.
 
+.. note::
+
+  If you omit the :cpp:`using` specifier, it is equivalent to :cpp:`using` a
+  library with the same name as the package. (This would be the
+  `default library` of the package.)
+
 .. default-role:: math
 
 A Simple Example

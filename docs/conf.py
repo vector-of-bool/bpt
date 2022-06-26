@@ -150,7 +150,6 @@ class SchematicObject(ObjectDescription[tuple[_FullNameStr, _Ident]]):
             self.state.document.note_explicit_target(signode)
 
         dom = cast(SchematicDomain, self.env.get_domain('schematic'))
-        print(f'Saving {self.objtype} {fullname}')
         assert self.objtype in ('property', 'mapping')
         dom.data['objects'][fullname] = {
             'parent': _dotpath(self.env),
@@ -391,7 +390,6 @@ class SchematicDomain(Domain):
         else:
             partials = [name]
         for cand in partials:
-            print('Looking for fullnamed object:', cand)
             found = self.data['objects'].get(cand)
             if found is not None:
                 return found
@@ -400,7 +398,6 @@ class SchematicDomain(Domain):
 
     def resolve_xref(self, env: BuildEnvironment, fromdocname: str, builder: Builder, typ: Literal['mapping', 'prop'],
                      target: str, node: addnodes.pending_xref, contnode: Element):
-        ident = f'{typ}:{target}'
         ent: _SchematicEntry | None
         ent = self.find_obj(node, target)
         if ent is None:

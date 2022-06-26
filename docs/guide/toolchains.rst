@@ -1,4 +1,4 @@
-.. highlight:: js
+.. highlight:: yaml
 .. default-domain:: schematic
 .. default-role:: schematic:prop
 
@@ -37,15 +37,14 @@ effectively in your project.
 Passing a Toolchain
 *******************
 
-In |bpt|, the default format of a toolchain is that of a single JSON5 file
-that describes the entire toolchain. When running a build for a project, the
-|bpt| executable will look in a few locations for a default toolchain, and
+In |bpt|, the default format of a toolchain is that of a single :term:`YAML`
+file that describes the entire toolchain. When running a build for a project,
+the |bpt| executable will look in a few locations for a default toolchain, and
 generate an error if no default toolchain file is found (Refer to
-:ref:`toolchains.default`). A different toolchain can be provided by passing
-the toolchain file for the |--toolchain| (or ``-t``) option on the command
-line::
+:ref:`toolchains.default`). A different toolchain can be provided by passing the
+toolchain file for the |--toolchain| (or ``-t``) option on the command line::
 
-    $ bpt build -t my-toolchain.json5
+    $ bpt build -t my-toolchain.yaml
 
 Alternatively, you can pass the name of a built-in toolchain. See below.
 
@@ -106,16 +105,16 @@ The following directories are searched, in order:
 
 #. ``$pwd/`` - If the working directory contains a toolchain file, it will be
    used as the default.
-#. ``$bpt_config_dir/`` - Searches for a toolchain file in |bpt|'s user-local
+#. ``<bpt_config_dir>/`` - Searches for a toolchain file in |bpt|'s user-local
    configuration directory (see below).
-#. ``$user_home/`` - Searches for a toolchain file at the root of the current
+#. ``<user_home>/`` - Searches for a toolchain file at the root of the current
    user's home directory. (``$HOME`` on Unix-like systems, and ``$PROFILE`` on
    Windows.)
 
-In each directory, it will search for ``toolchain.json5``, ``toolchain.jsonc``,
-or ``toolchain.json``.
+In each directory, it will search for ``toolchain.yaml``, ``toolchain.json5``,
+``toolchain.jsonc``, or ``toolchain.json``.
 
-The ``$bpt_config_dir`` directory is the |bpt| subdirectory of the user-local
+The ``<bpt_config_dir>`` directory is the |bpt| subdirectory of the user-local
 configuration directory.
 
 The user-local config directory is ``$XDG_CONFIG_DIR`` or ``~/.config`` on
@@ -184,14 +183,21 @@ Flags for linking executables can be specified with
     }
 
 
+.. note::
+
+  Command/flag list settings are subject to shell-like string splitting. String
+  splitting can be suppressed by using an array instead of a string. Refer:
+  :ref:`tc-splitting-note`.
+
 .. _toolchains.opt-ref:
 
 Toolchain Option Reference
 **************************
 
+.. _tc-splitting-note:
 
 Understanding Flags and Shell Parsing
--------------------------------------
+=====================================
 
 Many of the |bpt| toolchain parameters accept argument lists or shell-string
 lists. If such an option is given a single string, then that string is split
@@ -216,6 +222,10 @@ is equivalent to this one::
 Despite splitting strings as-if they were shell commands, |bpt| does nothing
 else shell-like. It does not expand environment variables, nor does it expand
 globs and wildcards.
+
+
+Toolchain Options Schema
+========================
 
 .. mapping:: ToolchainOptions
 
@@ -248,7 +258,7 @@ globs and wildcards.
   .. property:: cxx_compiler
     :optional:
 
-    :type: string
+    :type: :ts:`string`
 
     Names/paths of the C and C++ compilers, respectively.
 
@@ -270,6 +280,8 @@ globs and wildcards.
     :optional:
   .. property:: cxx_version
     :optional:
+
+    :type: :ts:`string`
 
     Specify the language versions for C and C++, respectively. By default, |bpt|
     will not set any language version. Using this option requires that the
@@ -303,6 +315,7 @@ globs and wildcards.
     ``/std:c++latest``. **Beware** that this is an unstable setting value that
     could change the major language version in a future MSVC update.
 
+
   .. property:: warning_flags
     :optional:
 
@@ -323,7 +336,7 @@ globs and wildcards.
 
     .. seealso::
 
-      Refer to :prop:`AdvancedToolchainOptions.base_warning_flags` for more
+      Refer to :prop:`~AdvancedToolchainOptions.base_warning_flags` for more
       information.
 
 
@@ -378,13 +391,13 @@ globs and wildcards.
 
       Generates debug information embedded in the compiled binaries.
 
-    :option split:
+    :option "split":
 
       Generates debug information in a separate file from the compiled binaries.
 
       .. note::
 
-        ``"split"`` with GCC requires that the compiler support the
+        ``"split"`` with GCC/Clang requires that the compiler support the
         ``-gsplit-dwarf`` option.
 
     :option true: Same as :ts:`"embedded"`
@@ -427,7 +440,7 @@ globs and wildcards.
 
     .. note::
 
-      On GNU-like compilers, setting :prop:`ToolchainOptions.runtime.static` to
+      On GNU-like compilers, setting :prop:`~ToolchainOptions.runtime.static` to
       |true| does not generate a static executable: it only statically links the
       runtime and standard library. To generate a static executable, the
       ``-static`` option should be added to ``link_flags``.
@@ -571,10 +584,14 @@ Advanced Options Reference
 
       The placeholder for the output path for the executable file.
 
+    :placeholder [flags]:
+
+      Placeholder for options specified using `~ToolchainOptions.link_flags`.
+
     :default: |default-inferred-from-compiler_id|:
 
       - If |compiler_id| is |msvc|, then
-        ``<cxx_compiler> /nologo /EHsc [in] /Fe[out]``
+        ``<cxx_compiler> /nologo /EHsc [in] /Fe[out] [flags]``
       - If |compiler_id| is |gnu| or |clang|, then
         ``<cxx_compiler> -fPIC [in] -pthread -o[out] [flags]``
       - If |compiler_id| is unset, then this property must be specified.

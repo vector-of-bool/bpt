@@ -13,7 +13,7 @@ within the :doc:`Poetry virtual environment <env>`::
 Note that individual tests can take between a few seconds and a few minutes to
 execute, so it may be useful to execute only a subset of the tests based on the
 functionality you want to test. Refer to
-`the pytest documentation <https://docs.pytest.org/en/latest/>` for more
+`the pytest documentation <https://docs.pytest.org/en/latest/>`_ for more
 information about using and executing ``pytest``. If you are running the full
 test suite, you may also want to pass the ``-n`` argument with a number of
 parallel jobs to execute.

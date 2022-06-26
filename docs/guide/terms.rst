@@ -34,6 +34,10 @@ This page documents miscellaneous terminology used throughout |bpt| and `CRS`.
     JSON data cannot contain comments. The order of keys within a JSON object is
     not significant.
 
+  JSON5
+
+    A superset of `JSON` that permits comments, single-quote strings, multi-line
+    strings, trailing commas, and bare identifier keys.
 
   YAML
 

@@ -183,7 +183,7 @@ No Arbitrary |#include| Directories
 ===================================
 
 Only ``src/`` and ``include/`` will ever be used as the basis for
-`header resolution <header search path>` while building a project, so all
+:term:`header resolution <header search path>` while building a project, so all
 |#include| directives should be relative to those directories. Refer to
 :ref:`libs.source-kinds`.
 
@@ -199,5 +199,5 @@ every library in that dependency tree will be compiled with an identical set of
 options. Refer to the :doc:`guide/toolchains` page for more information.
 
 Currently, the only exception to this rules is for flags that control compiler
-warnings: Dependencies will be compiled without adding any warnings flags, while
-the main project will be compiled with warnings enabled by default.
+diagnostics: Dependencies will be compiled without adding any warnings flags,
+while the main project will be compiled with warnings enabled by default.

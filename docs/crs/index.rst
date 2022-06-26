@@ -51,7 +51,7 @@ Briefly, `CRS` concerns itself with the following high-level concepts:
 
     An acronym for :strong:`C`\ ompile-\ :strong:`R`\ eady :strong:`S`\ ource.
     CRS is a set of file formats and `JSON` schemas that describe a way to
-    destribute software in source-code format, ready to be given to any
+    distribute software in source-code format, ready to be given to any
     compatible compiler without further configuration or code generation.
 
     .. seealso:: :doc:`index`

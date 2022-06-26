@@ -6,7 +6,7 @@ Using |bpt| in a CMake Project
 .. default-role:: term
 
 One of |bpt|'s primary goals is to inter-operate with other build systems
-cleanly. Because of `CMakes <CMake>` ubiquity, |bpt| includes built-in support
+cleanly. Because of `CMake's <CMake>` ubiquity, |bpt| includes built-in support
 for emitting files that can be imported into CMake.
 
 .. seealso::
@@ -51,11 +51,10 @@ Like with |bpt|, CMake wants us to explicitly declare how our build targets
 *use* other libraries. When we ``include()`` the generated CMake file, it will
 generate ``IMPORTED`` targets that can be linked against.
 
-In |bpt| (and in libman), a library is identified by a combination of
-*namespace* and *name*, joined together with a slash ``/`` character. This
-*qualified name* of a library is decided by the original package author, and
-should be documented. In the case of ``neo-sqlite3``, the only library is
-``neo/sqlite3``.
+In |bpt|, a library is identified by a combination of *namespace* and *name*,
+joined together with a slash ``/`` character. This *qualified name* of a library
+is decided by the original package author, and should be documented. In the case
+of ``neo-sqlite3``, the only library is ``neo/sqlite3``.
 
 When the generated import file imports a library, it creates a qualified name
 using a double-colon "``::``" instead of a slash. As such, our ``neo/sqlite3``
