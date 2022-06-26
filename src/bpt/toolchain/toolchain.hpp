@@ -106,6 +106,7 @@ public:
 
     static toolchain get_builtin(std::string_view key);
     static toolchain get_default();
+    static toolchain from_file(path_ref fpath);
 };
 
 }  // namespace bpt

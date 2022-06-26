@@ -10,7 +10,7 @@ from bpt_ci.paths import PROJECT_ROOT
 from bpt_ci.testing.http import HTTPServerFactory
 from bpt_ci.testing import Project
 from bpt_ci.testing.error import expect_error_marker
-from bpt_ci.testing.repo import CRSRepo, CRSRepoFactory, make_simple_crs
+from bpt_ci.testing.repo import CRSRepo, CRSRepoFactory, RepoCloner, make_simple_crs
 
 
 def test_repo_init(tmp_crs_repo: CRSRepo) -> None:
@@ -42,7 +42,7 @@ def test_repo_import(bpt: BPTWrapper, tmp_crs_repo: CRSRepo, tmp_project: Projec
         'pkg.json',
         json.dumps({
             'schema-version':
-            1,
+            0,
             'name':
             'meow',
             'version':
@@ -150,12 +150,17 @@ def test_repo_import_db_invalid3(bpt: BPTWrapper, tmp_path: Path, tmp_project: P
 
 
 @pytest.fixture(scope='session')
-def simple_repo(crs_repo_factory: CRSRepoFactory) -> CRSRepo:
+def simple_repo_base(crs_repo_factory: CRSRepoFactory) -> CRSRepo:
     repo = crs_repo_factory('simple')
     names = ('simple.crs', 'simple2.crs', 'simple3.crs', 'simple4.crs')
     simples = (PROJECT_ROOT / 'data' / name for name in names)
     repo.import_(simples, validate=False)
     return repo
+
+
+@pytest.fixture()
+def simple_repo(simple_repo_base: CRSRepo, clone_repo: RepoCloner) -> CRSRepo:
+    return clone_repo(simple_repo_base)
 
 
 def test_repo_double_import(bpt: BPTWrapper, simple_repo: CRSRepo) -> None:
@@ -175,6 +180,25 @@ def test_repo_double_import_replace(bpt: BPTWrapper, simple_repo: CRSRepo) -> No
     simple_repo.import_(PROJECT_ROOT / 'data/simple.crs', if_exists='replace', validate=False)
     after_time = simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1/pkg.tgz').stat().st_mtime
     assert before_time < after_time
+
+
+def test_repo_remove(simple_repo: CRSRepo) -> None:
+    assert simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1').exists()
+    simple_repo.remove('test-pkg@1.2.43~1')
+    assert not simple_repo.path.joinpath('pkg/test-pkg/1.2.43~1').exists()
+
+
+def test_repo_remove_twice(simple_repo: CRSRepo) -> None:
+    simple_repo.remove('test-pkg@1.2.43~1')
+    with expect_error_marker('pkg-remove-nonesuch'):
+        simple_repo.remove('test-pkg@1.2.43~1')
+
+
+def test_repo_remove_ignore_missing(simple_repo: CRSRepo) -> None:
+    simple_repo.remove('test-pkg@1.2.43~1')
+    simple_repo.remove('test-pkg@1.2.43~1', if_missing='ignore')
+    with expect_error_marker('pkg-remove-nonesuch'):
+        simple_repo.remove('test-pkg@1.2.43~1', if_missing='fail')
 
 
 def test_pkg_prefetch_http_url(bpt: BPTWrapper, simple_repo: CRSRepo, http_server_factory: HTTPServerFactory,
@@ -220,7 +244,7 @@ def test_repo_validate_simple(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'pkg-version':
             1,
             'schema-version':
-            1,
+            0,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
@@ -241,7 +265,7 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
             'name': 'foo',
             'version': '1.2.3',
             'pkg-version': 1,
-            'schema-version': 1,
+            'schema-version': 0,
             'libraries': [{
                 'path': '.',
                 'name': 'foo',
@@ -264,10 +288,10 @@ def test_repo_validate_interdep(tmp_crs_repo: CRSRepo, tmp_path: Path) -> None:
 
 
 def test_repo_validate_invalid_no_sibling(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'path': '.',
             'name': 'foo',
             'using': ['bar'],
@@ -306,13 +330,10 @@ def test_repo_no_use_invalid_pkg_version(tmp_crs_repo: CRSRepo, tmp_project: Pro
         db.execute(r'INSERT INTO crs_repo_packages(meta_json) VALUES(?)',
                    [json.dumps(make_simple_crs('bar', '1.2.3', pkg_version=1))])
 
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
-        'lib': {
-            'name': 'main',
-            'dependencies': ['bar@1.2.3']
-        },
+        'dependencies': ['bar@1.2.3'],
     }
     tmp_project.bpt.run(['pkg', 'solve', '-r', tmp_crs_repo.path, 'bar@1.2.3'])
     # Replace with a bad pkg_version:

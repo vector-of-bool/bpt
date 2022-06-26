@@ -2,7 +2,9 @@
 #include "./options.hpp"
 
 #include <bpt/crs/error.hpp>
+#include <bpt/crs/info/package.hpp>
 #include <bpt/deps.hpp>
+#include <bpt/error/doc_ref.hpp>
 #include <bpt/error/errors.hpp>
 #include <bpt/error/exit.hpp>
 #include <bpt/error/toolchain.hpp>
@@ -11,6 +13,7 @@
 #include <bpt/project/spdx.hpp>
 #include <bpt/sdist/error.hpp>
 #include <bpt/toolchain/errors.hpp>
+#include <bpt/toolchain/from_json.hpp>
 #include <bpt/usage_reqs.hpp>
 #include <bpt/util/compress.hpp>
 #include <bpt/util/fs/io.hpp>
@@ -72,48 +75,67 @@ auto handlers = std::tuple(  //
         write_error_marker("package-yaml-parse-error");
         return 1;
     },
-    [](e_sdist_from_directory, e_parse_project_manifest_path pkg_yaml, e_bad_pkg_yaml_key badkey) {
+    [](e_sdist_from_directory, e_parse_project_manifest_path bpt_yaml, e_bad_bpt_yaml_key badkey) {
         bpt_log(error,
                 "Error loading project info from [.bold.yellow[{}]]"_styled,
-                pkg_yaml.value.string());
-        bpt_log(error, "Unknown project property '.bold.red[{}]'"_styled, badkey.given);
-        if (badkey.nearest.has_value()) {
-            bpt_log(error, "  (Did you mean '.bold.green[{}]'?)"_styled, *badkey.nearest);
-        }
+                bpt_yaml.value.string());
+        badkey.log_error("Unknown project property '.bold.red[{}]'"_styled);
         return 1;
     },
-    [](const semester::walk_error& exc,
-       e_sdist_from_directory,
-       e_parse_project_manifest_path pkg_yaml) {
+    [](e_parse_dependency_manifest_path deps_json, e_bad_deps_json_key badkey) {
         bpt_log(error,
-                "Error loading project info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
-                pkg_yaml.value.string(),
-                exc.what());
+                "Error loading dependency info from [.bold.yellow[{}]]"_styled,
+                deps_json.value.string());
+        badkey.log_error("Unknown property '.bold.red[{}]'"_styled);
+        return 1;
+    },
+    [](const semester::walk_error&    exc,
+       e_sdist_from_directory         dir,
+       e_parse_project_manifest_path* bpt_yaml,
+       crs::e_pkg_json_path*          pkg_json) {
+        if (pkg_json) {
+            bpt_log(error,
+                    "Error loading package info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                    pkg_json->value.string(),
+                    exc.what());
+            write_error_marker("invalid-pkg-json");
+        } else if (bpt_yaml) {
+            bpt_log(error,
+                    "Error loading project info from [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                    bpt_yaml->value.string(),
+                    exc.what());
+            write_error_marker("invalid-pkg-yaml");
+        } else {
+            bpt_log(error,
+                    "Error parsing data in directory [.bold.yellow[{}]]: .bold.red[{}]"_styled,
+                    dir.value.string(),
+                    exc.what());
+        }
         return 1;
     },
     [](const neo::url_validation_error& exc,
        e_sdist_from_directory,
-       e_parse_project_manifest_path pkg_yaml,
+       e_parse_project_manifest_path bpt_yaml,
        e_url_string                  str) {
         bpt_log(
             error,
             "Error while parsing URL string '.bold.yellow[{}]' in [.bold.yellow[{}]]: .bold.red[{}]"_styled,
             str.value,
-            pkg_yaml.value.string(),
+            bpt_yaml.value.string(),
             exc.what());
         return 1;
     },
     [](bpt::e_bad_spdx_expression err,
        bpt::e_spdx_license_str    spdx_str,
        e_sdist_from_directory,
-       e_parse_project_manifest_path pkg_yaml) {
+       e_parse_project_manifest_path bpt_yaml) {
         bpt_log(error,
                 "Invalid SPDX license expression '.bold.yellow[{}]': .bold.red[{}]"_styled,
                 spdx_str.value,
                 err.value);
         bpt_log(error,
                 "  (While reading project manifest from [.bold.yellow[{}]]"_styled,
-                pkg_yaml.value.string());
+                bpt_yaml.value.string());
         write_error_marker("invalid-spdx");
         return 1;
     },
@@ -146,6 +168,16 @@ auto handlers = std::tuple(  //
             bpt_log(error, "  (While loading from file [.bold.red[{}]])"_styled, tc_file->value);
         }
         write_error_marker("bad-toolchain");
+        return 1;
+    },
+    [](e_bad_toolchain_key nonesuch, e_loading_toolchain, e_toolchain_filepath* tc_file) {
+        nonesuch.log_error("Unknown toolchain option: '.br.red[{}]'"_styled);
+        if (tc_file) {
+            bpt_log(error,
+                    "  (While reading toolchain from file [.bold.yellow[{}]])"_styled,
+                    tc_file->value);
+        }
+        write_error_marker("bad-toolchain-opt");
         return 1;
     },
     [](e_name_str                           badname,
@@ -233,6 +265,18 @@ auto handlers = std::tuple(  //
     [](bpt::e_exit ex, boost::leaf::verbose_diagnostic_info const& info) {
         bpt_log(trace, "Additional error information: {}", info);
         return ex.value;
+    },
+    [](bpt::e_human_message                        message,
+       bpt::e_doc_ref                              docref,
+       boost::leaf::verbose_diagnostic_info const& diag,
+       bpt::e_error_marker const*                  marker) {
+        bpt_log(error, "Error: .bold.red[{}]"_styled, message.value);
+        bpt_log(error, "Refer: .bold.yellow[https://dds`.pizza/docs/{}]"_styled, docref.value);
+        bpt_log(debug, "Additional diagnostic objects:\n.blue[{}]"_styled, diag);
+        if (marker) {
+            bpt::write_error_marker(marker->value);
+        }
+        return 1;
     },
     [](catch_<neo::sqlite3::error> exc, boost::leaf::verbose_diagnostic_info const& diag) {
         bpt_log(critical,

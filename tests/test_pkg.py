@@ -2,11 +2,12 @@ import json
 import tarfile
 import pytest
 from pathlib import Path
-from typing import Tuple
+
 import platform
 
 from bpt_ci.bpt import BPTWrapper
 from bpt_ci.testing import ProjectOpener, Project, error, CRSRepo
+from bpt_ci.util import read_tarfile_member
 
 
 @pytest.fixture()
@@ -62,7 +63,7 @@ def test_sdist_unreadable_dir(bpt: BPTWrapper) -> None:
 
 
 def test_sdist_invalid_yml(tmp_project: Project) -> None:
-    tmp_project.write('pkg.yaml', '[[')
+    tmp_project.write('bpt.yaml', '[[')
     with error.expect_error_marker('package-yaml-parse-error'):
         tmp_project.pkg_create()
 
@@ -70,7 +71,7 @@ def test_sdist_invalid_yml(tmp_project: Project) -> None:
 def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
     with error.expect_error_marker('pkg-search-no-result'):
         tmp_project.bpt.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'test-pkg',
         'version': '0.1.2',
     }
@@ -80,21 +81,83 @@ def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
 
 
 def test_pkg_spdx(tmp_project: Project) -> None:
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'foo',
         'version': '1.2.3',
         'license': 'MIT',
     }
     tmp_project.pkg_create()
-    tmp_project.pkg_yaml['license'] = 'bogus'
+    tmp_project.bpt_yaml['license'] = 'bogus'
     with error.expect_error_marker('invalid-spdx'):
         tmp_project.pkg_create()
 
     dest_tgz = tmp_project.root / 'test.tgz'
-    tmp_project.pkg_yaml['license'] = 'MIT'
+    tmp_project.bpt_yaml['license'] = 'MIT'
     tmp_project.pkg_create(dest=dest_tgz)
     with tarfile.open(dest_tgz) as tgz:
         pkg_json = json.loads(tgz.extractfile('pkg.json').read())
     assert 'meta' in pkg_json
     assert 'license' in pkg_json['meta']
     assert pkg_json['meta']['license'] == 'MIT'
+
+
+def test_pkg_create_almost_valid(tmp_project: Project) -> None:
+    pkg_data = {
+        "name":
+        "catch2",
+        "version":
+        "2.13.6",
+        "pkg-version":
+        1,
+        "libraries": [{
+            "name": "catch2",
+            "path": ".",
+            "using": [],
+            "test-using": [],
+            "dependencies": [],
+            "test-dependencies": []
+        }, {
+            "name": "main",
+            "path": "libs/main",
+            "test-dependencies": [],
+            "dependencies": [],
+            "test-using": [],
+            "using": [{
+                "lib": "catch2"
+            }]
+        }],
+        "schema-version":
+        0
+    }
+    tmp_project.write('pkg.json', json.dumps(pkg_data))
+    with error.expect_error_marker('invalid-pkg-json'):
+        tmp_project.build()
+    with error.expect_error_marker('invalid-pkg-json'):
+        tmp_project.pkg_create()
+
+    pkg_data['libraries'][1]['using'] = ['catch2']
+    tmp_project.root.joinpath('libs/main').mkdir(parents=True)
+    tmp_project.write('pkg.json', json.dumps(pkg_data))
+    tmp_project.build()
+    tmp_project.pkg_create()
+
+
+def test_pkg_create_default_using(tmp_project: Project):
+    tmp_project.bpt_yaml = {'name': 'foo', 'version': '1.2.3', 'dependencies': ['bar@4.1.3']}
+    tmp_project.pkg_create()
+    pkg_json = json.loads(read_tarfile_member(tmp_project.build_root / 'foo@1.2.3~1.tar.gz', 'pkg.json'))
+    assert pkg_json['libraries'][0] == {
+        'name': 'foo',
+        'path': '.',
+        'using': [],
+        'test-using': [],
+        'test-dependencies': [],
+        'dependencies': [{
+            'name': 'bar',
+            'versions': [{
+                'low': '4.1.3',
+                'high': '5.0.0'
+            }],
+            'using': ['bar'],
+        }]
+    }

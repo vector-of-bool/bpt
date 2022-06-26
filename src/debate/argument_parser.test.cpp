@@ -2,11 +2,12 @@
 
 #include "./enum.hpp"
 
+#include <bpt/bpt.test.hpp>
 #include <catch2/catch.hpp>
 
 TEST_CASE("Create an argument parser") {
     enum log_level {
-        _invalid,
+        invalid_,
         info,
         warning,
         error,
@@ -28,20 +29,20 @@ TEST_CASE("Create an argument parser") {
         .valname = "<file>",
         .action  = debate::put_into(file),
     });
-    parser.parse_argv({"--log-level=info"});
+    REQUIRES_LEAF_NOFAIL(parser.parse_argv({"--log-level=info"}));
     CHECK(level == log_level::info);
-    parser.parse_argv({"--log-level=warning"});
+    REQUIRES_LEAF_NOFAIL(parser.parse_argv({"--log-level=warning"}));
     CHECK(level == log_level::warning);
-    parser.parse_argv({"--log-level", "info"});
+    REQUIRES_LEAF_NOFAIL(parser.parse_argv({"--log-level", "info"}));
     CHECK(level == log_level::info);
-    parser.parse_argv({"-lerror"});
+    REQUIRES_LEAF_NOFAIL(parser.parse_argv({"-lerror"}));
     CHECK(level == log_level::error);
     CHECK_THROWS_AS(parser.parse_argv({"-lerror", "--log-level=info"}), std::runtime_error);
 
-    parser.parse_argv({"-l", "info"});
+    REQUIRES_LEAF_NOFAIL(parser.parse_argv({"-l", "info"}));
     CHECK(level == log_level::info);
 
-    parser.parse_argv({"-lwarning", "my-file.txt"});
+    REQUIRES_LEAF_NOFAIL(parser.parse_argv({"-lwarning", "my-file.txt"}));
     CHECK(level == log_level::warning);
     CHECK(file == "my-file.txt");
 }

@@ -8,7 +8,8 @@ namespace bpt {
 struct sdist_params {
     fs::path project_dir;
     fs::path dest_path;
-    bool     force = false;
+    bool     force    = false;
+    int      revision = 1;
 };
 
 struct sdist {

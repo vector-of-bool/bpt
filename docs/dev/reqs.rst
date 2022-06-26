@@ -13,10 +13,11 @@ Build Requirements
 Building |bpt| has a simple set of requirements:
 
 - **Python 3.7** or newer to run the bootstrap/CI scripts.
-- A C++ compiler that has rudimentary support for several C++20 features,
-  including Concepts. Newer releases of Visual C++ that ship with **VS 2019**
-  will be sufficient on Windows, as will **GCC 10** with ``-std=c++20`` and
-  ``-fcoroutines`` on other platforms.
+- A C++ compiler that has rudimentary support for several C++20 features. Newer
+  releases of Visual C++ that ship with **VS 2019** will be sufficient on
+  Windows, as will **GCC 10** with ``-std=c++20`` and ``-fcoroutines`` on other
+  platforms. **Note:** Using newer compiler versions may cause trouble as they
+  are untested, but adding support for these systems is planned.
 - On Linux, the OpenSSL headers are needed. This can be installed through the
   ``libssl-dev`` package on Debian/Ubuntu or ``openss-devel`` +
   ``openssl-static`` on RedHat systems. (For Windows, the |bpt| repository ships

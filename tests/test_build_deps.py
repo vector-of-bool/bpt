@@ -96,9 +96,7 @@ def bd_project(tmp_project: Project) -> Project:
 def test_cli(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     bd_project.bpt.build_deps(['foo@1.2.3'], repos=[bd_test_repo.path])
     assert bd_project.root.joinpath('_deps/foo@1.2.3~1').is_dir()
-    assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
-    assert bd_project.root.joinpath('_deps/_libman/foo/foo.lml').is_file()
-    assert bd_project.root.joinpath('INDEX.lmi').is_file()
+    assert bd_project.root.joinpath('_built.json').is_file()
 
 
 def test_cli_missing(bd_test_repo: CRSRepo, bd_project: Project) -> None:
@@ -111,9 +109,7 @@ def test_from_file(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     bd_project.write('deps.json5', json.dumps({'dependencies': ['foo+0.3.0']}))
     bd_project.bpt.build_deps(['-d', 'deps.json5'], repos=[bd_test_repo.path])
     assert bd_project.root.joinpath('_deps/foo@1.2.3~1').is_dir()
-    assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
-    assert bd_project.root.joinpath('_deps/_libman/foo/foo.lml').is_file()
-    assert bd_project.root.joinpath('INDEX.lmi').is_file()
+    assert bd_project.root.joinpath('_built.json').is_file()
 
 
 def test_from_file_missing(bd_project: Project) -> None:
@@ -126,9 +122,7 @@ def test_multiple_deps(bd_test_repo: CRSRepo, bd_project: Project) -> None:
     """build-deps with multiple deps resolves to a single version"""
     bd_project.bpt.build_deps(['foo@1.2.3', 'foo@1.2.6'], repos=[bd_test_repo.path])
     assert bd_project.root.joinpath('_deps/foo@1.2.8~1').is_dir()
-    assert bd_project.root.joinpath('_deps/_libman/foo.lmp').is_file()
-    assert bd_project.root.joinpath('_deps/_libman/foo/foo.lml').is_file()
-    assert bd_project.root.joinpath('INDEX.lmi').is_file()
+    assert bd_project.root.joinpath('_built.json').is_file()
 
 
 def test_cmake_simple(project_opener: ProjectOpener, bd_test_repo: CRSRepo) -> None:
@@ -157,7 +151,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
         {
             'foo': {
                 'pkg.json': json.dumps({
-                    'schema-version': 1,
+                    'schema-version': 0,
                     'name': 'foo',
                     'version': '1.2.3',
                     'pkg-version': 1,
@@ -183,7 +177,7 @@ def test_cmake_transitive(bd_project: Project, tmp_crs_repo: CRSRepo, dir_render
             },
             'bar': {
                 'pkg.json': json.dumps({
-                    'schema-version': 1,
+                    'schema-version': 0,
                     'name': 'bar',
                     'version': '1.2.3',
                     'pkg-version': 1,

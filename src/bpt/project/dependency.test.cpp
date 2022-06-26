@@ -17,15 +17,15 @@ TEST_CASE("Parse a shorthand") {
     auto [given, expect] = GENERATE(Catch::Generators::values<case_>({
         {
             .given  = "foo@1.2.3",
-            .expect = {{"foo"}, simple_ver_range("1.2.3", "2.0.0")},
+            .expect = {{"foo"}, simple_ver_range("1.2.3", "2.0.0"), {bpt::name{"foo"}}},
         },
         {
             .given  = "foo~1.2.3  ",
-            .expect = {{"foo"}, simple_ver_range("1.2.3", "1.3.0")},
+            .expect = {{"foo"}, simple_ver_range("1.2.3", "1.3.0"), {bpt::name{"foo"}}},
         },
         {
             .given  = " foo=1.2.3",
-            .expect = {{"foo"}, simple_ver_range("1.2.3", "1.2.4")},
+            .expect = {{"foo"}, simple_ver_range("1.2.3", "1.2.4"), {bpt::name{"foo"}}},
         },
         {
             .given  = "foo@1.2.3 using bar , baz",
@@ -38,7 +38,7 @@ TEST_CASE("Parse a shorthand") {
     auto dep = REQUIRES_LEAF_NOFAIL(bpt::project_dependency::from_shorthand_string(given));
 
     CHECK(dep.dep_name == expect.dep_name);
-    CHECK(dep.explicit_uses == expect.explicit_uses);
+    CHECK(dep.using_ == expect.using_);
     CHECK(dep.acceptable_versions == expect.acceptable_versions);
 }
 #endif

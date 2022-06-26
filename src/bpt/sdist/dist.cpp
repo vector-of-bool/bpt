@@ -90,6 +90,10 @@ void bpt::create_sdist_targz(path_ref filepath, const sdist_params& params) {
             throw_user_error<errc::sdist_exists>("Destination path '{}' already exists",
                                                  filepath.string());
         }
+        if (fs::is_directory(filepath)) {
+            throw_user_error<errc::sdist_exists>("Destination path '{}' is a directory",
+                                                 filepath.string());
+        }
     }
 
     auto tempdir = temporary_dir::create();
@@ -104,6 +108,7 @@ sdist bpt::create_sdist_in_dir(path_ref out, const sdist_params& params) {
     for (const crs::library_info& lib : in_sd.pkg.libraries) {
         sdist_copy_library(out, in_sd, lib, params);
     }
+    in_sd.pkg.id.revision = params.revision;
 
     fs::create_directories(out);
     bpt::write_file(out / "pkg.json", in_sd.pkg.to_json(2));
@@ -115,17 +120,17 @@ sdist sdist::from_directory(path_ref where) {
     crs::package_info meta;
 
     auto       pkg_json      = where / "pkg.json";
-    auto       pkg_yaml      = where / "pkg.yaml";
+    auto       bpt_yaml      = where / "bpt.yaml";
     const bool have_pkg_json = bpt::file_exists(pkg_json);
-    const bool have_pkg_yaml = bpt::file_exists(pkg_yaml);
+    const bool have_bpt_yaml = bpt::file_exists(bpt_yaml);
 
     if (have_pkg_json) {
-        if (have_pkg_yaml) {
+        if (have_bpt_yaml) {
             bpt_log(
                 warn,
                 "Directory has both [.cyan[{}]] and [.cyan[{}]] (The .bold.cyan[pkg`.json] file will be preferred)"_styled,
                 pkg_json.string(),
-                pkg_yaml.string());
+                bpt_yaml.string());
         }
         BPT_E_SCOPE(crs::e_pkg_json_path{pkg_json});
         auto data = bpt::parse_json5_file(pkg_json);
@@ -137,7 +142,7 @@ sdist sdist::from_directory(path_ref where) {
                 make_user_error<errc::invalid_pkg_filesystem>(
                     "No pkg.json nor project manifest in the project directory"),
                 e_missing_pkg_json{pkg_json},
-                e_missing_project_yaml{where / "pkg.yaml"},
+                e_missing_project_yaml{where / "bpt.yaml"},
                 BPT_ERR_REF("invalid-pkg-filesystem"));
         }
         meta = proj.manifest->as_crs_package_meta();

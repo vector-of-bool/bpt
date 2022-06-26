@@ -1,0 +1,45 @@
+code.bpt-name.literal>span.pre {
+    font-weight: bold;
+}
+
+p>code.bpt-name.literal>span.pre {
+    font-size: 14pt;
+}
+
+code.literal:not(.bpt-name) {
+    border: 1px solid #0004;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background-color: #0001;
+    white-space: nowrap;
+}
+
+pre span.linenos {
+    border-right: 2px solid green;
+    margin-right: 8px;
+}
+
+a.hoverxref.tooltip {
+    white-space: nowrap;
+}
+
+code.highlight.yaml span.l-Scalar-Plain:not(.l-Scalar) {
+    color: #062873;
+    font-weight: bold;
+}
+
+html .highlight pre .c1 {
+    color: #1b8799;
+}
+
+div.body h2 {
+    border-bottom: 2px solid gray;
+    font-size: 180%;
+    ;
+}
+
+div.body h3 {
+    font-style: italic;
+    border-bottom: 1px solid gray;
+    font-size: 150%;
+}

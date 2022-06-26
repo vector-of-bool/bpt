@@ -37,13 +37,12 @@ def ensure_absent(path: Pathish) -> None:
         pass
 
 
-_PkgYAMLLibraryUsingItem = TypedDict('_PkgYAMLLibraryUsingItem', {
+_ProjectYAMLLibraryUsingItem = TypedDict('_ProjectYAMLLibraryUsingItem', {
     'lib': str,
-    'for': Literal['lib', 'app', 'test'],
 })
 
 
-class _PkgYAMLDependencyItemRequired(TypedDict):
+class _ProjectYAMLDependencyItemRequired(TypedDict):
     dep: str
 
 
@@ -52,49 +51,41 @@ class _VersionItem(TypedDict):
     high: str
 
 
-_PkgYAMLDependencyItemOpt = TypedDict(
+_ProjectYAMLDependencyItemOpt = TypedDict(
     '_ProjectJSONDependencyItemOpt',
     {
         'versions': Sequence[_VersionItem],
-        'for': Literal['lib', 'app', 'test'],
         'using': Sequence[str],
     },
     total=False,
 )
 
 
-class _PkgYAMLDependencyItemMap(_PkgYAMLDependencyItemRequired, _PkgYAMLDependencyItemOpt):
+class _ProjectYAMLDependencyItemMap(_ProjectYAMLDependencyItemRequired, _ProjectYAMLDependencyItemOpt):
     pass
 
 
-_PkgYAMLDependencyItem = Union[str, _PkgYAMLDependencyItemMap]
+_ProjectYAMLDependencyItem = Union[str, _ProjectYAMLDependencyItemMap]
 
 
-class _PkgYAMLLibraryItemRequired(TypedDict):
+class _ProjectYAMLLibraryItemRequired(TypedDict):
     name: str
     path: str
 
 
-class _PkgYAMLLibraryItem(_PkgYAMLLibraryItemRequired, total=False):
-    using: Sequence[Union[str, _PkgYAMLLibraryUsingItem]]
-    dependencies: Sequence[_PkgYAMLDependencyItem]
+class _ProjectYAMLLibraryItem(_ProjectYAMLLibraryItemRequired, total=False):
+    using: Sequence[Union[str, _ProjectYAMLLibraryUsingItem]]
+    dependencies: Sequence[_ProjectYAMLDependencyItem]
 
 
-class _MainProjectLibraryItem(TypedDict, total=False):
-    name: str
-    dependencies: Sequence[_PkgYAMLDependencyItem]
-    using: Sequence[Union[str, _PkgYAMLLibraryUsingItem]]
-
-
-class _PkgYAMLRequired(TypedDict):
+class _ProjectYAMLRequired(TypedDict):
     name: str
     version: str
 
 
-class PkgYAML(_PkgYAMLRequired, total=False):
-    dependencies: Sequence[_PkgYAMLDependencyItem]
-    lib: _MainProjectLibraryItem
-    libs: Sequence[_PkgYAMLLibraryItem]
+class ProjectYAML(_ProjectYAMLRequired, total=False):
+    dependencies: Sequence[_ProjectYAMLDependencyItem]
+    libraries: Sequence[_ProjectYAMLLibraryItem]
 
 
 class Library:
@@ -231,16 +222,16 @@ class Project:
         self.build_root = dirpath / '_build'
 
     @property
-    def pkg_yaml(self) -> PkgYAML:
+    def bpt_yaml(self) -> ProjectYAML:
         """
-        Get/set the content of the ``pkg.yaml`` file for the project.
+        Get/set the content of the ``bpt.yaml`` file for the project.
         """
-        dat = json.loads(self.root.joinpath('pkg.yaml').read_text())
-        return cast(PkgYAML, _WritebackData(self.root.joinpath('pkg.yaml'), dat, dat))
+        dat = json.loads(self.root.joinpath('bpt.yaml').read_text())
+        return cast(ProjectYAML, _WritebackData(self.root.joinpath('bpt.yaml'), dat, dat))
 
-    @pkg_yaml.setter
-    def pkg_yaml(self, data: PkgYAML) -> None:
-        self.root.joinpath('pkg.yaml').write_text(json.dumps(data, indent=2))
+    @bpt_yaml.setter
+    def bpt_yaml(self, data: ProjectYAML) -> None:
+        self.root.joinpath('bpt.yaml').write_text(json.dumps(data, indent=2))
 
     def lib(self, name: str) -> Library:
         return Library(name, self.root / f'libs/{name}')
@@ -266,7 +257,8 @@ class Project:
               tweaks_dir: Optional[Path] = None,
               with_tests: bool = True,
               repos: Sequence[Pathish] = (),
-              log_level: Literal['info', 'debug', 'trace'] = 'trace') -> None:
+              log_level: Literal['info', 'debug', 'trace'] = 'trace',
+              cwd: Pathish | None = None) -> None:
         """
         Execute 'bpt build' on the project
         """
@@ -282,7 +274,8 @@ class Project:
                            tweaks_dir=tweaks_dir,
                            with_tests=with_tests,
                            repos=repos,
-                           more_args=[f'--log-level={log_level}'])
+                           more_args=[f'--log-level={log_level}'],
+                           cwd=cwd)
 
     def compile_file(self, *paths: Pathish, toolchain: Optional[Pathish] = None) -> None:
         with tc_mod.fixup_toolchain(toolchain or tc_mod.get_default_test_toolchain()) as tc:

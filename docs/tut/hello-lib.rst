@@ -24,9 +24,8 @@ specifically addressed in the prior example:
    project.
 #. |bpt| also supports a top-level directory named ``include/``. Both
    ``include/`` and ``src/`` may be present in a single library, but there are
-   some important differences. Refer to :ref:`pkgs.lib-roots` in the layout
-   guide.
-#. A single *library root* may contain any number of applications defined in
+   some important differences. Refer to :ref:`libs.source-kinds` in the guide.
+   #. A single *library root* may contain any number of applications defined in
    ``.main`` files, but a *library root* will correspond to exactly *one*
    library. Defining additional libraries requires additional packages or
    adding multiple library roots to a single package.

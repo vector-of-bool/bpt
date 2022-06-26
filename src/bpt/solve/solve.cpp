@@ -9,6 +9,7 @@
 #include <bpt/util/algo.hpp>
 #include <bpt/util/log.hpp>
 #include <bpt/util/signal.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <fmt/ostream.h>
@@ -45,24 +46,23 @@ semver::version sole_version(const crs::version_range_set& versions) {
     return (*versions.iter_intervals().begin()).low;
 }
 
+using name_vec = std::vector<bpt::name>;
+
 struct requirement {
     bpt::name              name;
     crs::version_range_set versions;
-    dependency_uses        uses;
+    name_vec               uses;
     std::optional<int>     pkg_version;
 
     explicit requirement(bpt::name              name,
                          crs::version_range_set vrs,
-                         dependency_uses        u,
+                         name_vec               u,
                          std::optional<int>     pver)
         : name{std::move(name)}
         , versions{std::move(vrs)}
         , uses{std::move(u)}
         , pkg_version{pver} {
-        uses.visit(neo::overload{
-            [](explicit_uses_list& l) { sr::sort(l.uses); },
-            [](implicit_uses_all) {},
-        });
+        sr::sort(uses);
     }
 
     static requirement from_crs_dep(const crs::dependency& dep) noexcept {
@@ -75,13 +75,7 @@ struct requirement {
         if (!versions.contains(other.versions)) {
             return false;
         }
-
-        if (uses.is<crs::implicit_uses_all>() || other.uses.is<crs::implicit_uses_all>()) {
-            return true;
-        }
-        auto& my_uses    = uses.as<crs::explicit_uses_list>().uses;
-        auto& other_uses = other.uses.as<crs::explicit_uses_list>().uses;
-        if (sr::includes(other_uses, my_uses)) {
+        if (sr::includes(other.uses, uses)) {
             return true;
         }
         return false;
@@ -91,45 +85,16 @@ struct requirement {
         return versions.disjoint(other.versions);
     }
 
-    dependency_uses union_usages(dependency_uses const& l,
-                                 dependency_uses const& r) const noexcept {
-        return l.visit(neo::overload{
-            [&](explicit_uses_list const& left) -> dependency_uses {
-                return r.visit(neo::overload{
-                    [&](explicit_uses_list const& right) -> dependency_uses {
-                        explicit_uses_list uses_union;
-                        sr::set_union(left.uses, right.uses, std::back_inserter(uses_union.uses));
-                        return uses_union;
-                    },
-                    [](implicit_uses_all a) -> dependency_uses { return a; },
-                });
-            },
-            [&](implicit_uses_all) -> dependency_uses { return r; },
-        });
+    name_vec union_usages(name_vec const& l, name_vec const& r) const noexcept {
+        name_vec uses_union;
+        sr::set_union(l, r, std::back_inserter(uses_union));
+        return uses_union;
     }
 
-    dependency_uses intersect_usages(dependency_uses const& l,
-                                     dependency_uses const& r) const noexcept {
-        return l.visit(neo::overload{
-            [&](explicit_uses_list const& left) -> dependency_uses {
-                return r.visit(neo::overload{
-                    [&](explicit_uses_list const& right) -> dependency_uses {
-                        explicit_uses_list uses_intersection;
-                        sr::set_intersection(left.uses,
-                                             right.uses,
-                                             std::back_inserter(uses_intersection.uses));
-                        return uses_intersection;
-                    },
-                    [&](implicit_uses_all) -> dependency_uses { return l; },
-                });
-            },
-            [&](implicit_uses_all) -> dependency_uses { return r; },
-        });
-    }
-
-    bool uses_is_empty(dependency_uses const& u) const noexcept {
-        return u.visit(neo::overload([](implicit_uses_all) { return true; },
-                                     [](explicit_uses_list const& e) { return e.uses.empty(); }));
+    name_vec intersect_usages(name_vec const& l, name_vec const& r) const noexcept {
+        name_vec uses_intersection;
+        sr::set_intersection(l, r, std::back_inserter(uses_intersection));
+        return uses_intersection;
     }
 
     std::optional<requirement> intersection(const requirement& other) const noexcept {
@@ -151,7 +116,7 @@ struct requirement {
 
     std::optional<requirement> difference(const requirement& other) const noexcept {
         auto range = versions.difference(other.versions);
-        if (range.empty() and (uses_is_empty(uses) or uses == other.uses)) {
+        if (range.empty() and (uses.empty() or uses == other.uses)) {
             return std::nullopt;
         }
         return requirement{name, std::move(range), union_usages(uses, other.uses), std::nullopt};
@@ -191,7 +156,7 @@ struct metadata_provider {
                       .first;
             sr::sort(found->second,
                      std::less<>{},
-                     NEO_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.revision)));
+                     BPT_TL(std::make_tuple(_1.pkg.id.version, -_1.pkg.id.revision)));
         }
         return found->second;
     }
@@ -204,20 +169,15 @@ struct metadata_provider {
             if (!req.versions.contains(entry.pkg.id.version)) {
                 return false;
             }
-            return req.uses.visit(neo::overload{
-                [&](crs::implicit_uses_all) { return true; },
-                [&](crs::explicit_uses_list const& u) {
-                    bool has_all_libraries = sr::all_of(u.uses, [&](auto&& uses_name) {
-                        return sr::any_of(entry.pkg.libraries, NEO_TL(uses_name == _1.name));
-                    });
-                    if (!has_all_libraries) {
-                        bpt_log(debug,
-                                "  Near match: {} (missing one or more required libraries)",
-                                entry.pkg.id.to_string());
-                    }
-                    return has_all_libraries;
-                },
+            bool has_all_libraries = sr::all_of(req.uses, [&](auto&& uses_name) {
+                return sr::any_of(entry.pkg.libraries, BPT_TL(uses_name == _1.name));
             });
+            if (!has_all_libraries) {
+                bpt_log(debug,
+                        "  Near match: {} (missing one or more required libraries)",
+                        entry.pkg.id.to_string());
+            }
+            return has_all_libraries;
         });
 
         if (cand == pkgs.cend()) {
@@ -254,13 +214,7 @@ struct metadata_provider {
         auto pkg = it->pkg;
 
         std::set<bpt::name> uses;
-        req.uses.visit(
-            neo::overload{[&](crs::explicit_uses_list const& u) { extend(uses, u.uses); },
-                          [&](crs::implicit_uses_all) {
-                              extend(uses,
-                                     pkg.libraries | stdv::transform(&crs::library_info::name));
-                          }});
-
+        extend(uses, req.uses);
         std::set<bpt::name> more_uses;
         while (1) {
             more_uses = uses;
@@ -281,9 +235,9 @@ struct metadata_provider {
 
         auto reqs = pkg.libraries                                                //
             | stdv::filter([&](auto&& lib) { return uses.contains(lib.name); })  //
-            | stdv::transform(NEO_TL(_1.dependencies))                           //
+            | stdv::transform(BPT_TL(_1.dependencies))                           //
             | stdv::join                                                         //
-            | stdv::transform(NEO_TL(requirement::from_crs_dep(_1)))             //
+            | stdv::transform(BPT_TL(requirement::from_crs_dep(_1)))             //
             | neo::to_vector;
         for (auto&& r : reqs) {
             bpt_log(trace, "  Requires: {}", r.decl_to_string());
@@ -359,17 +313,43 @@ generate_failure_explanation(const solve_failure_exception& exc) {
 void try_load_nonesuch_packages(boost::leaf::error_id           error,
                                 crs::cache_db const&            cache,
                                 const std::vector<requirement>& reqs) {
+    // Find packages and libraries that aren't at all available
     error.load([&](std::vector<e_nonesuch_package>& missing) {
         for (auto& req : reqs) {
             auto cands = cache.for_package(req.name);
-            if (cands.begin() != cands.end()) {
-                // This requirement has candidates
+            auto it    = cands.begin();
+            if (it == cands.end()) {
+                // This requirement has no candidates
+                auto all       = cache.all_enabled();
+                auto all_names = all
+                    | stdv::transform([](auto entry) { return entry.pkg.id.name.str; })
+                    | neo::to_vector;
+                missing.emplace_back(req.name.str, did_you_mean(req.name.str, all_names));
                 continue;
             }
-            auto all       = cache.all_enabled();
-            auto all_names = all | stdv::transform([](auto entry) { return entry.pkg.id.name.str; })
-                | neo::to_vector;
-            missing.emplace_back(req.name.str, did_you_mean(req.name.str, all_names));
+            error.load([&](std::vector<e_nonesuch_using_library>& missing_libs) {
+                auto want_libs = req.uses;
+                sr::sort(want_libs);
+                std::set<std::string> all_lib_names;
+                for (; it != cands.end() and not want_libs.empty(); ++it) {
+                    auto cand_has_libs = it->pkg.libraries
+                        | stdv::transform(&crs::library_info::name) | neo::to_vector;
+                    sr::sort(cand_has_libs);
+                    std::vector<bpt::name> missing_libs;
+                    sr::set_difference(want_libs, cand_has_libs, std::back_inserter(missing_libs));
+                    want_libs = std::move(missing_libs);
+                    extend(all_lib_names, cand_has_libs | stdv::transform(&bpt::name::str));
+                }
+                if (not want_libs.empty()) {
+                    extend(missing_libs,
+                           want_libs | stdv::transform([&](auto&& libname) {
+                               return e_nonesuch_using_library{
+                                   req.name,
+                                   e_nonesuch{libname.str,
+                                              did_you_mean(libname.str, all_lib_names)}};
+                           }));
+                }
+            });
         }
     });
 }
@@ -379,7 +359,7 @@ void try_load_nonesuch_packages(boost::leaf::error_id           error,
 std::vector<crs::pkg_id> bpt::solve(crs::cache_db const&                  cache,
                                     neo::any_input_range<crs::dependency> deps_) {
     metadata_provider provider{cache};
-    auto deps = deps_ | stdv::transform(NEO_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
+    auto deps = deps_ | stdv::transform(BPT_TL(requirement::from_crs_dep(_1))) | neo::to_vector;
     auto sln  = bpt_leaf_try { return pubgrub::solve(deps, provider); }
     bpt_leaf_catch(catch_<solve_failure_exception> exc)->noreturn_t {
         auto error = boost::leaf::new_error();
@@ -390,7 +370,7 @@ std::vector<crs::pkg_id> bpt::solve(crs::cache_db const&                  cache,
                                    BPT_ERR_REF("dep-res-failure"));
     };
     return sln
-        | stdv::transform(NEO_TL(crs::pkg_id{
+        | stdv::transform(BPT_TL(crs::pkg_id{
             .name     = _1.name,
             .version  = sole_version(_1.versions),
             .revision = _1.pkg_version.value(),

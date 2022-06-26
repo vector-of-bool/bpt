@@ -1,16 +1,26 @@
-.. _guide:
-
 User Guide
 ##########
 
 .. toctree::
     :maxdepth: 2
 
-    packages
+    projects
+    libraries
+    apps
+    tests
+    deps
+    cli/index
     toolchains
-    source-dists
-    pkg-cache
     remote-pkgs
-    interdeps
     build-deps
     cmake
+
+
+Terminology Guides
+******************
+
+.. toctree::
+    :maxdepth: 2
+
+    filesystem
+    terms

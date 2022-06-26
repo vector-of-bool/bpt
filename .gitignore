@@ -1,5 +1,4 @@
 _build/
-_site/
 __pycache__/
 .vscode/
 _prebuilt/

@@ -240,6 +240,10 @@ struct parse_engine {
         if (!arg.nargs) {
             // Just a switch. Consume a single character
             arg.action("", spelling);
+            if (tail.empty()) {
+                // A lone switch
+                shift();
+            }
             return tail;
         } else if (arg.nargs == 1) {
             // Want one value

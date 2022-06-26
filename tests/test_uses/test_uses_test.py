@@ -9,22 +9,21 @@ from bpt_ci.testing.fixtures import Project
 @pytest.fixture(scope='module')
 def ut_repo(crs_repo_factory: CRSRepoFactory, test_parent_dir: Path) -> CRSRepo:
     repo = crs_repo_factory('uses-test')
-    names = ('the_test_dependency', 'the_test_lib', 'unbuildable', 'with_bad_test_dep')
+    names = ('the_test_dependency', 'the_test_lib', 'unbuildable', 'with_bad_test_dep', 'partially_buildable')
     repo.import_((test_parent_dir / name for name in names))
     return repo
 
 
-## TODO: Do not build test libs if we are not building tests
-# def test_build_lib_with_failing_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
-#     proj = project_opener.open('with_bad_test_dep')
-#     # If we disable tests, then we won't try to build the test libraries, and
-#     # therefore won't hit the compilation error
-#     proj.build(with_tests=False, repos=[ut_repo.path])
-#     # Compiling with tests enabled produces an error
-#     with error.expect_error_marker('compile-failed'):
-#         proj.build(with_tests=True)
-#     # Check that nothing changed spuriously
-#     proj.build(with_tests=False)
+def test_build_lib_with_failing_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
+    proj = project_opener.open('with_bad_test_dep')
+    # If we disable tests, then we won't try to build the test libraries, and
+    # therefore won't hit the compilation error
+    proj.build(with_tests=False, repos=[ut_repo.path])
+    # Compiling with tests enabled produces an error
+    with error.expect_error_marker('compile-failed'):
+        proj.build(with_tests=True, repos=[ut_repo.path])
+    # Check that nothing changed spuriously
+    proj.build(with_tests=False, repos=[ut_repo.path])
 
 
 def test_build_lib_with_failing_transitive_test_dep(project_opener: ProjectOpener, ut_repo: CRSRepo) -> None:
@@ -91,10 +90,10 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         })
 
     # Missing the 'using'
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'testing',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'name': 'main',
             'path': 'main',
         }, {
@@ -106,10 +105,10 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         tmp_project.build()
 
     # Now add the missing 'using'
-    tmp_project.pkg_yaml = {
+    tmp_project.bpt_yaml = {
         'name': 'testing',
         'version': '1.2.3',
-        'libs': [{
+        'libraries': [{
             'name': 'main',
             'path': 'main',
         }, {
@@ -119,3 +118,30 @@ def test_uses_sibling_lib(tmp_project: Project) -> None:
         }]
     }
     tmp_project.build()
+
+
+def test_build_partial_dep(tmp_project: Project, ut_repo: CRSRepo) -> None:
+    fs.render_into(
+        tmp_project.root, {
+            'src': {
+                'use-lib.cpp':
+                r'''
+                #include <can_build/header.hpp>
+
+                int main() {
+                    return CAN_BUILD_ZERO;
+                }
+                ''',
+            },
+        })
+
+    tmp_project.bpt_yaml = {
+        'name': 'test-user',
+        'version': '1.2.3',
+        'dependencies': ['partially_buildable@0.1.0 using can_build'],
+    }
+    tmp_project.build(repos=[ut_repo.path])
+
+    tmp_project.bpt_yaml['dependencies'] = ['partially_buildable@0.1.0 using can_build, cannot_build']
+    with error.expect_error_marker('compile-failed'):
+        tmp_project.build(repos=[ut_repo.path])

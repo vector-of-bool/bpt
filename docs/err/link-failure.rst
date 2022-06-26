@@ -15,8 +15,9 @@ linking model, which we still use to this day, multiple *translation units*
 known as *linking*. The result of linking is an actual executable.
 
 .. note::
+
     Linking is also used to generate executables that are used as tests.
-    Refer: :ref:`pkgs.apps-tests`.
+    Refer: :doc:`/guide/apps` and :doc:`/guide/tests`
 
 
 What is "Linking"?

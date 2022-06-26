@@ -12,6 +12,7 @@
 #include <bpt/util/json5/convert.hpp>
 #include <bpt/util/json5/parse.hpp>
 #include <bpt/util/log.hpp>
+#include <bpt/util/tl.hpp>
 #include <bpt/util/yaml/convert.hpp>
 #include <bpt/util/yaml/parse.hpp>
 
@@ -23,18 +24,18 @@ using namespace bpt;
 project project::open_directory(path_ref path_) {
     BPT_E_SCOPE(e_open_project{path_});
     auto path     = resolve_path_strong(path_).value();
-    auto pkg_yaml = path / "pkg.yaml";
-    if (!bpt::file_exists(pkg_yaml)) {
-        if (bpt::file_exists(path / "pkg.yml")) {
+    auto bpt_yaml = path / "bpt.yaml";
+    if (!bpt::file_exists(bpt_yaml)) {
+        if (bpt::file_exists(path / "bpt.yml")) {
             bpt_log(warn,
-                    "There's a [pkg.yml] file in the project directory, but bpt expects a '.yaml' "
+                    "There's a [bpt.yml] file in the project directory, but bpt expects a '.yaml' "
                     "file extension. The file [{}] will be ignored.",
-                    (path / "pkg.yml").string());
+                    (path / "bpt.yml").string());
         }
         return project{path, std::nullopt};
     }
-    BPT_E_SCOPE(e_parse_project_manifest_path{pkg_yaml});
-    auto yml  = bpt::parse_yaml_file(pkg_yaml);
+    BPT_E_SCOPE(e_parse_project_manifest_path{bpt_yaml});
+    auto yml  = bpt::parse_yaml_file(bpt_yaml);
     auto data = bpt::yaml_as_json5_data(yml);
     auto man  = project_manifest::from_json_data(data, path);
     return project{path, man};
@@ -74,16 +75,16 @@ crs::package_info project_manifest::as_crs_package_meta() const noexcept {
             .test_dependencies = {},
         });
         extend(ret.libraries.back().dependencies,
-               root_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
+               root_dependencies | std::views::transform(BPT_TL(_1.as_crs_dependency())));
         extend(ret.libraries.back().test_dependencies,
-               root_test_dependencies | std::views::transform(NEO_TL(_1.as_crs_dependency())));
+               root_test_dependencies | std::views::transform(BPT_TL(_1.as_crs_dependency())));
     }
 
     auto meta_obj = json5::data::object_type();
     if (authors) {
         meta_obj.emplace("authors",
                          *authors                                              //
-                             | std::views::transform(NEO_TL(json5::data(_1)))  //
+                             | std::views::transform(BPT_TL(json5::data(_1)))  //
                              | neo::to_vector);
     }
     if (description) {

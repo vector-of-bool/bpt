@@ -1,5 +1,6 @@
 #include <bpt/cli/dispatch_main.hpp>
 #include <bpt/cli/options.hpp>
+#include <bpt/config.hpp>
 #include <bpt/util/env.hpp>
 #include <bpt/util/log.hpp>
 #include <bpt/util/output.hpp>
@@ -12,6 +13,9 @@
 #include <fansi/styled.hpp>
 #include <fmt/ostream.h>
 #include <neo/event.hpp>
+#include <neo/sqlite3/database.hpp>
+#include <neo/sqlite3/error.hpp>
+#include <neo/sqlite3/statement.hpp>
 
 #include <clocale>
 #include <filesystem>
@@ -39,7 +43,6 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
     load_locale();
     std::setlocale(LC_CTYPE, ".utf8");
 
-    bpt::install_signal_handlers();
     bpt::enable_ansi_console();
 
     bpt::cli::options       opts;
@@ -52,27 +55,25 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             return std::nullopt;
         },
         [&](debate::help_request, debate::e_argument_parser p) {
-            std::cout << p.parser.help_string(program_name);
+            std::cout << p.value.help_string(program_name);
             return 0;
         },
         [&](debate::unrecognized_argument,
             debate::e_argument_parser p,
             debate::e_arg_spelling    arg,
             debate::e_did_you_mean*   dym) {
-            std::cerr << p.parser.usage_string(program_name) << '\n';
-            if (p.parser.subparsers()) {
+            std::cerr << p.value.usage_string(program_name) << '\n';
+            if (p.value.subparsers()) {
                 fmt::print(std::cerr,
                            "Unrecognized argument/subcommand: \".bold.red[{}]\"\n"_styled,
-                           arg.spelling);
+                           arg.value);
             } else {
                 fmt::print(std::cerr,
                            "Unrecognized argument: \".bold.red[{}]\"\n"_styled,
-                           arg.spelling);
+                           arg.value);
             }
             if (dym) {
-                fmt::print(std::cerr,
-                           "  (Did you mean '.br.yellow[{}]'?)\n"_styled,
-                           dym->candidate);
+                fmt::print(std::cerr, "  (Did you mean '.br.yellow[{}]'?)\n"_styled, dym->value);
             }
             return 2;
         },
@@ -81,12 +82,12 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             debate::e_argument_parser   p,
             debate::e_arg_spelling      spell,
             debate::e_invalid_arg_value val) {
-            std::cerr << p.parser.usage_string(program_name) << '\n';
+            std::cerr << p.value.usage_string(program_name) << '\n';
             fmt::print(std::cerr,
-                       "Invalid {} value '{}' given for '{}'\n",
-                       arg.argument.valname,
-                       val.given,
-                       spell.spelling);
+                       "Invalid .cyan[{}] value \".bold.red[{}]\" given for '.yellow[{}]'\n"_styled,
+                       arg.value.valname,
+                       val.value,
+                       spell.value);
             return 2;
         },
         [&](debate::invalid_arguments,
@@ -94,43 +95,45 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
             debate::e_arg_spelling    spell,
             debate::e_argument        arg,
             debate::e_wrong_val_num   given) {
-            std::cerr << p.parser.usage_string(program_name) << '\n';
-            if (arg.argument.nargs == 0) {
-                fmt::print(std::cerr,
-                           "Argument '{}' does not expect any values, but was given one\n",
-                           spell.spelling);
-            } else if (arg.argument.nargs == 1 && given.n_given == 0) {
-                fmt::print(std::cerr,
-                           "Argument '{}' expected to be given a value, but received none\n",
-                           spell.spelling);
+            std::cerr << p.value.usage_string(program_name) << '\n';
+            if (arg.value.nargs == 0) {
+                fmt::print(
+                    std::cerr,
+                    "Argument .yellow[{}] does not expect any values, but was given one\n"_styled,
+                    spell.value);
+            } else if (arg.value.nargs == 1 && given.value == 0) {
+                fmt::print(
+                    std::cerr,
+                    "Argument .yellow[{}] expected to be given a value, but received none\n"_styled,
+                    spell.value);
             } else {
                 fmt::print(
                     std::cerr,
-                    "Wrong number of arguments provided for '{}': Expected {}, but only got {}\n",
-                    spell.spelling,
-                    arg.argument.nargs,
-                    given.n_given);
+                    "Wrong number of arguments provided for .yellow[{}]: Expected {}, but only got {}\n"_styled,
+                    spell.value,
+                    arg.value.nargs,
+                    given.value);
             }
             return 2;
         },
         [&](debate::missing_required, debate::e_argument_parser p, debate::e_argument arg) {
             fmt::print(std::cerr,
-                       "{}\nMissing required argument '{}'\n",
-                       p.parser.usage_string(program_name),
-                       arg.argument.preferred_spelling());
+                       "{}\nMissing required argument '.yellow[{}]'\n"_styled,
+                       p.value.usage_string(program_name),
+                       arg.value.preferred_spelling());
             return 2;
         },
         [&](debate::invalid_repetition, debate::e_argument_parser p, debate::e_arg_spelling sp) {
             fmt::print(std::cerr,
-                       "{}\nArgument '{}' cannot be provided more than once\n",
-                       p.parser.usage_string(program_name),
-                       sp.spelling);
+                       "{}\nArgument '.yellow[{}]' cannot be provided more than once\n"_styled,
+                       p.value.usage_string(program_name),
+                       sp.value);
             return 2;
         },
         [&](debate::invalid_arguments const& err, debate::e_argument_parser p) {
             fmt::print(std::cerr,
                        "{}\nError: {}\n",
-                       p.parser.usage_string(program_name),
+                       p.value.usage_string(program_name),
                        err.what());
             return 2;
         });
@@ -138,7 +141,27 @@ int main_fn(std::string_view program_name, const std::vector<std::string>& argv)
         // Non-null result from argument parsing, return that value immediately.
         return *result;
     }
-    bpt::log::current_log_level = opts.log_level;
+    if (opts.subcommand != bpt::cli::subcommand::new_) {
+        // We want ^C to behave as-normal for 'new'
+        bpt::install_signal_handlers();
+    }
+    bpt::log::current_log_level   = opts.log_level;
+    neo::opt_listener log_sqlite3 = [&](neo::sqlite3::event::step ev) {
+        auto msg = neo::sqlite3::error_category().message(static_cast<int>(ev.ec));
+        bpt_log(trace, "SQLite step: .bold.white[{}]"_styled, ev.st.expanded_sql_string());
+        if (neo::sqlite3::is_error_rc(ev.ec)) {
+            bpt_log(trace,
+                    "   Error: .bold.red[{}]: .bold.yellow[{}]"_styled,
+                    msg,
+                    ev.st.connection().error_message());
+        } else {
+            bpt_log(trace, "   Okay: .bold.green[{}]"_styled, msg);
+        }
+    };
+
+    if (opts.log_level >= bpt::log::level::trace and bpt::config::enable_sqlite3_trace()) {
+        log_sqlite3.start_listening();
+    }
     return bpt::cli::dispatch_main(opts);
 }
 

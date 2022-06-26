@@ -1,0 +1,5 @@
+{
+  name: "unbuildable",
+  version: "0.0.0",
+  libraries: [{ name: "fails_to_build", path: . }],
+}

@@ -1,1 +1,3 @@
-import bpt_ci.tasks
+import importlib
+
+importlib.import_module('bpt_ci.tasks')

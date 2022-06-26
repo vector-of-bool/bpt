@@ -1,10 +1,5 @@
 # Refer: https://aka.ms/yaml
 
-variables:
-  shouldDeploy: >-
-    ${{ eq(variables['Build.SourceBranch'], 'refs/heads/master') }}
-  deployDest: ${{ format('~/web/{0}/', variables['Build.SourceBranchName']) }}
-
 stages:
   - stage: build_test
     displayName: Build and Test
@@ -81,29 +76,3 @@ stages:
           - publish: _build/bpt-macos-x64
             displayName: Publish
             artifact: bpt-macos-x64
-
-  - stage: deploy_build
-    displayName: Deploy
-    condition: and(succeeded(), eq(variables.shouldDeploy, 'true'))
-    jobs:
-      - job: deploy
-        displayName: Deploy (${{variables['Build.SourceBranch']}})
-        steps:
-          - checkout: none
-          - task: DownloadPipelineArtifact@2
-            displayName: Download builds
-            inputs:
-              targetPath: art-dirs/
-          - bash: |
-              set -eu
-              mkdir -p art/
-              mv -- $(find art-dirs/ -type f) art/
-            displayName: Rearrange
-          - task: CopyFilesOverSSH@0
-            displayName: Post builds
-            inputs:
-              sshEndpoint: dds.pizza
-              sourceFolder: art/
-              targetFolder: ${{ variables.deployDest }}
-              failOnEmptySource: true
-              overwrite: true

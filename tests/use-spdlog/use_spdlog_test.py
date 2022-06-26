@@ -41,7 +41,7 @@ def test_get_build_use_spdlog(project_opener: ProjectOpener, toolchain_path: Pat
 
 def test_invalid_uses_specifier(project_opener: ProjectOpener, toolchain_path: Path, repo_with_spdlog: CRSRepo) -> None:
     proj = project_opener.open('project')
-    proj.pkg_yaml = {
+    proj.bpt_yaml = {
         'name': 'test',
         'version': '0.0.0',
         'dependencies': ['spdlog@1.4.2 using no-such-library'],

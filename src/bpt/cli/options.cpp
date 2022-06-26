@@ -1,11 +1,13 @@
 #include "./options.hpp"
 
+#include <bpt/crs/cache.hpp>
 #include <bpt/error/errors.hpp>
 #include <bpt/error/on_error.hpp>
 #include <bpt/error/toolchain.hpp>
 #include <bpt/toolchain/errors.hpp>
 #include <bpt/toolchain/from_json.hpp>
 #include <bpt/toolchain/toolchain.hpp>
+#include <bpt/util/env.hpp>
 #include <bpt/util/fs/io.hpp>
 
 #include <debate/enum.hpp>
@@ -69,13 +71,6 @@ struct setup {
         .action          = put_into(opts.out_path),
     };
 
-    argument lm_index_arg{
-        .long_spellings = {"libman-index"},
-        .help           = "Path to a libman index to use",
-        .valname        = "<lmi-path>",
-        .action         = put_into(opts.build.lm_index),
-    };
-
     argument jobs_arg{
         .long_spellings  = {"jobs"},
         .short_spellings = {"j"},
@@ -114,7 +109,7 @@ struct setup {
     argument no_default_repo_arg{
         .long_spellings  = {"no-default-repo"},
         .short_spellings = {"NDR"},
-        .help            = "Do not consult the default package repository [repo-2.dds.pizza]",
+        .help            = "Do not consult the default package repository [repo-3.bpt.pizza]",
         .nargs           = 0,
         .action          = store_false(opts.use_default_repo),
     };
@@ -139,11 +134,10 @@ struct setup {
         parser.add_argument({
             .long_spellings  = {"log-level"},
             .short_spellings = {"l"},
-            .help            = ""
-                    "Set the bpt logging level. One of 'trace', 'debug', 'info', \n"
-                    "'warn', 'error', 'critical', or 'silent'",
-            .valname = "<level>",
-            .action  = put_into(opts.log_level),
+            .help            = "Set the bpt logging level. One of 'trace', 'debug', 'info', \n"
+                               "'warn', 'error', 'critical', or 'silent'",
+            .valname         = "<level>",
+            .action          = put_into(opts.log_level),
         });
         parser.add_argument({
             .long_spellings = {"crs-cache-dir"},
@@ -183,6 +177,10 @@ struct setup {
             .name = "install-yourself",
             .help = "Have this bpt executable install itself onto your PATH",
         }));
+        setup_new_cmd(group.add_parser({
+            .name = "new",
+            .help = "Generate a new bpt project",
+        }));
     }
 
     void add_repo_args(argument_parser& cmd) {
@@ -210,8 +208,6 @@ struct setup {
         build_cmd.add_argument(no_warn_arg.dup());
         build_cmd.add_argument(out_arg.dup()).help = "Directory where bpt will write build results";
 
-        build_cmd.add_argument(lm_index_arg.dup()).help
-            = "Path to a libman index file to use for loading project dependencies";
         build_cmd.add_argument(jobs_arg.dup());
         build_cmd.add_argument(tweaks_dir_arg.dup());
     }
@@ -222,7 +218,6 @@ struct setup {
         compile_file_cmd.add_argument(no_warn_arg.dup()).help = "Disable compiler warnings";
         compile_file_cmd.add_argument(jobs_arg.dup()).help
             = "Set the maximum number of files to compile in parallel";
-        compile_file_cmd.add_argument(lm_index_arg.dup());
         compile_file_cmd.add_argument(out_arg.dup());
         compile_file_cmd.add_argument(tweaks_dir_arg.dup());
         add_repo_args(compile_file_cmd);
@@ -238,13 +233,17 @@ struct setup {
         build_deps_cmd.add_argument(toolchain_arg.dup()).required;
         build_deps_cmd.add_argument(jobs_arg.dup());
         build_deps_cmd.add_argument(out_arg.dup());
-        build_deps_cmd.add_argument(lm_index_arg.dup()).help
-            = "Destination path for the generated libman index file";
+        build_deps_cmd.add_argument({
+            .long_spellings = {"built-json"},
+            .help           = "Destination of the generated '_built.json' file.",
+            .valname        = "<lmi-path>",
+            .action         = put_into(opts.build.built_json),
+        });
         add_repo_args(build_deps_cmd);
         build_deps_cmd.add_argument({
             .long_spellings  = {"deps-file"},
             .short_spellings = {"d"},
-            .help            = "Path to a JSON5 file listing dependencies",
+            .help            = "Path to a YAML file listing dependencies",
             .valname         = "<deps-file>",
             .can_repeat      = true,
             .action          = debate::push_back_onto(opts.build_deps.deps_files),
@@ -269,10 +268,6 @@ struct setup {
         auto& pkg_group = pkg_cmd.add_subparsers({
             .valname = "<pkg-subcommand>",
             .action  = put_into(opts.pkg.subcommand),
-        });
-        pkg_group.add_parser({
-            .name = "ls",
-            .help = "List locally available packages",
         });
         setup_pkg_create_cmd(pkg_group.add_parser({
             .name = "create",
@@ -300,6 +295,11 @@ struct setup {
             = "Destination path for the source distribution archive";
         pkg_create_cmd.add_argument(if_exists_arg.dup()).help
             = "What to do if the destination names an existing file";
+        pkg_create_cmd.add_argument({
+            .long_spellings = {"revision"},
+            .help   = "The revision number of the generated package (The CRS \"pkg-version\")",
+            .action = put_into(opts.pkg.create.revision),
+        });
     }
 
     void setup_pkg_search_cmd(argument_parser& pkg_search_cmd) noexcept {
@@ -380,7 +380,7 @@ struct setup {
     void setup_repo_init_cmd(argument_parser& repn_init_cmd) {
         repn_init_cmd.add_argument(repo_repo_dir_arg.dup());
         repn_init_cmd.add_argument(if_exists_arg.dup()).help
-            = "What to do if the directory exists and is already repository";
+            = "What to do if the directory exists and is already a repository";
         repn_init_cmd.add_argument({
             .long_spellings  = {"name"},
             .short_spellings = {"n"},
@@ -393,6 +393,8 @@ struct setup {
 
     void setup_repo_remove_cmd(argument_parser& repo_remove_cmd) {
         repo_remove_cmd.add_argument(repo_repo_dir_arg.dup());
+        repo_remove_cmd.add_argument(if_missing_arg.dup()).help
+            = "What to do if the request package does not exist in the repository";
         repo_remove_cmd.add_argument({
             .help       = "One or more identifiers of packages to remove",
             .valname    = "<pkg-id>",
@@ -404,9 +406,9 @@ struct setup {
     void setup_install_yourself_cmd(argument_parser& install_yourself_cmd) {
         install_yourself_cmd.add_argument({
             .long_spellings = {"where"},
-            .help = "The scope of the installation. For .bold[system], installs in a global \n"
-                    "directory for all users of the system. For .bold[user], installs in a \n"
-                    "user-specific directory for executable binaries."_styled,
+            .help    = "The scope of the installation. For .bold[system], installs in a global \n"
+                       "directory for all users of the system. For .bold[user], installs in a \n"
+                       "user-specific directory for executable binaries."_styled,
             .valname = "{user,system}",
             .action  = put_into(opts.install_yourself.where),
         });
@@ -425,10 +427,30 @@ struct setup {
         });
         install_yourself_cmd.add_argument({
             .long_spellings = {"symlink"},
-            .help = "Create a symlink at the installed location to the existing 'bpt' executable\n"
-                    "instead of copying the executable file",
-            .nargs  = 0,
+            .help  = "Create a symlink at the installed location to the existing 'bpt' executable\n"
+                     "instead of copying the executable file",
+            .nargs = 0,
             .action = store_true(opts.install_yourself.symlink),
+        });
+    }
+
+    void setup_new_cmd(argument_parser& parser) {
+        parser.add_argument({
+            .help    = "Name for the new project",
+            .valname = "<project-name>",
+            .action  = put_into(opts.new_.name),
+        });
+        parser.add_argument({
+            .long_spellings = {"dir"},
+            .help           = "Directory in which the project will be generated",
+            .valname        = "<project-directory>",
+            .action         = put_into(opts.new_.directory),
+        });
+        parser.add_argument({
+            .long_spellings = {"split-src-include"},
+            .help           = "Whether to split the [src/] and [include/] directories",
+            .valname        = "{true,false}",
+            .action         = parse_bool_into(opts.new_.split_src_include),
         });
     }
 };
@@ -451,6 +473,56 @@ toolchain bpt::cli::options::load_toolchain() const {
         return bpt::toolchain::get_builtin(default_tc);
     } else {
         BPT_E_SCOPE(bpt::e_toolchain_filepath{tc_str});
-        return parse_toolchain_json5(bpt::read_file(tc_str));
+        return toolchain::from_file(fs::path(tc_str));
+    }
+}
+
+fs::path bpt::cli::options::absolute_project_dir_path() const noexcept {
+    return bpt::resolve_path_weak(project_dir);
+}
+
+bool cli::options::default_from_env(std::string key, bool def) noexcept {
+    auto env = bpt::getenv(key);
+    if (env.has_value()) {
+        return is_truthy_string(*env);
+    }
+    return def;
+}
+
+std::string cli::options::default_from_env(std::string key, std::string def) noexcept {
+    return bpt::getenv(key).value_or(def);
+}
+
+int cli::options::default_from_env(std::string key, int def) noexcept {
+    auto env = bpt::getenv(key);
+    if (!env.has_value()) {
+        return def;
+    }
+    int        r       = 0;
+    const auto dat     = env->data();
+    const auto dat_end = dat + env->size();
+    auto       res     = std::from_chars(dat, dat_end, r);
+    if (res.ptr != dat_end) {
+        return def;
+    }
+    return r;
+}
+
+cli::options::options() noexcept {
+    crs_cache_dir
+        = bpt::getenv("BPT_CRS_CACHE_DIR", [] { return crs::cache::default_path().string(); });
+
+    auto ll = getenv("BPT_LOG_LEVEL");
+    if (ll.has_value()) {
+        auto llo = magic_enum::enum_cast<log::level>(*ll);
+        if (llo.has_value()) {
+            log_level = *llo;
+        }
+    }
+
+    toolchain = getenv("BPT_TOOLCHAIN");
+    auto out  = getenv("BPT_OUTPUT_PATH");
+    if (out.has_value()) {
+        out_path = *out;
     }
 }

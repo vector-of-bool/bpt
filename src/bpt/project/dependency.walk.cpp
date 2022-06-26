@@ -29,7 +29,7 @@ static auto parse_version_range = [](const json5::data& range) {
                           require_str{"'high' version must be a string"},
                           put_into{high, version_from_string{}}},
              if_key{"_comment", just_accept},
-             dym.rejecter<e_bad_pkg_yaml_key>(),
+             dym.rejecter<e_bad_bpt_yaml_key>(),
          });
     if (high <= low) {
         throw(semester::walk_error{"'high' version must be strictly greater than 'low' version"});
@@ -66,21 +66,15 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
             },
             if_key{"versions",
                    require_array{"Dependency 'versions' must be an array of objects"},
-                   [&](auto&&) {
-                       got_versions_key = true;
-                       return walk.pass;
-                   },
+                   set_true{got_versions_key},
                    for_each{require_mapping{"Each 'versions' element must be an object"},
                             put_into(std::back_inserter(ver_ranges), parse_version_range)}},
             if_key{"using",
                    require_array{"Dependency 'using' must be an array"},
                    for_each{require_str{"Each dependency 'using' item must be a string"},
-                            [&](auto&&) {
-                                got_using_key = true;
-                                return walk.pass;
-                            },
+                            set_true{got_using_key},
                             put_into(std::back_inserter(explicit_uses), name_from_string{})}},
-            dym.rejecter<e_bad_pkg_yaml_key>(),
+            dym.rejecter<e_bad_bpt_yaml_key>(),
         });
 
     for (auto& ver : ver_ranges) {
@@ -98,7 +92,9 @@ project_dependency project_dependency::from_json_data(const json5::data& data) {
     }
 
     if (got_using_key) {
-        ret.explicit_uses = std::move(explicit_uses);
+        ret.using_ = std::move(explicit_uses);
+    } else {
+        ret.using_.push_back(ret.dep_name);
     }
 
     return ret;

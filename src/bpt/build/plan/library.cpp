@@ -77,13 +77,7 @@ library_plan library_plan::create(path_ref                    pkg_base,
     }
 
     auto pkg_dep_to_usages = [&](crs::dependency const& dep) {
-        neo_assert(invariant,
-                   dep.uses.is<crs::explicit_uses_list>(),
-                   "Expected an explicit usage requirement for dependency object",
-                   dep,
-                   pkg,
-                   lib);
-        return dep.uses.as<crs::explicit_uses_list>().uses | std::views::transform([&](auto&& l) {
+        return dep.uses | std::views::transform([&](auto&& l) {
                    return lm::usage{dep.name.str, l.str};
                });
     };

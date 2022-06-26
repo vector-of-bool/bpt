@@ -2,7 +2,7 @@ Error: Unknown Usage/Linking Requirements
 #########################################
 
 A library can declare that it *uses* another library by using the
-``using`` keyword in its ``pkg.yaml`` or ``pkg.json`` file.
+``using`` keyword in its ``bpt.yaml`` or ``pkg.json`` file.
 
 These requirements are specified by using the ``name`` that identifies the
 library. If the ``using`` is not within a dependency declaration, then the

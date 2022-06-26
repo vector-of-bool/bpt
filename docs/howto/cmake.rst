@@ -49,7 +49,7 @@ Including PMM
 =============
 
 Suppose I have downloaded and committed `pmm.cmake`_ into the ``tools/``
-subdirectory of my CMake project. To use it in CMake, I first need to
+`subdirectory` of my CMake project. To use it in CMake, I first need to
 ``include()`` the script. The simplest way is to simply ``include()`` the file
 
 .. code-block::
@@ -61,9 +61,9 @@ subdirectory of my CMake project. To use it in CMake, I first need to
 
   include(tools/pmm.cmake)
 
-The ``include()`` command should specify the path to ``pmm.cmake``, including
-the file extension, relative to the directory that contains the CMake script
-that contains the ``include()`` command.
+The ``include()`` command should specify the `relative path` to ``pmm.cmake``,
+including the `file extension`, relative to the `directory` that contains the
+CMake script that contains the ``include()`` command.
 
 
 Running PMM
@@ -79,13 +79,13 @@ for now.
 The basic signature of the ``pmm(BPT)`` command looks like this::
 
   pmm(BPT [DEP_FILES [filepaths...]]
-          [DEPENDS [dependencies...]]
+          [DEPENDENCIES [dependencies...]]
           [TOOLCHAIN file-or-id])
 
-The most straightforward usage is to use only the ``DEPENDS`` argument. For
+The most straightforward usage is to use only the ``DEPENDENCIES`` argument. For
 example, if we want to import `{fmt} <https://fmt.dev>`_::
 
-  pmm(BPT DEPENDS "fmt^7.0.3")
+  pmm(BPT DEPENDENCIES "fmt@7.0.3")
 
 When CMake executes the ``pmm(BPT ...)`` line above, PMM will download the
 appropriate |bpt| executable for your platform, generate
@@ -115,11 +115,10 @@ Like with |bpt|, CMake wants us to explicitly declare how our build targets
 *use* other libraries. After ``pmm(BPT)`` executes, there will be ``IMPORTED``
 targets that can be linked against.
 
-In |bpt| (and in libman), a library is identified by a combination of
-*namespace* and *name*, joined together with a slash ``/`` character. This
-*qualified name* of a library is decided by the original package author or
-maintainer, and should be documented. In the case of ``fmt``, the only library
-is ``fmt/fmt``.
+In |bpt| a library is identified by a combination of *package name* and *library
+name*, joined together with a slash ``/`` character. This *qualified name* of a
+library is decided by the original package author or maintainer, and should be
+documented. In the case of ``fmt``, the only library is ``fmt/fmt``.
 
 When ``pmm(BPT)`` imports a library, it creates a qualified name using a
 double-colon "``::``" instead of a slash. As such, our ``fmt/fmt`` is imported
@@ -141,7 +140,7 @@ In all, this is our final ``CMakeLists.txt``:
   project(MYApplication VERSION 2.1.3)
 
   include(tools/pmm.cmake)
-  pmm(BPT DEPENDS fmt^7.0.3)
+  pmm(BPT DEPENDENCIES fmt@7.0.3)
 
   add_executable(my-application app.cpp)
   target_link_libraries(my-application PRIVATE fmt::fmt)
@@ -154,7 +153,7 @@ Changing Compile Options
 :doc:`toolchains </guide/toolchains>`. PMM supports specifying a toolchain using
 the ``TOOLCHAIN`` argument::
 
-  pmm(BPT DEPENDS fmt^7.0.3 TOOLCHAIN my-toolchain.json5)
+  pmm(BPT DEPENDENCIES fmt@7.0.3 TOOLCHAIN my-toolchain.json5)
 
 Of course, writing a separate toolchain file just for your dependencies can be
 tedious. For this reason, PMM will write a toolchain file on-the-fly when it

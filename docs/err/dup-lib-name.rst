@@ -24,5 +24,5 @@ of the same ``name`` in the same ``namespace``. This issue should be raised
 with the maintainers of the packages in question.
 
 .. seealso::
-    For more information, refer to the :ref:`pkgs.pkgs` section and the
-    :ref:`pkgs.libs` section.
+
+    For more information, refer to the :doc:`/guide/libraries` page.

@@ -6,4 +6,6 @@ Package identifiers in |bpt| must follow a well-defined pattern of
 ``<name>`` follows a few simple rules.
 
 .. seealso::
-    :ref:`pkgs.pkgs` and :ref:`Package Naming Requirements <pkgs.naming-reqs>`
+
+  - :doc:`/guide/projects`
+  - :doc:`/crs/names`.

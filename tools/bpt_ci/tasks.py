@@ -204,7 +204,7 @@ async def __get_catch2() -> Path:
         into.with_suffix('.tmp').rename(into)
     proj_dir = into / '_proj'
     proj_dir.mkdir(exist_ok=True)
-    proj_dir.joinpath('pkg.yaml').write_text(
+    proj_dir.joinpath('bpt.yaml').write_text(
         json.dumps({
             'name':
             'catch2',
@@ -286,7 +286,7 @@ async def _repo_import_pkg(bpt: BPTWrapper, pkg: str, repo_dir: Path) -> None:
     pid = f'{name}@{ver}'
     pulled = paths.PREBUILT_DIR / 'ci-repo' / pid
     assert pulled.is_dir(), pid
-    pulled.joinpath('pkg.yaml').write_text(
+    pulled.joinpath('bpt.yaml').write_text(
         json.dumps({
             'name': name,
             'version': ver,

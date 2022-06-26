@@ -40,8 +40,8 @@ package_info package_info::from_json_data(const json5::data& data) {
         if (crs_version == data.as_object().cend()) {
             throw(semester::walk_error{"A 'schema-version' integer is required"});
         }
-        if (!crs_version->second.is_number() || crs_version->second.as_number() != 1) {
-            throw(semester::walk_error{"Only 'schema-version' == 1 is supported"});
+        if (!crs_version->second.is_number() || crs_version->second.as_number() != 0) {
+            throw(semester::walk_error{"Only 'schema-version' == 0 is supported"});
         }
         return from_json_data_v1(data);
     }
@@ -84,19 +84,7 @@ std::string package_info::to_json(int indent) const noexcept {
                 }));
             }
             json uses = json::array();
-            dep.uses.visit(neo::overload{
-                [&](explicit_uses_list const& l) {
-                    extend(uses, l.uses | std::views::transform(&bpt::name::str));
-                },
-                [&](implicit_uses_all) {
-                    neo_assert(invariant,
-                               false,
-                               "We attempted to serialize (to_json) a CRS metadata object that "
-                               "contains an implicit dependency library uses list. This should "
-                               "never occur.",
-                               *this);
-                },
-            });
+            extend(uses, dep.uses | std::views::transform(&bpt::name::str));
             ret.push_back(json::object({
                 {"name", dep.name.str},
                 {"versions", versions},
@@ -123,7 +111,7 @@ std::string package_info::to_json(int indent) const noexcept {
         {"extra", json5_as_nlohmann_json(extra)},
         {"meta", json5_as_nlohmann_json(meta)},
         {"libraries", std::move(ret_libs)},
-        {"schema-version", 1},
+        {"schema-version", 0},
     });
 
     return indent ? data.dump(indent) : data.dump();

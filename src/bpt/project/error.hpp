@@ -19,7 +19,7 @@ struct e_open_project {
     std::filesystem::path value;
 };
 
-struct e_bad_pkg_yaml_key : e_nonesuch {
+struct e_bad_bpt_yaml_key : e_nonesuch {
     using e_nonesuch::e_nonesuch;
 };
 

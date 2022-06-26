@@ -13,7 +13,7 @@ within the :doc:`Poetry virtual environment <env>`::
 Note that individual tests can take between a few seconds and a few minutes to
 execute, so it may be useful to execute only a subset of the tests based on the
 functionality you want to test. Refer to
-`the pytest documentation <https://docs.pytest.org/en/latest/>` for more
+`the pytest documentation <https://docs.pytest.org/en/latest/>`_ for more
 information about using and executing ``pytest``. If you are running the full
 test suite, you may also want to pass the ``-n`` argument with a number of
 parallel jobs to execute.
@@ -67,7 +67,7 @@ To write a test that checks for a given error-handling path, use the
 
   def test_sdist_invalid_project(tmp_project: Project) -> None:
     # Trying to create a package archive from a project without a
-    # pkg.yaml is invalid. Check that it creates the correct
+    # bpt.yaml is invalid. Check that it creates the correct
     # error-message string
     with error.expect_error_marker('no-package-yaml'):
       tmp_project.pkg_create()

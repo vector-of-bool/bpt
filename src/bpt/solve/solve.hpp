@@ -28,6 +28,11 @@ struct e_nonesuch_package : e_nonesuch {
     using e_nonesuch::e_nonesuch;
 };
 
+struct e_nonesuch_using_library {
+    bpt::name  pkg_name;
+    e_nonesuch lib;
+};
+
 std::vector<crs::pkg_id> solve(crs::cache_db const&, neo::any_input_range<crs::dependency>);
 
 }  // namespace bpt

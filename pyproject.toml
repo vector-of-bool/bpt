@@ -51,3 +51,28 @@ reportMissingImports = true
 
 [tool.doc8]
 max_line_length = 81
+
+[tool.pytest.ini_options]
+junit_log_passing_tests = true
+junit_logging = "all"
+testpaths = [
+    "tests/"
+]
+
+[tool.yapf]
+based_on_style = "pep8"
+column_limit = 120
+
+[tool.pylint.MASTER]
+jobs = 10
+persistent = true
+disable = [
+    "C",
+    "too-few-public-methods",
+    "redefined-outer-name",
+]
+
+[tool.pylint.REPORTS]
+reports = false
+score = true
+output-format = "colorized"

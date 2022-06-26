@@ -1,11 +1,12 @@
 #include "./root.hpp"
 
+#include <bpt/util/tl.hpp>
+
 #include <neo/memory.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 
 #include <neo/ranges.hpp>
-#include <neo/tl.hpp>
 
 using namespace bpt;
 
@@ -23,10 +24,10 @@ bpt::collected_sources bpt::collect_sources(path_ref dirpath) {
     auto state
         = neo::copy_shared(collector_state{dirpath, fs::recursive_directory_iterator{dirpath}});
     return state->dir_iter                                                          //
-        | filter(NEO_TL(_1.is_regular_file()))                                      //
-        | transform([state] NEO_CTL(source_file::from_path(_1, state->base_path)))  //
-        | filter(NEO_TL(_1.has_value()))                                            //
-        | transform([state] NEO_CTL(source_file{std::move(*_1)}))                   //
+        | filter(BPT_TL(_1.is_regular_file()))                                      //
+        | transform([state] BPT_CTL(source_file::from_path(_1, state->base_path)))  //
+        | filter(BPT_TL(_1.has_value()))                                            //
+        | transform([state] BPT_CTL(source_file{std::move(*_1)}))                   //
         ;
 }
 

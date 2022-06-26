@@ -1,17 +1,18 @@
 .. highlight:: cmake
 
 Using |bpt| in a CMake Project
-################################
+##############################
+
+.. default-role:: term
 
 One of |bpt|'s primary goals is to inter-operate with other build systems
-cleanly. Because of CMakes ubiquity, |bpt| includes built-in support for
-emitting files that can be imported into CMake.
+cleanly. Because of `CMake's <CMake>` ubiquity, |bpt| includes built-in support
+for emitting files that can be imported into CMake.
 
 .. seealso::
 
-  Before reading this page, be sure to read the :ref:`build-deps.gen-libman`
-  section of the :doc:`build-deps` page, which will discuss how to use the
-  ``bpt build-deps`` subcommand.
+  Before reading this page, be sure to read the :doc:`build-deps` page, which
+  will discuss how to use the ``bpt build-deps`` subcommand.
 
 .. seealso::
 
@@ -25,9 +26,9 @@ emitting files that can be imported into CMake.
 Generating a CMake Import File
 ******************************
 
-``build-deps`` accepts an ``--lmi-path`` argument, but also accepts a
-``--cmake=<path>`` argument that serves a similar purpose: It will write a CMake
-file to ``<path>`` that can be ``include()``'d into a CMake project:
+``build-deps`` accepts an ``--built-json`` argument, but also accepts a
+``--cmake=<path>`` argument that serves a similar purpose: It will write a
+`CMake` file to ``<path>`` that can be ``include()``'d into a CMake project:
 
 .. code-block:: bash
 
@@ -41,7 +42,7 @@ targets.
 Using the CMake Import File
 ===========================
 
-Once we have generated the CMake import file using ``bpt build-deps``, we can
+Once we have generated the `CMake` import file using ``bpt build-deps``, we can
 simply import it in our ``CMakeLists.txt``::
 
   include(deps.cmake)
@@ -50,11 +51,10 @@ Like with |bpt|, CMake wants us to explicitly declare how our build targets
 *use* other libraries. When we ``include()`` the generated CMake file, it will
 generate ``IMPORTED`` targets that can be linked against.
 
-In |bpt| (and in libman), a library is identified by a combination of
-*namespace* and *name*, joined together with a slash ``/`` character. This
-*qualified name* of a library is decided by the original package author, and
-should be documented. In the case of ``neo-sqlite3``, the only library is
-``neo/sqlite3``.
+In |bpt|, a library is identified by a combination of *namespace* and *name*,
+joined together with a slash ``/`` character. This *qualified name* of a library
+is decided by the original package author, and should be documented. In the case
+of ``neo-sqlite3``, the only library is ``neo/sqlite3``.
 
 When the generated import file imports a library, it creates a qualified name
 using a double-colon "``::``" instead of a slash. As such, our ``neo/sqlite3``
@@ -71,7 +71,7 @@ with any other target::
 ************************
 
 `PMM`_ is the *package package manager*, and can be used to control and access
-package managers from within CMake scripts. This includes controlling |bpt|.
+package managers from within `CMake` scripts. This includes controlling |bpt|.
 With PMM, we can automate all of the previous steps into a single line.
 
 For a complete rundown on using PMM to get dependencies via |bpt|, refer to

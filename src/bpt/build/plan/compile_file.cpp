@@ -18,10 +18,7 @@ compile_command_info compile_file_plan::generate_compile_command(build_env_ref e
     spec.enable_warnings = _rules.enable_warnings();
     spec.syntax_only     = _rules.syntax_only();
     for (auto dirpath : _rules.include_dirs()) {
-        if (!dirpath.is_absolute()) {
-            dirpath = env.output_root / dirpath;
-        }
-        dirpath = fs::weakly_canonical(dirpath);
+        dirpath = bpt::resolve_path_weak(dirpath);
         spec.include_dirs.push_back(std::move(dirpath));
     }
     for (const auto& use : _rules.uses()) {

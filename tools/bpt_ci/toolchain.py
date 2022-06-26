@@ -2,7 +2,7 @@ import json
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Mapping, MutableSequence
+from typing import Iterator, Mapping, MutableSequence, cast
 
 import json5
 
@@ -25,8 +25,10 @@ def fixup_toolchain(json_file: Pathish) -> Iterator[Path]:
     if ccache and data.get('compiler_id') in ('gnu', 'clang'):
         data['compiler_launcher'] = [str(ccache)]  # type: ignore
     # Check for lld for use with GCC/Clang
-    if paths.find_exe('ld.lld') and data.get('compiler_id') in ('gnu', 'clang'):
-        link_flags = data.setdefault('link_flags', [])
+    link_flags = cast('list[str]', data.setdefault('link_flags', []))
+    assert isinstance(link_flags, list) and all(isinstance(flag, str) for flag in link_flags)
+    uses_lto = any(flag.startswith('-flto') for flag in link_flags)
+    if not uses_lto and paths.find_exe('ld.lld') and data.get('compiler_id') in ('gnu', 'clang'):
         assert isinstance(link_flags, MutableSequence), link_flags
         link_flags.append('-fuse-ld=lld')
     # Save the new toolchain data

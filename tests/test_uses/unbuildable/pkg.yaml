@@ -1,7 +1,0 @@
-{
-    name: 'unbuildable',
-    version: '0.0.0',
-    lib: {
-        name: "fails_to_build"
-    }
-}

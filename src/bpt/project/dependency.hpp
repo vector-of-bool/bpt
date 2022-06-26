@@ -27,7 +27,7 @@ struct project_dependency {
     /// A set of version ranges that are acceptable
     crs::version_range_set acceptable_versions;
     /// Libraries from the dependency that will be explicitly used
-    std::optional<std::vector<bpt::name>> explicit_uses = std::nullopt;
+    std::vector<bpt::name> using_{};
 
     static project_dependency parse_dep_range_shorthand(std::string_view sv);
     static project_dependency from_shorthand_string(std::string_view sv);

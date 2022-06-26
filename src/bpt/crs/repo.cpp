@@ -2,11 +2,13 @@
 
 #include "./error.hpp"
 
+#include <bpt/dym.hpp>
 #include <bpt/error/handle.hpp>
 #include <bpt/error/on_error.hpp>
 #include <bpt/error/result.hpp>
 #include <bpt/error/try_catch.hpp>
 #include <bpt/sdist/dist.hpp>
+#include <bpt/solve/solve.hpp>  // for e_nonesuch_package
 #include <bpt/temp.hpp>
 #include <bpt/util/compress.hpp>
 #include <bpt/util/db/migrate.hpp>
@@ -17,8 +19,10 @@
 
 #include <neo/event.hpp>
 #include <neo/memory.hpp>
+#include <neo/ranges.hpp>
 #include <neo/sqlite3/database.hpp>
 #include <neo/sqlite3/error.hpp>
+#include <neo/sqlite3/exec.hpp>
 #include <neo/sqlite3/transaction.hpp>
 #include <neo/tar/util.hpp>
 #include <neo/ufmt.hpp>
@@ -147,6 +151,7 @@ void repository::import_dir(path_ref dirpath) {
 
     auto tmp_tgz = pkg_dir() / (prep_dir.path().filename().string() + ".tgz");
     neo::compress_directory_targz(prep_dir.path(), tmp_tgz);
+    neo_defer { std::ignore = ensure_absent(tmp_tgz); };
 
     if (pkg.id.revision < 1) {
         BOOST_LEAF_THROW_EXCEPTION(e_repo_import_invalid_pkg_version{
@@ -177,7 +182,31 @@ void repository::import_dir(path_ref dirpath) {
 }
 
 neo::any_input_range<package_info> repository::all_packages() const {
-    auto& q   = _prepare("SELECT meta_json FROM crs_repo_packages ORDER BY package_id"_sql);
+    auto& q   = _prepare(R"(
+        SELECT meta_json
+        FROM crs_repo_packages AS this
+        ORDER BY package_id
+    )"_sql);
+    auto  rst = neo::copy_shared(q.auto_reset());
+    return db_query<std::string_view>(q)
+        | std::views::transform([pin = rst](auto tup) -> package_info {
+               auto [json_str] = tup;
+               return package_info::from_json_str(json_str);
+           });
+}
+
+neo::any_input_range<package_info> repository::all_latest_rev_packages() const {
+    auto& q   = _prepare(R"(
+        SELECT meta_json
+        FROM crs_repo_packages AS this
+        WHERE NOT EXISTS(
+            SELECT 1 FROM crs_repo_packages AS other
+            WHERE other.pkg_version > this.pkg_version
+                AND other.version = this.version
+                AND other.name = this.name
+        )
+        ORDER BY package_id
+    )"_sql);
     auto  rst = neo::copy_shared(q.auto_reset());
     return db_query<std::string_view>(q)
         | std::views::transform([pin = rst](auto tup) -> package_info {
@@ -188,16 +217,24 @@ neo::any_input_range<package_info> repository::all_packages() const {
 
 void repository::remove_pkg(const package_info& meta) {
     auto to_delete = subdir_of(meta);
-    db_exec(_prepare(R"(
+    auto rows      = neo::sqlite3::exec_rows(_prepare(R"(
                 DELETE FROM crs_repo_packages
                  WHERE name = ?1
                        AND version = ?2
-                       AND (pkg_version = ?3
-                            OR ?3 = 0)
+                       AND (pkg_version = ?3)
+             RETURNING 1
             )"_sql),
-            meta.id.name.str,
-            meta.id.version.to_string(),
-            meta.id.revision)
-        .value();
+                                        meta.id.name.str,
+                                        meta.id.version.to_string(),
+                                        meta.id.revision)
+                    .value();
+    auto n_deleted = std::ranges::distance(rows);
+    if (n_deleted == 0) {
+        auto req_id  = meta.id.to_string();
+        auto all_ids = this->all_packages() | neo::lref
+            | std::views::transform([](auto inf) { return inf.id.to_string(); }) | neo::to_vector;
+        BOOST_LEAF_THROW_EXCEPTION(bpt::e_nonesuch_package{req_id, did_you_mean(req_id, all_ids)});
+    }
+    bpt_log(debug, "Deleting subdirectory [{}]", to_delete.string());
     ensure_absent(to_delete).value();
 }

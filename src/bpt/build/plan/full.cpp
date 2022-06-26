@@ -8,6 +8,7 @@
 #include <bpt/error/on_error.hpp>
 #include <bpt/util/log.hpp>
 #include <bpt/util/parallel.hpp>
+#include <bpt/util/tl.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <neo/tl.hpp>
@@ -78,8 +79,8 @@ void build_plan::compile_files(const build_env&             env,
 
     // Make an error if there are any unmarked files
     auto missing_files = as_pending  //
-        | ranges::views::filter(NEO_TL(!_1.marked))
-        | ranges::views::transform(NEO_TL(e_nonesuch{_1.filepath.string(), std::nullopt}))
+        | ranges::views::filter(BPT_TL(!_1.marked))
+        | ranges::views::transform(BPT_TL(e_nonesuch{_1.filepath.string(), std::nullopt}))
         | ranges::to_vector;
 
     if (!missing_files.empty()) {

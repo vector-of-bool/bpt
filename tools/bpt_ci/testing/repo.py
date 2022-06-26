@@ -41,6 +41,16 @@ class CRSRepo:
         if validate:
             self.validate()
 
+    def remove(self, name: str, if_missing: Literal[None, 'ignore', 'fail'] = None) -> None:
+        self.bpt.run([
+            '-ldebug',
+            'repo',
+            'remove',
+            self.path,
+            name,
+            (() if if_missing is None else f'--if-missing={if_missing}'),
+        ])
+
     def validate(self) -> None:
         self.bpt.run(['repo', 'validate', self.path, '-ldebug'])
 
@@ -100,7 +110,7 @@ def http_crs_repo(tmp_crs_repo: CRSRepo, http_server_factory: HTTPServerFactory)
 def make_simple_crs(name: str, version: str, *, pkg_version: int = 1) -> Any:
     return {
         'schema-version':
-        1,
+        0,
         'name':
         name,
         'version':

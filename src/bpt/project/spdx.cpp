@@ -2,12 +2,12 @@
 
 #include <bpt/error/on_error.hpp>
 #include <bpt/util/string.hpp>
+#include <bpt/util/tl.hpp>
 #include <bpt/util/wrap_var.hpp>
 
 #include <boost/leaf/exception.hpp>
 #include <neo/memory.hpp>
 #include <neo/opt_ref.hpp>
-#include <neo/tl.hpp>
 #include <neo/ufmt.hpp>
 #include <neo/utility.hpp>
 
@@ -61,7 +61,7 @@ std::string_view next_token(std::string_view sv) {
 
 template <typename T>
 neo::opt_ref<const T> find_with_id(std::string_view id) {
-    auto found = std::ranges::lower_bound(T::all, id, std::less<>{}, NEO_TL(_1.id));
+    auto found = std::ranges::lower_bound(T::all, id, std::less<>{}, BPT_TL(_1.id));
     if (found == std::ranges::end(T::all) || found->id != id) {
         return std::nullopt;
     }

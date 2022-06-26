@@ -1,6 +1,7 @@
 #include "./argument.hpp"
 
 #include <neo/ufmt.hpp>
+#include <neo/utility.hpp>
 
 #include <fmt/color.h>
 
@@ -48,8 +49,8 @@ std::string argument::syntax_string() const noexcept {
     std::string ret;
     auto        pref_spell   = preferred_spelling();
     auto        real_valname = !valname.empty()
-        ? valname
-        : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
+               ? valname
+               : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
     if (is_positional()) {
         if (required) {
             if (can_repeat) {
@@ -121,4 +122,39 @@ std::string argument::help_string() const noexcept {
     ret.push_back('\n');
 
     return ret;
+}
+
+bool debate::parse_bool_string(std::string_view sv) {
+    if (sv
+        == neo::oper::any_of("y",  //
+                             "Y",
+                             "yes",
+                             "YES",
+                             "Yes",
+                             "true",
+                             "TRUE",
+                             "True",
+                             "on",
+                             "ON",
+                             "On",
+                             "1")) {
+        return true;
+    } else if (sv
+               == neo::oper::any_of("n",
+                                    "N",
+                                    "no",
+                                    "NO",
+                                    "No",
+                                    "false",
+                                    "FALSE",
+                                    "False",
+                                    "off",
+                                    "OFF",
+                                    "Off",
+                                    "0")) {
+        return false;
+    } else {
+        BOOST_LEAF_THROW_EXCEPTION(invalid_arguments("Invalid string for boolean/toggle option"),
+                                   e_invalid_arg_value{std::string(sv)});
+    }
 }

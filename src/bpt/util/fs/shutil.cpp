@@ -6,6 +6,7 @@
 #include <bpt/error/result.hpp>
 #include <bpt/error/try_catch.hpp>
 #include <bpt/temp.hpp>
+#include <bpt/util/log.hpp>
 
 #include <neo/ufmt.hpp>
 
@@ -16,9 +17,18 @@ using namespace bpt;
 result<void> bpt::ensure_absent(path_ref path) noexcept {
     BPT_E_SCOPE(e_remove_file{path});
     std::error_code ec;
+    bpt_log(trace, "Recursive ensure-absent [{}]", path.string());
     fs::remove_all(path, ec);
-    if (ec && ec != std::errc::no_such_file_or_directory) {
-        return new_error(ec);
+    if (ec) {
+        const bool is_enoent = ec == std::errc::no_such_file_or_directory;
+        bpt_log(trace,
+                "  Ensure-absent error while removing [{}]: {}{}",
+                path.string(),
+                ec.message(),
+                is_enoent ? " (Ignoring this error)" : "");
+        if (not is_enoent) {
+            return new_error(ec);
+        }
     }
     return {};
 }
@@ -44,7 +54,7 @@ result<void> bpt::move_file(path_ref source, path_ref dest) {
     }
 
     if (ec != std::errc::cross_device_link && ec != std::errc::permission_denied) {
-        BOOST_LEAF_NEW_ERROR();
+        return BOOST_LEAF_NEW_ERROR();
     }
 
     auto tmp = bpt_leaf_try_some { return bpt::temporary_dir::create_in(dest.parent_path()); }

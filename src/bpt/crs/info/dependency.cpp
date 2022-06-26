@@ -76,12 +76,7 @@ std::string bpt::crs::dependency::decl_to_string() const noexcept {
         }
         strm << "]";
     }
-    uses.visit(neo::overload{
-        [&](implicit_uses_all) { strm << "/*"; },
-        [&](explicit_uses_list const& u) {
-            strm << '/' << joinstr(",", u.uses | std::views::transform(&bpt::name::str));
-        },
-    });
+    strm << '/' << joinstr(",", uses | std::views::transform(&bpt::name::str));
     return strm.str();
 }
 
@@ -143,7 +138,7 @@ dependency dependency::from_data(const json5::data& data) {
             pubgrub::interval_set<semver::version>{ver.low(), ver.high()});
     }
 
-    ret.uses = explicit_uses_list{std::move(uses)};
+    ret.uses = std::move(uses);
 
     return ret;
 }

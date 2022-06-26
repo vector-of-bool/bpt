@@ -14,4 +14,5 @@ Test execution can be suppressed using the ``--no-tests`` command line option
 with the ``build`` subcommand.
 
 .. seealso::
-    Refer to the page on :ref:`pkgs.apps-tests`.
+
+    :doc:`/guide/tests`.
