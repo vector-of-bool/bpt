@@ -1,10 +1,5 @@
 # Refer: https://aka.ms/yaml
 
-variables:
-  shouldDeploy: >-
-    ${{ eq(variables['Build.SourceBranch'], 'refs/heads/master') }}
-  deployDest: ${{ format('~/web/{0}/', variables['Build.SourceBranchName']) }}
-
 stages:
   - stage: build_test
     displayName: Build and Test
@@ -14,6 +9,9 @@ stages:
         pool:
           vmImage: windows-2019
         steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: 3.8
           - pwsh: tools\get-win-openssl.ps1
             displayName: Get OpenSSL for Windows
           - script: python -m pip install poetry && poetry install --no-dev
@@ -23,8 +21,8 @@ stages:
               call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\vsdevcmd" -arch=x64 || exit 1
               echo Executing Build and Tests
               reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f || exit 1
-              poetry run dds-ci || exit 1
-              move _build\dds.exe _build\dds-win-x64.exe || exit 1
+              poetry run dagon ci || exit 1
+              move _build\bpt.exe _build\bpt-win-x64.exe || exit 1
             displayName: Build and Test
           - task: PublishTestResults@2
             displayName: Publish Tests
@@ -33,14 +31,14 @@ stages:
               testResultsFiles: '**/pytest-junit.xml'
               failTaskOnFailedTests: true
               testRunTitle: Windows Tests
-          - publish: _build\dds-win-x64.exe
+          - publish: _build\bpt-win-x64.exe
             displayName: Publish
-            artifact: dds-win-x64
+            artifact: bpt-win-x64
 
-      - job: linux_gcc9
-        displayName: Linux - GCC 9
+      - job: linux_gcc10
+        displayName: Linux - GCC 10
         pool:
-          vmImage: ubuntu-18.04
+          vmImage: ubuntu-20.04
         steps:
           - script: make alpine-static-ci
             displayName: Build and Test
@@ -51,17 +49,17 @@ stages:
               testResultsFiles: '**/pytest-junit.xml'
               failTaskOnFailedTests: true
               testRunTitle: Linux Tests
-          - publish: _build/dds-linux-x64
+          - publish: _build/bpt-linux-x64
             displayName: Publish
-            artifact: dds-linux-x64
+            artifact: bpt-linux-x64
 
-      - job: macos_gcc9
-        displayName: macOS - GCC 9
+      - job: macos_gcc10
+        displayName: macOS - GCC 10
         pool:
           vmImage: macOS-10.15
         steps:
-          - script: brew install gcc@9 ccache
-            displayName: Get GCC 9
+          - script: brew install gcc@10 ccache
+            displayName: Get GCC 10
           - script: brew install openssl@1.1
             displayName: Install OpenSSL
           - script: python3 -m pip install poetry
@@ -75,32 +73,6 @@ stages:
               testResultsFiles: '**/pytest-junit.xml'
               failTaskOnFailedTests: true
               testRunTitle: macOS Tests
-          - publish: _build/dds-macos-x64
+          - publish: _build/bpt-macos-x64
             displayName: Publish
-            artifact: dds-macos-x64
-
-  - stage: deploy_build
-    displayName: Deploy
-    condition: and(succeeded(), eq(variables.shouldDeploy, 'true'))
-    jobs:
-      - job: deploy
-        displayName: Deploy (${{variables['Build.SourceBranch']}})
-        steps:
-          - checkout: none
-          - task: DownloadPipelineArtifact@2
-            displayName: Download builds
-            inputs:
-              targetPath: art-dirs/
-          - bash: |
-              set -eu
-              mkdir -p art/
-              mv -- $(find art-dirs/ -type f) art/
-            displayName: Rearrange
-          - task: CopyFilesOverSSH@0
-            displayName: Post builds
-            inputs:
-              sshEndpoint: dds.pizza
-              sourceFolder: art/
-              targetFolder: ${{ variables.deployDest }}
-              failOnEmptySource: true
-              overwrite: true
+            artifact: bpt-macos-x64

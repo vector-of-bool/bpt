@@ -24,32 +24,32 @@ struct missing_required : invalid_arguments {
     using invalid_arguments::invalid_arguments;
 };
 
-struct invalid_repitition : invalid_arguments {
+struct invalid_repetition : invalid_arguments {
     using invalid_arguments::invalid_arguments;
 };
 
 struct e_argument {
-    const debate::argument& argument;
+    const debate::argument& value;
 };
 
 struct e_argument_parser {
-    const debate::argument_parser& parser;
+    const debate::argument_parser& value;
 };
 
 struct e_invalid_arg_value {
-    std::string given;
+    std::string value;
 };
 
 struct e_wrong_val_num {
-    int n_given;
+    int value;
 };
 
 struct e_arg_spelling {
-    std::string spelling;
+    std::string value;
 };
 
 struct e_did_you_mean {
-    std::string candidate;
+    std::string value;
 };
 
 }  // namespace debate

@@ -5,16 +5,19 @@ import pytest
 from _pytest.config import Config as PyTestConfig
 
 # Ensure the fixtures are registered with PyTest:
-from dds_ci.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import
-from dds_ci.testing.http import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from bpt_ci.testing.fs import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from bpt_ci.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from bpt_ci.testing.http import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from bpt_ci.testing.repo import *  # pylint: disable=wildcard-import,unused-wildcard-import
 
 
 def pytest_addoption(parser: Any) -> None:
     parser.addoption('--test-deps',
                      action='store_true',
                      default=False,
-                     help='Run the exhaustive and intensive dds-deps tests')
-    parser.addoption('--dds-exe', help='Path to the dds executable under test', type=Path)
+                     help='Run the exhaustive and intensive bpt-deps tests')
+    parser.addoption('--bpt-exe', help='Path to the bpt executable under test', type=Path)
+    parser.addoption('--git-exe', help='Path to the git executable', type=Path)
 
 
 def pytest_configure(config: Any) -> None:

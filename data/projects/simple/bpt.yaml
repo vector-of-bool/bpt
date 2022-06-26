@@ -1,0 +1,9 @@
+# prettier-ignore
+{
+    "name": "simple",
+    "version": "1.2.3",
+    "libraries": [{
+        "name": "simple",
+        "path": "."
+    }],
+}

@@ -7,9 +7,14 @@
     "warning_flags": [
         "-Werror",
     ],
+    "cxx_flags": [
+        "-fcoroutines",
+    ],
     "link_flags": [
         "-static-libgcc",
-        "-static-libstdc++"
+        "-static-libstdc++",
+        "-l:libssl.a",
+        "-l:libcrypto.a",
     ],
     "optimize": true
 }

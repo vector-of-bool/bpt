@@ -1,10 +1,131 @@
-DDS CI Scripts Python API
-#########################
+|bpt| CI Scripts Python API
+###########################
 
-Types from pytest
-*****************
+Test Fixtures
+*************
 
-These types are defined by pytest, but are used extensively within the testing
+The following test fixtures are defined:
+
+- :func:`~bpt_ci.testing.fixtures.bpt` - :class:`bpt_ci.bpt.BPTWrapper` - A
+  wrapper around the |bpt| executable under test.
+- :func:`~bpt_ci.testing.fixtures.tmp_project` -
+  :class:`bpt_ci.testing.fixtures.Project` - Create a new empty directory to be
+  used as a test project for |bpt| to execute.
+- :func:`~bpt_ci.testing.repo.http_crs_repo` -
+  :class:`bpt_ci.testing.repo.CRSRepoServer` - Create a new bpt repository and
+  spawn an HTTP server to serve it.
+
+
+Module: ``bpt_ci``
+******************
+
+.. automodule:: bpt_ci
+  :members:
+
+
+
+Module: ``bpt_ci.bootstrap``
+****************************
+
+.. automodule:: bpt_ci.bootstrap
+  :members:
+
+
+Module: ``bpt_ci.bpt``
+**********************
+
+.. automodule:: bpt_ci.bpt
+  :members:
+
+
+Module: ``bpt_ci.docs``
+***********************
+
+.. automodule:: bpt_ci.docs
+  :members:
+
+
+Module: ``bpt_ci.msvs``
+***********************
+
+.. automodule:: bpt_ci.msvs
+  :members:
+
+
+Module: ``bpt_ci.paths``
+************************
+
+.. automodule:: bpt_ci.paths
+  :members:
+
+
+Module: ``bpt_ci.proc``
+***********************
+
+.. automodule:: bpt_ci.proc
+  :members:
+
+
+Module: ``bpt_ci.util``
+***********************
+
+.. automodule:: bpt_ci.util
+  :members:
+
+
+Module: ``bpt_ci.toolchain``
+****************************
+
+.. automodule:: bpt_ci.toolchain
+  :members:
+
+
+Module: ``bpt_ci.testing``
+**************************
+
+.. automodule:: bpt_ci.testing
+  :members:
+
+
+Module: ``bpt_ci.testing.error``
+********************************
+
+.. automodule:: bpt_ci.testing.error
+  :members:
+
+
+Module: ``bpt_ci.testing.fixtures``
+***********************************
+
+.. automodule:: bpt_ci.testing.fixtures
+  :members:
+
+
+Module: ``bpt_ci.testing.fs``
+***********************************
+
+.. automodule:: bpt_ci.testing.fs
+  :members:
+
+
+Module: ``bpt_ci.testing.http``
+*******************************
+
+.. automodule:: bpt_ci.testing.http
+  :members:
+
+
+Module: ``bpt_ci.testing.repo``
+***********************************
+
+.. automodule:: bpt_ci.testing.repo
+  :members:
+
+
+External Types to Know
+**********************
+
+These types are defined externally and arg used extensively throughout the CI
 scripts.
 
 .. class:: _pytest.fixtures.FixtureRequest
@@ -15,65 +136,16 @@ scripts.
 
   .. seealso:: :class:`pytest.TempPathFactory`
 
+.. class:: _pytest.config.Config
 
-Test Fixtures
-*************
+  .. seealso:: :class:`pytest.Config`
 
-The following test fixtures are defined:
+.. class:: Pathish
 
-- :func:`~dds_ci.testing.fixtures.dds` - :class:`dds_ci.dds.DDSWrapper` - A
-  wrapper around the ``dds`` executable under test.
-- :func:`~dds_ci.testing.fixtures.tmp_project` -
-  :class:`dds_ci.testing.fixtures.Project` - Create a new empty directory to be
-  used as a test project for ``dds`` to execute.
-- :func:`~dds_ci.testing.http.http_repo` -
-  :class:`dds_ci.testing.http.RepoServer` - Create a new dds repository and
-  spawn an HTTP server to serve it.
+  A type alias for objects that can be treated as paths. Includes any subclass
+  of `PurePath`. `str`, and types providing an ``__fspath__`` method.
 
-Module: ``dds_ci``
-******************
+.. class:: dagon.proc.CommandLine
 
-.. automodule:: dds_ci
-  :members:
-
-
-Module: ``dds_ci.dds``
-**********************
-
-.. automodule:: dds_ci.dds
-  :members:
-
-
-Module: ``dds_ci.proc``
-***********************
-
-.. automodule:: dds_ci.proc
-  :members:
-
-
-Module: ``dds_ci.testing``
-**************************
-
-.. automodule:: dds_ci.testing
-  :members:
-
-
-Module: ``dds_ci.testing.http``
-*******************************
-
-.. automodule:: dds_ci.testing.http
-  :members:
-
-
-Module: ``dds_ci.testing.fixtures``
-***********************************
-
-.. automodule:: dds_ci.testing.fixtures
-  :members:
-
-
-Module: ``dds_ci.testing.error``
-********************************
-
-.. automodule:: dds_ci.testing.error
-  :members:
+  A sequence of command-line-argument compatible types, including `Pathish`,
+  `int`, `float`, and recursive `CommandLine` arrays.

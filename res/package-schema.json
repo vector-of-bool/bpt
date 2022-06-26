@@ -37,6 +37,12 @@
                 "type": "string"
             }
         },
+        "test_depends": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
         "test_driver": {
             "type": "string",
             "default": "Catch-Main",

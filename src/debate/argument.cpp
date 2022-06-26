@@ -1,5 +1,8 @@
 #include "./argument.hpp"
 
+#include <neo/ufmt.hpp>
+#include <neo/utility.hpp>
+
 #include <fmt/color.h>
 
 using namespace debate;
@@ -44,25 +47,46 @@ std::string argument::preferred_spelling() const noexcept {
 
 std::string argument::syntax_string() const noexcept {
     std::string ret;
-    if (!required) {
-        ret.push_back('[');
-    }
+    auto        pref_spell   = preferred_spelling();
+    auto        real_valname = !valname.empty()
+               ? valname
+               : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
     if (is_positional()) {
-        ret.append(preferred_spelling());
-    } else {
-        ret.append(preferred_spelling());
-        if (nargs != 0) {
-            auto real_valname = !valname.empty()
-                ? valname
-                : (long_spellings.empty() ? "<value>" : ("<" + long_spellings[0] + ">"));
-            ret.append(fmt::format(" {}", valname.empty() ? "<value>" : valname));
+        if (required) {
+            if (can_repeat) {
+                ret.append(neo::ufmt("{} [{} [...]]", real_valname, real_valname));
+            } else {
+                ret.append(real_valname);
+            }
+        } else {
+            if (can_repeat) {
+                ret.append(neo::ufmt("[{} [{} [...]]]", real_valname, real_valname));
+            } else {
+                ret.append(neo::ufmt("[{}]", real_valname));
+            }
         }
-    }
-    if (can_repeat) {
-        ret.append(" ...");
-    }
-    if (!required) {
-        ret.push_back(']');
+    } else if (nargs != 0) {
+        char sep_char = pref_spell.starts_with("--") ? '=' : ' ';
+        if (required) {
+            ret.append(neo::ufmt("{}{}{}", pref_spell, sep_char, real_valname));
+            if (can_repeat) {
+                ret.append(neo::ufmt(" [{}{}{} [...]]", pref_spell, sep_char, real_valname));
+            }
+        } else {
+            if (can_repeat) {
+                ret.append(neo::ufmt("[{}{}{} [{}{}{} [...]]]",
+                                     pref_spell,
+                                     sep_char,
+                                     real_valname,
+                                     pref_spell,
+                                     sep_char,
+                                     real_valname));
+            } else {
+                ret.append(neo::ufmt("[{}{}{}]", pref_spell, sep_char, real_valname));
+            }
+        }
+    } else {
+        ret.append(neo::ufmt("[{}]", pref_spell));
     }
     return ret;
 }
@@ -98,4 +122,39 @@ std::string argument::help_string() const noexcept {
     ret.push_back('\n');
 
     return ret;
+}
+
+bool debate::parse_bool_string(std::string_view sv) {
+    if (sv
+        == neo::oper::any_of("y",  //
+                             "Y",
+                             "yes",
+                             "YES",
+                             "Yes",
+                             "true",
+                             "TRUE",
+                             "True",
+                             "on",
+                             "ON",
+                             "On",
+                             "1")) {
+        return true;
+    } else if (sv
+               == neo::oper::any_of("n",
+                                    "N",
+                                    "no",
+                                    "NO",
+                                    "No",
+                                    "false",
+                                    "FALSE",
+                                    "False",
+                                    "off",
+                                    "OFF",
+                                    "Off",
+                                    "0")) {
+        return false;
+    } else {
+        BOOST_LEAF_THROW_EXCEPTION(invalid_arguments("Invalid string for boolean/toggle option"),
+                                   e_invalid_arg_value{std::string(sv)});
+    }
 }

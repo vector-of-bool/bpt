@@ -1,5 +1,5 @@
-from dds_ci.testing.fixtures import ProjectOpener
-from dds_ci import paths, proc
+from bpt_ci.testing.fixtures import ProjectOpener
+from bpt_ci import paths, proc
 
 
 def test_lib_with_tweaks(project_opener: ProjectOpener) -> None:

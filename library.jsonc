@@ -1,6 +1,6 @@
 {
     "$schema": "./res/library-schema.json",
-    "name": "dds",
+    "name": "bpt",
     "uses": [
         "spdlog/spdlog",
         "microsoft/wil",
@@ -22,5 +22,6 @@
         "zlib/zlib",
         "neo/compress",
         "neargye/magic_enum",
+        "yaml-cpp/yaml-cpp",
     ]
 }

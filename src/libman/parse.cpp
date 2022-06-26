@@ -1,5 +1,6 @@
 #include "./parse.hpp"
 
+#include <bpt/util/fs/io.hpp>
 #include <libman/util.hpp>
 
 #include <fmt/core.h>
@@ -74,10 +75,10 @@ pair_list lm::parse_string(std::string_view s) {
     return pair_list(std::move(pairs));
 }
 
-lm::pair_list lm::parse_file(fs::path fpath) { return parse_string(dds::slurp_file(fpath)); }
+lm::pair_list lm::parse_file(fs::path fpath) { return parse_string(bpt::read_file(fpath)); }
 
 void lm::write_pairs(fs::path fpath, const std::vector<pair>& pairs) {
-    auto fstream = dds::open(fpath, std::ios::out | std::ios::binary);
+    auto fstream = bpt::open_file(fpath, std::ios::out | std::ios::binary);
     for (auto& pair : pairs) {
         fstream << pair.key << ": " << pair.value << '\n';
     }

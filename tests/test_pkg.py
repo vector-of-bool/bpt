@@ -1,12 +1,13 @@
+import json
+import tarfile
 import pytest
 from pathlib import Path
-from typing import Tuple
-import subprocess
+
 import platform
 
-from dds_ci import proc
-from dds_ci.dds import DDSWrapper
-from dds_ci.testing import ProjectOpener, Project, error
+from bpt_ci.bpt import BPTWrapper
+from bpt_ci.testing import ProjectOpener, Project, error, CRSRepo
+from bpt_ci.util import read_tarfile_member
 
 
 @pytest.fixture()
@@ -17,7 +18,7 @@ def test_project(project_opener: ProjectOpener) -> Project:
 def test_create_pkg(test_project: Project, tmp_path: Path) -> None:
     # Create in the default location
     test_project.pkg_create()
-    sd_dir = test_project.build_root / 'foo@1.2.3.tar.gz'
+    sd_dir = test_project.build_root / 'foo@1.2.3~1.tar.gz'
     assert sd_dir.is_file(), 'Did not create an sdist in the default location'
     # Create in a different location
     dest = tmp_path / 'dummy.tar.gz'
@@ -25,82 +26,138 @@ def test_create_pkg(test_project: Project, tmp_path: Path) -> None:
     assert dest.is_file(), 'Did not create an sdist in the new location'
 
 
-@pytest.fixture()
-def _test_pkg(test_project: Project) -> Tuple[Path, Project]:
-    repo_content_path = test_project.dds.repo_dir / 'foo@1.2.3'
-    assert not repo_content_path.is_dir()
+def test_create_pkg_already_exists_fails(test_project: Project) -> None:
     test_project.pkg_create()
-    assert not repo_content_path.is_dir()
-    return test_project.build_root / 'foo@1.2.3.tar.gz', test_project
+    with error.expect_error_marker('sdist-already-exists'):
+        test_project.pkg_create()
 
 
-def test_import_sdist_archive(_test_pkg: Tuple[Path, Project]) -> None:
-    sdist, project = _test_pkg
-    repo_content_path = project.dds.repo_dir / 'foo@1.2.3'
-    project.dds.pkg_import(sdist)
-    assert repo_content_path.is_dir(), \
-        'The package did not appear in the local cache'
-    assert repo_content_path.joinpath('library.jsonc').is_file(), \
-        'The package\'s library.jsonc did not get imported'
-    # Excluded file will not be in the sdist:
-    assert not repo_content_path.joinpath('other-file.txt').is_file(), \
-        'Non-package content appeared in the package cache'
+def test_create_pkg_already_exists_fails_with_explicit_fail(test_project: Project) -> None:
+    test_project.pkg_create()
+    with error.expect_error_marker('sdist-already-exists'):
+        test_project.pkg_create(if_exists='fail')
 
 
-@pytest.mark.skipif(platform.system() == 'Windows',
-                    reason='Windows has trouble reading packages from stdin. Need to investigate.')
-def test_import_sdist_stdin(_test_pkg: Tuple[Path, Project]) -> None:
-    sdist, project = _test_pkg
-    pipe = subprocess.Popen(
-        list(proc.flatten_cmd([
-            project.dds.path,
-            project.dds.cache_dir_arg,
-            'pkg',
-            'import',
-            '--stdin',
-        ])),
-        stdin=subprocess.PIPE,
-    )
-    assert pipe.stdin
-    with sdist.open('rb') as sdist_bin:
-        buf = sdist_bin.read(1024)
-        while buf:
-            pipe.stdin.write(buf)
-            buf = sdist_bin.read(1024)
-        pipe.stdin.close()
-
-    rc = pipe.wait()
-    assert rc == 0, 'Subprocess failed'
-    _check_import(project.dds.repo_dir / 'foo@1.2.3')
+def test_create_pkg_already_exists_succeeds_with_ignore(test_project: Project) -> None:
+    test_project.pkg_create()
+    test_project.pkg_create(if_exists='ignore')
 
 
-def test_import_sdist_dir(test_project: Project) -> None:
-    test_project.dds.run(['pkg', 'import', test_project.dds.cache_dir_arg, test_project.root])
-    _check_import(test_project.dds.repo_dir / 'foo@1.2.3')
-
-
-def _check_import(repo_content_path: Path) -> None:
-    assert repo_content_path.is_dir(), \
-        'The package did not appear in the local cache'
-    assert repo_content_path.joinpath('library.jsonc').is_file(), \
-        'The package\'s library.jsonc did not get imported'
-    # Excluded file will not be in the sdist:
-    assert not repo_content_path.joinpath('other-file.txt').is_file(), \
-        'Non-package content appeared in the package cache'
+def test_create_pkg_already_exists_succeeds_with_replace(test_project: Project) -> None:
+    sd_path: Path = test_project.build_root / 'foo@1.2.3~1.tar.gz'
+    test_project.build_root.mkdir(exist_ok=True, parents=True)
+    sd_path.touch()
+    test_project.pkg_create(if_exists='replace')
+    assert sd_path.stat().st_size > 0, 'Did not replace the existing file'
 
 
 def test_sdist_invalid_project(tmp_project: Project) -> None:
-    with error.expect_error_marker('no-package-json5'):
+    with error.expect_error_marker('no-pkg-meta-files'):
         tmp_project.pkg_create()
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='We know this fails on Linux')
-def test_sdist_unreadable_dir(dds: DDSWrapper) -> None:
-    with error.expect_error_marker('failed-package-json5-scan'):
-        dds.run(['pkg', 'create', '--project=/root'])
+def test_sdist_unreadable_dir(bpt: BPTWrapper) -> None:
+    with error.expect_error_marker('sdist-open-fail-generic'):
+        bpt.run(['pkg', 'create', '--project=/root'])
 
 
-def test_sdist_invalid_json5(tmp_project: Project) -> None:
-    tmp_project.write('package.json5', 'bogus json5')
-    with error.expect_error_marker('package-json5-parse-error'):
+def test_sdist_invalid_yml(tmp_project: Project) -> None:
+    tmp_project.write('bpt.yaml', '[[')
+    with error.expect_error_marker('package-yaml-parse-error'):
         tmp_project.pkg_create()
+
+
+def test_pkg_search(tmp_crs_repo: CRSRepo, tmp_project: Project) -> None:
+    with error.expect_error_marker('pkg-search-no-result'):
+        tmp_project.bpt.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
+    tmp_project.bpt_yaml = {
+        'name': 'test-pkg',
+        'version': '0.1.2',
+    }
+    tmp_crs_repo.import_(tmp_project.root)
+    # No error now:
+    tmp_project.bpt.run(['pkg', 'search', 'test-pkg', '-r', tmp_crs_repo.path])
+
+
+def test_pkg_spdx(tmp_project: Project) -> None:
+    tmp_project.bpt_yaml = {
+        'name': 'foo',
+        'version': '1.2.3',
+        'license': 'MIT',
+    }
+    tmp_project.pkg_create()
+    tmp_project.bpt_yaml['license'] = 'bogus'
+    with error.expect_error_marker('invalid-spdx'):
+        tmp_project.pkg_create()
+
+    dest_tgz = tmp_project.root / 'test.tgz'
+    tmp_project.bpt_yaml['license'] = 'MIT'
+    tmp_project.pkg_create(dest=dest_tgz)
+    with tarfile.open(dest_tgz) as tgz:
+        pkg_json = json.loads(tgz.extractfile('pkg.json').read())
+    assert 'meta' in pkg_json
+    assert 'license' in pkg_json['meta']
+    assert pkg_json['meta']['license'] == 'MIT'
+
+
+def test_pkg_create_almost_valid(tmp_project: Project) -> None:
+    pkg_data = {
+        "name":
+        "catch2",
+        "version":
+        "2.13.6",
+        "pkg-version":
+        1,
+        "libraries": [{
+            "name": "catch2",
+            "path": ".",
+            "using": [],
+            "test-using": [],
+            "dependencies": [],
+            "test-dependencies": []
+        }, {
+            "name": "main",
+            "path": "libs/main",
+            "test-dependencies": [],
+            "dependencies": [],
+            "test-using": [],
+            "using": [{
+                "lib": "catch2"
+            }]
+        }],
+        "schema-version":
+        0
+    }
+    tmp_project.write('pkg.json', json.dumps(pkg_data))
+    with error.expect_error_marker('invalid-pkg-json'):
+        tmp_project.build()
+    with error.expect_error_marker('invalid-pkg-json'):
+        tmp_project.pkg_create()
+
+    pkg_data['libraries'][1]['using'] = ['catch2']
+    tmp_project.root.joinpath('libs/main').mkdir(parents=True)
+    tmp_project.write('pkg.json', json.dumps(pkg_data))
+    tmp_project.build()
+    tmp_project.pkg_create()
+
+
+def test_pkg_create_default_using(tmp_project: Project):
+    tmp_project.bpt_yaml = {'name': 'foo', 'version': '1.2.3', 'dependencies': ['bar@4.1.3']}
+    tmp_project.pkg_create()
+    pkg_json = json.loads(read_tarfile_member(tmp_project.build_root / 'foo@1.2.3~1.tar.gz', 'pkg.json'))
+    assert pkg_json['libraries'][0] == {
+        'name': 'foo',
+        'path': '.',
+        'using': [],
+        'test-using': [],
+        'test-dependencies': [],
+        'dependencies': [{
+            'name': 'bar',
+            'versions': [{
+                'low': '4.1.3',
+                'high': '5.0.0'
+            }],
+            'using': ['bar'],
+        }]
+    }

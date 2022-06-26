@@ -1,7 +1,7 @@
 #include "./argument_parser.hpp"
 
-/// XXX: Refactor this after pulling debate:: out of dds
-#include <dds/dym.hpp>
+/// XXX: Refactor this after pulling debate:: out of bpt
+#include <bpt/dym.hpp>
 
 #include <boost/leaf/error.hpp>
 #include <boost/leaf/exception.hpp>
@@ -36,7 +36,7 @@ struct parse_engine {
     void see(const argument& arg) {
         auto did_insert = seen.insert(&arg).second;
         if (!did_insert && !arg.can_repeat) {
-            BOOST_LEAF_THROW_EXCEPTION(invalid_repitition("Invalid repitition"));
+            BOOST_LEAF_THROW_EXCEPTION(invalid_repetition("Invalid repetition"));
         }
     }
 
@@ -51,7 +51,7 @@ struct parse_engine {
 
     std::optional<std::string> find_nearest_arg_spelling(std::string_view given) const noexcept {
         std::vector<std::string> candidates;
-        // Only match arguments of the corrent type
+        // Only match arguments of the correct type
         auto parser = bottom_parser;
         while (parser) {
             for (auto& arg : parser->arguments()) {
@@ -70,7 +70,7 @@ struct parse_engine {
                 candidates.push_back(p.name);
             }
         }
-        return dds::did_you_mean(given, candidates);
+        return bpt::did_you_mean(given, candidates);
     }
 
     void parse_another() {
@@ -240,6 +240,10 @@ struct parse_engine {
         if (!arg.nargs) {
             // Just a switch. Consume a single character
             arg.action("", spelling);
+            if (tail.empty()) {
+                // A lone switch
+                shift();
+            }
             return tail;
         } else if (arg.nargs == 1) {
             // Want one value

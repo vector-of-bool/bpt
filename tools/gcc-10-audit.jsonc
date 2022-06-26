@@ -1,0 +1,25 @@
+{
+    "$schema": "../res/toolchain-schema.json",
+    "compiler_id": "gnu",
+    "c_compiler": "gcc-10",
+    "cxx_compiler": "g++-10",
+    "cxx_version": "c++20",
+    "warning_flags": [
+        "-Werror",
+    ],
+    "flags": [
+        // "-fsanitize=address,undefined",
+    ],
+    "link_flags": [
+        // "-fsanitize=address,undefined",
+        "-l:libssl.a",
+        "-l:libcrypto.a",
+        "-ldl",
+        // 'eggs'
+    ],
+    "cxx_flags": [
+        "-fconcepts-diagnostics-depth=10",
+        "-fcoroutines",
+    ],
+    "debug": true
+}

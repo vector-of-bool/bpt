@@ -15,8 +15,9 @@ linking model, which we still use to this day, multiple *translation units*
 known as *linking*. The result of linking is an actual executable.
 
 .. note::
+
     Linking is also used to generate executables that are used as tests.
-    Refer: :ref:`pkgs.apps-tests`.
+    Refer: :doc:`/guide/apps` and :doc:`/guide/tests`
 
 
 What is "Linking"?
@@ -187,7 +188,7 @@ Suppose you have two different source files:
     #include "a.hpp"
 
     void error(string message) {
-        cerr << "An error occured: " << msg << '\n';
+        cerr << "An error occurred: " << msg << '\n';
     }
 
     void a_func() {
@@ -303,8 +304,8 @@ in the form of a static library, shared library/DLL, or even plain object
 files.
 
 If the external library containing the definition in question is managed by
-``dds``, this issue should never occur. If the library exists outside of
-``dds`` (e.g. a system library), then that library will need to be manually
+|bpt|, this issue should never occur. If the library exists outside of
+|bpt| (e.g. a system library), then that library will need to be manually
 added as a linker input using a toolchain file using the ``Link-Flags`` option.
 See: :ref:`toolchains.opt-ref`.
 
@@ -319,10 +320,10 @@ of the dependency in question to see if it requires additional linker inputs
 in order to be used.
 
 If the library that should contain the unresolved reference is a dependency
-managed by ``dds``, it is possible that the library author has mistakenly
+managed by |bpt|, it is possible that the library author has mistakenly
 declared a symbol without providing a definition. If the definition *is*
-present in the ``dds``-provided dependency library, then the failure to resolve
-the reference would be a ``dds`` bug.
+present in the |bpt|-provided dependency library, then the failure to resolve
+the reference would be a |bpt| bug.
 
 
 Issue: The definition is simply missing
@@ -469,9 +470,9 @@ Issue: The source file containing definition is not being included in the link
 If the translation unit that contains the definition of an entity is not being
 passed to the linker, the linker will not be able to find it!
 
-If you are using ``dds`` correctly, and the compiled source file containing the
+If you are using |bpt| correctly, and the compiled source file containing the
 definition is placed as a (direct or indirect) descendent of the ``src/``
-directory, then ``dds`` will always include that source file as part of the
+directory, then |bpt| will always include that source file as part of the
 link for the enclosing library.
 
 Build systems that require you to enumerate your source files explicitly will

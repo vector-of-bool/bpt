@@ -1,0 +1,38 @@
+#include "./root.hpp"
+
+#include <bpt/util/tl.hpp>
+
+#include <neo/memory.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
+
+#include <neo/ranges.hpp>
+
+using namespace bpt;
+
+namespace {
+
+struct collector_state {
+    fs::path                         base_path;
+    fs::recursive_directory_iterator dir_iter;
+};
+
+}  // namespace
+
+bpt::collected_sources bpt::collect_sources(path_ref dirpath) {
+    using namespace ranges::views;
+    auto state
+        = neo::copy_shared(collector_state{dirpath, fs::recursive_directory_iterator{dirpath}});
+    return state->dir_iter                                                          //
+        | filter(BPT_TL(_1.is_regular_file()))                                      //
+        | transform([state] BPT_CTL(source_file::from_path(_1, state->base_path)))  //
+        | filter(BPT_TL(_1.has_value()))                                            //
+        | transform([state] BPT_CTL(source_file{std::move(*_1)}))                   //
+        ;
+}
+
+std::vector<source_file> source_root::collect_sources() const {
+    using namespace ranges::views;
+    // Collect all source files from the directory
+    return bpt::collect_sources(path) | neo::to_vector;
+}

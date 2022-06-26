@@ -14,7 +14,7 @@ TEST_CASE("Stylize some text") {
     test = render("foo `.eggs");
     CHECK(test == "foo .eggs");
 
-    test = render("foo `.bar[`]");
+    test = render("foo `.bar[]");
     CHECK(test == "foo .bar[]");
 
     test = render("foo .bold[bar] baz");

@@ -1,0 +1,10 @@
+{
+    name: "the_test_dependency",
+    version: "0.0.0",
+
+    libraries:
+        [
+            { path: ., name: "the_test_dependency", using: [sibling] },
+            { path: sibling, name: sibling },
+        ],
+}
