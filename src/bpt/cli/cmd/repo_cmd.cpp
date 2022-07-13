@@ -52,7 +52,7 @@ int repo_cmd(const options& opts) {
     bpt_leaf_catch(bpt::crs::e_repo_open_path repo_path, e_migration_error error) {
         bpt_log(
             error,
-            "Error while applying database migrations when opening SQLite database for repostiory [.br.yellow[{}]]: .br.red[{}]"_styled,
+            "Error while applying database migrations when opening SQLite database for repository [.br.yellow[{}]]: .br.red[{}]"_styled,
             repo_path.value.string(),
             error.value);
         write_error_marker("repo-db-invalid");
