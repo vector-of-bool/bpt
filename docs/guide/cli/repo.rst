@@ -30,7 +30,7 @@ directory
 
 .. option:: --name <name>
 
-  :required: Specify the name of the new repostiory. This can be any free-form
+  :required: Specify the name of the new repository. This can be any free-form
       string. It is recommended to use the domain name (and possible URL path)
       at which the repository is intended to be accessed. This string is not
       usually seen in the |bpt| user interface.
@@ -101,7 +101,7 @@ files into a repository at the given directory.
 ``bpt repo remove``
 *******************
 
-``bpt repo remove <repo-dir>`` will remove packages from a repostiory.
+``bpt repo remove <repo-dir>`` will remove packages from a repository.
 
 .. program:: bpt repo remove
 

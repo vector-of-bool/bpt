@@ -45,7 +45,7 @@ int repo_init(const options& opts) {
     return bpt_leaf_try { return _repo_init(opts); }
     bpt_leaf_catch(bpt::crs::e_repo_already_init, bpt::crs::e_repo_open_path dirpath) {
         bpt_log(error,
-                "Failed to initialize a new repostiory at [{}]: Repository already exists",
+                "Failed to initialize a new repository at [{}]: Repository already exists",
                 dirpath.value.string());
         write_error_marker("repo-init-already-init");
         return 1;
