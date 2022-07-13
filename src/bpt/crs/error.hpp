@@ -12,7 +12,7 @@ struct e_repo_open_path {
     std::filesystem::path value;
 };
 
-struct e_repo_importing_dir {
+struct e_repo_importing_path {
     std::filesystem::path value;
 };
 

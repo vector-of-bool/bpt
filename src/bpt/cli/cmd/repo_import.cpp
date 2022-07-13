@@ -23,7 +23,14 @@ namespace bpt::cli::cmd {
 
 namespace {
 
-void _import_file(bpt::crs::repository& repo, path_ref dirpath) { repo.import_dir(dirpath); }
+void _import_file(bpt::crs::repository& repo, path_ref pkgpath) {
+    auto abs_path = fs::canonical(pkgpath);
+    if (fs::is_regular_file(abs_path)) {
+        repo.import_targz(pkgpath);
+    } else {
+        repo.import_dir(pkgpath);
+    }
+}
 
 int _repo_import(const options& opts) {
     auto repo = bpt::crs::repository::open_existing(opts.repo.repo_dir);
@@ -69,22 +76,22 @@ int repo_import(const options& opts) {
     return bpt_leaf_try { return _repo_import(opts); }
     bpt_leaf_catch(bpt::crs::e_repo_import_pkg_already_present,
                    bpt::crs::e_repo_importing_package meta,
-                   bpt::crs::e_repo_importing_dir     from_dir) {
+                   bpt::crs::e_repo_importing_path    from_path) {
         bpt_log(
             error,
             "Refusing to overwrite existing package .br.yellow[{}] (Importing from [.br.yellow[{}]])"_styled,
             meta.value.id.to_string(),
-            from_dir.value.string());
+            from_path.value.string());
         write_error_marker("repo-import-pkg-already-exists");
         return 1;
     }
-    bpt_leaf_catch(bpt::crs::e_repo_importing_dir crs_dir,
-                   std::error_code                ec,
+    bpt_leaf_catch(bpt::crs::e_repo_importing_path crs_path,
+                   std::error_code                 ec,
                    boost::leaf::match<std::error_code, boost::leaf::category<neo::sqlite3::errc>>,
                    e_sqlite3_error const* sqlite_error) {
         bpt_log(error,
                 "SQLite error while importing [.br.yellow[{}]]"_styled,
-                crs_dir.value.string());
+                crs_path.value.string());
         bpt_log(error, "  .br.red[{}]"_styled, ec.message());
         if (sqlite_error) {
             bpt_log(error, "    .br.red[{}]"_styled, sqlite_error->value);
@@ -93,10 +100,10 @@ int repo_import(const options& opts) {
         write_error_marker("repo-import-db-error");
         return 1;
     }
-    bpt_leaf_catch(bpt::e_json_parse_error        parse_error,
-                   bpt::crs::e_repo_importing_dir crs_dir,
-                   bpt::crs::e_pkg_json_path      pkg_json_path) {
-        bpt_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_dir.value.string());
+    bpt_leaf_catch(bpt::e_json_parse_error         parse_error,
+                   bpt::crs::e_repo_importing_path crs_path,
+                   bpt::crs::e_pkg_json_path       pkg_json_path) {
+        bpt_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_path.value.string());
         bpt_log(error,
                 "  JSON parse error in [.br.yellow[{}]]:"_styled,
                 pkg_json_path.value.string());
@@ -104,10 +111,10 @@ int repo_import(const options& opts) {
         write_error_marker("repo-import-invalid-crs-json-parse-error");
         return 1;
     }
-    bpt_leaf_catch(bpt::crs::e_invalid_meta_data  error,
-                   bpt::crs::e_repo_importing_dir crs_dir,
-                   bpt::crs::e_pkg_json_path      pkg_json_path) {
-        bpt_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_dir.value.string());
+    bpt_leaf_catch(bpt::crs::e_invalid_meta_data   error,
+                   bpt::crs::e_repo_importing_path crs_path,
+                   bpt::crs::e_pkg_json_path       pkg_json_path) {
+        bpt_log(error, "Error while importing [.br.yellow[{}]]"_styled, crs_path.value.string());
         bpt_log(error,
                 "CRS data in [.br.yellow[{}]] is invalid: .br.red[{}]"_styled,
                 pkg_json_path.value.string(),
@@ -115,11 +122,11 @@ int repo_import(const options& opts) {
         write_error_marker("repo-import-invalid-crs-json");
         return 1;
     }
-    bpt_leaf_catch(bpt::crs::e_invalid_meta_data  error,
-                   bpt::crs::e_repo_importing_dir proj_dir,
+    bpt_leaf_catch(bpt::crs::e_invalid_meta_data   error,
+                   bpt::crs::e_repo_importing_path proj_path,
                    bpt::e_open_project,
                    bpt::e_parse_project_manifest_path proj_json_path) {
-        bpt_log(error, "Error while importing [.br.yellow[{}]]"_styled, proj_dir.value.string());
+        bpt_log(error, "Error while importing [.br.yellow[{}]]"_styled, proj_path.value.string());
         bpt_log(error,
                 "Project data in [.br.yellow[{}]] is invalid: .br.red[{}]"_styled,
                 proj_json_path.value.string(),
@@ -128,19 +135,19 @@ int repo_import(const options& opts) {
         return 1;
     }
     bpt_leaf_catch(user_error<errc::invalid_pkg_filesystem> const& exc,
-                   crs::e_repo_importing_dir                       crs_dir) {
+                   crs::e_repo_importing_path                      crs_path) {
         bpt_log(error,
                 "Error while importing [.br.yellow[{}]]: .br.red[{}]"_styled,
-                crs_dir.value.string(),
+                crs_path.value.string(),
                 exc.what());
         write_error_marker("repo-import-noent");
         return 1;
     }
-    bpt_leaf_catch(bpt::crs::e_repo_importing_dir crs_dir,
-                   bpt::e_read_file_path const*   read_file,
-                   bpt::e_copy_file const*        copy_file,
-                   std::error_code                ec) {
-        bpt_log(error, "Error while importing [.br.red[{}]]:"_styled, crs_dir.value.string());
+    bpt_leaf_catch(bpt::crs::e_repo_importing_path crs_path,
+                   bpt::e_read_file_path const*    read_file,
+                   bpt::e_copy_file const*         copy_file,
+                   std::error_code                 ec) {
+        bpt_log(error, "Error while importing [.br.red[{}]]:"_styled, crs_path.value.string());
         if (read_file) {
             bpt_log(error,
                     " Error reading file [.br.yellow[{}]]:"_styled,
@@ -156,13 +163,13 @@ int repo_import(const options& opts) {
         write_error_marker("repo-import-noent");
         return 1;
     }
-    bpt_leaf_catch(crs::e_repo_importing_dir              crs_dir,
+    bpt_leaf_catch(crs::e_repo_importing_path             crs_path,
                    crs::e_repo_importing_package          meta,
                    crs::e_repo_import_invalid_pkg_version err) {
         bpt_log(info,
                 "Error while importing .br.yellow[{}] (from [.br.yellow[{}]]):"_styled,
                 meta.value.id.to_string(),
-                crs_dir.value.string());
+                crs_path.value.string());
         bpt_log(error, "Invalid 'pkg-version' on package: .br.red[{}]"_styled, err.value);
         write_error_marker("repo-import-invalid-pkg-version");
         return 1;
